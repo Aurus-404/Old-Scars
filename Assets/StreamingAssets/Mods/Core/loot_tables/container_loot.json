@@ -1,0 +1,14 @@
+{
+  "loot_tables": [
+    {
+      "type": "loot_table",
+      "id": "debug_sealed_container_loot_01",
+      "entries": [
+        {
+          "item_id": "scrap_metal_01",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

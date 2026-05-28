@@ -1,0 +1,14 @@
+{
+  "weapon_profiles": [
+    {
+      "type": "weapon_profile",
+      "id": "improvised_blunt_medium",
+      "damage_type": "blunt",
+      "scales_with": ["strength"],
+      "condition_affects_damage": true,
+      "condition_affects_accuracy": true,
+      "default_actions": ["blunt_swing", "forceful_strike"],
+      "armor_interaction": "blunt_impact"
+    }
+  ]
+}

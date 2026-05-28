@@ -1,0 +1,69 @@
+{
+  "items": [
+    {
+      "type": "item",
+      "id": "rusted_crowbar_01",
+      "display": {
+        "name": "Palanca oxidada",
+        "description": "Una vieja palanca industrial cubierta de óxido, grasa seca y marcas de uso. Sirve para hacer fuerza, romper cosas débiles o como arma improvisada."
+      },
+      "categories": ["tool", "weapon", "crafting_material"],
+      "tags": [
+        "item",
+        "tool",
+        "weapon",
+        "crowbar",
+        "metal",
+        "industrial",
+        "improvised_weapon",
+        "can_pry",
+        "can_force_doors",
+        "crafting_component"
+      ],
+      "physical": {
+        "weight_kg": 2.4,
+        "volume_l": 1.8,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 35,
+        "base_sell_value": 12
+      },
+      "equip": {
+        "allowed_slots": ["right_hand", "left_hand"]
+      },
+      "combat": {
+        "weapon_profile": "improvised_blunt_medium",
+        "damage": {
+          "min": 4,
+          "max": 9
+        },
+        "actions": ["blunt_swing", "forceful_strike"]
+      }
+    },
+    {
+      "type": "item",
+      "id": "scrap_metal_01",
+      "display": {
+        "name": "Scrap Metal",
+        "description": "A small piece of worn metal, useful as a basic material."
+      },
+      "categories": ["material", "crafting_material"],
+      "tags": [
+        "item",
+        "material",
+        "metal",
+        "crafting_component"
+      ],
+      "physical": {
+        "weight_kg": 0.6,
+        "volume_l": 0.4,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 2,
+        "base_sell_value": 1
+      }
+    }
+  ]
+}

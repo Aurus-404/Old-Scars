@@ -1,0 +1,27 @@
+{
+  "tags": [
+    { "id": "item", "description": "Objeto que puede existir como item en el mundo o inventario." },
+    { "id": "player", "description": "Actor debug controlado por el jugador." },
+    { "id": "human", "description": "Actor humano." },
+    { "id": "tool", "description": "Objeto usado como herramienta para interacciones contextuales." },
+    { "id": "weapon", "description": "Objeto usable como arma." },
+    { "id": "crowbar", "description": "Objeto tipo palanca." },
+    { "id": "material", "description": "Material simple usado como item base o componente." },
+    { "id": "metal", "description": "Objeto compuesto principalmente de metal." },
+    { "id": "industrial", "description": "Objeto de origen o función industrial." },
+    { "id": "improvised_weapon", "description": "Objeto no diseñado principalmente para combate pero usable como arma." },
+    { "id": "can_pry", "description": "Puede hacer palanca para abrir, separar o forzar objetos." },
+    { "id": "can_force_doors", "description": "Puede forzar puertas cerradas o trabadas." },
+    { "id": "crafting_component", "description": "Puede usarse como componente de crafting." },
+    { "id": "inspectable", "description": "Objeto que puede examinarse con una interaccion contextual debug." },
+    { "id": "world_item", "description": "Objeto item representado fisicamente en el mundo." },
+    { "id": "pickupable", "description": "Objeto del mundo que puede recogerse mediante la accion debug de pickup." },
+    { "id": "picked_up", "description": "Estado runtime de un item de mundo que ya fue recogido." },
+    { "id": "locked_door", "description": "Puerta o acceso bloqueado por cerradura, traba o candado." },
+    { "id": "forced_open", "description": "Estado debug de un objeto forzado abierto." },
+    { "id": "sealed_container", "description": "Contenedor sellado que puede abrirse con una herramienta adecuada." },
+    { "id": "opened_container", "description": "Estado debug de un contenedor abierto." },
+    { "id": "lootable_container", "description": "Contenedor que todavia puede saquearse durante runtime." },
+    { "id": "looted_container", "description": "Estado runtime de un contenedor ya saqueado." }
+  ]
+}

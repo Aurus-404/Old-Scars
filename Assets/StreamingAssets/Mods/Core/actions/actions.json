@@ -1,0 +1,171 @@
+{
+  "actions": [
+    {
+      "type": "action",
+      "id": "blunt_swing",
+      "contexts": ["combat"],
+      "display": {
+        "name": "Golpe",
+        "description": "Un golpe directo con el objeto empuñado.",
+        "failure_text": "No tenés suficiente espacio o control para golpear."
+      },
+      "requirements": {
+        "weapon_tags": ["weapon"]
+      },
+      "cost": {
+        "stamina": 5,
+        "time": 0.8
+      },
+      "modifiers": {
+        "damage_multiplier": 1.0,
+        "accuracy_modifier": 0.0
+      },
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "forceful_strike",
+      "contexts": ["combat"],
+      "display": {
+        "name": "Golpe fuerte",
+        "description": "Un golpe pesado. Más dañino, pero más lento y agotador.",
+        "failure_text": "No tenés suficiente fuerza o estabilidad para un golpe así."
+      },
+      "requirements": {
+        "actor_min_stats": {
+          "strength": 4
+        },
+        "weapon_tags": ["weapon"]
+      },
+      "cost": {
+        "stamina": 10,
+        "time": 1.4
+      },
+      "modifiers": {
+        "damage_multiplier": 1.4,
+        "accuracy_modifier": -0.15
+      },
+      "interruptible": false
+    },
+    {
+      "type": "action",
+      "id": "force_door",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Forzar puerta",
+        "description": "Usás una herramienta adecuada para forzar la puerta.",
+        "failure_text": "Necesitás una herramienta adecuada o más fuerza."
+      },
+      "requirements": {
+        "actor_min_stats": {
+          "strength": 3
+        },
+        "target_tags": ["locked_door"],
+        "weapon_tags": ["can_pry", "can_force_doors"]
+      },
+      "cost": {
+        "stamina": 15,
+        "time": 3.0
+      },
+      "modifiers": {
+        "damage_multiplier": 1.0,
+        "accuracy_modifier": 0.0
+      },
+      "effects": [
+        { "type": "remove_tag", "target": "target", "tag": "locked_door" },
+        { "type": "add_tag", "target": "target", "tag": "forced_open" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "examine_object",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Examinar",
+        "description": "Observas el objeto con atencion.",
+        "failure_text": "No hay nada claro que examinar."
+      },
+      "requirements": {
+        "target_tags": ["inspectable"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 1.0
+      },
+      "effects": [
+        { "type": "show_target_info", "target": "target" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "pick_up_item",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Recoger",
+        "description": "Recoges el objeto y lo agregas a tu inventario.",
+        "failure_text": "No podes recoger este objeto."
+      },
+      "requirements": {
+        "target_tags": ["world_item", "pickupable"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 0.5
+      },
+      "effects": [
+        { "type": "pick_up_item", "target": "target" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "pry_open_container",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Abrir contenedor",
+        "description": "Usas una herramienta para hacer palanca y abrir el contenedor.",
+        "failure_text": "Necesitas una herramienta adecuada para abrirlo."
+      },
+      "requirements": {
+        "target_tags": ["sealed_container"],
+        "weapon_tags": ["can_pry"]
+      },
+      "cost": {
+        "stamina": 8,
+        "time": 2.0
+      },
+      "modifiers": {
+        "damage_multiplier": 1.0,
+        "accuracy_modifier": 0.0
+      },
+      "effects": [
+        { "type": "remove_tag", "target": "target", "tag": "sealed_container" },
+        { "type": "add_tag", "target": "target", "tag": "opened_container" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "search_container",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Buscar contenedor",
+        "description": "Revisas el contenedor abierto en busca de algo util.",
+        "failure_text": "No podes saquear este contenedor."
+      },
+      "requirements": {
+        "target_tags": ["opened_container", "lootable_container"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 1.5
+      },
+      "effects": [
+        { "type": "search_container", "target": "target" }
+      ],
+      "interruptible": true
+    }
+  ]
+}
