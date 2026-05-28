@@ -425,6 +425,36 @@
 - No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
 - Estado: validated.
 
+### Action Availability Diagnostics / Requirement Readability v0
+
+- Milestone 18 implementado y validado como capacidad diagnostica opcional para disponibilidad de acciones contextuales.
+- Agregado `ActionAvailabilityDiagnosticReport` como reporte runtime-only con target display/name, contexto requerido, actor tags snapshot, target tags snapshot, equipped item id, equipped item tags snapshot y entradas por accion.
+- Agregado `ActionAvailabilityDiagnosticEntry` como entrada estructurada por accion candidata.
+- Cada entrada guarda action id/display, disponibilidad, razones de exito/bloqueo, tags requeridos, tags faltantes y matched item tags.
+- El diagnostico usa `ActionAvailabilityEvaluator.Evaluate()` y `ActionAvailabilityResult`.
+- El diagnostico evalua el mismo conjunto de acciones candidatas que `InteractionSystem` considera antes de filtrar por disponibilidad.
+- `GetAvailableActions()` sigue devolviendo solo acciones disponibles.
+- El comportamiento jugable y el menu contextual ejecutable no cambiaron respecto a Milestone 17.
+- Agregado `DebugActionAvailabilityPanel` como UI debug OnGUI para visualizar acciones disponibles/bloqueadas, razones de bloqueo y snapshots de contexto.
+- `DebugActionAvailabilityPanel` solo lee el reporte y no ejecuta acciones ni modifica disponibilidad.
+- `DebugActionAvailabilityPanel` se muestra/oculta con F8 y arranca oculto por defecto.
+- `DebugFeedbackLogPanel` se ajusto para mostrarse/ocultarse con F7 y arrancar oculto por defecto.
+- `InventoryDebugPanel` sigue funcionando con `I`.
+- Validado en Unity: el proyecto compila sin errores.
+- Validado en Unity: `GetAvailableActions()` sigue devolviendo solo acciones disponibles.
+- Validado en Unity: el diagnostico muestra acciones disponibles y bloqueadas.
+- Validado en Unity: puerta cerrada sin palanca bloquea `force_door` por item tags faltantes.
+- Validado en Unity: puerta cerrada con palanca muestra `force_door` disponible.
+- Validado en Unity: puerta forzada bloquea `force_door` por falta de `locked_door` y el snapshot muestra `forced_open`.
+- Validado en Unity: contenedor sellado muestra `pry_open_container` disponible.
+- Validado en Unity: contenedor abierto muestra `search_container` disponible.
+- Validado en Unity: contenedor looteado bloquea `search_container` por falta de `lootable_container` y el snapshot muestra `looted_container`.
+- Validado en Unity: `GameplayFeedbackLog` sigue separado y funcionando.
+- Validado en Unity: los paneles debug arrancan ocultos por defecto.
+- El diagnostico es runtime-only, debug/fundacional, sin EventBus, sin listeners, sin subscriptions, sin callbacks, sin payload generico, sin UI final y sin persistencia.
+- No se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
+- Estado: validated.
+
 ### Deuda Tecnica Menor Detectada
 
 - GameDataManager mostraba warning de DontDestroyOnLoad porque no estaba en un root GameObject.
@@ -500,6 +530,19 @@ Milestone 17 validado:
 - el gameplay no depende del panel de feedback;
 - `InteractionSystem` no fue tocado;
 - no se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+
+Milestone 18 validado:
+
+- el diagnostico de disponibilidad es runtime-only, debug/fundacional y no persistente;
+- el diagnostico usa `ActionAvailabilityEvaluator.Evaluate()` y `ActionAvailabilityResult`;
+- `GetAvailableActions()` sigue devolviendo solo acciones disponibles;
+- el menu contextual ejecutable no cambio respecto a Milestone 17;
+- `DebugActionAvailabilityPanel` muestra acciones disponibles/bloqueadas, razones de bloqueo y snapshots de contexto;
+- `DebugActionAvailabilityPanel` se alterna con F8 y arranca oculto;
+- `DebugFeedbackLogPanel` se alterna con F7 y arranca oculto;
+- `InventoryDebugPanel` sigue funcionando con `I`;
+- `GameplayFeedbackLog` sigue separado y funcionando;
+- no se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
 
 Con `InventoryComponent` asignado:
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace OldScars.Core.Feedback
 {
@@ -9,16 +10,29 @@ namespace OldScars.Core.Feedback
         private const float PanelHeight = 260f;
 
         [SerializeField] private GameplayFeedbackLog feedbackLog;
-        [SerializeField] private bool isVisible = true;
+        [SerializeField] private bool visibleOnStart = false;
+        [SerializeField] private Key toggleKey = Key.F7;
         [SerializeField] private bool showDebugOnly = true;
         [SerializeField] private int maxVisibleEntries = 8;
 
+        private bool isVisible;
         private Vector2 scrollPosition;
 
         private void Awake()
         {
+            isVisible = visibleOnStart;
+
             if (feedbackLog == null)
                 feedbackLog = FindAnyObjectByType<GameplayFeedbackLog>();
+        }
+
+        private void Update()
+        {
+            if (!WasTogglePressed())
+                return;
+
+            isVisible = !isVisible;
+            scrollPosition = Vector2.zero;
         }
 
         private void OnGUI()
@@ -132,6 +146,16 @@ namespace OldScars.Core.Feedback
             float x = 24f;
             float y = Mathf.Max(0f, Screen.height - PanelHeight - 24f);
             return new Rect(x, y, PanelWidth, PanelHeight);
+        }
+
+        private bool WasTogglePressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null || toggleKey == Key.None)
+                return false;
+
+            var keyControl = keyboard[toggleKey];
+            return keyControl != null && keyControl.wasPressedThisFrame;
         }
 
         private static string SafeText(string primary, string fallback)

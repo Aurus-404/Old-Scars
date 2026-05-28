@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OldScars.Core.Actions;
 using OldScars.Core.Data.Definitions;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,12 +12,14 @@ namespace OldScars.Core.Interactions
 
         [SerializeField] private ContextualActionDebugPanel debugPanel;
         [SerializeField] private DebugActionProgressController progressController;
+        [SerializeField] private DebugActionAvailabilityPanel availabilityPanel;
         [SerializeField] private ActorInteractionContext actorInteractionContext;
         [SerializeField] private LayerMask interactableLayerMask;
         [SerializeField] private float maxRayDistance = 1000f;
         [SerializeField] private float interactionRange = 3f;
         [SerializeField] private float rightDragThresholdPixels = 8f;
         [SerializeField] private bool logAvailabilityDetails = false;
+        [SerializeField] private bool showAvailabilityDiagnostics = true;
 
         private readonly InteractionSystem interactionSystem = new InteractionSystem();
 
@@ -31,6 +34,9 @@ namespace OldScars.Core.Interactions
 
             if (progressController == null)
                 progressController = FindAnyObjectByType<DebugActionProgressController>();
+
+            if (availabilityPanel == null)
+                availabilityPanel = FindAnyObjectByType<DebugActionAvailabilityPanel>();
 
             if (actorInteractionContext == null)
                 actorInteractionContext = FindAnyObjectByType<ActorInteractionContext>();
@@ -172,6 +178,9 @@ namespace OldScars.Core.Interactions
 
             List<ActionDefinition> availableActions = interactionSystem.GetAvailableActions(query);
 
+            if (showAvailabilityDiagnostics)
+                ShowAvailabilityDiagnostics(interactionSystem.GetAvailabilityDiagnostics(query));
+
             if (debugPanel == null)
                 debugPanel = FindAnyObjectByType<ContextualActionDebugPanel>();
 
@@ -182,6 +191,15 @@ namespace OldScars.Core.Interactions
             }
 
             debugPanel.ShowActions(availableActions, targetTags, equippedItemDefinitionId, mousePosition, actorInteractionContext);
+        }
+
+        private void ShowAvailabilityDiagnostics(ActionAvailabilityDiagnosticReport report)
+        {
+            if (availabilityPanel == null)
+                availabilityPanel = FindAnyObjectByType<DebugActionAvailabilityPanel>();
+
+            if (availabilityPanel != null)
+                availabilityPanel.SetReport(report);
         }
 
         private void HideDebugPanel()

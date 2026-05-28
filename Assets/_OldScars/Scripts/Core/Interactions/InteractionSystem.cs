@@ -27,58 +27,14 @@ namespace OldScars.Core.Interactions
         {
             var availableActions = new List<ActionDefinition>();
 
-            if (query == null)
-            {
-                Debug.LogError("[InteractionSystem] Cannot evaluate a null interaction query.");
+            if (!TryBuildAvailabilityContext(query, true, out ActionAvailabilityContext context, out string[] itemTags))
                 return availableActions;
-            }
 
-            if (query.Database == null)
+            List<EvaluatedAction> evaluatedActions = EvaluateCandidateActions(query, context, query.LogAvailabilityDetails);
+            for (int index = 0; index < evaluatedActions.Count; index++)
             {
-                Debug.LogError("[InteractionSystem] Cannot evaluate actions without a GameDatabase.");
-                return availableActions;
-            }
-
-            if (query.Target == null)
-            {
-                Debug.LogError("[InteractionSystem] Cannot evaluate actions without a target.");
-                return availableActions;
-            }
-
-            if (string.IsNullOrWhiteSpace(query.RequiredContext))
-            {
-                Debug.LogError("[InteractionSystem] Cannot evaluate actions without a required context.");
-                return availableActions;
-            }
-
-            bool hasEquippedItem = !IsNoEquippedItemId(query.EquippedItemId);
-            string[] itemTags = GetEquippedItemTags(query.Database, query.EquippedItemId);
-
-            var context = new ActionAvailabilityContext
-            {
-                ActorTags = query.ActorTags,
-                ActorStats = query.ActorStats,
-                TargetTags = query.Target.Tags,
-                ItemTags = itemTags,
-                EquippedItemId = query.EquippedItemId,
-                HasEquippedItem = hasEquippedItem
-            };
-
-            foreach (ActionDefinition action in query.Database.GetAllActions())
-            {
-                if (action == null)
-                    continue;
-
-                if (!HasContext(action, query.RequiredContext))
-                    continue;
-
-                ActionAvailabilityResult availabilityResult = evaluator.Evaluate(action, context);
-
-                if (query.LogAvailabilityDetails)
-                    LogAvailabilityDetail(action, availabilityResult, query);
-
-                if (availabilityResult.IsAvailable)
-                    availableActions.Add(action);
+                if (evaluatedActions[index].Result.IsAvailable)
+                    availableActions.Add(evaluatedActions[index].Action);
             }
 
             Debug.Log(
@@ -93,6 +49,102 @@ namespace OldScars.Core.Interactions
                 $"\n  Actions: {FormatActionIds(availableActions)}");
 
             return availableActions;
+        }
+
+        public ActionAvailabilityDiagnosticReport GetAvailabilityDiagnostics(InteractionQuery query)
+        {
+            if (!TryBuildAvailabilityContext(query, false, out ActionAvailabilityContext context, out string[] itemTags))
+                return null;
+
+            var report = new ActionAvailabilityDiagnosticReport(
+                query.Target.name,
+                GetTargetDisplayName(query.Target),
+                query.RequiredContext,
+                query.ActorTags,
+                query.Target.Tags,
+                FormatEquippedItemId(query.EquippedItemId),
+                itemTags);
+
+            List<EvaluatedAction> evaluatedActions = EvaluateCandidateActions(query, context, false);
+            for (int index = 0; index < evaluatedActions.Count; index++)
+            {
+                EvaluatedAction evaluatedAction = evaluatedActions[index];
+                report.AddEntry(new ActionAvailabilityDiagnosticEntry(evaluatedAction.Action, evaluatedAction.Result));
+            }
+
+            return report;
+        }
+
+        private bool TryBuildAvailabilityContext(
+            InteractionQuery query,
+            bool logEquippedItemDetails,
+            out ActionAvailabilityContext context,
+            out string[] itemTags)
+        {
+            context = null;
+            itemTags = new string[0];
+
+            if (query == null)
+            {
+                Debug.LogError("[InteractionSystem] Cannot evaluate a null interaction query.");
+                return false;
+            }
+
+            if (query.Database == null)
+            {
+                Debug.LogError("[InteractionSystem] Cannot evaluate actions without a GameDatabase.");
+                return false;
+            }
+
+            if (query.Target == null)
+            {
+                Debug.LogError("[InteractionSystem] Cannot evaluate actions without a target.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(query.RequiredContext))
+            {
+                Debug.LogError("[InteractionSystem] Cannot evaluate actions without a required context.");
+                return false;
+            }
+
+            bool hasEquippedItem = !IsNoEquippedItemId(query.EquippedItemId);
+            itemTags = GetEquippedItemTags(query.Database, query.EquippedItemId, logEquippedItemDetails);
+
+            context = new ActionAvailabilityContext
+            {
+                ActorTags = query.ActorTags,
+                ActorStats = query.ActorStats,
+                TargetTags = query.Target.Tags,
+                ItemTags = itemTags,
+                EquippedItemId = query.EquippedItemId,
+                HasEquippedItem = hasEquippedItem
+            };
+
+            return true;
+        }
+
+        private List<EvaluatedAction> EvaluateCandidateActions(InteractionQuery query, ActionAvailabilityContext context, bool logAvailabilityDetails)
+        {
+            var evaluatedActions = new List<EvaluatedAction>();
+
+            foreach (ActionDefinition action in query.Database.GetAllActions())
+            {
+                if (action == null)
+                    continue;
+
+                if (!HasContext(action, query.RequiredContext))
+                    continue;
+
+                ActionAvailabilityResult availabilityResult = evaluator.Evaluate(action, context);
+
+                if (logAvailabilityDetails)
+                    LogAvailabilityDetail(action, availabilityResult, query);
+
+                evaluatedActions.Add(new EvaluatedAction(action, availabilityResult));
+            }
+
+            return evaluatedActions;
         }
 
         private static void LogAvailabilityDetail(ActionDefinition action, ActionAvailabilityResult result, InteractionQuery query)
@@ -115,18 +167,22 @@ namespace OldScars.Core.Interactions
                 $"\n  Block reasons: {FormatStrings(result.BlockReasons)}");
         }
 
-        private static string[] GetEquippedItemTags(GameDatabase database, string equippedItemId)
+        private static string[] GetEquippedItemTags(GameDatabase database, string equippedItemId, bool logDetails)
         {
             if (IsNoEquippedItemId(equippedItemId))
             {
-                Debug.Log("[InteractionSystem] No equipped item.");
+                if (logDetails)
+                    Debug.Log("[InteractionSystem] No equipped item.");
+
                 return new string[0];
             }
 
             ItemDefinition item = database.GetItem(equippedItemId);
             if (item == null)
             {
-                Debug.LogWarning($"[InteractionSystem] Equipped item '{equippedItemId}' was not found in GameDatabase. Continuing with empty item tags.");
+                if (logDetails)
+                    Debug.LogWarning($"[InteractionSystem] Equipped item '{equippedItemId}' was not found in GameDatabase. Continuing with empty item tags.");
+
                 return new string[0];
             }
 
@@ -176,6 +232,15 @@ namespace OldScars.Core.Interactions
             return string.Join(", ", values);
         }
 
+        private static string GetTargetDisplayName(WorldObjectTags target)
+        {
+            if (target == null)
+                return null;
+
+            WorldObjectDebugInfo debugInfo = target.GetComponent<WorldObjectDebugInfo>();
+            return debugInfo != null ? debugInfo.GetDisplayNameOrFallback(target.name) : target.name;
+        }
+
         private static string FormatStats(Dictionary<string, float> values)
         {
             if (values == null || values.Count == 0)
@@ -202,6 +267,18 @@ namespace OldScars.Core.Interactions
                 return "(none)";
 
             return action.id;
+        }
+
+        private readonly struct EvaluatedAction
+        {
+            public readonly ActionDefinition Action;
+            public readonly ActionAvailabilityResult Result;
+
+            public EvaluatedAction(ActionDefinition action, ActionAvailabilityResult result)
+            {
+                Action = action;
+                Result = result;
+            }
         }
     }
 }

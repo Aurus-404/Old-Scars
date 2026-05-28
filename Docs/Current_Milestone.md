@@ -2,19 +2,19 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto y feedback de gameplay estructurado runtime-only.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only y diagnostico runtime-only de disponibilidad de acciones.
 
-Milestone 17 esta validado en Unity.
+Milestone 18 esta validado en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
 Ultimo milestone validado:
 
-- Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0.
+- Milestone 18: Action Availability Diagnostics / Requirement Readability v0.
 
 Proximo recomendado:
 
-- Preparar el siguiente sprint sobre la base validada de Milestone 17.
+- Preparar el siguiente sprint sobre la base validada de Milestone 18.
 
 
 ## Milestones Validados
@@ -249,6 +249,35 @@ Validado en Unity:
 - El gameplay no depende del panel de feedback.
 - No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
 
+### Milestone 18: Action Availability Diagnostics / Requirement Readability v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- El proyecto compila en Unity sin errores.
+- Se agrego una capacidad diagnostica opcional para disponibilidad de acciones contextuales.
+- El diagnostico usa la misma evaluacion que `GetAvailableActions()` mediante `ActionAvailabilityEvaluator.Evaluate()` y `ActionAvailabilityResult`.
+- El diagnostico no duplica logica de disponibilidad y no cambia comportamiento jugable.
+- `ActionAvailabilityDiagnosticReport` captura target, actor tags snapshot, target tags snapshot, item equipado, item tags snapshot y entradas por accion.
+- `ActionAvailabilityDiagnosticEntry` captura action id/display, disponibilidad, razones de bloqueo, tags requeridos, tags faltantes y tags del item que hicieron match.
+- `DebugActionAvailabilityPanel` muestra acciones disponibles y bloqueadas, razones de bloqueo y snapshots de contexto.
+- `GetAvailableActions()` sigue devolviendo solo acciones disponibles.
+- El menu contextual ejecutable no cambio respecto a Milestone 17.
+- Puerta cerrada sin palanca: `force_door` bloqueada por item tags faltantes.
+- Puerta cerrada con palanca: `force_door` disponible.
+- Puerta forzada: `force_door` bloqueada por falta de `locked_door` y snapshot muestra `forced_open`.
+- Contenedor sellado: `pry_open_container` disponible.
+- Contenedor abierto: `search_container` disponible.
+- Contenedor looteado: `search_container` bloqueada por falta de `lootable_container` y snapshot muestra `looted_container`.
+- `GameplayFeedbackLog` sigue separado y funcionando.
+- `DebugFeedbackLogPanel` se muestra/oculta con F7.
+- `DebugActionAvailabilityPanel` se muestra/oculta con F8.
+- `InventoryDebugPanel` sigue funcionando con `I`.
+- Los paneles arrancan ocultos por defecto.
+- El diagnostico es runtime-only, debug/fundacional, sin EventBus, sin listeners, sin subscriptions, sin callbacks, sin payload generico, sin UI final y sin persistencia.
+- No se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -268,8 +297,10 @@ Validado en Unity:
 - `InteractionSystem` recibe `InteractionQuery`.
 - `InteractionSystem` resuelve item equipado, maneja `none`/vacio y evalua acciones por contexto.
 - `InteractionSystem` puede loguear detalles de disponibilidad si `InteractionQuery.LogAvailabilityDetails` esta activo.
+- `InteractionSystem` puede producir un reporte diagnostico estructurado de disponibilidad sin conocer UI.
 - `ActionAvailabilityEvaluator` evalua actor tags, target tags, item tags y actor_min_stats.
 - `ActionAvailabilityEvaluator.Evaluate()` devuelve `ActionAvailabilityResult` explicable.
+- `ActionAvailabilityDiagnosticReport` y `ActionAvailabilityDiagnosticEntry` copian snapshots/datos derivados de la misma evaluacion.
 - `requirements.weapon_tags` sigue siendo el campo activo para required equipped item tags.
 
 ### Debug Item Runtime
@@ -315,8 +346,21 @@ Validado en Unity:
 - `GameplayFeedbackLog` es append/read y no persistente.
 - `GameplayFeedbackLog` no es EventBus y no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
 - `DebugFeedbackLogPanel` lee `Entries` y las muestra con OnGUI debug.
+- `DebugFeedbackLogPanel` arranca oculto por defecto y se muestra/oculta con F7.
 - `DebugFeedbackLogPanel` no recibe llamadas desde gameplay y no ejecuta logica de gameplay.
 - Si no existe `GameplayFeedbackLog` en escena, el gameplay sigue funcionando sin depender del feedback visual.
+
+### Action Availability Diagnostics Runtime
+
+- `ActionAvailabilityDiagnosticReport` describe la disponibilidad actual de acciones contextuales antes de ejecutarlas.
+- `ActionAvailabilityDiagnosticReport` guarda target, contexto requerido, actor tags snapshot, target tags snapshot, item equipado y equipped item tags snapshot.
+- `ActionAvailabilityDiagnosticEntry` guarda una entrada por accion candidata del mismo contexto.
+- Cada entrada guarda disponibilidad, razones de exito/bloqueo, tags requeridos/faltantes y matched item tags.
+- El diagnostico usa `ActionAvailabilityEvaluator.Evaluate()` y `ActionAvailabilityResult`.
+- El diagnostico no registra hechos ocurridos; eso pertenece a `GameplayFeedbackLog`.
+- El diagnostico es runtime-only, no persistente y sin EventBus, listeners, subscriptions, callbacks ni payload generico.
+- `DebugActionAvailabilityPanel` solo muestra el reporte con OnGUI debug.
+- `DebugActionAvailabilityPanel` arranca oculto por defecto y se muestra/oculta con F8.
 
 ### UI Debug Contextual
 
@@ -326,7 +370,8 @@ Validado en Unity:
 - `ContextualActionDebugProgressPanel` muestra progreso debug de accion activa.
 - `ContextualActionDebugResultPanel` muestra resultados debug.
 - `InventoryDebugPanel` muestra inventario v0 con OnGUI y se abre con `I`.
-- `DebugFeedbackLogPanel` muestra feedback estructurado runtime-only del POI como UI debug.
+- `DebugFeedbackLogPanel` muestra feedback estructurado runtime-only del POI como UI debug y se alterna con F7.
+- `DebugActionAvailabilityPanel` muestra diagnostico de disponibilidad runtime-only como UI debug y se alterna con F8.
 - `DebugWorldUiInputBlocker` consume click izquierdo cuando hay UI abierta.
 
 ### Movimiento Y Camara
@@ -368,10 +413,12 @@ Validado en Unity:
 - `WorldInteractionDebugTester.logAvailabilityDetails` desactivado por defecto; activarlo solo para auditar requisitos de acciones.
 - Camara principal como hija del CameraRig.
 - `GameplayFeedbackDebug` bajo `Debug_UI` con `GameplayFeedbackLog` y `DebugFeedbackLogPanel` para leer feedback runtime del POI.
+- `ActionAvailabilityDiagnosticsDebug` bajo `Debug_UI` con `DebugActionAvailabilityPanel` para leer diagnostics runtime del POI.
+- `DebugFeedbackLogPanel` y `DebugActionAvailabilityPanel` arrancan ocultos por defecto.
 
 ## Proximo Recomendado
 
-Preparar el siguiente sprint sobre la base validada de Milestone 17.
+Preparar el siguiente sprint sobre la base validada de Milestone 18.
 
 Milestone 16 fue validado con:
 
@@ -395,6 +442,23 @@ Milestone 17 fue validado con:
 - POI sigue funcionando: puerta `forced_open`, contenedor `looted_container`, `search_container` desaparece despues de saquear;
 - `InteractionSystem` no fue tocado;
 - no se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+
+Milestone 18 fue validado con:
+
+- diagnostico opcional de disponibilidad de acciones contextuales;
+- `ActionAvailabilityDiagnosticReport` y `ActionAvailabilityDiagnosticEntry`;
+- diagnostico basado en `ActionAvailabilityEvaluator.Evaluate()` y `ActionAvailabilityResult`;
+- `GetAvailableActions()` sigue devolviendo solo acciones disponibles;
+- menu contextual ejecutable sin cambios respecto a Milestone 17;
+- acciones disponibles y bloqueadas visibles en `DebugActionAvailabilityPanel`;
+- razones de bloqueo y snapshots de contexto visibles;
+- `force_door`, `pry_open_container` y `search_container` diagnostican correctamente sus requisitos segun estado runtime;
+- `GameplayFeedbackLog` sigue separado y funcionando;
+- F7 alterna `DebugFeedbackLogPanel`;
+- F8 alterna `DebugActionAvailabilityPanel`;
+- `I` sigue alternando `InventoryDebugPanel`;
+- paneles debug ocultos por defecto;
+- no se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
 
 Milestone 14 fue validado con:
 

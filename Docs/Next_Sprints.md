@@ -8,22 +8,26 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 17 esta `validated`.
+- Milestone 18 esta `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
 - El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0, container loot v0 y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
 - El POI ahora tiene una base runtime-only de feedback estructurado mediante `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
 - El feedback registra `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged`.
+- El POI ahora tiene diagnostico runtime-only de disponibilidad mediante `ActionAvailabilityDiagnosticReport`, `ActionAvailabilityDiagnosticEntry` y `DebugActionAvailabilityPanel`.
+- El diagnostico muestra acciones disponibles/bloqueadas, razones de bloqueo y snapshots de contexto sin cambiar `GetAvailableActions()`.
+- `DebugFeedbackLogPanel` se alterna con F7, `DebugActionAvailabilityPanel` con F8 e `InventoryDebugPanel` con `I`.
+- Los paneles debug arrancan ocultos por defecto.
 - Data load sigue OK con 0 errors y 0 warnings.
 - `InteractionSystem` sigue desacoplado.
 - No se toco JSON.
 - No se crearon actions nuevas ni effects nuevos.
-- No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+- No se creo journal, quest log, UI final, save system, EventBus, listeners/subscriptions/callbacks ni sistemas grandes.
 - No se rompieron `InventoryComponent`, `WorldItemPickup`, `ContainerLootComponent`, action duration, runtime tags ni loot tables.
 
 Proxima accion recomendada:
 
-- Preparar el siguiente sprint sobre la base validada de Milestone 17, sin adelantar combate, IA, save system, UI final, inventario final, loot avanzado, crafting, journal, quest log, EventBus ni mapa grande.
+- Preparar el siguiente sprint sobre la base validada de Milestone 18, sin adelantar combate, IA, save system, UI final, inventario final, loot avanzado, crafting, journal, quest log, EventBus ni mapa grande.
 
 Base validada:
 
@@ -138,6 +142,29 @@ Milestone 17 validado:
 - El gameplay no depende del panel de feedback.
 - No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
 
+Milestone 18 validado:
+
+- Milestone 18: Action Availability Diagnostics / Requirement Readability v0 esta `validated`.
+- `ActionAvailabilityDiagnosticReport` y `ActionAvailabilityDiagnosticEntry` funcionan como base runtime-only de diagnostico.
+- El diagnostico usa `ActionAvailabilityEvaluator.Evaluate()` y `ActionAvailabilityResult`.
+- El diagnostico evalua el mismo conjunto de acciones candidatas que `InteractionSystem` considera antes de filtrar disponibilidad.
+- `GetAvailableActions()` sigue devolviendo solo acciones disponibles.
+- El menu contextual ejecutable no cambio respecto a Milestone 17.
+- `DebugActionAvailabilityPanel` muestra acciones disponibles y bloqueadas, razones de bloqueo y snapshots de contexto.
+- Puerta cerrada sin palanca: `force_door` bloqueada por item tags faltantes.
+- Puerta cerrada con palanca: `force_door` disponible.
+- Puerta forzada: `force_door` bloqueada por falta de `locked_door` y snapshot muestra `forced_open`.
+- Contenedor sellado: `pry_open_container` disponible.
+- Contenedor abierto: `search_container` disponible.
+- Contenedor looteado: `search_container` bloqueada por falta de `lootable_container` y snapshot muestra `looted_container`.
+- `GameplayFeedbackLog` sigue separado y funcionando.
+- `DebugFeedbackLogPanel` se muestra/oculta con F7.
+- `DebugActionAvailabilityPanel` se muestra/oculta con F8.
+- `InventoryDebugPanel` sigue funcionando con `I`.
+- Los paneles arrancan ocultos por defecto.
+- El diagnostico es runtime-only, debug/fundacional, sin EventBus, sin listeners, sin subscriptions, sin callbacks, sin payload generico, sin UI final y sin persistencia.
+- No se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
+
 Pruebas validadas:
 
 - Con `DebugInventory.equippedItemIndex = 0`, puerta muestra `force_door` + `examine_object`, contenedor muestra `pry_open_container` + `examine_object`, maquina muestra `examine_object`.
@@ -195,6 +222,25 @@ Pruebas validadas de Milestone 17:
 - El gameplay no depende del panel de feedback.
 - No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
 
+Pruebas validadas de Milestone 18:
+
+- El proyecto compila en Unity sin errores.
+- `GetAvailableActions()` sigue devolviendo solo acciones disponibles.
+- El menu contextual ejecutable no cambio respecto a Milestone 17.
+- El diagnostico muestra acciones disponibles y bloqueadas.
+- Puerta cerrada sin palanca: `force_door` bloqueada por item tags faltantes.
+- Puerta cerrada con palanca: `force_door` disponible.
+- Puerta forzada: `force_door` bloqueada por falta de `locked_door` y snapshot muestra `forced_open`.
+- Contenedor sellado: `pry_open_container` disponible.
+- Contenedor abierto: `search_container` disponible.
+- Contenedor looteado: `search_container` bloqueada por falta de `lootable_container` y snapshot muestra `looted_container`.
+- `GameplayFeedbackLog` sigue separado y funcionando.
+- `DebugFeedbackLogPanel` se muestra/oculta con F7.
+- `DebugActionAvailabilityPanel` se muestra/oculta con F8.
+- `InventoryDebugPanel` sigue funcionando con `I`.
+- Los paneles arrancan ocultos por defecto.
+- No se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
+
 ## Sprints Posteriores Recomendados
 
 ### Tool Requirement Schema Cleanup Futuro
@@ -227,6 +273,7 @@ Pruebas validadas de Milestone 17:
 ### POI Follow-up Futuro
 
 - Milestone 17 ya valido la primera base runtime-only de feedback estructurado para legibilidad del POI.
+- Milestone 18 ya valido diagnostico runtime-only de disponibilidad de acciones y lectura de requisitos/bloqueos.
 - Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
 

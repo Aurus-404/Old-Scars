@@ -23,8 +23,9 @@ Old Scars tiene una base debug/prototipo validada para:
 - container loot v0 validado en Unity.
 - primer POI jugable compacto validado en `SampleScene`.
 - base runtime-only de feedback de gameplay estructurado validada en `SampleScene`.
+- diagnostico runtime-only de disponibilidad de acciones contextuales validado en `SampleScene`.
 
-Milestone 17 esta validado en Unity.
+Milestone 18 esta validado en Unity.
 
 ## Estados Permitidos
 
@@ -54,6 +55,7 @@ Milestone 17 esta validado en Unity.
 | Milestone 15: Container Loot v0 | Saquear contenedores abiertos y agregar loot al InventoryComponent. | validated | Validado: LootTableDefinition v0, carga de loot_tables, search_container, Scrap Metal en inventario y bloqueo de loot infinito. |
 | Milestone 16: Primer POI jugable completo | Ordenar `SampleScene` como una bahia de mantenimiento compacta que combine pickup, inventario, herramienta equipada, puerta, contenedor, loot y maquina examinable. | validated | Validado: SampleScene funciona como primer POI jugable compacto con loop completo y estados runtime correctos. |
 | Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0 | Agregar una base runtime-only de feedback estructurado para acciones relevantes de gameplay y lectura debug del POI. | validated | Validado: GameplayFeedbackLog registra entradas estructuradas y DebugFeedbackLogPanel las lee sin acoplar gameplay a UI. |
+| Milestone 18: Action Availability Diagnostics / Requirement Readability v0 | Agregar diagnostico opcional de disponibilidad de acciones contextuales sin duplicar la logica de evaluacion. | validated | Validado: muestra acciones disponibles/bloqueadas, razones de bloqueo y snapshots de contexto sin cambiar GetAvailableActions ni el menu contextual. |
 
 ## Milestone Actual
 
@@ -61,11 +63,11 @@ No hay milestone implementado pendiente de validacion.
 
 El ultimo milestone cerrado como `validated` es:
 
-- Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0 (`validated`).
+- Milestone 18: Action Availability Diagnostics / Requirement Readability v0 (`validated`).
 
 ## Proximo Recomendado
 
-Preparar el siguiente sprint sobre la base validada de Milestone 17.
+Preparar el siguiente sprint sobre la base validada de Milestone 18.
 
 Milestone 11 dejo validado:
 
@@ -196,6 +198,27 @@ Milestone 17 dejo validado:
 - el gameplay no depende del panel de feedback;
 - no se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
 
+Milestone 18 dejo validado:
+
+- `ActionAvailabilityDiagnosticReport` y `ActionAvailabilityDiagnosticEntry` funcionan como diagnostico runtime-only de disponibilidad;
+- el diagnostico usa `ActionAvailabilityEvaluator.Evaluate()` y `ActionAvailabilityResult`;
+- el diagnostico evalua el mismo conjunto de acciones candidatas que `InteractionSystem` considera antes de filtrar;
+- `GetAvailableActions()` sigue devolviendo solo acciones disponibles;
+- el menu contextual ejecutable no cambio respecto a Milestone 17;
+- `DebugActionAvailabilityPanel` muestra acciones disponibles y bloqueadas, razones de bloqueo y snapshots de contexto;
+- puerta cerrada sin palanca: `force_door` queda bloqueada por item tags faltantes;
+- puerta cerrada con palanca: `force_door` queda disponible;
+- puerta forzada: `force_door` queda bloqueada por falta de `locked_door` y el snapshot muestra `forced_open`;
+- contenedor sellado: `pry_open_container` queda disponible;
+- contenedor abierto: `search_container` queda disponible;
+- contenedor looteado: `search_container` queda bloqueada por falta de `lootable_container` y el snapshot muestra `looted_container`;
+- `GameplayFeedbackLog` sigue separado y funcionando;
+- `DebugFeedbackLogPanel` se muestra/oculta con F7;
+- `DebugActionAvailabilityPanel` se muestra/oculta con F8;
+- `InventoryDebugPanel` sigue funcionando con `I`;
+- los paneles debug arrancan ocultos por defecto;
+- no se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -249,6 +272,12 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `GameplayFeedbackLog` no es EventBus: no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
 - `DebugFeedbackLogPanel` es UI debug y solo lee entradas del log.
 - El feedback de gameplay puede servir como base futura para HUD, journal, notificaciones o UI final, pero esos sistemas no existen todavia.
+- `ActionAvailabilityDiagnosticReport` es runtime-only, debug/fundacional y no persistente.
+- El diagnostico de disponibilidad no es EventBus: no tiene listeners, subscriptions, callbacks ni payload generico.
+- El diagnostico de disponibilidad explica estado actual antes de ejecutar acciones; no registra hechos ocurridos y no se mezcla con `GameplayFeedbackLog`.
+- `DebugActionAvailabilityPanel` es UI debug y solo muestra el reporte diagnostico.
+- `DebugFeedbackLogPanel` arranca oculto por defecto y se alterna con F7.
+- `DebugActionAvailabilityPanel` arranca oculto por defecto y se alterna con F8.
 - No hay scripting libre dentro de JSON.
 - No hay inventario final todavia.
 - No hay loot final ni avanzado todavia.
@@ -291,6 +320,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `GameplayFeedbackEntry`: entrada estructurada de feedback runtime.
 - `GameplayFeedbackLog`: log runtime-only append/read de feedback de gameplay.
 - `DebugFeedbackLogPanel`: panel debug OnGUI que lee entradas del log.
+- `ActionAvailabilityDiagnosticReport`: reporte runtime-only de disponibilidad actual de acciones contextuales.
+- `ActionAvailabilityDiagnosticEntry`: entrada estructurada por accion candidata con disponibilidad, razones y tags requeridos/faltantes.
+- `DebugActionAvailabilityPanel`: panel debug OnGUI que muestra el reporte de disponibilidad con F8.
 - `PointClickMovementController`: movimiento debug con CharacterController.
 - `PointClickMovementInputController`: input de movimiento por click izquierdo.
 - `DebugWorldUiInputBlocker`: bloqueo debug de clicks cuando hay UI abierta.
