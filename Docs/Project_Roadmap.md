@@ -22,8 +22,9 @@ Old Scars tiene una base debug/prototipo validada para:
 - inventario jugable v0 y pickup loop validados en Unity.
 - container loot v0 validado en Unity.
 - primer POI jugable compacto validado en `SampleScene`.
+- base runtime-only de feedback de gameplay estructurado validada en `SampleScene`.
 
-Milestone 16 esta validado en Unity.
+Milestone 17 esta validado en Unity.
 
 ## Estados Permitidos
 
@@ -52,6 +53,7 @@ Milestone 16 esta validado en Unity.
 | Milestone 14: Playable Inventory + Pickup Loop | Crear inventario v0, item pickup de mundo y equip simple por UI debug. | validated | Validado: iniciar sin item, recoger palanca, verla con I, equiparla y habilitar acciones de herramienta. |
 | Milestone 15: Container Loot v0 | Saquear contenedores abiertos y agregar loot al InventoryComponent. | validated | Validado: LootTableDefinition v0, carga de loot_tables, search_container, Scrap Metal en inventario y bloqueo de loot infinito. |
 | Milestone 16: Primer POI jugable completo | Ordenar `SampleScene` como una bahia de mantenimiento compacta que combine pickup, inventario, herramienta equipada, puerta, contenedor, loot y maquina examinable. | validated | Validado: SampleScene funciona como primer POI jugable compacto con loop completo y estados runtime correctos. |
+| Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0 | Agregar una base runtime-only de feedback estructurado para acciones relevantes de gameplay y lectura debug del POI. | validated | Validado: GameplayFeedbackLog registra entradas estructuradas y DebugFeedbackLogPanel las lee sin acoplar gameplay a UI. |
 
 ## Milestone Actual
 
@@ -59,11 +61,11 @@ No hay milestone implementado pendiente de validacion.
 
 El ultimo milestone cerrado como `validated` es:
 
-- Milestone 16: Primer POI jugable completo (`validated`).
+- Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0 (`validated`).
 
 ## Proximo Recomendado
 
-Preparar el siguiente sprint sobre la base validada de Milestone 16.
+Preparar el siguiente sprint sobre la base validada de Milestone 17.
 
 Milestone 11 dejo validado:
 
@@ -174,6 +176,26 @@ Milestone 16 dejo validado:
 - no se crearon sistemas nuevos;
 - no se rompieron `InventoryComponent`, `WorldItemPickup`, `ContainerLootComponent`, action duration, runtime tags ni loot tables.
 
+Milestone 17 dejo validado:
+
+- `GameplayFeedbackEntryType`, `GameplayFeedbackEntry`, `GameplayFeedbackLog` y `DebugFeedbackLogPanel` funcionan como base runtime-only de feedback;
+- `GameplayFeedbackLog` es append/read, no persistente y limitado por `maxEntries`;
+- el log no tiene listeners, subscriptions, callbacks, dispatch ni payload generico;
+- los sistemas de gameplay registran entradas estructuradas;
+- `DebugFeedbackLogPanel` solo lee `Entries` desde `GameplayFeedbackLog`;
+- el panel debug no recibe llamadas directas desde gameplay y no ejecuta logica de gameplay;
+- `ItemPickedUp` se registra al recoger la palanca;
+- `ItemEquipped` y `ItemUnequipped` se registran al equipar o desequipar;
+- `ActionCompleted` se registra en `examine_object`, `force_door`, `pry_open_container` y `search_container`;
+- `TargetStateChanged` debug registra cambios runtime de tags;
+- `LootReceived` se registra al obtener `scrap_metal_01`;
+- `search_container` deja de aparecer despues de saquear;
+- el contenedor queda con `looted_container`;
+- la puerta queda con `forced_open`;
+- `InteractionSystem` no fue tocado;
+- el gameplay no depende del panel de feedback;
+- no se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -223,10 +245,15 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `pick_up_item` es un effect cerrado que ejecuta `WorldItemPickup` y agrega una `ItemInstance` al `InventoryComponent` del actor.
 - `search_container` es un effect cerrado que ejecuta `ContainerLootComponent` y agrega loot v0 al `InventoryComponent` del actor.
 - `LootTableDefinition` v0 es deterministica: solo `item_id` y `count`.
+- `GameplayFeedbackLog` es runtime-only, append/read y no persistente.
+- `GameplayFeedbackLog` no es EventBus: no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
+- `DebugFeedbackLogPanel` es UI debug y solo lee entradas del log.
+- El feedback de gameplay puede servir como base futura para HUD, journal, notificaciones o UI final, pero esos sistemas no existen todavia.
 - No hay scripting libre dentro de JSON.
 - No hay inventario final todavia.
 - No hay loot final ni avanzado todavia.
 - No hay save system todavia.
+- No hay journal ni quest log todavia.
 - No hay combate real todavia.
 - Movimiento validado: point-and-click sobre Ground.
 - Debug Player usa CharacterController.
@@ -260,6 +287,10 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `ContextualActionDebugPanel`: menu contextual debug OnGUI.
 - `ContextualActionDebugProgressPanel`: feedback debug de accion en progreso.
 - `ContextualActionDebugResultPanel`: resultado debug OnGUI.
+- `GameplayFeedbackEntryType`: categorias cerradas de feedback runtime.
+- `GameplayFeedbackEntry`: entrada estructurada de feedback runtime.
+- `GameplayFeedbackLog`: log runtime-only append/read de feedback de gameplay.
+- `DebugFeedbackLogPanel`: panel debug OnGUI que lee entradas del log.
 - `PointClickMovementController`: movimiento debug con CharacterController.
 - `PointClickMovementInputController`: input de movimiento por click izquierdo.
 - `DebugWorldUiInputBlocker`: bloqueo debug de clicks cuando hay UI abierta.
@@ -277,6 +308,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - contenedores reales;
 - save system;
 - world state persistente;
+- journal;
+- quest log;
+- EventBus de gameplay;
 - combate real;
 - IA;
 - pathfinding/NavMesh;

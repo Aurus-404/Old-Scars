@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
+using OldScars.Core.Feedback;
 using OldScars.Core.Items;
 using UnityEngine;
 
@@ -21,7 +22,7 @@ namespace OldScars.Core.Interactions
 
         public string LootTableId => lootTableId;
 
-        public DebugActionExecutionResult Search(DebugActionExecutionContext executionContext)
+        public DebugActionExecutionResult Search(DebugActionExecutionContext executionContext, ActionDefinition action = null)
         {
             WorldObjectTags targetTags = executionContext.Target;
             if (targetTags == null)
@@ -71,11 +72,12 @@ namespace OldScars.Core.Interactions
             }
 
             Dictionary<string, int> addedCounts = AddLootToInventory(lootTable, inventory);
-            MarkContainerLooted(targetTags);
+            MarkContainerLooted(targetTags, executionContext, action);
 
             if (addedCounts.Count == 0)
                 return DebugActionExecutionResult.Info("Buscar contenedor", "No encontraste nada util.");
 
+            RecordLootReceived(addedCounts, database, executionContext, action);
             return DebugActionExecutionResult.Info("Buscar contenedor", $"Encontraste: {FormatAddedLoot(addedCounts, database)}.");
         }
 
@@ -153,15 +155,17 @@ namespace OldScars.Core.Interactions
             return addedCounts;
         }
 
-        private static void MarkContainerLooted(WorldObjectTags targetTags)
+        private static void MarkContainerLooted(WorldObjectTags targetTags, DebugActionExecutionContext executionContext, ActionDefinition action)
         {
-            targetTags.RemoveTag(LootableContainerTag);
-            targetTags.AddTag(LootedContainerTag);
+            bool removedLootable = targetTags.RemoveTag(LootableContainerTag);
+            bool addedLooted = targetTags.AddTag(LootedContainerTag);
 
             Debug.Log(
                 "[ContainerLootComponent] Container looted." +
                 $"\n  Target: {targetTags.name}" +
                 $"\n  Runtime tags: {FormatTags(targetTags.RuntimeTags)}");
+
+            RecordTargetStateChanged(executionContext, action, addedLooted, removedLootable);
         }
 
         private static string FormatAddedLoot(Dictionary<string, int> addedCounts, GameDatabase database)
@@ -184,6 +188,79 @@ namespace OldScars.Core.Interactions
                 return SafeText(itemId);
 
             return item.display.name;
+        }
+
+        private static void RecordLootReceived(Dictionary<string, int> addedCounts, GameDatabase database, DebugActionExecutionContext executionContext, ActionDefinition action)
+        {
+            if (addedCounts == null || addedCounts.Count == 0)
+                return;
+
+            foreach (KeyValuePair<string, int> added in addedCounts)
+            {
+                string itemDisplayName = GetItemDisplayName(added.Key, database);
+                GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                    GameplayFeedbackEntryType.LootReceived,
+                    $"Encontraste {itemDisplayName} x{added.Value}.",
+                    actorId: GetActorName(executionContext.ActorContext),
+                    actorDisplayName: GetActorName(executionContext.ActorContext),
+                    targetId: GetTargetName(executionContext.Target),
+                    targetDisplayName: GetTargetDisplayName(executionContext.Target),
+                    itemId: added.Key,
+                    itemDisplayName: itemDisplayName,
+                    actionId: action != null ? action.id : null,
+                    actionDisplayName: GetActionDisplayName(action),
+                    quantity: added.Value));
+            }
+        }
+
+        private static void RecordTargetStateChanged(DebugActionExecutionContext executionContext, ActionDefinition action, bool addedLooted, bool removedLootable)
+        {
+            if (!addedLooted && !removedLootable)
+                return;
+
+            string targetDisplayName = GetTargetDisplayName(executionContext.Target);
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.TargetStateChanged,
+                $"Estado actualizado: {SafeText(targetDisplayName)}.",
+                actorId: GetActorName(executionContext.ActorContext),
+                actorDisplayName: GetActorName(executionContext.ActorContext),
+                targetId: GetTargetName(executionContext.Target),
+                targetDisplayName: targetDisplayName,
+                actionId: action != null ? action.id : null,
+                actionDisplayName: GetActionDisplayName(action),
+                addedTags: addedLooted ? new[] { LootedContainerTag } : null,
+                removedTags: removedLootable ? new[] { LootableContainerTag } : null,
+                debugOnly: true));
+        }
+
+        private static string GetActionDisplayName(ActionDefinition action)
+        {
+            if (action == null)
+                return null;
+
+            if (action.display != null && !string.IsNullOrWhiteSpace(action.display.name))
+                return action.display.name;
+
+            return action.id;
+        }
+
+        private static string GetActorName(ActorInteractionContext actorContext)
+        {
+            return actorContext != null ? actorContext.name : null;
+        }
+
+        private static string GetTargetName(WorldObjectTags targetTags)
+        {
+            return targetTags != null ? targetTags.name : null;
+        }
+
+        private static string GetTargetDisplayName(WorldObjectTags targetTags)
+        {
+            if (targetTags == null)
+                return null;
+
+            WorldObjectDebugInfo debugInfo = targetTags.GetComponent<WorldObjectDebugInfo>();
+            return debugInfo != null ? debugInfo.GetDisplayNameOrFallback(targetTags.name) : targetTags.name;
         }
 
         private static string FormatTags(string[] tags)

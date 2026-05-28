@@ -391,6 +391,40 @@
 - No se rompieron `InventoryComponent`, `WorldItemPickup`, `ContainerLootComponent`, action duration, runtime tags ni loot tables.
 - Estado: validated.
 
+### Gameplay Feedback Log Foundation / POI State Readability v0
+
+- Milestone 17 implementado y validado como base runtime-only de feedback estructurado para el POI.
+- Agregado `GameplayFeedbackEntryType` con categorias cerradas: `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived`, `TargetStateChanged`, `Info` y `Warning`.
+- Agregado `GameplayFeedbackEntry` para guardar datos estructurados: tipo, mensaje fallback, tiempo, actor, target, item, action, quantity, tags agregados/removidos y `debugOnly`.
+- Agregado `GameplayFeedbackLog` como log runtime-only append/read con `maxEntries`, `Record`, `Clear` y `Entries`.
+- `GameplayFeedbackLog` no es persistente.
+- `GameplayFeedbackLog` no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
+- Agregado `DebugFeedbackLogPanel` como UI debug OnGUI que solo lee `Entries`.
+- `DebugFeedbackLogPanel` no recibe llamadas desde gameplay y no ejecuta logica de gameplay.
+- `SampleScene` agrega `GameplayFeedbackDebug` bajo `Debug_UI` con `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
+- `WorldItemPickup` registra `ItemPickedUp` al recoger la palanca.
+- `InventoryComponent` registra `ItemEquipped` y `ItemUnequipped` al equipar o desequipar.
+- `DebugActionExecutor` registra `ActionCompleted` al completar acciones.
+- `DebugActionExecutor` registra `TargetStateChanged` solo cuando el mismo aplica effects `add_tag` o `remove_tag`.
+- `WorldItemPickup` registra `TargetStateChanged` solo por los tags que el mismo cambia: `picked_up` y `pickupable`.
+- `ContainerLootComponent` registra `TargetStateChanged` solo por los tags que el mismo cambia: `looted_container` y `lootable_container`.
+- `ContainerLootComponent` registra `LootReceived` al obtener `scrap_metal_01`.
+- `InventoryComponent.AddItemByDefinitionId` no registra `ItemPickedUp` ni `LootReceived`; pickup y loot registran desde sus sistemas de origen.
+- Validado en Unity: el proyecto compila sin errores.
+- Validado en Unity: el panel `Gameplay Feedback Log` aparece en `SampleScene`.
+- Validado en Unity: `ItemPickedUp` se registra al recoger la palanca.
+- Validado en Unity: `ItemEquipped` / `ItemUnequipped` se registran al equipar o desequipar.
+- Validado en Unity: `ActionCompleted` se registra en `examine_object`, `force_door`, `pry_open_container` y `search_container`.
+- Validado en Unity: `TargetStateChanged` debug registra cambios runtime de tags.
+- Validado en Unity: `LootReceived` se registra al obtener `scrap_metal_01`.
+- Validado en Unity: `search_container` deja de aparecer despues de saquear.
+- Validado en Unity: el contenedor queda con `looted_container`.
+- Validado en Unity: la puerta queda con `forced_open`.
+- Validado en Unity: `InteractionSystem` no fue tocado.
+- Validado en Unity: el gameplay no depende del panel de feedback.
+- No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+- Estado: validated.
+
 ### Deuda Tecnica Menor Detectada
 
 - GameDataManager mostraba warning de DontDestroyOnLoad porque no estaba en un root GameObject.
@@ -457,6 +491,16 @@ Milestone 16 validado:
 - `InteractionSystem` sigue desacoplado;
 - no se tocaron codigo ni JSON.
 
+Milestone 17 validado:
+
+- `GameplayFeedbackLog` registra entradas estructuradas runtime-only;
+- `DebugFeedbackLogPanel` solo lee `Entries`;
+- el feedback es append/read, sin listeners, subscriptions, callbacks, dispatch ni payload generico;
+- `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged` se registran en el loop del POI;
+- el gameplay no depende del panel de feedback;
+- `InteractionSystem` no fue tocado;
+- no se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+
 Con `InventoryComponent` asignado:
 
 - el item equipado sale exclusivamente de `InventoryComponent`;
@@ -497,4 +541,7 @@ Con equipped item definition id none o vacio:
 - No hay save system.
 - No hay IA.
 - No hay UI final.
+- No hay journal.
+- No hay quest log.
+- No hay EventBus de gameplay.
 - Los sistemas actuales son prototipos debug para probar flujo data-driven.

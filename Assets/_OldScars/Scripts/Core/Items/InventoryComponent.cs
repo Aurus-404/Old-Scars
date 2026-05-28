@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
+using OldScars.Core.Feedback;
 using UnityEngine;
 
 namespace OldScars.Core.Items
@@ -92,13 +93,18 @@ namespace OldScars.Core.Items
             equippedItemIndex = index;
             ItemInstance equippedItem = itemInstances[equippedItemIndex];
             Debug.Log($"[InventoryComponent] Equipped item {equippedItem.DefinitionId} [{equippedItem.InstanceId}] at index {equippedItemIndex}.");
+            RecordItemEquipped(equippedItem);
             return true;
         }
 
         public void Unequip()
         {
+            ItemInstance unequippedItem = GetEquippedItemInstance();
             equippedItemIndex = -1;
             Debug.Log("[InventoryComponent] Equipped item cleared.");
+
+            if (unequippedItem != null)
+                RecordItemUnequipped(unequippedItem);
         }
 
         private bool IsEquippedItemIndexValid()
@@ -114,6 +120,56 @@ namespace OldScars.Core.Items
         private static bool IsNoItemId(string itemId)
         {
             return string.IsNullOrWhiteSpace(itemId) || itemId.ToLowerInvariant() == NoItemId;
+        }
+
+        private void RecordItemEquipped(ItemInstance item)
+        {
+            if (item == null)
+                return;
+
+            string displayName = GetItemDisplayName(item.DefinitionId);
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.ItemEquipped,
+                $"Equipaste {displayName}.",
+                actorId: name,
+                actorDisplayName: name,
+                itemId: item.DefinitionId,
+                itemDisplayName: displayName,
+                quantity: 1));
+        }
+
+        private void RecordItemUnequipped(ItemInstance item)
+        {
+            if (item == null)
+                return;
+
+            string displayName = GetItemDisplayName(item.DefinitionId);
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.ItemUnequipped,
+                $"Desequipaste {displayName}.",
+                actorId: name,
+                actorDisplayName: name,
+                itemId: item.DefinitionId,
+                itemDisplayName: displayName,
+                quantity: 1));
+        }
+
+        private static string GetItemDisplayName(string definitionId)
+        {
+            if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+                return SafeText(definitionId);
+
+            GameDatabase database = GameDataManager.Instance.Database;
+            ItemDefinition definition = database != null ? database.GetItem(definitionId) : null;
+            if (definition == null || definition.display == null || string.IsNullOrWhiteSpace(definition.display.name))
+                return SafeText(definitionId);
+
+            return definition.display.name;
+        }
+
+        private static string SafeText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
         }
     }
 }

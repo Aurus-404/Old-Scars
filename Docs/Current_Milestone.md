@@ -2,19 +2,19 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0 y primer POI jugable compacto.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto y feedback de gameplay estructurado runtime-only.
 
-Milestone 16 esta validado en Unity.
+Milestone 17 esta validado en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
 Ultimo milestone validado:
 
-- Milestone 16: Primer POI jugable completo.
+- Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0.
 
 Proximo recomendado:
 
-- Preparar el siguiente sprint sobre la base validada de Milestone 16.
+- Preparar el siguiente sprint sobre la base validada de Milestone 17.
 
 
 ## Milestones Validados
@@ -225,6 +225,30 @@ Validado en Unity:
 - No se crearon sistemas nuevos.
 - No se rompieron `InventoryComponent`, `WorldItemPickup`, `ContainerLootComponent`, action duration, runtime tags ni loot tables.
 
+### Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- El proyecto compila en Unity sin errores.
+- Se agrego una base runtime-only de feedback de gameplay mediante `GameplayFeedbackEntryType`, `GameplayFeedbackEntry`, `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
+- Los sistemas de gameplay registran entradas estructuradas y el panel debug solo las lee.
+- `GameplayFeedbackLog` es append/read, runtime-only, no persistente y limitado por `maxEntries`.
+- `GameplayFeedbackLog` no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
+- El panel `Gameplay Feedback Log` aparece en `SampleScene`.
+- `ItemPickedUp` se registra al recoger la palanca.
+- `ItemEquipped` y `ItemUnequipped` se registran al equipar o desequipar.
+- `ActionCompleted` se registra en `examine_object`, `force_door`, `pry_open_container` y `search_container`.
+- `TargetStateChanged` debug registra cambios runtime de tags.
+- `LootReceived` se registra al obtener `scrap_metal_01`.
+- `search_container` deja de aparecer despues de saquear.
+- El contenedor queda con `looted_container`.
+- La puerta queda con `forced_open`.
+- `InteractionSystem` no fue tocado.
+- El gameplay no depende del panel de feedback.
+- No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -283,6 +307,17 @@ Validado en Unity:
 - `pick_up_item` ejecuta `WorldItemPickup` sobre el target.
 - `search_container` ejecuta `ContainerLootComponent` sobre el target.
 
+### Gameplay Feedback Runtime
+
+- `GameplayFeedbackEntryType` define categorias cerradas: `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived`, `TargetStateChanged`, `Info` y `Warning`.
+- `GameplayFeedbackEntry` guarda datos estructurados: tipo, mensaje fallback, tiempo, actor, target, item, action, quantity, tags agregados/removidos y `debugOnly`.
+- `GameplayFeedbackLog` guarda entradas runtime-only con `maxEntries`, `Record`, `Clear` y `Entries`.
+- `GameplayFeedbackLog` es append/read y no persistente.
+- `GameplayFeedbackLog` no es EventBus y no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
+- `DebugFeedbackLogPanel` lee `Entries` y las muestra con OnGUI debug.
+- `DebugFeedbackLogPanel` no recibe llamadas desde gameplay y no ejecuta logica de gameplay.
+- Si no existe `GameplayFeedbackLog` en escena, el gameplay sigue funcionando sin depender del feedback visual.
+
 ### UI Debug Contextual
 
 - `WorldInteractionDebugTester` coordina input de interaccion, raycast y bridge hacia UI.
@@ -291,6 +326,7 @@ Validado en Unity:
 - `ContextualActionDebugProgressPanel` muestra progreso debug de accion activa.
 - `ContextualActionDebugResultPanel` muestra resultados debug.
 - `InventoryDebugPanel` muestra inventario v0 con OnGUI y se abre con `I`.
+- `DebugFeedbackLogPanel` muestra feedback estructurado runtime-only del POI como UI debug.
 - `DebugWorldUiInputBlocker` consume click izquierdo cuando hay UI abierta.
 
 ### Movimiento Y Camara
@@ -331,10 +367,11 @@ Validado en Unity:
   - `ContainerLootComponent.lootTableId = debug_sealed_container_loot_01`.
 - `WorldInteractionDebugTester.logAvailabilityDetails` desactivado por defecto; activarlo solo para auditar requisitos de acciones.
 - Camara principal como hija del CameraRig.
+- `GameplayFeedbackDebug` bajo `Debug_UI` con `GameplayFeedbackLog` y `DebugFeedbackLogPanel` para leer feedback runtime del POI.
 
 ## Proximo Recomendado
 
-Preparar el siguiente sprint sobre la base validada de Milestone 16.
+Preparar el siguiente sprint sobre la base validada de Milestone 17.
 
 Milestone 16 fue validado con:
 
@@ -348,6 +385,16 @@ Milestone 16 fue validado con:
 - data load OK con 0 errors y 0 warnings;
 - `InteractionSystem` desacoplado;
 - sin cambios de codigo ni JSON.
+
+Milestone 17 fue validado con:
+
+- base runtime-only de feedback estructurado;
+- `GameplayFeedbackLog` append/read sin listeners, subscriptions, callbacks, dispatch ni payload generico;
+- `DebugFeedbackLogPanel` leyendo entradas del log sin acoplar gameplay a UI;
+- entradas `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged`;
+- POI sigue funcionando: puerta `forced_open`, contenedor `looted_container`, `search_container` desaparece despues de saquear;
+- `InteractionSystem` no fue tocado;
+- no se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
 
 Milestone 14 fue validado con:
 
@@ -378,6 +425,9 @@ No debe crear todavia:
 - inventario real;
 - loot final o avanzado;
 - save system;
+- journal;
+- quest log;
+- EventBus;
 - combate real;
 - IA;
 - dialogos complejos;

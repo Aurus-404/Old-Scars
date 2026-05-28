@@ -8,19 +8,22 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 16 esta `validated`.
+- Milestone 17 esta `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
-- El POI usa solo sistemas existentes y validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0 y container loot v0.
+- El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0, container loot v0 y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
+- El POI ahora tiene una base runtime-only de feedback estructurado mediante `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
+- El feedback registra `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged`.
 - Data load sigue OK con 0 errors y 0 warnings.
 - `InteractionSystem` sigue desacoplado.
-- No se tocaron codigo ni JSON.
-- No se crearon actions nuevas, effects nuevos ni sistemas nuevos.
+- No se toco JSON.
+- No se crearon actions nuevas ni effects nuevos.
+- No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
 - No se rompieron `InventoryComponent`, `WorldItemPickup`, `ContainerLootComponent`, action duration, runtime tags ni loot tables.
 
 Proxima accion recomendada:
 
-- Preparar el siguiente sprint sobre la base validada de Milestone 16, sin adelantar combate, IA, save system, UI final, inventario final, loot avanzado, crafting ni mapa grande.
+- Preparar el siguiente sprint sobre la base validada de Milestone 17, sin adelantar combate, IA, save system, UI final, inventario final, loot avanzado, crafting, journal, quest log, EventBus ni mapa grande.
 
 Base validada:
 
@@ -115,6 +118,26 @@ Milestone 15 validado:
 - `InteractionSystem` sigue sin depender de inventario, loot ni MonoBehaviour.
 - No se creo loot avanzado, UI final, save system, stacks, economia, crafting, combate ni IA.
 
+Milestone 17 validado:
+
+- Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0 esta `validated`.
+- `GameplayFeedbackEntryType`, `GameplayFeedbackEntry`, `GameplayFeedbackLog` y `DebugFeedbackLogPanel` funcionan como base runtime-only de feedback.
+- `GameplayFeedbackLog` es append/read, no persistente y limitado por `maxEntries`.
+- `GameplayFeedbackLog` no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
+- `DebugFeedbackLogPanel` solo lee `Entries` desde `GameplayFeedbackLog`.
+- Los sistemas de gameplay registran entradas estructuradas; el panel debug no recibe llamadas directas desde gameplay.
+- `ItemPickedUp` se registra al recoger la palanca.
+- `ItemEquipped` y `ItemUnequipped` se registran al equipar o desequipar.
+- `ActionCompleted` se registra en `examine_object`, `force_door`, `pry_open_container` y `search_container`.
+- `TargetStateChanged` debug registra cambios runtime de tags.
+- `LootReceived` se registra al obtener `scrap_metal_01`.
+- `search_container` deja de aparecer despues de saquear.
+- El contenedor queda con `looted_container`.
+- La puerta queda con `forced_open`.
+- `InteractionSystem` no fue tocado.
+- El gameplay no depende del panel de feedback.
+- No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+
 Pruebas validadas:
 
 - Con `DebugInventory.equippedItemIndex = 0`, puerta muestra `force_door` + `examine_object`, contenedor muestra `pry_open_container` + `examine_object`, maquina muestra `examine_object`.
@@ -156,6 +179,22 @@ Pruebas validadas de Milestone 15:
 - Interactuar otra vez: `search_container` ya no debe aparecer.
 - Confirmar que pickup, action duration, runtime tags, `force_door`, `pry_open_container` e `InteractionSystem` siguen funcionando.
 
+Pruebas validadas de Milestone 17:
+
+- El proyecto compila en Unity sin errores.
+- El panel `Gameplay Feedback Log` aparece en `SampleScene`.
+- `ItemPickedUp` se registra al recoger la palanca.
+- `ItemEquipped` / `ItemUnequipped` se registran al equipar o desequipar.
+- `ActionCompleted` se registra en `examine_object`, `force_door`, `pry_open_container` y `search_container`.
+- `TargetStateChanged` debug registra cambios runtime de tags.
+- `LootReceived` se registra al obtener `scrap_metal_01`.
+- `search_container` deja de aparecer despues de saquear.
+- El contenedor queda con `looted_container`.
+- La puerta queda con `forced_open`.
+- `InteractionSystem` no fue tocado.
+- El gameplay no depende del panel de feedback.
+- No se creo journal, quest log, UI final, save system, EventBus ni sistemas grandes.
+
 ## Sprints Posteriores Recomendados
 
 ### Tool Requirement Schema Cleanup Futuro
@@ -187,7 +226,8 @@ Pruebas validadas de Milestone 15:
 
 ### POI Follow-up Futuro
 
-- Evaluar solo ajustes chicos de legibilidad o feedback debug si la proxima prueba los justifica.
+- Milestone 17 ya valido la primera base runtime-only de feedback estructurado para legibilidad del POI.
+- Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
 
 ## Pospuestos / No Tocar Todavia
@@ -195,6 +235,9 @@ Pruebas validadas de Milestone 15:
 - combate;
 - IA;
 - facciones;
+- journal;
+- quest log;
+- EventBus de gameplay;
 - mapa grande;
 - vehiculos;
 - crafting completo;

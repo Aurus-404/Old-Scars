@@ -1,5 +1,6 @@
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
+using OldScars.Core.Feedback;
 using OldScars.Core.Interactions;
 using UnityEngine;
 
@@ -56,11 +57,14 @@ namespace OldScars.Core.Items
             if (item == null)
                 return DebugActionExecutionResult.Info("Recoger", $"No se pudo recoger '{SafeText(itemDefinitionId)}'.");
 
-            targetTags.AddTag(PickedUpTag);
-            targetTags.RemoveTag(PickupableTag);
+            bool addedPickedUp = targetTags.AddTag(PickedUpTag);
+            bool removedPickupable = targetTags.RemoveTag(PickupableTag);
             DisableVisiblePickupParts();
 
             string displayName = GetItemDisplayName(item.DefinitionId);
+            RecordItemPickedUp(actorContext, targetTags, item, displayName);
+            RecordTargetStateChanged(actorContext, targetTags, addedPickedUp, removedPickupable);
+
             Debug.Log($"[WorldItemPickup] Picked up {item.DefinitionId} [{item.InstanceId}].");
             return DebugActionExecutionResult.Info("Recoger", $"Recogiste {displayName}.");
         }
@@ -83,6 +87,56 @@ namespace OldScars.Core.Items
                 return SafeText(definitionId);
 
             return definition.display.name;
+        }
+
+        private static void RecordItemPickedUp(ActorInteractionContext actorContext, WorldObjectTags targetTags, ItemInstance item, string itemDisplayName)
+        {
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.ItemPickedUp,
+                $"Recogiste {SafeText(itemDisplayName)}.",
+                actorId: GetActorName(actorContext),
+                actorDisplayName: GetActorName(actorContext),
+                targetId: GetTargetName(targetTags),
+                targetDisplayName: GetTargetDisplayName(targetTags),
+                itemId: item != null ? item.DefinitionId : null,
+                itemDisplayName: itemDisplayName,
+                quantity: item != null ? 1 : 0));
+        }
+
+        private static void RecordTargetStateChanged(ActorInteractionContext actorContext, WorldObjectTags targetTags, bool addedPickedUp, bool removedPickupable)
+        {
+            if (!addedPickedUp && !removedPickupable)
+                return;
+
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.TargetStateChanged,
+                $"Estado actualizado: {SafeText(GetTargetDisplayName(targetTags))}.",
+                actorId: GetActorName(actorContext),
+                actorDisplayName: GetActorName(actorContext),
+                targetId: GetTargetName(targetTags),
+                targetDisplayName: GetTargetDisplayName(targetTags),
+                addedTags: addedPickedUp ? new[] { PickedUpTag } : null,
+                removedTags: removedPickupable ? new[] { PickupableTag } : null,
+                debugOnly: true));
+        }
+
+        private static string GetActorName(ActorInteractionContext actorContext)
+        {
+            return actorContext != null ? actorContext.name : null;
+        }
+
+        private static string GetTargetName(WorldObjectTags targetTags)
+        {
+            return targetTags != null ? targetTags.name : null;
+        }
+
+        private static string GetTargetDisplayName(WorldObjectTags targetTags)
+        {
+            if (targetTags == null)
+                return null;
+
+            WorldObjectDebugInfo debugInfo = targetTags.GetComponent<WorldObjectDebugInfo>();
+            return debugInfo != null ? debugInfo.GetDisplayNameOrFallback(targetTags.name) : targetTags.name;
         }
 
         private static ItemDefinition GetItemDefinition(string definitionId)
