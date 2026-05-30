@@ -2,19 +2,19 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones y lectura visual debug estable de estados runtime por color.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color y storage runtime-only de items con cantidades simples.
 
-Milestone 19.2 esta validado en Unity.
+Milestone 20 esta validado en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
 Ultimo milestone validado:
 
-- Milestone 19.2: Stable Color-Only State Visuals.
+- Milestone 20: Item Storage / Container Foundation v0.
 
 Proximo recomendado:
 
-- Milestone 20 queda como proximo milestone pendiente, sin definir todavia.
+- Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
 
 
 ## Milestones Validados
@@ -311,6 +311,34 @@ Validado en Unity:
 - El menu contextual sigue mostrando solo acciones disponibles.
 - No se toco codigo, JSON ni gameplay.
 
+### Milestone 20: Item Storage / Container Foundation v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- El proyecto compila sin errores.
+- Se creo una base comun runtime-only para almacenamiento de items mediante `ItemStorage` e `ItemStorageEntry`.
+- `ItemStorage` es clase C# pura, no `MonoBehaviour`.
+- `ItemStorageEntry` representa `ItemInstance` + `Quantity`.
+- `Quantity` no fue agregado a `ItemInstance`.
+- No hay auto-merge por `DefinitionId` para evitar mezclar objetos unicos con distinta condicion.
+- `InventoryComponent` ahora usa `ItemStorage` internamente sin romper el flujo existente.
+- `pick_up_item` sigue agregando `rusted_crowbar_01` al inventario.
+- `InventoryDebugPanel` con I sigue funcionando.
+- `InventoryDebugPanel` muestra cantidades simples cuando `Quantity > 1`.
+- Equipar crowbar sigue funcionando.
+- `ContainerLootComponent` ahora inicializa storage interno una sola vez desde su loot table antes de que el contenedor sea accesible.
+- `sealed_container` no permite `search_container`.
+- `pry_open_container` habilita `search_container`.
+- `search_container` transfiere contenido existente del contenedor al inventario en lugar de generar loot al buscar.
+- El contenedor queda `looted_container` y no vuelve a entregar loot.
+- Data load sigue OK con 0 errors y 0 warnings.
+- F7, F8 e I siguen funcionando.
+- El menu contextual sigue mostrando solo acciones disponibles.
+- No se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base.
+- No se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -340,10 +368,15 @@ Validado en Unity:
 
 - `ItemInstance` representa una instancia runtime minima de un item definition.
 - `ItemInstance` guarda `InstanceId`, `DefinitionId` y `Condition`.
+- `ItemStorage` es una clase C# pura runtime-only para almacenar entries de items con cantidades simples.
+- `ItemStorageEntry` representa un `ItemInstance` y una `Quantity >= 1`.
+- La cantidad pertenece al storage; no se agrego `Quantity` a `ItemInstance`.
+- `ItemStorage` no auto-mergea por `DefinitionId`.
 - `LootTableDefinition` representa una tabla v0 deterministica de loot.
-- `InventoryComponent` v0 guarda una lista runtime plana de `ItemInstance`.
-- `InventoryComponent` permite `AddItemByDefinitionId`, `EquipIndex` y `Unequip`.
+- `InventoryComponent` v0 usa `ItemStorage` internamente.
+- `InventoryComponent` permite `AddItemByDefinitionId`, `AddItemByDefinitionId` con cantidad simple, `EquipIndex` y `Unequip`.
 - `InventoryComponent` no autoequipa al recoger.
+- `InventoryDebugPanel` lee entries de storage y muestra cantidades cuando `Quantity > 1`.
 - `DebugInventory` crea instancias runtime al iniciar cuando `GameDataManager` esta listo.
 - `DebugInventory` no es inventario final, no guarda save data y no implementa equipamiento real.
 
@@ -378,7 +411,7 @@ Validado en Unity:
 - `add_tag` y `remove_tag` afectan solo al target.
 - `show_target_info` lee `WorldObjectDebugInfo`.
 - `pick_up_item` ejecuta `WorldItemPickup` sobre el target.
-- `search_container` ejecuta `ContainerLootComponent` sobre el target.
+- `search_container` ejecuta `ContainerLootComponent` sobre el target y transfiere contenido existente del storage del contenedor.
 
 ### Gameplay Feedback Runtime
 
@@ -451,7 +484,8 @@ Validado en Unity:
   - `sealed_container`;
   - `lootable_container`;
   - `inspectable`;
-  - `ContainerLootComponent.lootTableId = debug_sealed_container_loot_01`.
+  - `ContainerLootComponent.lootTableId = debug_sealed_container_loot_01`;
+  - storage runtime inicializado una vez desde su loot table.
 - `WorldInteractionDebugTester.logAvailabilityDetails` desactivado por defecto; activarlo solo para auditar requisitos de acciones.
 - Camara principal como hija del CameraRig.
 - `GameplayFeedbackDebug` bajo `Debug_UI` con `GameplayFeedbackLog` y `DebugFeedbackLogPanel` para leer feedback runtime del POI.
@@ -461,7 +495,7 @@ Validado en Unity:
 
 ## Proximo Recomendado
 
-Milestone 20 queda como proximo milestone pendiente, sin definir todavia.
+Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
 
 Milestone 16 fue validado con:
 
@@ -525,6 +559,20 @@ Milestone 19.2 fue validado con:
 - F7, F8 e I funcionando;
 - menu contextual mostrando solo acciones disponibles;
 - sin tocar codigo, JSON ni gameplay.
+
+Milestone 20 fue validado con:
+
+- base comun runtime-only de storage mediante `ItemStorage` e `ItemStorageEntry`;
+- `InventoryComponent` apoyado internamente en `ItemStorage` sin romper pickup, equip ni panel debug;
+- `ContainerLootComponent` inicializando storage interno una vez desde su loot table;
+- `search_container` transfiriendo contenido existente al inventario en vez de generar loot al buscar;
+- cantidades simples visibles en `InventoryDebugPanel` cuando `Quantity > 1`;
+- contenedor quedando `looted_container` y sin entregar loot dos veces;
+- data load OK con 0 errors y 0 warnings;
+- F7, F8 e I funcionando;
+- menu contextual mostrando solo acciones disponibles;
+- sin tocar JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base;
+- sin UI final, peso, slots, grid, save system ni contenedores anidados.
 
 Milestone 14 fue validado con:
 

@@ -81,8 +81,8 @@ namespace OldScars.Core.Items
 
             GUILayout.Space(8f);
 
-            IReadOnlyList<ItemInstance> items = inventory.GetItems();
-            if (items == null || items.Count == 0)
+            IReadOnlyList<ItemStorageEntry> entries = inventory.GetStorageEntries();
+            if (entries == null || entries.Count == 0)
             {
                 GUILayout.Label("Inventory is empty.");
             }
@@ -90,8 +90,8 @@ namespace OldScars.Core.Items
             {
                 scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(210f));
 
-                for (int index = 0; index < items.Count; index++)
-                    DrawItemRow(index, items[index]);
+                for (int index = 0; index < entries.Count; index++)
+                    DrawItemRow(index, entries[index]);
 
                 GUILayout.EndScrollView();
             }
@@ -99,10 +99,12 @@ namespace OldScars.Core.Items
             GUILayout.EndArea();
         }
 
-        private void DrawItemRow(int index, ItemInstance item)
+        private void DrawItemRow(int index, ItemStorageEntry entry)
         {
+            ItemInstance item = entry != null ? entry.Item : null;
+
             GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label(GetItemLabel(index, item), GUILayout.Width(300f));
+            GUILayout.Label(GetItemLabel(index, entry), GUILayout.Width(300f));
 
             bool isEquipped = inventory.EquippedItemIndex == index;
             GUI.enabled = item != null && !isEquipped;
@@ -115,16 +117,29 @@ namespace OldScars.Core.Items
 
         private string GetEquippedItemLabel()
         {
-            ItemInstance item = inventory.GetEquippedItemInstance();
-            return item != null ? GetItemDisplayName(item.DefinitionId) : "(none)";
+            ItemStorageEntry entry = inventory.GetEquippedStorageEntry();
+            if (entry == null || entry.Item == null)
+                return "(none)";
+
+            return FormatItemDisplayName(entry);
         }
 
-        private string GetItemLabel(int index, ItemInstance item)
+        private string GetItemLabel(int index, ItemStorageEntry entry)
         {
+            ItemInstance item = entry != null ? entry.Item : null;
             if (item == null)
                 return $"{index}: (none)";
 
-            return $"{index}: {GetItemDisplayName(item.DefinitionId)} [{item.InstanceId}] condition {item.Condition}";
+            return $"{index}: {FormatItemDisplayName(entry)} [{item.InstanceId}] condition {item.Condition}";
+        }
+
+        private string FormatItemDisplayName(ItemStorageEntry entry)
+        {
+            if (entry == null || entry.Item == null)
+                return "(none)";
+
+            string displayName = GetItemDisplayName(entry.Item.DefinitionId);
+            return entry.Quantity > 1 ? $"{displayName} x{entry.Quantity}" : displayName;
         }
 
         private static string GetItemDisplayName(string definitionId)

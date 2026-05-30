@@ -502,6 +502,44 @@
 - No se toco gameplay.
 - Estado: validated.
 
+### Item Storage / Container Foundation v0
+
+- Milestone 20 implementado y validado como base comun runtime-only para almacenamiento de items con cantidades simples.
+- Se creo `ItemStorage` como clase C# pura, no `MonoBehaviour`.
+- Se creo `ItemStorageEntry` para representar `ItemInstance` + `Quantity`.
+- `Quantity` debe ser mayor o igual a 1.
+- `Quantity` no fue agregado a `ItemInstance`.
+- No hay auto-merge por `DefinitionId`, para evitar mezclar objetos unicos con distinta condicion.
+- `InventoryComponent` ahora usa `ItemStorage` internamente.
+- `AddItemByDefinitionId(string)` sigue funcionando como antes.
+- `InventoryComponent` soporta `AddItemByDefinitionId(string, int quantity)`.
+- `InventoryDebugPanel` sigue funcionando con `I`.
+- `InventoryDebugPanel` muestra cantidades simples cuando `Quantity > 1`.
+- `ContainerLootComponent` mantiene su componente y `lootTableId` serializado.
+- `ContainerLootComponent` inicializa storage interno una sola vez desde su loot table.
+- El contenido del contenedor existe aunque el contenedor este `sealed_container`.
+- `search_container` transfiere contenido existente al `InventoryComponent` en lugar de generar loot al buscar.
+- Al quedar vacio, el contenedor queda `looted_container` como antes.
+- Validado en Unity: compila sin errores.
+- Validado en Unity: data load 0 errors / 0 warnings.
+- Validado en Unity: `pick_up_item` sigue agregando `rusted_crowbar_01` al inventario.
+- Validado en Unity: equipar crowbar sigue funcionando.
+- Validado en Unity: `sealed_container` no permite `search_container`.
+- Validado en Unity: `pry_open_container` habilita `search_container`.
+- Validado en Unity: `search_container` transfiere contenido existente del contenedor al inventario.
+- Validado en Unity: las cantidades simples se muestran en `InventoryDebugPanel` cuando `Quantity > 1`.
+- Validado en Unity: el contenedor queda `looted_container` y no vuelve a entregar loot.
+- Validado en Unity: F7, F8 e I siguen funcionando.
+- Validado en Unity: el menu contextual sigue mostrando solo acciones disponibles.
+- No se toco JSON.
+- No se toco schema.
+- No se toco `InteractionSystem`.
+- No se toco `ActionAvailabilityEvaluator`.
+- No se tocaron diagnostics.
+- No se toco `GameplayFeedbackLog` base.
+- No se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
+- Estado: validated.
+
 ### Deuda Tecnica Menor Detectada
 
 - GameDataManager mostraba warning de DontDestroyOnLoad porque no estaba en un root GameObject.
@@ -612,6 +650,21 @@ Milestone 19.2 validado:
 - F7, F8 e I siguen funcionando;
 - el menu contextual sigue mostrando solo acciones disponibles;
 - no se toco codigo, JSON ni gameplay.
+
+Milestone 20 validado:
+
+- `ItemStorage` e `ItemStorageEntry` forman la base comun runtime-only de almacenamiento de items con cantidades simples;
+- `InventoryComponent` usa `ItemStorage` internamente sin romper `AddItemByDefinitionId`, pickup, equip ni `InventoryDebugPanel`;
+- `ContainerLootComponent` inicializa storage interno una sola vez desde su loot table;
+- el contenido del contenedor existe antes de ser accesible;
+- `search_container` transfiere contenido existente al inventario y no re-rollea loot;
+- las cantidades simples se muestran en `InventoryDebugPanel` cuando `Quantity > 1`;
+- el contenedor queda `looted_container` y no vuelve a entregar loot;
+- data load sigue OK con 0 errors y 0 warnings;
+- F7, F8 e I siguen funcionando;
+- el menu contextual sigue mostrando solo acciones disponibles;
+- no se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base;
+- no se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
 
 Con `InventoryComponent` asignado:
 

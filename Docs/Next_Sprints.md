@@ -8,10 +8,14 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 19.2 esta `validated`.
+- Milestone 20 esta `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
-- El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0, container loot v0 y feedback runtime-only.
+- El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0, container loot v0, storage runtime-only de items y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
+- `ItemStorage` e `ItemStorageEntry` forman la base comun runtime-only de storage de items con cantidades simples.
+- `InventoryComponent` usa `ItemStorage` internamente sin romper pickup, equip ni `InventoryDebugPanel`.
+- `ContainerLootComponent` inicializa storage interno una sola vez desde su loot table y `search_container` transfiere contenido existente al inventario.
+- `InventoryDebugPanel` muestra cantidades simples cuando `Quantity > 1`.
 - El POI ahora tiene una base runtime-only de feedback estructurado mediante `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
 - El feedback registra `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged`.
 - El POI ahora tiene diagnostico runtime-only de disponibilidad mediante `ActionAvailabilityDiagnosticReport`, `ActionAvailabilityDiagnosticEntry` y `DebugActionAvailabilityPanel`.
@@ -27,10 +31,11 @@ Estado actual:
 - No se crearon actions nuevas ni effects nuevos.
 - No se creo journal, quest log, UI final, save system, EventBus, listeners/subscriptions/callbacks ni sistemas grandes.
 - No se rompieron `InventoryComponent`, `WorldItemPickup`, `ContainerLootComponent`, action duration, runtime tags ni loot tables.
+- No se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base.
 
 Proxima accion recomendada:
 
-- Milestone 20 queda como proximo milestone pendiente, sin definir todavia.
+- Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
 
 Base validada:
 
@@ -194,6 +199,29 @@ Milestone 19.2 validado:
 - El menu contextual sigue mostrando solo acciones disponibles.
 - No se toco codigo, JSON ni gameplay.
 
+Milestone 20 validado:
+
+- Milestone 20: Item Storage / Container Foundation v0 esta `validated`.
+- `ItemStorage` funciona como clase C# pura runtime-only, no `MonoBehaviour`.
+- `ItemStorageEntry` representa `ItemInstance` + `Quantity`.
+- `Quantity` no fue agregado a `ItemInstance`.
+- No hay auto-merge por `DefinitionId` para evitar mezclar objetos unicos con distinta condicion.
+- `InventoryComponent` usa `ItemStorage` internamente sin romper el flujo existente.
+- `pick_up_item` sigue agregando `rusted_crowbar_01` al inventario.
+- `InventoryDebugPanel` con `I` sigue funcionando.
+- `InventoryDebugPanel` muestra cantidades simples cuando `Quantity > 1`.
+- Equipar crowbar sigue funcionando.
+- `ContainerLootComponent` inicializa storage interno una sola vez desde su loot table antes de que el contenedor sea accesible.
+- `sealed_container` no permite `search_container`.
+- `pry_open_container` habilita `search_container`.
+- `search_container` transfiere contenido existente del contenedor al inventario.
+- El contenedor queda `looted_container` y no vuelve a entregar loot.
+- Data load sigue OK con 0 errors y 0 warnings.
+- F7, F8 e I siguen funcionando.
+- El menu contextual sigue mostrando solo acciones disponibles.
+- No se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base.
+- No se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
+
 Pruebas validadas:
 
 - Con `DebugInventory.equippedItemIndex = 0`, puerta muestra `force_door` + `examine_object`, contenedor muestra `pry_open_container` + `examine_object`, maquina muestra `examine_object`.
@@ -308,7 +336,7 @@ Pruebas validadas de Milestone 18:
 - Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
 
-### Milestone 20
+### Milestone 21
 
 - Pendiente.
 - Sin definir todavia.

@@ -10,7 +10,7 @@ namespace OldScars.Core.Items
     /// Runtime-only inventory v0 for the playable debug loop.
     ///
     /// This is not the final inventory or equipment system. It has no save
-    /// data, capacity, stacks, slots, drag/drop, pickup/drop rules, or UI.
+    /// data, capacity, slots, drag/drop, pickup/drop rules, or UI.
     /// </summary>
     public sealed class InventoryComponent : MonoBehaviour
     {
@@ -18,16 +18,30 @@ namespace OldScars.Core.Items
 
         [SerializeField] private int equippedItemIndex = -1;
 
-        private readonly List<ItemInstance> itemInstances = new List<ItemInstance>();
+        private readonly ItemStorage storage = new ItemStorage();
+        private readonly List<ItemInstance> itemInstancesView = new List<ItemInstance>();
 
         public int EquippedItemIndex => equippedItemIndex;
+        public IReadOnlyList<ItemStorageEntry> Entries => storage.Entries;
+        public bool IsEmpty => storage.IsEmpty;
 
         public ItemInstance AddItemByDefinitionId(string definitionId)
+        {
+            return AddItemByDefinitionId(definitionId, 1);
+        }
+
+        public ItemInstance AddItemByDefinitionId(string definitionId, int quantity)
         {
             string normalizedDefinitionId = NormalizeItemId(definitionId);
             if (IsNoItemId(normalizedDefinitionId))
             {
                 Debug.LogWarning("[InventoryComponent] Cannot add an empty item definition id.");
+                return null;
+            }
+
+            if (quantity < 1)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot add '{normalizedDefinitionId}' with quantity {quantity}. Quantity must be >= 1.");
                 return null;
             }
 
@@ -52,28 +66,53 @@ namespace OldScars.Core.Items
             }
 
             var instance = new ItemInstance(definition);
-            itemInstances.Add(instance);
+            storage.AddItem(instance, quantity);
 
             Debug.Log(
                 "[InventoryComponent] Added runtime item instance." +
                 $"\n  Definition: {instance.DefinitionId}" +
                 $"\n  Instance: {instance.InstanceId}" +
-                $"\n  Condition: {instance.Condition}");
+                $"\n  Condition: {instance.Condition}" +
+                $"\n  Quantity: {quantity}");
 
             return instance;
         }
 
         public IReadOnlyList<ItemInstance> GetItems()
         {
-            return itemInstances;
+            itemInstancesView.Clear();
+            IReadOnlyList<ItemStorageEntry> entries = storage.Entries;
+            for (int index = 0; index < entries.Count; index++)
+                itemInstancesView.Add(entries[index].Item);
+
+            return itemInstancesView;
+        }
+
+        public IReadOnlyList<ItemStorageEntry> GetStorageEntries()
+        {
+            return storage.Entries;
+        }
+
+        public int TransferItemsFrom(ItemStorage source)
+        {
+            if (source == null)
+            {
+                Debug.LogWarning("[InventoryComponent] Cannot transfer items from a null storage.");
+                return 0;
+            }
+
+            return source.TransferAllTo(storage);
         }
 
         public ItemInstance GetEquippedItemInstance()
         {
-            if (!IsEquippedItemIndexValid())
-                return null;
+            ItemStorageEntry equippedEntry = GetEquippedStorageEntry();
+            return equippedEntry != null ? equippedEntry.Item : null;
+        }
 
-            return itemInstances[equippedItemIndex];
+        public ItemStorageEntry GetEquippedStorageEntry()
+        {
+            return IsEquippedItemIndexValid() ? storage.GetEntry(equippedItemIndex) : null;
         }
 
         public string GetEquippedItemDefinitionId()
@@ -84,14 +123,15 @@ namespace OldScars.Core.Items
 
         public bool EquipIndex(int index)
         {
-            if (index < 0 || index >= itemInstances.Count || itemInstances[index] == null)
+            ItemStorageEntry entry = storage.GetEntry(index);
+            if (entry == null || entry.Item == null)
             {
                 Debug.LogWarning($"[InventoryComponent] Cannot equip invalid item index {index}.");
                 return false;
             }
 
             equippedItemIndex = index;
-            ItemInstance equippedItem = itemInstances[equippedItemIndex];
+            ItemInstance equippedItem = entry.Item;
             Debug.Log($"[InventoryComponent] Equipped item {equippedItem.DefinitionId} [{equippedItem.InstanceId}] at index {equippedItemIndex}.");
             RecordItemEquipped(equippedItem);
             return true;
@@ -109,7 +149,7 @@ namespace OldScars.Core.Items
 
         private bool IsEquippedItemIndexValid()
         {
-            return equippedItemIndex >= 0 && equippedItemIndex < itemInstances.Count;
+            return equippedItemIndex >= 0 && equippedItemIndex < storage.EntryCount;
         }
 
         private static string NormalizeItemId(string itemId)

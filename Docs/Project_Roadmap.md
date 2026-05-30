@@ -25,8 +25,9 @@ Old Scars tiene una base debug/prototipo validada para:
 - base runtime-only de feedback de gameplay estructurado validada en `SampleScene`.
 - diagnostico runtime-only de disponibilidad de acciones contextuales validado en `SampleScene`.
 - lectura visual debug estable de estados runtime por color validada en `SampleScene`.
+- base comun runtime-only de storage de items con cantidades simples validada en `SampleScene`.
 
-Milestone 19.2 esta validado en Unity.
+Milestone 20 esta validado en Unity.
 
 ## Estados Permitidos
 
@@ -59,7 +60,8 @@ Milestone 19.2 esta validado en Unity.
 | Milestone 18: Action Availability Diagnostics / Requirement Readability v0 | Agregar diagnostico opcional de disponibilidad de acciones contextuales sin duplicar la logica de evaluacion. | validated | Validado: muestra acciones disponibles/bloqueadas, razones de bloqueo y snapshots de contexto sin cambiar GetAvailableActions ni el menu contextual. |
 | Milestone 19.1: Debug State Color Readability | Mejorar la lectura visual de estados del POI usando colores debug por regla visual en WorldObjectStateView. | validated | Validado: WorldObjectStateView aplica color debug con MaterialPropertyBlock sin modificar gameplay ni materiales compartidos. |
 | Milestone 19.2: Stable Color-Only State Visuals | Estabilizar la lectura visual del POI para que puerta y contenedor comuniquen estado solo por color debug. | validated | Validado: puerta y contenedor cambian color sin rotar, moverse ni cambiar geometria; la palanca sigue ocultandose con picked_up. |
-| Milestone 20 | Pendiente de definir. | planned | Sin alcance definido todavia. |
+| Milestone 20: Item Storage / Container Foundation v0 | Crear una base comun runtime-only para almacenamiento de items con cantidades simples, usada por inventario y contenedores del mundo. | validated | Validado: ItemStorage e ItemStorageEntry funcionan, InventoryComponent usa storage internamente y ContainerLootComponent transfiere contenido existente sin re-rollear loot. |
+| Milestone 21 | Pendiente de definir. | planned | Sin alcance definido todavia. |
 
 ## Milestone Actual
 
@@ -67,11 +69,11 @@ No hay milestone implementado pendiente de validacion.
 
 El ultimo milestone cerrado como `validated` es:
 
-- Milestone 19.2: Stable Color-Only State Visuals (`validated`).
+- Milestone 20: Item Storage / Container Foundation v0 (`validated`).
 
 ## Proximo Recomendado
 
-Milestone 20 queda como proximo milestone pendiente, sin definir todavia.
+Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
 
 Milestone 11 dejo validado:
 
@@ -247,6 +249,23 @@ Milestone 19.2 dejo validado:
 - el menu contextual sigue mostrando solo acciones disponibles;
 - no se toco codigo, JSON ni gameplay.
 
+Milestone 20 dejo validado:
+
+- `ItemStorage` funciona como clase C# pura runtime-only, no `MonoBehaviour`;
+- `ItemStorageEntry` representa `ItemInstance` + `Quantity`;
+- `Quantity` no fue agregado a `ItemInstance`;
+- no hay auto-merge por `DefinitionId`, para evitar mezclar objetos unicos con distinta condicion;
+- `InventoryComponent` usa `ItemStorage` internamente sin romper `AddItemByDefinitionId`, pickup, equip ni `InventoryDebugPanel`;
+- `InventoryDebugPanel` muestra cantidades simples cuando `Quantity > 1`;
+- `ContainerLootComponent` inicializa storage interno una sola vez desde su loot table antes de que el contenedor sea accesible;
+- `search_container` transfiere contenido existente del contenedor al inventario en vez de generar loot al buscar;
+- el contenedor queda con `looted_container` y no vuelve a entregar loot;
+- data load sigue OK con 0 errors y 0 warnings;
+- F7, F8 e I siguen funcionando;
+- el menu contextual sigue mostrando solo acciones disponibles;
+- no se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base;
+- no se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -282,8 +301,11 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - Las definitions viven en JSON.
 - Las instancias viven en runtime o en un futuro sistema de guardado.
 - `ItemInstance` es runtime-only y no es save data.
+- `ItemStorage` es runtime-only y no es save data.
+- `ItemStorageEntry` guarda `ItemInstance` + `Quantity`; la cantidad pertenece al storage, no a `ItemInstance`.
+- No hay auto-merge por `DefinitionId` en `ItemStorage`.
 - `DebugInventory` es debug temporal y no es inventario final.
-- `InventoryComponent` es inventario jugable v0, no inventario final.
+- `InventoryComponent` es inventario jugable v0, usa `ItemStorage` internamente y no es inventario final.
 - `ActorInteractionContext` resuelve item equipado con prioridad `InventoryComponent` -> `DebugInventory` -> `equippedItemDefinitionId` legacy.
 - Si `InventoryComponent` esta asignado al actor, define exclusivamente el item equipado; si devuelve sin item, no se usa fallback.
 - Si no hay `InventoryComponent` y `DebugInventory` esta asignado, `DebugInventory` define el item equipado; si devuelve sin item, no se usa fallback legacy.
@@ -294,7 +316,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `add_tag` y `remove_tag` afectan al target en runtime.
 - `show_target_info` es un effect cerrado que lee `WorldObjectDebugInfo`.
 - `pick_up_item` es un effect cerrado que ejecuta `WorldItemPickup` y agrega una `ItemInstance` al `InventoryComponent` del actor.
-- `search_container` es un effect cerrado que ejecuta `ContainerLootComponent` y agrega loot v0 al `InventoryComponent` del actor.
+- `search_container` es un effect cerrado que ejecuta `ContainerLootComponent` y transfiere contenido existente del storage del contenedor al `InventoryComponent` del actor.
 - `LootTableDefinition` v0 es deterministica: solo `item_id` y `count`.
 - `GameplayFeedbackLog` es runtime-only, append/read y no persistente.
 - `GameplayFeedbackLog` no es EventBus: no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
@@ -332,12 +354,14 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `InteractionSystem`: arma contexto y devuelve acciones disponibles.
 - `ActorInteractionContext`: datos minimos del actor para interactuar.
 - `ItemInstance`: instancia runtime-only minima de un item.
+- `ItemStorage`: storage runtime-only de items con cantidades simples.
+- `ItemStorageEntry`: entrada runtime de storage con `ItemInstance` representativo y `Quantity`.
 - `LootTableDefinition`: definicion v0 de loot deterministico.
-- `InventoryComponent`: inventario v0 runtime-only con lista plana de item instances y equip por indice.
+- `InventoryComponent`: inventario v0 runtime-only apoyado en `ItemStorage` y equip por indice.
 - `DebugInventory`: inventario debug temporal para crear item instances y exponer item equipado.
 - `InventoryDebugPanel`: UI debug OnGUI de inventario v0.
 - `WorldItemPickup`: componente debug para recoger un item de mundo configurado.
-- `ContainerLootComponent`: componente debug para saquear contenedores abiertos.
+- `ContainerLootComponent`: componente debug para inicializar storage desde loot table y transferir contenido de contenedores abiertos.
 - `WorldObjectTags`: initial tags y runtime tags.
 - `WorldObjectStateView`: componente visual debug que lee runtime tags y aplica SetActive, rotacion local o color debug por regla visual.
 - `WorldObjectDebugInfo`: texto debug para examinar objetos.

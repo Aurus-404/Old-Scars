@@ -11,7 +11,7 @@ namespace OldScars.Core.Interactions
     /// Runtime bridge for searchable container loot v0.
     ///
     /// This is not a final container inventory, loot UI, random loot system,
-    /// save state, stack system, crafting system, or economy system.
+    /// save state, stack limits, crafting system, or economy system.
     /// </summary>
     public sealed class ContainerLootComponent : MonoBehaviour
     {
@@ -20,7 +20,20 @@ namespace OldScars.Core.Interactions
 
         [SerializeField] private string lootTableId;
 
+        private readonly ItemStorage storage = new ItemStorage();
+        private bool storageInitialized;
+
         public string LootTableId => lootTableId;
+        public bool HasInitializedStorage => storageInitialized;
+        public bool IsStorageEmpty => storage.IsEmpty;
+        public int StoredEntryCount => storage.EntryCount;
+        public int StoredItemQuantity => storage.TotalQuantity;
+        public IReadOnlyList<ItemStorageEntry> StorageEntries => storage.Entries;
+
+        private void Start()
+        {
+            EnsureStorageInitialized();
+        }
 
         public DebugActionExecutionResult Search(DebugActionExecutionContext executionContext, ActionDefinition action = null)
         {
@@ -51,34 +64,102 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Buscar contenedor", "Error: el actor no tiene inventario v0 configurado.");
             }
 
-            if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+            if (!TryGetReadyDatabase(out GameDatabase database, out string databaseError))
             {
-                Debug.LogWarning("[ContainerLootComponent] GameDataManager is not ready.");
-                return DebugActionExecutionResult.Info("Buscar contenedor", "Error: la base de datos no esta lista.");
+                Debug.LogWarning($"[ContainerLootComponent] {databaseError}");
+                return DebugActionExecutionResult.Info("Buscar contenedor", $"Error: {databaseError}");
             }
 
-            GameDatabase database = GameDataManager.Instance.Database;
-            LootTableDefinition lootTable = database != null ? database.GetLootTable(lootTableId) : null;
-            if (lootTable == null)
+            if (!EnsureStorageInitialized(database, out string storageError))
             {
-                Debug.LogWarning($"[ContainerLootComponent] Loot table '{SafeText(lootTableId)}' was not found.");
-                return DebugActionExecutionResult.Info("Buscar contenedor", $"Error: loot table no encontrada: {SafeText(lootTableId)}.");
+                Debug.LogWarning($"[ContainerLootComponent] {storageError}");
+                return DebugActionExecutionResult.Info("Buscar contenedor", $"Error: {storageError}");
             }
 
-            if (HasBrokenLootData(lootTable, database, out string dataError))
-            {
-                Debug.LogWarning($"[ContainerLootComponent] Loot table '{SafeText(lootTableId)}' has invalid data: {dataError}");
-                return DebugActionExecutionResult.Info("Buscar contenedor", $"Error: loot table invalida: {dataError}.");
-            }
-
-            Dictionary<string, int> addedCounts = AddLootToInventory(lootTable, inventory);
+            Dictionary<string, int> addedCounts = GetStoredItemCounts();
+            int transferredQuantity = inventory.TransferItemsFrom(storage);
             MarkContainerLooted(targetTags, executionContext, action);
 
-            if (addedCounts.Count == 0)
+            if (transferredQuantity <= 0 || addedCounts.Count == 0)
                 return DebugActionExecutionResult.Info("Buscar contenedor", "No encontraste nada util.");
 
             RecordLootReceived(addedCounts, database, executionContext, action);
             return DebugActionExecutionResult.Info("Buscar contenedor", $"Encontraste: {FormatAddedLoot(addedCounts, database)}.");
+        }
+
+        private bool EnsureStorageInitialized()
+        {
+            if (storageInitialized)
+                return true;
+
+            if (!TryGetReadyDatabase(out GameDatabase database, out string databaseError))
+            {
+                Debug.LogWarning($"[ContainerLootComponent] Cannot initialize storage for '{SafeText(lootTableId)}': {databaseError}");
+                return false;
+            }
+
+            string storageError;
+            return EnsureStorageInitialized(database, out storageError);
+        }
+
+        private bool EnsureStorageInitialized(GameDatabase database, out string error)
+        {
+            error = null;
+
+            if (storageInitialized)
+                return true;
+
+            LootTableDefinition lootTable = database != null ? database.GetLootTable(lootTableId) : null;
+            if (lootTable == null)
+            {
+                error = $"loot table no encontrada: {SafeText(lootTableId)}.";
+                return false;
+            }
+
+            if (HasBrokenLootData(lootTable, database, out string dataError))
+            {
+                error = $"loot table invalida: {dataError}.";
+                return false;
+            }
+
+            PopulateStorage(lootTable, database);
+            storageInitialized = true;
+
+            Debug.Log(
+                "[ContainerLootComponent] Runtime storage initialized." +
+                $"\n  Loot table: {SafeText(lootTableId)}" +
+                $"\n  Entries: {storage.EntryCount}" +
+                $"\n  Total quantity: {storage.TotalQuantity}" +
+                $"\n  Contents: {FormatStorageContents(database)}");
+
+            return true;
+        }
+
+        private static bool TryGetReadyDatabase(out GameDatabase database, out string error)
+        {
+            database = null;
+            error = null;
+
+            if (GameDataManager.Instance == null)
+            {
+                error = "GameDataManager.Instance no encontrado.";
+                return false;
+            }
+
+            if (!GameDataManager.Instance.IsReady)
+            {
+                error = "la base de datos no esta lista.";
+                return false;
+            }
+
+            database = GameDataManager.Instance.Database;
+            if (database == null)
+            {
+                error = "GameDatabase no encontrada.";
+                return false;
+            }
+
+            return true;
         }
 
         private static bool HasBrokenLootData(LootTableDefinition lootTable, GameDatabase database, out string error)
@@ -128,31 +209,55 @@ namespace OldScars.Core.Interactions
             return false;
         }
 
-        private static Dictionary<string, int> AddLootToInventory(LootTableDefinition lootTable, InventoryComponent inventory)
+        private void PopulateStorage(LootTableDefinition lootTable, GameDatabase database)
         {
-            var addedCounts = new Dictionary<string, int>();
-
             if (lootTable.entries == null)
-                return addedCounts;
+                return;
 
             for (int entryIndex = 0; entryIndex < lootTable.entries.Length; entryIndex++)
             {
                 LootTableEntryDefinition entry = lootTable.entries[entryIndex];
+                ItemDefinition definition = database.GetItem(entry.item_id);
+                storage.AddItem(new ItemInstance(definition), entry.count);
+            }
+        }
 
-                for (int countIndex = 0; countIndex < entry.count; countIndex++)
-                {
-                    ItemInstance item = inventory.AddItemByDefinitionId(entry.item_id);
-                    if (item == null)
-                        continue;
+        private Dictionary<string, int> GetStoredItemCounts()
+        {
+            var counts = new Dictionary<string, int>();
 
-                    if (!addedCounts.ContainsKey(item.DefinitionId))
-                        addedCounts[item.DefinitionId] = 0;
+            IReadOnlyList<ItemStorageEntry> entries = storage.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (entry == null || entry.Item == null || string.IsNullOrWhiteSpace(entry.Item.DefinitionId))
+                    continue;
 
-                    addedCounts[item.DefinitionId]++;
-                }
+                if (!counts.ContainsKey(entry.Item.DefinitionId))
+                    counts[entry.Item.DefinitionId] = 0;
+
+                counts[entry.Item.DefinitionId] += entry.Quantity;
             }
 
-            return addedCounts;
+            return counts;
+        }
+
+        private string FormatStorageContents(GameDatabase database)
+        {
+            var parts = new List<string>();
+
+            IReadOnlyList<ItemStorageEntry> entries = storage.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (entry == null || entry.Item == null)
+                    continue;
+
+                string displayName = GetItemDisplayName(entry.Item.DefinitionId, database);
+                parts.Add($"{displayName} x{entry.Quantity}");
+            }
+
+            return parts.Count > 0 ? string.Join(", ", parts) : "nada";
         }
 
         private static void MarkContainerLooted(WorldObjectTags targetTags, DebugActionExecutionContext executionContext, ActionDefinition action)
