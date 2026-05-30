@@ -2,19 +2,21 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color y storage runtime-only de items con cantidades simples.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags` y defensas de acceso al storage de contenedores.
 
-Milestone 20 esta validado en Unity.
+Milestone 21 y Milestone 21.0.1 estan validados en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
 Ultimo milestone validado:
 
 - Milestone 20: Item Storage / Container Foundation v0.
+- Milestone 21: Stateful Inspection & Container Access v0.
+- Milestone 21.0.1: Hotfix - State-Aware Inspection Selection.
 
 Proximo recomendado:
 
-- Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
+- Milestone 22 queda como proximo milestone pendiente, sin definir todavia.
 
 
 ## Milestones Validados
@@ -339,6 +341,56 @@ Validado en Unity:
 - No se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base.
 - No se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
 
+### Milestone 21: Stateful Inspection & Container Access v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- El proyecto compila sin errores.
+- Data load sigue OK con 0 errors y 0 warnings.
+- Se agrego inspeccion dependiente de `RuntimeTags`.
+- `WorldObjectDebugInfo` puede elegir textos condicionales por `requiredTags`, `forbiddenTags` y prioridad.
+- `WorldObjectDebugInfo` mantiene `displayName` e `inspectText` como fallback.
+- `DebugActionExecutor` usa esos textos al ejecutar `examine_object`.
+- Examinar puerta cerrada muestra texto `locked_door`.
+- Tras `force_door`, examinar puerta muestra texto `forced_open`.
+- Examinar contenedor sellado muestra texto `sealed_container` y `[DEBUG STORAGE]`.
+- Tras `pry_open_container`, `search_container` aparece correctamente.
+- `search_container` transfiere contenido existente.
+- Tras `search_container`, examinar contenedor muestra `looted_container`.
+- El contenedor no entrega loot dos veces.
+- `InventoryDebugPanel` con I sigue funcionando.
+- F7, F8 e I siguen funcionando.
+- El menu contextual sigue mostrando solo acciones disponibles.
+- No se toco JSON ni schema.
+- No se toco `InteractionSystem`.
+- No se toco `ActionAvailabilityEvaluator`.
+- No se tocaron diagnostics.
+- No se toco `GameplayFeedbackLog`.
+- No se creo UI final de contenedor, peso, slots, grid, split/merge, save system ni contenedores anidados.
+
+Piezas validadas:
+
+- StateAwareInspectionText v1.
+- ContainerInspectionDebugStorageReadability v0.
+- ContainerAccessRules v0.
+
+### Milestone 21.0.1: Hotfix - State-Aware Inspection Selection
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- La seleccion de texto condicional usa `RuntimeTags` reales.
+- La puerta forzada ya no muestra el texto de puerta trabada.
+- Puerta `locked_door` requiere `locked_door` y bloquea `forced_open`.
+- Puerta `forced_open` requiere `forced_open`, bloquea `locked_door` y tiene mayor prioridad.
+- El contenedor mantiene `looted_container` con prioridad mas alta.
+- `opened_container` + `lootable_container` mantiene `forbiddenTags: looted_container`.
+- `sealed_container` requiere `sealed_container`.
+- No se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics, `GameplayFeedbackLog`, `ItemStorage`, `ItemStorageEntry` ni `InventoryComponent`.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -397,6 +449,13 @@ Validado en Unity:
 - En `SampleScene`, puerta y contenedor usan geometria estable y comunican estado solo por color.
 - La palanca puede seguir ocultando su visual con `SetActive` cuando tiene `picked_up`.
 
+### World Object Debug Info
+
+- `WorldObjectDebugInfo` guarda texto debug de inspeccion.
+- `WorldObjectDebugInfo` puede seleccionar texto por `RuntimeTags`.
+- Las reglas condicionales usan `requiredTags`, `forbiddenTags` y `priority`.
+- Si no hay regla valida, o si un campo condicional esta vacio, se usa el fallback `displayName` / `inspectText`.
+
 ### Debug Action Execution
 
 - `DebugActionProgressController` controla acciones debug en progreso.
@@ -412,6 +471,8 @@ Validado en Unity:
 - `show_target_info` lee `WorldObjectDebugInfo`.
 - `pick_up_item` ejecuta `WorldItemPickup` sobre el target.
 - `search_container` ejecuta `ContainerLootComponent` sobre el target y transfiere contenido existente del storage del contenedor.
+- `ContainerLootComponent` valida acceso al storage antes de transferir loot.
+- Al examinar un contenedor, `[DEBUG STORAGE]` muestra estado runtime del storage como debug/readability.
 
 ### Gameplay Feedback Runtime
 
@@ -495,7 +556,7 @@ Validado en Unity:
 
 ## Proximo Recomendado
 
-Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
+Milestone 22 queda como proximo milestone pendiente, sin definir todavia.
 
 Milestone 16 fue validado con:
 
@@ -573,6 +634,30 @@ Milestone 20 fue validado con:
 - menu contextual mostrando solo acciones disponibles;
 - sin tocar JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base;
 - sin UI final, peso, slots, grid, save system ni contenedores anidados.
+
+Milestone 21 fue validado con:
+
+- inspeccion dependiente de `RuntimeTags`;
+- textos condicionales en `WorldObjectDebugInfo` por `requiredTags`, `forbiddenTags` y prioridad;
+- `DebugActionExecutor` usando esos textos al ejecutar `examine_object`;
+- resumen debug `[DEBUG STORAGE]` al examinar contenedores;
+- `ContainerLootComponent` validando acceso antes de transferir loot;
+- puerta cerrada mostrando texto `locked_door`;
+- puerta forzada mostrando texto `forced_open`;
+- contenedor sellado mostrando texto `sealed_container` + `[DEBUG STORAGE]`;
+- contenedor abierto habilitando `search_container`;
+- contenedor saqueado mostrando texto `looted_container` y sin entregar loot dos veces;
+- F7, F8 e I funcionando;
+- menu contextual mostrando solo acciones disponibles;
+- sin tocar JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog`.
+
+Milestone 21.0.1 fue validado con:
+
+- seleccion condicional usando `RuntimeTags` reales;
+- reglas de puerta mutuamente excluyentes;
+- puerta `forced_open` con prioridad mayor que `locked_door`;
+- la puerta forzada ya no muestra el texto de puerta trabada;
+- no se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics, `GameplayFeedbackLog`, `ItemStorage`, `ItemStorageEntry` ni `InventoryComponent`.
 
 Milestone 14 fue validado con:
 

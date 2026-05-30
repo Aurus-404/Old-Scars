@@ -15,6 +15,8 @@ namespace OldScars.Core.Interactions
     /// </summary>
     public sealed class ContainerLootComponent : MonoBehaviour
     {
+        private const string OpenedContainerTag = "opened_container";
+        private const string SealedContainerTag = "sealed_container";
         private const string LootableContainerTag = "lootable_container";
         private const string LootedContainerTag = "looted_container";
 
@@ -25,6 +27,7 @@ namespace OldScars.Core.Interactions
 
         public string LootTableId => lootTableId;
         public bool HasInitializedStorage => storageInitialized;
+        public bool HasStoredItems => !storage.IsEmpty;
         public bool IsStorageEmpty => storage.IsEmpty;
         public int StoredEntryCount => storage.EntryCount;
         public int StoredItemQuantity => storage.TotalQuantity;
@@ -44,10 +47,10 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Buscar contenedor", "Error: contenedor sin tags de mundo.");
             }
 
-            if (!targetTags.HasTag(LootableContainerTag))
+            if (!CanSearch(executionContext, out string accessBlockReason))
             {
-                Debug.Log("[ContainerLootComponent] Container is not lootable; search ignored.");
-                return DebugActionExecutionResult.Info("Buscar contenedor", "Este contenedor ya no se puede saquear.");
+                Debug.Log($"[ContainerLootComponent] Search blocked: {accessBlockReason}");
+                return DebugActionExecutionResult.Info("Buscar contenedor", accessBlockReason);
             }
 
             ActorInteractionContext actorContext = executionContext.ActorContext;
@@ -85,6 +88,46 @@ namespace OldScars.Core.Interactions
 
             RecordLootReceived(addedCounts, database, executionContext, action);
             return DebugActionExecutionResult.Info("Buscar contenedor", $"Encontraste: {FormatAddedLoot(addedCounts, database)}.");
+        }
+
+        public bool CanAccessStorage(WorldObjectTags targetTags)
+        {
+            return string.IsNullOrWhiteSpace(GetAccessBlockReason(targetTags));
+        }
+
+        public bool CanSearch(DebugActionExecutionContext executionContext, out string reason)
+        {
+            reason = GetAccessBlockReason(executionContext.Target);
+            return string.IsNullOrWhiteSpace(reason);
+        }
+
+        public string GetAccessBlockReason(WorldObjectTags targetTags)
+        {
+            if (targetTags == null)
+                return "Error: contenedor sin tags de mundo.";
+
+            if (targetTags.HasTag(LootedContainerTag))
+                return "Este contenedor ya fue saqueado.";
+
+            if (targetTags.HasTag(SealedContainerTag))
+                return "Este contenedor esta sellado.";
+
+            if (!targetTags.HasTag(OpenedContainerTag))
+                return "Este contenedor no esta abierto.";
+
+            if (!targetTags.HasTag(LootableContainerTag))
+                return "Este contenedor ya no se puede saquear.";
+
+            return null;
+        }
+
+        public string GetDebugStorageSummary()
+        {
+            return
+                $"Storage initialized: {FormatYesNo(storageInitialized)}" +
+                $"\nEntry count: {storage.EntryCount}" +
+                $"\nTotal quantity: {storage.TotalQuantity}" +
+                $"\nContents: {FormatStorageContentsByDefinitionId()}";
         }
 
         private bool EnsureStorageInitialized()
@@ -260,6 +303,23 @@ namespace OldScars.Core.Interactions
             return parts.Count > 0 ? string.Join(", ", parts) : "nada";
         }
 
+        private string FormatStorageContentsByDefinitionId()
+        {
+            var parts = new List<string>();
+
+            IReadOnlyList<ItemStorageEntry> entries = storage.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.DefinitionId))
+                    continue;
+
+                parts.Add($"{entry.DefinitionId} x{entry.Quantity}");
+            }
+
+            return parts.Count > 0 ? string.Join(", ", parts) : "(empty)";
+        }
+
         private static void MarkContainerLooted(WorldObjectTags targetTags, DebugActionExecutionContext executionContext, ActionDefinition action)
         {
             bool removedLootable = targetTags.RemoveTag(LootableContainerTag);
@@ -371,6 +431,11 @@ namespace OldScars.Core.Interactions
         private static string FormatTags(string[] tags)
         {
             return tags != null && tags.Length > 0 ? string.Join(", ", tags) : "(none)";
+        }
+
+        private static string FormatYesNo(bool value)
+        {
+            return value ? "yes" : "no";
         }
 
         private static string SafeText(string value)

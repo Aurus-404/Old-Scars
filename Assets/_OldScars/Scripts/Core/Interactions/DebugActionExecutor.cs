@@ -280,10 +280,20 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info(targetName, message);
             }
 
-            string title = debugInfo.GetDisplayNameOrFallback(targetName);
-            string body = debugInfo.GetInspectTextOrFallback();
+            string title = debugInfo.GetDisplayNameOrFallback(targetName, target);
+            string body = debugInfo.GetInspectTextOrFallback(target);
+            body = AppendContainerDebugStorageSummary(body, target);
             Debug.Log($"[DebugActionExecutor] {effectContext}: show_target_info for '{title}'.");
             return DebugActionExecutionResult.Info(title, body);
+        }
+
+        private static string AppendContainerDebugStorageSummary(string body, WorldObjectTags target)
+        {
+            ContainerLootComponent containerLoot = target != null ? target.GetComponent<ContainerLootComponent>() : null;
+            if (containerLoot == null)
+                return body;
+
+            return SafeText(body) + "\n\n[DEBUG STORAGE]\n" + containerLoot.GetDebugStorageSummary();
         }
 
         private static string GetActionDisplayName(ActionDefinition action)

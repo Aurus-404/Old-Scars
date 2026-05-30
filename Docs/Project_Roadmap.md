@@ -26,8 +26,9 @@ Old Scars tiene una base debug/prototipo validada para:
 - diagnostico runtime-only de disponibilidad de acciones contextuales validado en `SampleScene`.
 - lectura visual debug estable de estados runtime por color validada en `SampleScene`.
 - base comun runtime-only de storage de items con cantidades simples validada en `SampleScene`.
+- inspeccion dependiente de `RuntimeTags` y reglas defensivas de acceso a storage de contenedores validadas en `SampleScene`.
 
-Milestone 20 esta validado en Unity.
+Milestone 21 y Milestone 21.0.1 estan validados en Unity.
 
 ## Estados Permitidos
 
@@ -61,7 +62,9 @@ Milestone 20 esta validado en Unity.
 | Milestone 19.1: Debug State Color Readability | Mejorar la lectura visual de estados del POI usando colores debug por regla visual en WorldObjectStateView. | validated | Validado: WorldObjectStateView aplica color debug con MaterialPropertyBlock sin modificar gameplay ni materiales compartidos. |
 | Milestone 19.2: Stable Color-Only State Visuals | Estabilizar la lectura visual del POI para que puerta y contenedor comuniquen estado solo por color debug. | validated | Validado: puerta y contenedor cambian color sin rotar, moverse ni cambiar geometria; la palanca sigue ocultandose con picked_up. |
 | Milestone 20: Item Storage / Container Foundation v0 | Crear una base comun runtime-only para almacenamiento de items con cantidades simples, usada por inventario y contenedores del mundo. | validated | Validado: ItemStorage e ItemStorageEntry funcionan, InventoryComponent usa storage internamente y ContainerLootComponent transfiere contenido existente sin re-rollear loot. |
-| Milestone 21 | Pendiente de definir. | planned | Sin alcance definido todavia. |
+| Milestone 21: Stateful Inspection & Container Access v0 | Agregar inspeccion dependiente de RuntimeTags y defensas de acceso al storage de contenedores. | validated | Validado: WorldObjectDebugInfo elige textos condicionales, DebugActionExecutor los usa en examine_object y ContainerLootComponent bloquea accesos invalidos. |
+| Milestone 21.0.1: Hotfix - State-Aware Inspection Selection | Corregir seleccion de texto condicional para usar RuntimeTags reales y reglas mutuamente excluyentes. | validated | Validado: la puerta forzada ya no muestra texto de puerta trabada. |
+| Milestone 22 | Pendiente de definir. | planned | Sin alcance definido todavia. |
 
 ## Milestone Actual
 
@@ -69,11 +72,11 @@ No hay milestone implementado pendiente de validacion.
 
 El ultimo milestone cerrado como `validated` es:
 
-- Milestone 20: Item Storage / Container Foundation v0 (`validated`).
+- Milestone 21.0.1: Hotfix - State-Aware Inspection Selection (`validated`).
 
 ## Proximo Recomendado
 
-Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
+Milestone 22 queda como proximo milestone pendiente, sin definir todavia.
 
 Milestone 11 dejo validado:
 
@@ -266,6 +269,40 @@ Milestone 20 dejo validado:
 - no se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base;
 - no se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
 
+Milestone 21 dejo validado:
+
+- inspeccion dependiente de `RuntimeTags` mediante `WorldObjectDebugInfo`;
+- `WorldObjectDebugInfo` puede elegir textos condicionales por `requiredTags`, `forbiddenTags` y `priority`;
+- los campos `displayName` e `inspectText` existentes se mantienen como fallback;
+- `DebugActionExecutor` usa textos condicionales al ejecutar `examine_object`;
+- `ContainerLootComponent` expone resumen debug de storage para inspeccion;
+- el bloque `[DEBUG STORAGE]` muestra estado runtime del storage sin ser UI final;
+- `ContainerLootComponent` separa tener contenido interno de poder acceder al storage;
+- `ContainerLootComponent` valida acceso antes de transferir loot;
+- `sealed_container` puede tener storage inicializado pero no permite `search_container`;
+- `search_container` transfiere contenido existente y no entrega loot dos veces;
+- data load sigue OK con 0 errors y 0 warnings;
+- F7, F8 e I siguen funcionando;
+- el menu contextual sigue mostrando solo acciones disponibles;
+- no se toco JSON ni schema;
+- no se toco `InteractionSystem`;
+- no se toco `ActionAvailabilityEvaluator`;
+- no se tocaron diagnostics;
+- no se toco `GameplayFeedbackLog`;
+- no se creo UI final de contenedor, peso, slots, grid, split/merge, save system ni contenedores anidados.
+
+Milestone 21.0.1 dejo validado:
+
+- la seleccion condicional de inspeccion usa `RuntimeTags` reales;
+- las reglas de puerta son mutuamente excluyentes;
+- puerta `locked_door` requiere `locked_door` y bloquea `forced_open`;
+- puerta `forced_open` requiere `forced_open`, bloquea `locked_door` y tiene mayor prioridad;
+- tras `force_door`, examinar la puerta muestra texto `forced_open` y no el texto de puerta trabada;
+- el contenedor mantiene `looted_container` con prioridad mas alta;
+- `opened_container` + `lootable_container` mantiene `forbiddenTags: looted_container`;
+- `sealed_container` requiere `sealed_container`;
+- no se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics, `GameplayFeedbackLog`, `ItemStorage`, `ItemStorageEntry` ni `InventoryComponent`.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -317,6 +354,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `show_target_info` es un effect cerrado que lee `WorldObjectDebugInfo`.
 - `pick_up_item` es un effect cerrado que ejecuta `WorldItemPickup` y agrega una `ItemInstance` al `InventoryComponent` del actor.
 - `search_container` es un effect cerrado que ejecuta `ContainerLootComponent` y transfiere contenido existente del storage del contenedor al `InventoryComponent` del actor.
+- `ContainerLootComponent` valida acceso al storage antes de transferir loot y expone resumen debug de storage para inspeccion.
 - `LootTableDefinition` v0 es deterministica: solo `item_id` y `count`.
 - `GameplayFeedbackLog` es runtime-only, append/read y no persistente.
 - `GameplayFeedbackLog` no es EventBus: no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
@@ -331,6 +369,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `WorldObjectStateView` lee runtime tags y aplica reglas visuales debug sin modificar tags ni gameplay.
 - `WorldObjectStateView` puede aplicar color debug por regla visual usando `MaterialPropertyBlock`.
 - En `SampleScene`, puerta y contenedor comunican estados por color debug estable, sin rotacion ni cambio de geometria.
+- `WorldObjectDebugInfo` puede seleccionar texto de inspeccion por `RuntimeTags`, `requiredTags`, `forbiddenTags` y prioridad.
 - No hay scripting libre dentro de JSON.
 - No hay inventario final todavia.
 - No hay loot final ni avanzado todavia.
@@ -361,10 +400,10 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `DebugInventory`: inventario debug temporal para crear item instances y exponer item equipado.
 - `InventoryDebugPanel`: UI debug OnGUI de inventario v0.
 - `WorldItemPickup`: componente debug para recoger un item de mundo configurado.
-- `ContainerLootComponent`: componente debug para inicializar storage desde loot table y transferir contenido de contenedores abiertos.
+- `ContainerLootComponent`: componente debug para inicializar storage desde loot table, reportar storage debug y transferir contenido solo cuando el contenedor es accesible.
 - `WorldObjectTags`: initial tags y runtime tags.
 - `WorldObjectStateView`: componente visual debug que lee runtime tags y aplica SetActive, rotacion local o color debug por regla visual.
-- `WorldObjectDebugInfo`: texto debug para examinar objetos.
+- `WorldObjectDebugInfo`: texto debug para examinar objetos, con fallback y textos condicionales por runtime tags.
 - `ActionAvailabilityResult`: resultado explicable de disponibilidad de acciones.
 - `DebugActionProgressController`: controla acciones debug en progreso.
 - `DebugActionExecutor`: ejecuta effects debug cerrados.

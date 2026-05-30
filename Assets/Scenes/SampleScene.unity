@@ -1033,6 +1033,23 @@ MonoBehaviour:
   displayName: Puerta oxidada trabada
   inspectText: La puerta esta trabada por oxido. Una herramienta de palanca podria
     forzarla.
+  conditionalInspectionTexts:
+  - priority: 10
+    requiredTags:
+    - locked_door
+    forbiddenTags:
+    - forced_open
+    displayName: Puerta oxidada trabada
+    inspectText: La puerta sigue trabada por oxido. La union del marco no cede
+      sin una herramienta de palanca.
+  - priority: 20
+    requiredTags:
+    - forced_open
+    forbiddenTags:
+    - locked_door
+    displayName: Puerta forzada
+    inspectText: La puerta quedo forzada y abierta. El marco esta torcido, pero
+      ya no bloquea el paso.
 --- !u!114 &2300001001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1763,6 +1780,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Contenedor sellado de mantenimiento
   inspectText: La tapa esta sellada y torcida. Parece forzable con una palanca.
+  conditionalInspectionTexts:
+  - priority: 10
+    requiredTags:
+    - sealed_container
+    forbiddenTags: []
+    displayName: Contenedor sellado de mantenimiento
+    inspectText: La tapa esta sellada y torcida. El contenedor existe y puede
+      tener contenido, pero todavia no se puede acceder.
+  - priority: 20
+    requiredTags:
+    - opened_container
+    - lootable_container
+    forbiddenTags:
+    - looted_container
+    displayName: Contenedor abierto de mantenimiento
+    inspectText: La tapa esta abierta. Dentro podria quedar material util para
+      revisar.
+  - priority: 30
+    requiredTags:
+    - looted_container
+    forbiddenTags: []
+    displayName: Contenedor saqueado
+    inspectText: El contenedor ya fue revisado. No queda nada util a simple vista.
 --- !u!114 &2300000001
 MonoBehaviour:
   m_ObjectHideFlags: 0

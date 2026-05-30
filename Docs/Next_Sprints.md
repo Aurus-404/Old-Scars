@@ -8,7 +8,7 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 20 esta `validated`.
+- Milestone 21 y Milestone 21.0.1 estan `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
 - El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0, container loot v0, storage runtime-only de items y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
@@ -16,6 +16,11 @@ Estado actual:
 - `InventoryComponent` usa `ItemStorage` internamente sin romper pickup, equip ni `InventoryDebugPanel`.
 - `ContainerLootComponent` inicializa storage interno una sola vez desde su loot table y `search_container` transfiere contenido existente al inventario.
 - `InventoryDebugPanel` muestra cantidades simples cuando `Quantity > 1`.
+- `WorldObjectDebugInfo` selecciona textos de inspeccion por `RuntimeTags`, `requiredTags`, `forbiddenTags` y prioridad.
+- `DebugActionExecutor` usa esos textos al ejecutar `examine_object`.
+- `ContainerLootComponent` expone `[DEBUG STORAGE]` para inspeccion debug y valida acceso antes de transferir loot.
+- La puerta forzada muestra texto `forced_open` y ya no muestra texto de puerta trabada.
+- El contenedor sellado muestra texto `sealed_container` + `[DEBUG STORAGE]`; luego muestra `looted_container` tras saquear.
 - El POI ahora tiene una base runtime-only de feedback estructurado mediante `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
 - El feedback registra `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged`.
 - El POI ahora tiene diagnostico runtime-only de disponibilidad mediante `ActionAvailabilityDiagnosticReport`, `ActionAvailabilityDiagnosticEntry` y `DebugActionAvailabilityPanel`.
@@ -35,7 +40,7 @@ Estado actual:
 
 Proxima accion recomendada:
 
-- Milestone 21 queda como proximo milestone pendiente, sin definir todavia.
+- Milestone 22 queda como proximo milestone pendiente, sin definir todavia.
 
 Base validada:
 
@@ -222,6 +227,40 @@ Milestone 20 validado:
 - No se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base.
 - No se agrego UI final, peso, slots, grid, save system ni contenedores anidados.
 
+Milestone 21 validado:
+
+- Milestone 21: Stateful Inspection & Container Access v0 esta `validated`.
+- `WorldObjectDebugInfo` elige textos condicionales por `RuntimeTags`, `requiredTags`, `forbiddenTags` y prioridad.
+- `WorldObjectDebugInfo` mantiene `displayName` e `inspectText` como fallback.
+- `DebugActionExecutor` usa esos textos al ejecutar `examine_object`.
+- `ContainerLootComponent` expone resumen debug de storage en `[DEBUG STORAGE]`.
+- `ContainerLootComponent` valida acceso antes de transferir loot.
+- Examinar puerta cerrada muestra texto `locked_door`.
+- Tras `force_door`, examinar puerta muestra texto `forced_open`.
+- Examinar contenedor sellado muestra `sealed_container` + `[DEBUG STORAGE]`.
+- Tras `pry_open_container`, `search_container` aparece correctamente.
+- `search_container` transfiere contenido existente.
+- Tras `search_container`, examinar contenedor muestra `looted_container`.
+- El contenedor no entrega loot dos veces.
+- `InventoryDebugPanel` con `I` sigue funcionando.
+- F7, F8 e I siguen funcionando.
+- El menu contextual sigue mostrando solo acciones disponibles.
+- No se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog`.
+- No se creo UI final de contenedor, peso, slots, grid, split/merge, save system ni contenedores anidados.
+
+Milestone 21.0.1 validado:
+
+- Milestone 21.0.1: Hotfix - State-Aware Inspection Selection esta `validated`.
+- La seleccion condicional usa `RuntimeTags` reales.
+- Las reglas de puerta son mutuamente excluyentes.
+- Puerta `locked_door` requiere `locked_door` y bloquea `forced_open`.
+- Puerta `forced_open` requiere `forced_open`, bloquea `locked_door` y tiene mayor prioridad.
+- La puerta forzada ya no muestra el texto de puerta trabada.
+- El contenedor mantiene `looted_container` con prioridad mas alta.
+- `opened_container` + `lootable_container` mantiene `forbiddenTags: looted_container`.
+- `sealed_container` requiere `sealed_container`.
+- No se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics, `GameplayFeedbackLog`, `ItemStorage`, `ItemStorageEntry` ni `InventoryComponent`.
+
 Pruebas validadas:
 
 - Con `DebugInventory.equippedItemIndex = 0`, puerta muestra `force_door` + `examine_object`, contenedor muestra `pry_open_container` + `examine_object`, maquina muestra `examine_object`.
@@ -336,7 +375,7 @@ Pruebas validadas de Milestone 18:
 - Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
 
-### Milestone 21
+### Milestone 22
 
 - Pendiente.
 - Sin definir todavia.
