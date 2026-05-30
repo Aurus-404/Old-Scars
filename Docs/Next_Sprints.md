@@ -8,7 +8,7 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 18 esta `validated`.
+- Milestone 19.2 esta `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
 - El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0, container loot v0 y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
@@ -18,6 +18,9 @@ Estado actual:
 - El diagnostico muestra acciones disponibles/bloqueadas, razones de bloqueo y snapshots de contexto sin cambiar `GetAvailableActions()`.
 - `DebugFeedbackLogPanel` se alterna con F7, `DebugActionAvailabilityPanel` con F8 e `InventoryDebugPanel` con `I`.
 - Los paneles debug arrancan ocultos por defecto.
+- `WorldObjectStateView` soporta color debug por regla visual usando `MaterialPropertyBlock`.
+- Puerta y contenedor comunican estados runtime por color debug estable, sin rotaciones ni cambios de geometria.
+- La palanca sigue ocultandose con `SetActive` cuando tiene `picked_up`.
 - Data load sigue OK con 0 errors y 0 warnings.
 - `InteractionSystem` sigue desacoplado.
 - No se toco JSON.
@@ -27,7 +30,7 @@ Estado actual:
 
 Proxima accion recomendada:
 
-- Preparar el siguiente sprint sobre la base validada de Milestone 18, sin adelantar combate, IA, save system, UI final, inventario final, loot avanzado, crafting, journal, quest log, EventBus ni mapa grande.
+- Milestone 20 queda como proximo milestone pendiente, sin definir todavia.
 
 Base validada:
 
@@ -165,6 +168,32 @@ Milestone 18 validado:
 - El diagnostico es runtime-only, debug/fundacional, sin EventBus, sin listeners, sin subscriptions, sin callbacks, sin payload generico, sin UI final y sin persistencia.
 - No se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
 
+Milestone 19.1 validado:
+
+- Milestone 19.1: Debug State Color Readability esta `validated`.
+- `WorldObjectStateView` ahora soporta color debug por regla visual usando `MaterialPropertyBlock`.
+- Los colores reflejan runtime tags sin modificar gameplay ni materiales compartidos.
+- Puerta cambia de rojo oscuro a verde tras `force_door`.
+- Contenedor cambia de naranja a cian tras `pry_open_container` y a gris oscuro tras `search_container`.
+- Palanca se oculta tras `pick_up_item`.
+- F7, F8 e I siguen funcionando.
+- El menu contextual sigue mostrando solo acciones disponibles.
+- No se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, `GameplayFeedbackLog` ni diagnostics.
+
+Milestone 19.2 validado:
+
+- Milestone 19.2: Stable Color-Only State Visuals esta `validated`.
+- `SampleScene` fue ajustada para que puerta y contenedor mantengan geometria estable.
+- Se neutralizaron rotaciones, cambios de variante visual y deformaciones raras.
+- Puerta y contenedor ahora comunican estados solo por color debug.
+- La puerta cambia de rojo oscuro a verde tras `force_door` sin rotar ni moverse.
+- El contenedor cambia de naranja a cian y luego gris oscuro sin cambiar geometria.
+- La palanca sigue ocultandose con `SetActive` cuando tiene `picked_up`.
+- Data load sigue OK con 0 errors y 0 warnings.
+- F7, F8 e I siguen funcionando.
+- El menu contextual sigue mostrando solo acciones disponibles.
+- No se toco codigo, JSON ni gameplay.
+
 Pruebas validadas:
 
 - Con `DebugInventory.equippedItemIndex = 0`, puerta muestra `force_door` + `examine_object`, contenedor muestra `pry_open_container` + `examine_object`, maquina muestra `examine_object`.
@@ -274,8 +303,15 @@ Pruebas validadas de Milestone 18:
 
 - Milestone 17 ya valido la primera base runtime-only de feedback estructurado para legibilidad del POI.
 - Milestone 18 ya valido diagnostico runtime-only de disponibilidad de acciones y lectura de requisitos/bloqueos.
+- Milestone 19.1 ya valido color debug por regla visual en `WorldObjectStateView`.
+- Milestone 19.2 ya valido estados visuales estables color-only para puerta y contenedor en `SampleScene`.
 - Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
+
+### Milestone 20
+
+- Pendiente.
+- Sin definir todavia.
 
 ## Pospuestos / No Tocar Todavia
 

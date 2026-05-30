@@ -24,8 +24,9 @@ Old Scars tiene una base debug/prototipo validada para:
 - primer POI jugable compacto validado en `SampleScene`.
 - base runtime-only de feedback de gameplay estructurado validada en `SampleScene`.
 - diagnostico runtime-only de disponibilidad de acciones contextuales validado en `SampleScene`.
+- lectura visual debug estable de estados runtime por color validada en `SampleScene`.
 
-Milestone 18 esta validado en Unity.
+Milestone 19.2 esta validado en Unity.
 
 ## Estados Permitidos
 
@@ -56,6 +57,9 @@ Milestone 18 esta validado en Unity.
 | Milestone 16: Primer POI jugable completo | Ordenar `SampleScene` como una bahia de mantenimiento compacta que combine pickup, inventario, herramienta equipada, puerta, contenedor, loot y maquina examinable. | validated | Validado: SampleScene funciona como primer POI jugable compacto con loop completo y estados runtime correctos. |
 | Milestone 17: Gameplay Feedback Log Foundation / POI State Readability v0 | Agregar una base runtime-only de feedback estructurado para acciones relevantes de gameplay y lectura debug del POI. | validated | Validado: GameplayFeedbackLog registra entradas estructuradas y DebugFeedbackLogPanel las lee sin acoplar gameplay a UI. |
 | Milestone 18: Action Availability Diagnostics / Requirement Readability v0 | Agregar diagnostico opcional de disponibilidad de acciones contextuales sin duplicar la logica de evaluacion. | validated | Validado: muestra acciones disponibles/bloqueadas, razones de bloqueo y snapshots de contexto sin cambiar GetAvailableActions ni el menu contextual. |
+| Milestone 19.1: Debug State Color Readability | Mejorar la lectura visual de estados del POI usando colores debug por regla visual en WorldObjectStateView. | validated | Validado: WorldObjectStateView aplica color debug con MaterialPropertyBlock sin modificar gameplay ni materiales compartidos. |
+| Milestone 19.2: Stable Color-Only State Visuals | Estabilizar la lectura visual del POI para que puerta y contenedor comuniquen estado solo por color debug. | validated | Validado: puerta y contenedor cambian color sin rotar, moverse ni cambiar geometria; la palanca sigue ocultandose con picked_up. |
+| Milestone 20 | Pendiente de definir. | planned | Sin alcance definido todavia. |
 
 ## Milestone Actual
 
@@ -63,11 +67,11 @@ No hay milestone implementado pendiente de validacion.
 
 El ultimo milestone cerrado como `validated` es:
 
-- Milestone 18: Action Availability Diagnostics / Requirement Readability v0 (`validated`).
+- Milestone 19.2: Stable Color-Only State Visuals (`validated`).
 
 ## Proximo Recomendado
 
-Preparar el siguiente sprint sobre la base validada de Milestone 18.
+Milestone 20 queda como proximo milestone pendiente, sin definir todavia.
 
 Milestone 11 dejo validado:
 
@@ -219,6 +223,30 @@ Milestone 18 dejo validado:
 - los paneles debug arrancan ocultos por defecto;
 - no se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
 
+Milestone 19.1 dejo validado:
+
+- `WorldObjectStateView` soporta color debug por regla visual usando `MaterialPropertyBlock`;
+- los colores reflejan runtime tags sin modificar gameplay ni materiales compartidos;
+- la puerta cambia de rojo oscuro a verde tras `force_door`;
+- el contenedor cambia de naranja a cian y luego gris oscuro durante el loop `pry_open_container` -> `search_container`;
+- la palanca se oculta tras `pick_up_item`;
+- F7, F8 e I siguen funcionando;
+- el menu contextual sigue mostrando solo acciones disponibles;
+- no se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, `GameplayFeedbackLog` ni diagnostics.
+
+Milestone 19.2 dejo validado:
+
+- `SampleScene` fue ajustada para que puerta y contenedor mantengan geometria estable;
+- se neutralizaron rotaciones, cambios de variante visual y deformaciones raras;
+- puerta y contenedor comunican estados solo por color debug;
+- la puerta cambia de rojo oscuro a verde tras `force_door` sin rotar ni moverse;
+- el contenedor cambia de naranja a cian y luego gris oscuro sin cambiar geometria;
+- la palanca sigue ocultandose con `SetActive` cuando tiene `picked_up`;
+- data load sigue OK con 0 errors y 0 warnings;
+- F7, F8 e I siguen funcionando;
+- el menu contextual sigue mostrando solo acciones disponibles;
+- no se toco codigo, JSON ni gameplay.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -278,6 +306,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `DebugActionAvailabilityPanel` es UI debug y solo muestra el reporte diagnostico.
 - `DebugFeedbackLogPanel` arranca oculto por defecto y se alterna con F7.
 - `DebugActionAvailabilityPanel` arranca oculto por defecto y se alterna con F8.
+- `WorldObjectStateView` lee runtime tags y aplica reglas visuales debug sin modificar tags ni gameplay.
+- `WorldObjectStateView` puede aplicar color debug por regla visual usando `MaterialPropertyBlock`.
+- En `SampleScene`, puerta y contenedor comunican estados por color debug estable, sin rotacion ni cambio de geometria.
 - No hay scripting libre dentro de JSON.
 - No hay inventario final todavia.
 - No hay loot final ni avanzado todavia.
@@ -308,6 +339,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `WorldItemPickup`: componente debug para recoger un item de mundo configurado.
 - `ContainerLootComponent`: componente debug para saquear contenedores abiertos.
 - `WorldObjectTags`: initial tags y runtime tags.
+- `WorldObjectStateView`: componente visual debug que lee runtime tags y aplica SetActive, rotacion local o color debug por regla visual.
 - `WorldObjectDebugInfo`: texto debug para examinar objetos.
 - `ActionAvailabilityResult`: resultado explicable de disponibilidad de acciones.
 - `DebugActionProgressController`: controla acciones debug en progreso.

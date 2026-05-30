@@ -455,6 +455,53 @@
 - No se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
 - Estado: validated.
 
+### Debug State Color Readability
+
+- Milestone 19.1 implementado y validado como mejora de lectura visual debug de estados runtime del POI.
+- `WorldObjectStateView` ahora soporta color debug por regla visual.
+- El color debug se aplica usando `MaterialPropertyBlock`.
+- Los colores reflejan runtime tags sin modificar gameplay.
+- Los colores no modifican materiales compartidos.
+- Puerta `locked_door`: rojo oscuro.
+- Puerta `forced_open`: verde.
+- Contenedor `sealed_container`: naranja.
+- Contenedor `opened_container` + `lootable_container`: cian.
+- Contenedor `looted_container`: gris oscuro.
+- Palanca `pickupable`: color claro/visible.
+- Palanca `picked_up`: sigue ocultandose.
+- Validado en Unity: data load sigue OK con 0 errors y 0 warnings.
+- Validado en Unity: puerta cambia de rojo oscuro a verde tras `force_door`.
+- Validado en Unity: contenedor cambia de naranja a cian tras `pry_open_container` y a gris oscuro tras `search_container`.
+- Validado en Unity: palanca se oculta tras `pick_up_item`.
+- Validado en Unity: F7, F8 e I siguen funcionando.
+- Validado en Unity: el menu contextual sigue mostrando solo acciones disponibles.
+- No se toco JSON.
+- No se toco `InteractionSystem`.
+- No se toco `ActionAvailabilityEvaluator`.
+- No se toco `GameplayFeedbackLog`.
+- No se tocaron diagnostics.
+- No se creo UI final, arte final, VFX, sonido ni animaciones.
+- Estado: validated.
+
+### Stable Color-Only State Visuals
+
+- Milestone 19.2 implementado y validado como estabilizacion visual color-only para estados del POI.
+- `SampleScene` fue ajustada para que puerta y contenedor mantengan geometria estable entre estados.
+- Se neutralizaron rotaciones de puerta.
+- Se neutralizaron cambios de variante visual del contenedor.
+- Se neutralizaron deformaciones raras o cambios de forma/posicion/escala entre estados del contenedor.
+- Puerta y contenedor ahora comunican estados solo por color debug.
+- La puerta inicia roja y tras `force_door` cambia a verde sin rotar ni moverse.
+- El contenedor inicia naranja, tras `pry_open_container` cambia a cian y tras `search_container` cambia a gris oscuro sin cambiar geometria.
+- La palanca sigue ocultandose con `SetActive` cuando tiene `picked_up`.
+- Validado en Unity: data load sigue OK con 0 errors y 0 warnings.
+- Validado en Unity: F7, F8 e I siguen funcionando.
+- Validado en Unity: el menu contextual sigue mostrando solo acciones disponibles.
+- No se toco codigo.
+- No se toco JSON.
+- No se toco gameplay.
+- Estado: validated.
+
 ### Deuda Tecnica Menor Detectada
 
 - GameDataManager mostraba warning de DontDestroyOnLoad porque no estaba en un root GameObject.
@@ -543,6 +590,28 @@ Milestone 18 validado:
 - `InventoryDebugPanel` sigue funcionando con `I`;
 - `GameplayFeedbackLog` sigue separado y funcionando;
 - no se toco JSON, loaders, database, validator, `GameplayFeedbackLog` base, combate, IA, save system, journal, quest log ni UI final.
+
+Milestone 19.1 validado:
+
+- `WorldObjectStateView` soporta color debug por regla visual usando `MaterialPropertyBlock`;
+- los colores reflejan runtime tags sin modificar gameplay ni materiales compartidos;
+- puerta cambia de rojo oscuro a verde tras `force_door`;
+- contenedor cambia de naranja a cian y luego gris oscuro;
+- palanca se oculta tras `pick_up_item`;
+- F7, F8 e I siguen funcionando;
+- el menu contextual sigue mostrando solo acciones disponibles;
+- no se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, `GameplayFeedbackLog` ni diagnostics.
+
+Milestone 19.2 validado:
+
+- `SampleScene` mantiene geometria estable para puerta y contenedor;
+- puerta y contenedor comunican estados solo por color debug;
+- se neutralizaron rotaciones, variantes visuales y deformaciones raras;
+- la palanca sigue ocultandose con `SetActive` cuando tiene `picked_up`;
+- data load sigue OK con 0 errors y 0 warnings;
+- F7, F8 e I siguen funcionando;
+- el menu contextual sigue mostrando solo acciones disponibles;
+- no se toco codigo, JSON ni gameplay.
 
 Con `InventoryComponent` asignado:
 
