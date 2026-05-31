@@ -1,5 +1,5 @@
 # Old Scars — Development Rules for ChatGPT + Codex
-Version: 0.2
+Version: 0.3
 Purpose: shared compact rule file for ChatGPT and Codex. This file stores specific technical/work rules that should not live in ChatGPT memory. Keep it concise, updated, and versioned in the repo.
 
 Recommended repo path:
@@ -125,7 +125,19 @@ When a new specific rule is defined or changed:
 - It should not spam warnings every frame.
 - Rules should be complete for the object: activate needed visuals and deactivate conflicting variants.
 
-## 9. Documentation and Git rules
+## 9. Actor inventory / NPC loot profile rules
+
+- NPC/actor starting inventory should be defined through data profiles/templates, not hardcoded per scene object when avoidable.
+- JSON may define actor inventory candidates by storage/slot, such as right_hand candidates and base_storage contents.
+- Candidate lists should reference existing item definition IDs and use simple weights/probabilities/quantities.
+- Runtime spawning picks from those candidates and creates ItemInstances; the JSON profile is not the live inventory after spawn.
+- Save data must store the picked runtime inventory/instances, not reroll the profile.
+- Equipped item candidates must respect equippable data now, and future slot rules when right_hand/left_hand/body slots exist.
+- Lootable dead actors should expose their actor inventory/storages; they should not be converted into generic static containers unless explicitly approved for a limited debug shortcut.
+- Reuse ItemStorage for actor storage, corpse loot, containers, and future backpacks/pockets.
+- Keep the first NPC loot profile minimal and validated before adding many NPC archetypes.
+
+## 10. Documentation and Git rules
 
 - After a milestone is validated, update:
   - Docs/Project_Roadmap.md
@@ -137,7 +149,7 @@ When a new specific rule is defined or changed:
 - Push to GitHub before starting the next milestone.
 - Do not mark a milestone validated until it has been tested in Unity.
 
-## 10. Codex prompt rules
+## 11. Codex prompt rules
 
 - Prompts to Codex should be compact and not waste context/tokens.
 - Include only the critical objective, restrictions, files/systems if necessary, and validation checklist.
@@ -145,7 +157,7 @@ When a new specific rule is defined or changed:
 - Prefer: objective + hard restrictions + expected output + validation.
 - If Codex might touch forbidden systems, explicitly say to stop and explain first.
 
-## 11. Things not to introduce prematurely
+## 12. Things not to introduce prematurely
 
 Do not introduce these unless explicitly approved for a milestone:
 - Combat system.
@@ -161,7 +173,7 @@ Do not introduce these unless explicitly approved for a milestone:
 - Large refactors of validated systems.
 - Object-specific visual scripts when a generic component works.
 
-## 12. Update protocol for this file
+## 13. Update protocol for this file
 
 When updating this file:
 - Keep it compact.
