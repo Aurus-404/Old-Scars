@@ -1,6 +1,7 @@
 {
   "tags": [
     { "id": "item", "description": "Objeto que puede existir como item en el mundo o inventario." },
+    { "id": "consumable", "description": "Item que puede consumirse para aplicar efectos cerrados de gameplay." },
     { "id": "player", "description": "Actor debug controlado por el jugador." },
     { "id": "human", "description": "Actor humano." },
     { "id": "tool", "description": "Objeto usado como herramienta para interacciones contextuales." },

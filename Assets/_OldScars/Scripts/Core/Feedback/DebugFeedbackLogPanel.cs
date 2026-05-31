@@ -118,6 +118,12 @@ namespace OldScars.Core.Feedback
             if (entry.quantity > 0)
                 parts.Add($"qty={entry.quantity}");
 
+            if (!string.IsNullOrWhiteSpace(entry.needId))
+            {
+                string needName = !string.IsNullOrWhiteSpace(entry.needDisplayName) ? entry.needDisplayName : entry.needId;
+                parts.Add($"need={needName} ({entry.needId}) {entry.needValueBefore:0.#}->{entry.needValueAfter:0.#}/{entry.needMaxValue:0.#} (+{entry.needAmount:0.#})");
+            }
+
             if (entry.addedTags != null && entry.addedTags.Length > 0)
                 parts.Add($"added=[{string.Join(", ", entry.addedTags)}]");
 

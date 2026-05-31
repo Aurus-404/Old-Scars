@@ -206,7 +206,16 @@ namespace OldScars.Core.Interactions
             }
 
             Debug.Log($"[DebugActionExecutor] {effectContext}: search_container for loot table '{SafeText(containerLoot.LootTableId)}'.");
-            return containerLoot.Search(executionContext, action);
+            DebugActionExecutionResult result = containerLoot.Search(executionContext, action, out bool canOpenStoragePanel, out InventoryComponent inventory);
+            if (!canOpenStoragePanel)
+                return result;
+
+            ItemStorageDebugPanel storagePanel = ItemStorageDebugPanel.GetOrCreate();
+            if (storagePanel == null)
+                return DebugActionExecutionResult.Info("Buscar contenedor", "No se pudo crear Storage Debug Panel.");
+
+            storagePanel.Show(containerLoot, inventory, executionContext, action);
+            return DebugActionExecutionResult.None();
         }
 
         private static bool IsTagMutationEffect(ActionEffectDefinition effect)

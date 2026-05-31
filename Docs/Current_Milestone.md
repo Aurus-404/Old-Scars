@@ -2,9 +2,9 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags` y defensas de acceso al storage de contenedores.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, consumibles cerrados por JSON, UI debug de survival y saqueo manual de contenedores.
 
-Milestone 21 y Milestone 21.0.1 estan validados en Unity.
+Milestone 22, Milestone 22.1, Milestone 22.1.1 y Milestone 22.1.2 estan validados en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
@@ -13,10 +13,14 @@ Ultimo milestone validado:
 - Milestone 20: Item Storage / Container Foundation v0.
 - Milestone 21: Stateful Inspection & Container Access v0.
 - Milestone 21.0.1: Hotfix - State-Aware Inspection Selection.
+- Milestone 22: Actor Needs & Debug Supply Containers v0.
+- Milestone 22.1: Survival UI, Action Feedback & Manual Container Loot v0.
+- Milestone 22.1.1: Hotfix - Wire Survival and Storage Debug UI.
+- Milestone 22.1.2: Hotfix - Equippable Item Flag.
 
 Proximo recomendado:
 
-- Milestone 22 queda como proximo milestone pendiente, sin definir todavia.
+- Milestone 23: Actor Inventory Foundation v0 queda como proximo milestone pendiente, sin definir implementacion completa todavia.
 
 
 ## Milestones Validados
@@ -324,7 +328,7 @@ Validado en Unity:
 - `ItemStorage` es clase C# pura, no `MonoBehaviour`.
 - `ItemStorageEntry` representa `ItemInstance` + `Quantity`.
 - `Quantity` no fue agregado a `ItemInstance`.
-- No hay auto-merge por `DefinitionId` para evitar mezclar objetos unicos con distinta condicion.
+- En Milestone 20 todavia no habia auto-merge por `DefinitionId`; Milestone 22.1 agrego merge simple controlado por `max_stack`.
 - `InventoryComponent` ahora usa `ItemStorage` internamente sin romper el flujo existente.
 - `pick_up_item` sigue agregando `rusted_crowbar_01` al inventario.
 - `InventoryDebugPanel` con I sigue funcionando.
@@ -391,6 +395,75 @@ Validado en Unity:
 - `sealed_container` requiere `sealed_container`.
 - No se toco JSON, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics, `GameplayFeedbackLog`, `ItemStorage`, `ItemStorageEntry` ni `InventoryComponent`.
 
+### Milestone 22: Actor Needs & Debug Supply Containers v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `ActorNeedsComponent` generico para actores con hunger/thirst runtime.
+- Solo actores con `ActorNeedsComponent` tienen necesidades.
+- Hunger/Thirst decaen en Play Mode.
+- `water_bottle_01` restaura `thirst`.
+- `food_ration_01` restaura `hunger`.
+- Consumibles definidos por JSON cerrado con `consumable.restore_needs`.
+- `InventoryDebugPanel` permite usar consumibles mediante `InventoryItemUseService`.
+- El uso consume cantidad solo si se aplica un efecto valido.
+- Food/Water Debug Crate y Misc Debug Crate usan loot tables y storage interno.
+- Data load sigue OK con 0 errors y 0 warnings.
+- F7, F8, I, palanca, puerta y caja original siguen funcionando.
+- No se creo UI final, cocina, heridas, enfermedad, temperatura, descanso, IA, combate ni save system.
+
+### Milestone 22.1: Survival UI, Action Feedback & Manual Container Loot v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- UI debug fija arriba a la izquierda muestra Hunger/Thirst.
+- Consumir agua/comida registra `ItemUsed` en `GameplayFeedbackLog`.
+- `max_stack` se agrego a `ItemDefinition`/JSON.
+- `max_stack = 1` significa no stackeable.
+- `max_stack > 1` permite merge simple en `ItemStorage`.
+- `Scrap Metal x1 + Scrap Metal x500` queda como `Scrap Metal x501`.
+- Cajas debug nuevas usan cantidades x500.
+- `search_container` abre `ItemStorageDebugPanel` y no transfiere todo automaticamente.
+- `ItemStorageDebugPanel` muestra `Take 1`, `Take Stack`, `Take All` y `Close`.
+- `looted_container` solo se aplica cuando el storage queda vacio.
+- Cajas debug nuevas cambian color con `WorldObjectStateView`: cian con loot, gris/negro vacias.
+- No se creo inventario final, drag/drop, peso, save system, comercio, IA ni combate.
+
+### Milestone 22.1.1: Hotfix - Wire Survival and Storage Debug UI
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `ActorNeedsDebugPanel` esta presente en `SampleScene`, visible arriba a la izquierda y conectado al Debug Player.
+- `ActorNeedsDebugPanel` autoresuelve `ActorNeedsComponent` de forma segura.
+- `ItemStorageDebugPanel` existe en `SampleScene`.
+- `search_container` encuentra o crea `ItemStorageDebugPanel` por fallback seguro.
+- El panel de storage abre contenido de contenedores validos.
+- Aparecen `Take 1`, `Take Stack`, `Take All` y `Close`.
+- `DebugWorldUiInputBlocker` bloquea clicks sobre paneles debug para no mover ni disparar acciones detras.
+- Food/Water Debug Crate y Misc Debug Crate reflejan estados con `WorldObjectStateView`.
+
+### Milestone 22.1.2: Hotfix - Equippable Item Flag
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `equippable` se agrego como boolean en `ItemDefinition`/JSON.
+- `equippable` no es tag y no usa strings `yes/no`.
+- `rusted_crowbar_01` tiene `equippable: true`.
+- `scrap_metal_01`, `water_bottle_01` y `food_ration_01` tienen `equippable: false`.
+- `InventoryDebugPanel` solo muestra `Equip` si `itemDefinition.equippable == true`.
+- La palanca sigue equipable.
+- Agua/comida no se pueden equipar, pero si usar.
+- Cantidades, stacking, `Use` e `ItemStorageDebugPanel` siguen funcionando.
+- Data load sigue OK con 0 errors y 0 warnings.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -399,7 +472,7 @@ Validado en Unity:
 - C# ejecuta logica.
 - `GameDataLoader` carga `StreamingAssets/Mods/Core`.
 - `GameDatabase` expone definiciones cargadas.
-- `DataValidator` valida IDs, types, tags, referencias, effects, loot tables y warnings no destructivos de `weapon_tags`.
+- `DataValidator` valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles y warnings no destructivos de `weapon_tags`.
 
 ### Interaction System
 
@@ -421,14 +494,19 @@ Validado en Unity:
 - `ItemInstance` representa una instancia runtime minima de un item definition.
 - `ItemInstance` guarda `InstanceId`, `DefinitionId` y `Condition`.
 - `ItemStorage` es una clase C# pura runtime-only para almacenar entries de items con cantidades simples.
+- `ItemStorage` mergea stacks por mismo `definitionId` hasta `max_stack` cuando `max_stack > 1`.
 - `ItemStorageEntry` representa un `ItemInstance` y una `Quantity >= 1`.
 - La cantidad pertenece al storage; no se agrego `Quantity` a `ItemInstance`.
-- `ItemStorage` no auto-mergea por `DefinitionId`.
+- `max_stack` en `ItemDefinition` define el stackeo simple; `max_stack = 1` significa no stackeable.
+- `equippable` en `ItemDefinition` es un boolean funcional, no un tag.
+- `consumable.restore_needs` define efectos cerrados de consumibles por `need_id` y `amount`.
 - `LootTableDefinition` representa una tabla v0 deterministica de loot.
 - `InventoryComponent` v0 usa `ItemStorage` internamente.
 - `InventoryComponent` permite `AddItemByDefinitionId`, `AddItemByDefinitionId` con cantidad simple, `EquipIndex` y `Unequip`.
 - `InventoryComponent` no autoequipa al recoger.
-- `InventoryDebugPanel` lee entries de storage y muestra cantidades cuando `Quantity > 1`.
+- `InventoryDebugPanel` lee entries de storage, muestra cantidades, permite `Use` en consumibles y muestra `Equip` solo si `equippable == true`.
+- `InventoryItemUseService` aplica consumibles a `ActorNeedsComponent` y consume cantidad solo si hubo efecto valido.
+- `ItemStorageDebugPanel` es panel debug reusable para ver y tomar contenido de storages accesibles.
 - `DebugInventory` crea instancias runtime al iniciar cuando `GameDataManager` esta listo.
 - `DebugInventory` no es inventario final, no guarda save data y no implementa equipamiento real.
 
@@ -456,6 +534,16 @@ Validado en Unity:
 - Las reglas condicionales usan `requiredTags`, `forbiddenTags` y `priority`.
 - Si no hay regla valida, o si un campo condicional esta vacio, se usa el fallback `displayName` / `inspectText`.
 
+### Actor Needs Runtime
+
+- `ActorNeedsComponent` es generico para actores y no exclusivo del jugador.
+- Solo los actores con `ActorNeedsComponent` tienen necesidades.
+- `ActorNeedProfile` define configuracion serializable de necesidades.
+- `ActorNeedState` guarda valores runtime visibles para debug.
+- Hunger/Thirst decaen en Play Mode mediante `Time.deltaTime`.
+- Las necesidades se restauran con API cerrada como `RestoreNeed`, `TryRestoreNeed`, `GetNeedValue` y `HasNeed`.
+- `ActorNeedsDebugPanel` muestra Hunger/Thirst como UI debug temporal arriba a la izquierda.
+
 ### Debug Action Execution
 
 - `DebugActionProgressController` controla acciones debug en progreso.
@@ -471,12 +559,13 @@ Validado en Unity:
 - `show_target_info` lee `WorldObjectDebugInfo`.
 - `pick_up_item` ejecuta `WorldItemPickup` sobre el target.
 - `search_container` ejecuta `ContainerLootComponent` sobre el target y transfiere contenido existente del storage del contenedor.
+- En el flujo actual, `search_container` abre `ItemStorageDebugPanel` para saqueo manual cuando el storage es accesible.
 - `ContainerLootComponent` valida acceso al storage antes de transferir loot.
 - Al examinar un contenedor, `[DEBUG STORAGE]` muestra estado runtime del storage como debug/readability.
 
 ### Gameplay Feedback Runtime
 
-- `GameplayFeedbackEntryType` define categorias cerradas: `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived`, `TargetStateChanged`, `Info` y `Warning`.
+- `GameplayFeedbackEntryType` define categorias cerradas: `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ItemUsed`, `ActionCompleted`, `LootReceived`, `TargetStateChanged`, `Info` y `Warning`.
 - `GameplayFeedbackEntry` guarda datos estructurados: tipo, mensaje fallback, tiempo, actor, target, item, action, quantity, tags agregados/removidos y `debugOnly`.
 - `GameplayFeedbackLog` guarda entradas runtime-only con `maxEntries`, `Record`, `Clear` y `Entries`.
 - `GameplayFeedbackLog` es append/read y no persistente.
@@ -506,6 +595,8 @@ Validado en Unity:
 - `ContextualActionDebugProgressPanel` muestra progreso debug de accion activa.
 - `ContextualActionDebugResultPanel` muestra resultados debug.
 - `InventoryDebugPanel` muestra inventario v0 con OnGUI y se abre con `I`.
+- `ActorNeedsDebugPanel` muestra necesidades debug del actor.
+- `ItemStorageDebugPanel` muestra contenido de storage y permite `Take 1`, `Take Stack`, `Take All` y `Close`.
 - `DebugFeedbackLogPanel` muestra feedback estructurado runtime-only del POI como UI debug y se alterna con F7.
 - `DebugActionAvailabilityPanel` muestra diagnostico de disponibilidad runtime-only como UI debug y se alterna con F8.
 - `DebugWorldUiInputBlocker` consume click izquierdo cuando hay UI abierta.
@@ -531,6 +622,7 @@ Validado en Unity:
 - Debug Player con:
   - `ActorInteractionContext`;
   - `InventoryComponent` v0 vacio para Milestone 14;
+  - `ActorNeedsComponent` para hunger/thirst debug;
   - `DebugInventory` opcional para Milestone 12;
   - `PointClickMovementController`;
   - `CharacterController`.
@@ -551,12 +643,16 @@ Validado en Unity:
 - Camara principal como hija del CameraRig.
 - `GameplayFeedbackDebug` bajo `Debug_UI` con `GameplayFeedbackLog` y `DebugFeedbackLogPanel` para leer feedback runtime del POI.
 - `ActionAvailabilityDiagnosticsDebug` bajo `Debug_UI` con `DebugActionAvailabilityPanel` para leer diagnostics runtime del POI.
+- `ActorNeedsDebugPanel` visible arriba a la izquierda para Hunger/Thirst.
+- `ItemStorageDebugPanel` disponible para saqueo manual de contenedores accesibles.
 - `DebugFeedbackLogPanel` y `DebugActionAvailabilityPanel` arrancan ocultos por defecto.
 - Objetos principales del POI pueden usar `WorldObjectStateView` para reflejar runtime tags visualmente sin controlar gameplay.
 
 ## Proximo Recomendado
 
-Milestone 22 queda como proximo milestone pendiente, sin definir todavia.
+Milestone 23: Actor Inventory Foundation v0 queda como proximo milestone pendiente.
+
+En M23 se empieza a pensar inventario de actores/personajes/cadaveres, usando `ItemStorage` como base comun. No hay implementacion completa definida todavia.
 
 Milestone 16 fue validado con:
 
@@ -686,6 +782,8 @@ Milestone 15 fue validado con:
 No debe crear todavia:
 
 - inventario real;
+- actor inventory final;
+- cadaveres lootables finales;
 - loot final o avanzado;
 - save system;
 - journal;

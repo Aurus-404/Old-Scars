@@ -66,16 +66,17 @@ namespace OldScars.Core.Items
             }
 
             var instance = new ItemInstance(definition);
-            storage.AddItem(instance, quantity);
+            ItemStorageEntry addedEntry = storage.AddItem(instance, quantity);
+            ItemInstance storedItem = addedEntry != null ? addedEntry.Item : instance;
 
             Debug.Log(
                 "[InventoryComponent] Added runtime item instance." +
-                $"\n  Definition: {instance.DefinitionId}" +
-                $"\n  Instance: {instance.InstanceId}" +
-                $"\n  Condition: {instance.Condition}" +
+                $"\n  Definition: {storedItem.DefinitionId}" +
+                $"\n  Instance: {storedItem.InstanceId}" +
+                $"\n  Condition: {storedItem.Condition}" +
                 $"\n  Quantity: {quantity}");
 
-            return instance;
+            return storedItem;
         }
 
         public IReadOnlyList<ItemInstance> GetItems()
@@ -93,6 +94,33 @@ namespace OldScars.Core.Items
             return storage.Entries;
         }
 
+        public ItemStorageEntry GetEntry(int index)
+        {
+            return storage.GetEntry(index);
+        }
+
+        public bool TryRemoveItemAt(int index, int quantity)
+        {
+            ItemStorageEntry entry = storage.GetEntry(index);
+            if (entry == null || quantity < 1)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot remove quantity {quantity} from invalid item index {index}.");
+                return false;
+            }
+
+            bool removesEntry = quantity >= entry.Quantity;
+            if (!storage.RemoveAt(index, quantity))
+            {
+                Debug.LogWarning($"[InventoryComponent] Failed to remove quantity {quantity} from item index {index}.");
+                return false;
+            }
+
+            if (removesEntry)
+                AdjustEquippedIndexAfterEntryRemoval(index);
+
+            return true;
+        }
+
         public int TransferItemsFrom(ItemStorage source)
         {
             if (source == null)
@@ -102,6 +130,23 @@ namespace OldScars.Core.Items
             }
 
             return source.TransferAllTo(storage);
+        }
+
+        public int TransferItemFrom(ItemStorage source, int sourceIndex, int quantity)
+        {
+            if (source == null)
+            {
+                Debug.LogWarning("[InventoryComponent] Cannot transfer an item from a null storage.");
+                return 0;
+            }
+
+            if (quantity < 1)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot transfer quantity {quantity}. Quantity must be >= 1.");
+                return 0;
+            }
+
+            return source.TransferTo(storage, sourceIndex, quantity);
         }
 
         public ItemInstance GetEquippedItemInstance()
@@ -150,6 +195,18 @@ namespace OldScars.Core.Items
         private bool IsEquippedItemIndexValid()
         {
             return equippedItemIndex >= 0 && equippedItemIndex < storage.EntryCount;
+        }
+
+        private void AdjustEquippedIndexAfterEntryRemoval(int removedIndex)
+        {
+            if (equippedItemIndex == removedIndex)
+            {
+                equippedItemIndex = -1;
+            }
+            else if (equippedItemIndex > removedIndex)
+            {
+                equippedItemIndex--;
+            }
         }
 
         private static string NormalizeItemId(string itemId)

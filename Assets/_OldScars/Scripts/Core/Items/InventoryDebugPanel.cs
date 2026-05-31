@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using UnityEngine;
@@ -14,15 +15,27 @@ namespace OldScars.Core.Items
     /// </summary>
     public sealed class InventoryDebugPanel : MonoBehaviour
     {
-        private const float PanelWidth = 440f;
-        private const float PanelHeight = 320f;
+        private const float PanelWidth = 560f;
+        private const float PanelHeight = 360f;
 
         [SerializeField] private InventoryComponent inventory;
+        [SerializeField] private ActorNeedsComponent actorNeeds;
 
         private bool isVisible;
         private Vector2 scrollPosition;
+        private string lastUseMessage;
 
         public bool IsVisible => isVisible;
+
+        private void Awake()
+        {
+            ResolveActorNeeds();
+        }
+
+        private void OnEnable()
+        {
+            ResolveActorNeeds();
+        }
 
         public void Hide()
         {
@@ -81,6 +94,9 @@ namespace OldScars.Core.Items
 
             GUILayout.Space(8f);
 
+            if (!string.IsNullOrWhiteSpace(lastUseMessage))
+                GUILayout.Label(lastUseMessage);
+
             IReadOnlyList<ItemStorageEntry> entries = inventory.GetStorageEntries();
             if (entries == null || entries.Count == 0)
             {
@@ -106,13 +122,32 @@ namespace OldScars.Core.Items
             GUILayout.BeginHorizontal(GUI.skin.box);
             GUILayout.Label(GetItemLabel(index, entry), GUILayout.Width(300f));
 
-            bool isEquipped = inventory.EquippedItemIndex == index;
-            GUI.enabled = item != null && !isEquipped;
-            if (GUILayout.Button(isEquipped ? "Equipped" : "Equip", GUILayout.Height(24f)))
-                inventory.EquipIndex(index);
-            GUI.enabled = true;
+            if (IsEquippable(entry))
+            {
+                bool isEquipped = inventory.EquippedItemIndex == index;
+                GUI.enabled = item != null && !isEquipped;
+                if (GUILayout.Button(isEquipped ? "Equipped" : "Equip", GUILayout.Height(24f)))
+                    inventory.EquipIndex(index);
+                GUI.enabled = true;
+            }
+
+            if (InventoryItemUseService.IsConsumable(entry))
+            {
+                if (GUILayout.Button("Use", GUILayout.Height(24f), GUILayout.Width(80f)))
+                    UseItem(index);
+            }
 
             GUILayout.EndHorizontal();
+        }
+
+        private void UseItem(int index)
+        {
+            ResolveActorNeeds();
+
+            InventoryItemUseResult result = InventoryItemUseService.TryUseItem(inventory, index, actorNeeds);
+            lastUseMessage = result.Message;
+            if (!result.Success)
+                Debug.Log($"[InventoryDebugPanel] Use failed: {result.Message}");
         }
 
         private string GetEquippedItemLabel()
@@ -139,20 +174,34 @@ namespace OldScars.Core.Items
                 return "(none)";
 
             string displayName = GetItemDisplayName(entry.Item.DefinitionId);
-            return entry.Quantity > 1 ? $"{displayName} x{entry.Quantity}" : displayName;
+            return $"{displayName} x{entry.Quantity}";
+        }
+
+        private static bool IsEquippable(ItemStorageEntry entry)
+        {
+            ItemDefinition definition = GetItemDefinition(entry != null ? entry.DefinitionId : null);
+            return definition != null && definition.equippable;
         }
 
         private static string GetItemDisplayName(string definitionId)
         {
-            if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
-                return SafeText(definitionId);
-
-            GameDatabase database = GameDataManager.Instance.Database;
-            ItemDefinition definition = database != null ? database.GetItem(definitionId) : null;
+            ItemDefinition definition = GetItemDefinition(definitionId);
             if (definition == null || definition.display == null || string.IsNullOrWhiteSpace(definition.display.name))
                 return SafeText(definitionId);
 
             return definition.display.name;
+        }
+
+        private static ItemDefinition GetItemDefinition(string definitionId)
+        {
+            if (string.IsNullOrWhiteSpace(definitionId))
+                return null;
+
+            if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+                return null;
+
+            GameDatabase database = GameDataManager.Instance.Database;
+            return database != null ? database.GetItem(definitionId) : null;
         }
 
         private static Rect GetPanelRect()
@@ -172,6 +221,18 @@ namespace OldScars.Core.Items
         private static Vector2 ToGuiPosition(Vector2 mousePosition)
         {
             return new Vector2(mousePosition.x, Screen.height - mousePosition.y);
+        }
+
+        private void ResolveActorNeeds()
+        {
+            if (actorNeeds != null)
+                return;
+
+            if (inventory != null)
+                actorNeeds = inventory.GetComponentInParent<ActorNeedsComponent>();
+
+            if (actorNeeds == null)
+                actorNeeds = FindAnyObjectByType<ActorNeedsComponent>();
         }
 
         private static string SafeText(string value)

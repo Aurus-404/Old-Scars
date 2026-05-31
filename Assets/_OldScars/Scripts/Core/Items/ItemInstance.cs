@@ -1,4 +1,5 @@
 using OldScars.Core.Data.Definitions;
+using System;
 
 namespace OldScars.Core.Items
 {
@@ -16,12 +17,27 @@ namespace OldScars.Core.Items
         public string InstanceId { get; }
         public string DefinitionId { get; }
         public int Condition { get; }
+        public int MaxStack { get; }
 
         public ItemInstance(ItemDefinition definition)
         {
             InstanceId = CreateRuntimeInstanceId();
             DefinitionId = definition != null ? definition.id : null;
             Condition = GetInitialCondition(definition);
+            MaxStack = GetMaxStack(definition);
+        }
+
+        private ItemInstance(string definitionId, int condition, int maxStack)
+        {
+            InstanceId = CreateRuntimeInstanceId();
+            DefinitionId = definitionId;
+            Condition = Math.Max(1, condition);
+            MaxStack = Math.Max(1, maxStack);
+        }
+
+        public ItemInstance CreateStackSibling()
+        {
+            return new ItemInstance(DefinitionId, Condition, MaxStack);
         }
 
         private static string CreateRuntimeInstanceId()
@@ -37,6 +53,11 @@ namespace OldScars.Core.Items
                 return 1;
 
             return definition.physical.condition_max;
+        }
+
+        private static int GetMaxStack(ItemDefinition definition)
+        {
+            return definition != null ? Math.Max(1, definition.max_stack) : 1;
         }
     }
 }

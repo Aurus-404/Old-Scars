@@ -15,10 +15,13 @@ namespace OldScars.Core.Data.Definitions
         public ItemDisplay display;
         public string[] categories; // UI grouping only; not system logic.
         public string[] tags;       // System-facing identifiers.
+        public int max_stack = 1;   // Simple runtime storage stacking limit.
+        public bool equippable;     // Explicit equip eligibility. Defaults to false if omitted.
         public ItemPhysical physical;
         public ItemEconomy economy;
-        public ItemEquip equip;     // null if not equippable.
+        public ItemEquip equip;     // Optional equipment metadata for equippable items.
         public ItemCombat combat;   // null if not usable as a weapon.
+        public ItemConsumable consumable; // null if not consumable.
     }
 
     [System.Serializable]
@@ -65,6 +68,19 @@ namespace OldScars.Core.Data.Definitions
         public string weapon_profile; // references WeaponProfileDefinition.id
         public ItemDamage damage;
         public string[] actions;      // references ActionDefinition.id[]
+    }
+
+    [System.Serializable]
+    public sealed class ItemConsumable
+    {
+        public ItemNeedRestore[] restore_needs;
+    }
+
+    [System.Serializable]
+    public sealed class ItemNeedRestore
+    {
+        public string need_id;
+        public float amount;
     }
 
     [System.Serializable]

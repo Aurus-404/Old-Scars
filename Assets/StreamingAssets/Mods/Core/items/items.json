@@ -20,6 +20,8 @@
         "can_force_doors",
         "crafting_component"
       ],
+      "max_stack": 1,
+      "equippable": true,
       "physical": {
         "weight_kg": 2.4,
         "volume_l": 1.8,
@@ -55,6 +57,8 @@
         "metal",
         "crafting_component"
       ],
+      "max_stack": 999,
+      "equippable": false,
       "physical": {
         "weight_kg": 0.6,
         "volume_l": 0.4,
@@ -63,6 +67,70 @@
       "economy": {
         "base_buy_value": 2,
         "base_sell_value": 1
+      }
+    },
+    {
+      "type": "item",
+      "id": "water_bottle_01",
+      "display": {
+        "name": "Water Bottle",
+        "description": "A sealed bottle of clean water for debug survival testing."
+      },
+      "categories": ["consumable"],
+      "tags": [
+        "item",
+        "consumable"
+      ],
+      "max_stack": 999,
+      "equippable": false,
+      "physical": {
+        "weight_kg": 0.5,
+        "volume_l": 0.5,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 5,
+        "base_sell_value": 2
+      },
+      "consumable": {
+        "restore_needs": [
+          {
+            "need_id": "thirst",
+            "amount": 35
+          }
+        ]
+      }
+    },
+    {
+      "type": "item",
+      "id": "food_ration_01",
+      "display": {
+        "name": "Food Ration",
+        "description": "A compact ration pack for debug survival testing."
+      },
+      "categories": ["consumable"],
+      "tags": [
+        "item",
+        "consumable"
+      ],
+      "max_stack": 999,
+      "equippable": false,
+      "physical": {
+        "weight_kg": 0.4,
+        "volume_l": 0.35,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 8,
+        "base_sell_value": 3
+      },
+      "consumable": {
+        "restore_needs": [
+          {
+            "need_id": "hunger",
+            "amount": 35
+          }
+        ]
       }
     }
   ]

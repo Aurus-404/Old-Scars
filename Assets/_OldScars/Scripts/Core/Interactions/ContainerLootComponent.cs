@@ -40,7 +40,15 @@ namespace OldScars.Core.Interactions
 
         public DebugActionExecutionResult Search(DebugActionExecutionContext executionContext, ActionDefinition action = null)
         {
+            return Search(executionContext, action, out _, out _);
+        }
+
+        public DebugActionExecutionResult Search(DebugActionExecutionContext executionContext, ActionDefinition action, out bool canOpenStoragePanel, out InventoryComponent inventory)
+        {
             WorldObjectTags targetTags = executionContext.Target;
+            canOpenStoragePanel = false;
+            inventory = null;
+
             if (targetTags == null)
             {
                 Debug.LogWarning("[ContainerLootComponent] Cannot search container without target tags.");
@@ -60,7 +68,7 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Buscar contenedor", "Error: actor no configurado para saquear.");
             }
 
-            InventoryComponent inventory = actorContext.GetInventoryComponent();
+            inventory = actorContext.GetInventoryComponent();
             if (inventory == null)
             {
                 Debug.LogWarning("[ContainerLootComponent] Actor has no InventoryComponent.");
@@ -79,15 +87,77 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Buscar contenedor", $"Error: {storageError}");
             }
 
-            Dictionary<string, int> addedCounts = GetStoredItemCounts();
-            int transferredQuantity = inventory.TransferItemsFrom(storage);
-            MarkContainerLooted(targetTags, executionContext, action);
+            if (storage.IsEmpty)
+            {
+                MarkContainerLootedIfEmpty(targetTags, executionContext, action);
+                return DebugActionExecutionResult.Info("Buscar contenedor", "No queda contenido en este contenedor.");
+            }
 
-            if (transferredQuantity <= 0 || addedCounts.Count == 0)
-                return DebugActionExecutionResult.Info("Buscar contenedor", "No encontraste nada util.");
+            canOpenStoragePanel = true;
+            return DebugActionExecutionResult.Info("Buscar contenedor", "Contenido disponible en Storage Debug Panel.");
+        }
+
+        public int TakeItem(int storageIndex, int quantity, InventoryComponent inventory, DebugActionExecutionContext executionContext, ActionDefinition action, out string message)
+        {
+            message = null;
+
+            if (quantity < 1)
+            {
+                message = "Cantidad invalida.";
+                return 0;
+            }
+
+            WorldObjectTags targetTags = executionContext.Target != null ? executionContext.Target : GetComponent<WorldObjectTags>();
+            if (!CanAccessStorage(targetTags))
+            {
+                message = GetAccessBlockReason(targetTags);
+                return 0;
+            }
+
+            if (inventory == null)
+            {
+                message = "El actor no tiene inventario v0 configurado.";
+                return 0;
+            }
+
+            if (!TryGetReadyDatabase(out GameDatabase database, out string databaseError))
+            {
+                message = databaseError;
+                return 0;
+            }
+
+            if (!EnsureStorageInitialized(database, out string storageError))
+            {
+                message = storageError;
+                return 0;
+            }
+
+            ItemStorageEntry entry = storage.GetEntry(storageIndex);
+            if (entry == null || entry.Item == null)
+            {
+                message = "Slot de contenedor invalido.";
+                return 0;
+            }
+
+            string definitionId = entry.DefinitionId;
+            int requestedQuantity = Mathf.Min(quantity, entry.Quantity);
+            int transferredQuantity = inventory.TransferItemFrom(storage, storageIndex, requestedQuantity);
+            if (transferredQuantity <= 0)
+            {
+                message = "No se pudo transferir contenido.";
+                return 0;
+            }
+
+            var addedCounts = new Dictionary<string, int>
+            {
+                [definitionId] = transferredQuantity
+            };
 
             RecordLootReceived(addedCounts, database, executionContext, action);
-            return DebugActionExecutionResult.Info("Buscar contenedor", $"Encontraste: {FormatAddedLoot(addedCounts, database)}.");
+            MarkContainerLootedIfEmpty(targetTags, executionContext, action);
+
+            message = $"Tomaste {FormatAddedLoot(addedCounts, database)}.";
+            return transferredQuantity;
         }
 
         public bool CanAccessStorage(WorldObjectTags targetTags)
@@ -265,26 +335,6 @@ namespace OldScars.Core.Interactions
             }
         }
 
-        private Dictionary<string, int> GetStoredItemCounts()
-        {
-            var counts = new Dictionary<string, int>();
-
-            IReadOnlyList<ItemStorageEntry> entries = storage.Entries;
-            for (int index = 0; index < entries.Count; index++)
-            {
-                ItemStorageEntry entry = entries[index];
-                if (entry == null || entry.Item == null || string.IsNullOrWhiteSpace(entry.Item.DefinitionId))
-                    continue;
-
-                if (!counts.ContainsKey(entry.Item.DefinitionId))
-                    counts[entry.Item.DefinitionId] = 0;
-
-                counts[entry.Item.DefinitionId] += entry.Quantity;
-            }
-
-            return counts;
-        }
-
         private string FormatStorageContents(GameDatabase database)
         {
             var parts = new List<string>();
@@ -331,6 +381,14 @@ namespace OldScars.Core.Interactions
                 $"\n  Runtime tags: {FormatTags(targetTags.RuntimeTags)}");
 
             RecordTargetStateChanged(executionContext, action, addedLooted, removedLootable);
+        }
+
+        private void MarkContainerLootedIfEmpty(WorldObjectTags targetTags, DebugActionExecutionContext executionContext, ActionDefinition action)
+        {
+            if (targetTags == null || !storage.IsEmpty)
+                return;
+
+            MarkContainerLooted(targetTags, executionContext, action);
         }
 
         private static string FormatAddedLoot(Dictionary<string, int> addedCounts, GameDatabase database)

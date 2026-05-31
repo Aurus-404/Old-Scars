@@ -5,6 +5,7 @@ namespace OldScars.Core.Feedback
         ItemPickedUp,
         ItemEquipped,
         ItemUnequipped,
+        ItemUsed,
         ActionCompleted,
         LootReceived,
         TargetStateChanged,

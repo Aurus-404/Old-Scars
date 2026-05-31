@@ -1,5 +1,5 @@
 # Old Scars — Development Rules for ChatGPT + Codex
-Version: 0.1
+Version: 0.2
 Purpose: shared compact rule file for ChatGPT and Codex. This file stores specific technical/work rules that should not live in ChatGPT memory. Keep it concise, updated, and versioned in the repo.
 
 Recommended repo path:
@@ -42,6 +42,12 @@ When a new specific rule is defined or changed:
 - JSON should reference IDs, not scene objects.
 - Loot tables are separate definitions; items should not declare their spawn sources.
 - Effects must be closed/allowed C# effect types.
+- `max_stack` is the source of simple item stacking in `ItemDefinition`.
+- `max_stack = 1` means non-stackable.
+- `max_stack > 1` allows simple merge in `ItemStorage`.
+- `equippable` is a functional boolean in `ItemDefinition`, not a tag.
+- Consumables use the closed `consumable.restore_needs` block.
+- Consumable effects are data-driven parameters for closed C# logic, not free JSON scripting.
 
 ## 3. Naming rules
 
@@ -78,6 +84,7 @@ When a new specific rule is defined or changed:
 ## 6. Feedback/debug tools rules
 
 - GameplayFeedbackLog records structured gameplay facts that happened.
+- Consuming an item should record structured feedback such as `ItemUsed`.
 - ActionAvailabilityDiagnostics explains why actions are currently available or blocked.
 - These systems must stay separate.
 - Debug panels only display/read data; they do not decide gameplay.
@@ -87,6 +94,8 @@ When a new specific rule is defined or changed:
   - F7 = Gameplay Feedback Log.
   - F8 = Action Availability Diagnostics.
 - A missing debug panel/log must not break gameplay.
+- ActorNeedsDebugPanel and ItemStorageDebugPanel are debug tools, not final UI.
+- ItemStorageDebugPanel should remain reusable for storages such as crates, corpses, backpacks, or traders.
 
 ## 7. Unity scene/component rules
 
@@ -97,6 +106,9 @@ When a new specific rule is defined or changed:
 - Avoid reorganizing the POI unless the milestone requires it.
 - Use placeholders when validating behavior; do not chase final art.
 - Prefer generic components over object-specific scripts.
+- ItemStorage should remain the common base for inventories and containers.
+- World containers may have internal storage before the content is accessible.
+- Object state controls whether storage can be accessed; it does not determine whether storage exists.
 
 ## 8. WorldObjectStateView rules
 

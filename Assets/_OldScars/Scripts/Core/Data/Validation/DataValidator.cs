@@ -119,6 +119,12 @@ namespace OldScars.Core.Data.Validation
                     ValidateTagList(item.tags, $"{ctx}: tags");
                 }
 
+                if (item.max_stack < 1)
+                    report.Error($"{ctx}: 'max_stack' must be >= 1 (got {item.max_stack}).");
+
+                if (item.equippable && item.equip == null)
+                    report.Error($"{ctx}: 'equippable' is true but 'equip' block is missing.");
+
                 if (item.physical == null)
                 {
                     report.Error($"{ctx}: 'physical' block is required.");
@@ -151,6 +157,35 @@ namespace OldScars.Core.Data.Validation
 
                 if (item.combat != null)
                     ValidateItemCombat(item, ctx);
+
+                if (item.consumable != null)
+                    ValidateItemConsumable(item, ctx);
+            }
+        }
+
+        private void ValidateItemConsumable(ItemDefinition item, string ctx)
+        {
+            if (item.consumable.restore_needs == null || item.consumable.restore_needs.Length == 0)
+            {
+                report.Error($"{ctx}: 'consumable.restore_needs' must not be empty when 'consumable' block is present.");
+                return;
+            }
+
+            for (int index = 0; index < item.consumable.restore_needs.Length; index++)
+            {
+                string restoreCtx = $"{ctx}: consumable.restore_needs[{index}]";
+                ItemNeedRestore restoreNeed = item.consumable.restore_needs[index];
+
+                if (restoreNeed == null)
+                {
+                    report.Error($"{restoreCtx}: restore need entry must not be null.");
+                    continue;
+                }
+
+                RequireSnakeCase(restoreNeed.need_id, "need_id", restoreCtx);
+
+                if (restoreNeed.amount <= 0f)
+                    report.Error($"{restoreCtx}: 'amount' must be > 0 (got {restoreNeed.amount}).");
             }
         }
 

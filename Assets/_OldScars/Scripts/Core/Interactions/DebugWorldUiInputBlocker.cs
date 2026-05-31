@@ -1,4 +1,5 @@
 using OldScars.Core.Items;
+using OldScars.Core.Actors;
 using UnityEngine;
 
 namespace OldScars.Core.Interactions
@@ -8,6 +9,8 @@ namespace OldScars.Core.Interactions
         [SerializeField] private ContextualActionDebugPanel actionPanel;
         [SerializeField] private ContextualActionDebugResultPanel resultPanel;
         [SerializeField] private InventoryDebugPanel inventoryPanel;
+        [SerializeField] private ItemStorageDebugPanel storagePanel;
+        [SerializeField] private ActorNeedsDebugPanel actorNeedsPanel;
 
         private void Awake()
         {
@@ -19,23 +22,34 @@ namespace OldScars.Core.Interactions
 
             if (inventoryPanel == null)
                 inventoryPanel = FindAnyObjectByType<InventoryDebugPanel>();
+
+            if (storagePanel == null)
+                storagePanel = FindAnyObjectByType<ItemStorageDebugPanel>();
+
+            if (actorNeedsPanel == null)
+                actorNeedsPanel = FindAnyObjectByType<ActorNeedsDebugPanel>();
         }
 
         public bool ConsumeLeftClickIfNeeded(Vector2 screenPosition)
         {
             EnsureReferences();
 
+            if (actorNeedsPanel != null && actorNeedsPanel.ContainsScreenPosition(screenPosition))
+                return true;
+
             bool actionPanelOpen = actionPanel != null && actionPanel.IsVisible;
             bool resultPanelOpen = resultPanel != null && resultPanel.IsVisible;
             bool inventoryPanelOpen = inventoryPanel != null && inventoryPanel.IsVisible;
+            bool storagePanelOpen = storagePanel != null && storagePanel.IsVisible;
 
-            if (!actionPanelOpen && !resultPanelOpen && !inventoryPanelOpen)
+            if (!actionPanelOpen && !resultPanelOpen && !inventoryPanelOpen && !storagePanelOpen)
                 return false;
 
             bool clickInsideOpenPanel =
                 (actionPanelOpen && actionPanel.ContainsScreenPosition(screenPosition)) ||
                 (resultPanelOpen && resultPanel.ContainsScreenPosition(screenPosition)) ||
-                (inventoryPanelOpen && inventoryPanel.ContainsScreenPosition(screenPosition));
+                (inventoryPanelOpen && inventoryPanel.ContainsScreenPosition(screenPosition)) ||
+                (storagePanelOpen && storagePanel.ContainsScreenPosition(screenPosition));
 
             if (!clickInsideOpenPanel)
             {
@@ -47,9 +61,23 @@ namespace OldScars.Core.Interactions
 
                 if (inventoryPanelOpen)
                     inventoryPanel.Hide();
+
+                if (storagePanelOpen)
+                    storagePanel.Hide();
             }
 
             return true;
+        }
+
+        public bool IsPointerOverBlockingPanel(Vector2 screenPosition)
+        {
+            EnsureReferences();
+
+            return (actorNeedsPanel != null && actorNeedsPanel.ContainsScreenPosition(screenPosition)) ||
+                   (actionPanel != null && actionPanel.IsVisible && actionPanel.ContainsScreenPosition(screenPosition)) ||
+                   (resultPanel != null && resultPanel.IsVisible && resultPanel.ContainsScreenPosition(screenPosition)) ||
+                   (inventoryPanel != null && inventoryPanel.IsVisible && inventoryPanel.ContainsScreenPosition(screenPosition)) ||
+                   (storagePanel != null && storagePanel.IsVisible && storagePanel.ContainsScreenPosition(screenPosition));
         }
 
         private void EnsureReferences()
@@ -62,6 +90,12 @@ namespace OldScars.Core.Interactions
 
             if (inventoryPanel == null)
                 inventoryPanel = FindAnyObjectByType<InventoryDebugPanel>();
+
+            if (storagePanel == null)
+                storagePanel = FindAnyObjectByType<ItemStorageDebugPanel>();
+
+            if (actorNeedsPanel == null)
+                actorNeedsPanel = FindAnyObjectByType<ActorNeedsDebugPanel>();
         }
     }
 }

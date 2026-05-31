@@ -17,6 +17,12 @@ namespace OldScars.Core.Feedback
             string actionId = null,
             string actionDisplayName = null,
             int quantity = 0,
+            string needId = null,
+            string needDisplayName = null,
+            float needAmount = 0f,
+            float needValueBefore = 0f,
+            float needValueAfter = 0f,
+            float needMaxValue = 0f,
             string[] addedTags = null,
             string[] removedTags = null,
             bool debugOnly = false)
@@ -33,6 +39,12 @@ namespace OldScars.Core.Feedback
             this.actionId = actionId;
             this.actionDisplayName = actionDisplayName;
             this.quantity = quantity;
+            this.needId = needId;
+            this.needDisplayName = needDisplayName;
+            this.needAmount = needAmount;
+            this.needValueBefore = needValueBefore;
+            this.needValueAfter = needValueAfter;
+            this.needMaxValue = needMaxValue;
             this.addedTags = CloneTags(addedTags);
             this.removedTags = CloneTags(removedTags);
             this.debugOnly = debugOnly;
@@ -50,6 +62,12 @@ namespace OldScars.Core.Feedback
         public readonly string actionId;
         public readonly string actionDisplayName;
         public readonly int quantity;
+        public readonly string needId;
+        public readonly string needDisplayName;
+        public readonly float needAmount;
+        public readonly float needValueBefore;
+        public readonly float needValueAfter;
+        public readonly float needMaxValue;
         public readonly string[] addedTags;
         public readonly string[] removedTags;
         public readonly bool debugOnly;

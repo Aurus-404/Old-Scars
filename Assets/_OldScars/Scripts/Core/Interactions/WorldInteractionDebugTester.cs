@@ -13,6 +13,7 @@ namespace OldScars.Core.Interactions
         [SerializeField] private ContextualActionDebugPanel debugPanel;
         [SerializeField] private DebugActionProgressController progressController;
         [SerializeField] private DebugActionAvailabilityPanel availabilityPanel;
+        [SerializeField] private DebugWorldUiInputBlocker uiInputBlocker;
         [SerializeField] private ActorInteractionContext actorInteractionContext;
         [SerializeField] private LayerMask interactableLayerMask;
         [SerializeField] private float maxRayDistance = 1000f;
@@ -37,6 +38,9 @@ namespace OldScars.Core.Interactions
 
             if (availabilityPanel == null)
                 availabilityPanel = FindAnyObjectByType<DebugActionAvailabilityPanel>();
+
+            if (uiInputBlocker == null)
+                uiInputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
 
             if (actorInteractionContext == null)
                 actorInteractionContext = FindAnyObjectByType<ActorInteractionContext>();
@@ -84,6 +88,12 @@ namespace OldScars.Core.Interactions
 
         private void TryOpenContextMenu(Vector2 mousePosition)
         {
+            if (uiInputBlocker == null)
+                uiInputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
+
+            if (uiInputBlocker != null && uiInputBlocker.IsPointerOverBlockingPanel(mousePosition))
+                return;
+
             if (IsActionInProgress())
             {
                 Debug.Log("[WorldInteractionDebugTester] Context menu blocked because a debug action is in progress.");

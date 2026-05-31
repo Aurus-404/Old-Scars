@@ -9,6 +9,30 @@
           "count": 1
         }
       ]
+    },
+    {
+      "type": "loot_table",
+      "id": "debug_food_water_crate_loot_01",
+      "entries": [
+        {
+          "item_id": "water_bottle_01",
+          "count": 500
+        },
+        {
+          "item_id": "food_ration_01",
+          "count": 500
+        }
+      ]
+    },
+    {
+      "type": "loot_table",
+      "id": "debug_misc_supply_crate_loot_01",
+      "entries": [
+        {
+          "item_id": "scrap_metal_01",
+          "count": 500
+        }
+      ]
     }
   ]
 }
