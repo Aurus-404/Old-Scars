@@ -1,5 +1,5 @@
 # Old Scars — Development Rules for ChatGPT + Codex
-Version: 0.3
+Version: 0.4
 Purpose: shared compact rule file for ChatGPT and Codex. This file stores specific technical/work rules that should not live in ChatGPT memory. Keep it concise, updated, and versioned in the repo.
 
 Recommended repo path:
@@ -48,6 +48,95 @@ When a new specific rule is defined or changed:
 - `equippable` is a functional boolean in `ItemDefinition`, not a tag.
 - Consumables use the closed `consumable.restore_needs` block.
 - Consumable effects are data-driven parameters for closed C# logic, not free JSON scripting.
+
+## 2.1 Item JSON model rules
+
+Item JSON should be treated as a stable data contract for current and future systems, not only as the minimum fields used by the current milestone.
+
+Rules:
+- Item JSON may include future-facing data if the field has a clear purpose, stable naming, and can be validated.
+- Do not add arbitrary fields unless ItemDefinition/schema/validator know them or the milestone explicitly approves them.
+- Prefer optional blocks over empty placeholder blocks. If an item does not use a system, omit that block.
+- Current systems may ignore approved future-facing blocks, but they must not break loading or validation.
+- Keep gameplay logic in C# and reusable profiles; JSON should reference IDs and declare data.
+- Avoid duplicating complex combat, crafting, AI, or interaction logic inside each item.
+- Prefer reusable profile references for complex systems, such as weapon_profile_id, instead of per-item one-off logic.
+- Prefer snake_case keys in JSON unless an existing loader/schema already requires otherwise.
+- Use technical slot IDs like right_hand, left_hand, both_hands, back, belt, torso, head; avoid human text such as "right hand".
+- For equipment, prefer allowed_slots and occupied_slots instead of one loose slot string.
+- both_hands should normally be an occupied-slot rule, not a literal equip socket.
+- Visual equipment data belongs in a separate equip_visual block and should be optional until visual equipment is implemented.
+- UI data such as category_sort and icon_id belongs in a display/ui-oriented block, not in tags.
+- max_stack should live in a stacking block long-term. Existing flat max_stack may remain until migration is explicitly approved.
+- consumable data should stay closed and explicit, such as consumable.restore_needs.
+- Economy, physical, combat, visual, display, stacking, equip, and consumable data should stay separated.
+
+Recommended target item shape:
+
+```json
+{
+  "id": "rusted_crowbar_01",
+  "schema_version": 1,
+
+  "display": {
+    "name": "Crowbar",
+    "description": "A heavy metal crowbar. Useful for forcing weak doors, opening sealed containers, and as an improvised weapon.",
+    "category_sort": "tools",
+    "icon_id": "item_crowbar"
+  },
+
+  "tags": [
+    "item",
+    "tool",
+    "weapon",
+    "crowbar",
+    "metal",
+    "melee_weapon",
+    "can_pry",
+    "can_force_weak_doors",
+    "crafting_component"
+  ],
+
+  "stacking": {
+    "max_stack": 1
+  },
+
+  "equip": {
+    "equippable": true,
+    "allowed_slots": ["right_hand"],
+    "occupied_slots": ["right_hand"],
+    "equip_group": "handheld_tool"
+  },
+
+  "equip_visual": {
+    "model_id": "rusted_crowbar_01_model",
+    "rig": "humanoid",
+    "socket": "right_hand",
+    "local_position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "local_rotation": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "local_scale": { "x": 1.0, "y": 1.0, "z": 1.0 }
+  },
+
+  "physical": {
+    "condition_max": 100,
+    "weight": 2.5,
+    "material": "metal"
+  },
+
+  "economy": {
+    "base_buy_value": 45,
+    "base_sell_value": 20
+  },
+
+  "combat": {
+    "weapon_profile_id": "improvised_blunt_01"
+  }
+}
+```
+
+Migration rule:
+- This target shape should guide future data work, but do not migrate every item or loader at once unless the current milestone explicitly includes that migration.
+- During transition, keep backwards compatibility for validated fields such as display_name, description, max_stack, equippable, consumable, physical, economy, and combat if they already exist in the repo.
 
 ## 3. Naming rules
 
