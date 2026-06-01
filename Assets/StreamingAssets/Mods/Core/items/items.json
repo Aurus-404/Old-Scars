@@ -32,7 +32,9 @@
         "base_sell_value": 12
       },
       "equip": {
-        "allowed_slots": ["right_hand", "left_hand"]
+        "equippable": true,
+        "allowed_slots": ["right_hand"],
+        "occupied_slots": ["right_hand"]
       },
       "combat": {
         "weapon_profile": "improvised_blunt_medium",

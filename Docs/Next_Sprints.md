@@ -8,12 +8,13 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 22, Milestone 22.1, Milestone 22.1.1 y Milestone 22.1.2 estan `validated`.
+- Milestone 23, Milestone 23.0.1, Milestone 23.0.2 y Milestone 23.0.3 estan `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
-- El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario v0, pickup, equip simple, acciones con duracion, runtime tags, loot tables v0, container loot v0, storage runtime-only de items y feedback runtime-only.
+- El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario de actor v0, pickup, equip `right_hand`, acciones con duracion, runtime tags, loot tables v0, container loot v0, storage runtime-only de items y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
 - `ItemStorage` e `ItemStorageEntry` forman la base comun runtime-only de storage de items con cantidades simples.
-- `InventoryComponent` usa `ItemStorage` internamente sin romper pickup, equip ni `InventoryDebugPanel`.
+- `InventoryComponent` usa `ItemStorage` internamente como Storage y separa Equipped conceptualmente.
+- `right_hand` es el primer slot runtime funcional de actor y usa `rightHandItemInstanceId`.
 - `ContainerLootComponent` inicializa storage interno una sola vez desde su loot table y `search_container` transfiere contenido existente al inventario.
 - `InventoryDebugPanel` muestra cantidades simples cuando `Quantity > 1`.
 - `WorldObjectDebugInfo` selecciona textos de inspeccion por `RuntimeTags`, `requiredTags`, `forbiddenTags` y prioridad.
@@ -33,8 +34,14 @@ Estado actual:
 - `ItemStorageDebugPanel` permite `Take 1`, `Take Stack`, `Take All` y `Close`.
 - `looted_container` solo aparece cuando el storage queda vacio.
 - Food/Water Debug Crate y Misc Debug Crate usan x500 y cambian color por `WorldObjectStateView`.
-- `equippable` en `ItemDefinition` controla si `InventoryDebugPanel` muestra `Equip`.
-- La palanca sigue equipable; agua/comida no se equipan pero si se usan.
+- `equip.equippable`, `equip.allowed_slots` y `equip.occupied_slots` controlan equipamiento por slot en JSON.
+- `equippable` plano queda como compatibilidad temporal.
+- La palanca sigue equipable solo en `right_hand`; agua/comida/scrap no se equipan pero agua/comida si se usan.
+- `DataValidator` detecta contradicciones entre `equippable` plano y `equip.equippable`.
+- `InventoryDebugPanel` muestra Equipped separado de Storage.
+- `InteractionSystem` sigue habilitando `force_door` y `pry_open_container` con la palanca equipada.
+- `ContextualActionDebugPanel` revalida acciones antes de ejecutar y refresca disponibilidad si cambia el item equipado.
+- Loot final validado: Scrap x501, Water x500, Food x500, Crowbar x1.
 - El POI ahora tiene una base runtime-only de feedback estructurado mediante `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
 - El feedback registra `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged`.
 - El POI ahora tiene diagnostico runtime-only de disponibilidad mediante `ActionAvailabilityDiagnosticReport`, `ActionAvailabilityDiagnosticEntry` y `DebugActionAvailabilityPanel`.
@@ -49,12 +56,12 @@ Estado actual:
 - No se creo UI final, save system, EventBus, listeners/subscriptions/callbacks, IA ni combate.
 - No se creo journal, quest log, UI final, save system, EventBus, listeners/subscriptions/callbacks ni sistemas grandes.
 - No se rompieron `InventoryComponent`, `WorldItemPickup`, `ContainerLootComponent`, action duration, runtime tags ni loot tables.
-- No se toco JSON, schema, `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base.
+- No se hizo refactor grande de `InteractionSystem`, `ActionAvailabilityEvaluator`, diagnostics ni `GameplayFeedbackLog` base.
 
 Proxima accion recomendada:
 
-- Milestone 23: Actor Inventory Foundation v0 queda como proximo milestone pendiente.
-- En M23 se empieza a pensar inventario de actores/personajes/cadaveres, usando `ItemStorage` como base comun.
+- Milestone 23.1: Lootable Debug Actor + Health v0 queda como proximo milestone pendiente.
+- M23.1 debe usar la base de inventario de actor validada en M23.
 - No definir implementacion completa todavia.
 
 Base validada:
@@ -322,6 +329,48 @@ Milestone 22.1.2 validado:
 - Agua/comida no se pueden equipar, pero si usar.
 - Data load sigue OK con 0 errors y 0 warnings.
 
+Milestone 23 validado:
+
+- Milestone 23: Actor Inventory Foundation v0 esta `validated`.
+- `InventoryComponent` separa conceptualmente Storage y Equipped.
+- `right_hand` es el primer slot runtime funcional.
+- `rightHandItemInstanceId` es la fuente real del item equipado; no se usa indice como fuente.
+- El item equipado sigue dentro de `ItemStorage`.
+- `rusted_crowbar_01` se equipa solo en `right_hand` segun JSON.
+- `equip.equippable`, `equip.allowed_slots` y `equip.occupied_slots` estan soportados.
+- `equippable` plano queda como compatibilidad temporal.
+- `DataValidator` detecta contradicciones entre `equippable` plano y `equip.equippable`.
+- `InventoryComponent` valida internamente si un item puede equiparse.
+- `InventoryDebugPanel` muestra Equipped separado de Storage.
+- Agua/comida/scrap no se pueden equipar.
+- Agua/comida siguen usando `Use`.
+- `InteractionSystem` sigue detectando la palanca equipada y habilita `force_door` / `pry_open_container`.
+- Loot final validado: Scrap x501, Water x500, Food x500, Crowbar x1.
+- Data load sigue OK con 0 errors y 0 warnings.
+- F7, F8, I, Hunger/Thirst, `GameplayFeedbackLog`, `ItemStorageDebugPanel` y loot de cajas siguen funcionando.
+
+Milestone 23.0.1 validado:
+
+- Milestone 23.0.1: Hotfix - Cleanup legacy equipped index warning esta `validated`.
+- Se elimino el warning CS0414 del indice legacy de equip.
+- `rightHandItemInstanceId` sigue siendo la fuente real.
+- `GetEquippedItemDefinitionId()` sigue devolviendo el item de `right_hand`.
+
+Milestone 23.0.2 validado:
+
+- Milestone 23.0.2: Hotfix - Revalidate Action Requirements Before Execution esta `validated`.
+- Las acciones contextuales se revalidan antes de iniciar progreso.
+- Si la accion ya no esta disponible, no se ejecuta y muestra feedback debug.
+- Menus viejos no pueden iniciar `force_door` / `pry_open_container` si la palanca fue desequipada.
+
+Milestone 23.0.3 validado:
+
+- Milestone 23.0.3: Hotfix - Refresh Context Menu Availability esta `validated`.
+- El menu contextual detecta cambios del item equipado mientras esta abierto.
+- El menu refresca acciones usando `InteractionSystem.GetAvailableActions()`.
+- `Item` cambia entre `rusted_crowbar_01` y `(none)`.
+- `force_door` / `pry_open_container` desaparecen al desequipar y vuelven al reequipar si el target sigue valido.
+
 Pruebas validadas:
 
 - Con `DebugInventory.equippedItemIndex = 0`, puerta muestra `force_door` + `examine_object`, contenedor muestra `pry_open_container` + `examine_object`, maquina muestra `examine_object`.
@@ -436,11 +485,11 @@ Pruebas validadas de Milestone 18:
 - Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
 
-### Milestone 23
+### Milestone 23.1
 
-- Actor Inventory Foundation v0.
+- Lootable Debug Actor + Health v0.
 - Pendiente.
-- Empezar a pensar inventario de actores/personajes/cadaveres usando `ItemStorage` como base comun.
+- Debe usar la base de inventario de actor validada en M23.
 - No definir implementacion completa todavia.
 
 ## Pospuestos / No Tocar Todavia

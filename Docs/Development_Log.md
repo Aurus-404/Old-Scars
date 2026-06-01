@@ -661,6 +661,70 @@
 - No se creo equipment system avanzado, slots de manos, ActorInventoryComponent, UI final, documentacion, commit ni push durante el hotfix.
 - Estado: validated.
 
+### Actor Inventory Foundation v0
+
+- Milestone 23 implementado y validado como base de inventario de actor.
+- `InventoryComponent` separa conceptualmente Storage y Equipped.
+- `ItemStorage` sigue siendo la base principal para guardar items.
+- `right_hand` queda como primer slot runtime funcional.
+- `right_hand` usa `rightHandItemInstanceId`, no indice.
+- El item equipado sigue existiendo dentro de `ItemStorage`.
+- `ItemStorage` puede resolver entries por `ItemInstance.InstanceId`.
+- `rusted_crowbar_01` se equipa solo en `right_hand` segun JSON.
+- `ItemDefinition` soporta `equip.equippable`, `equip.allowed_slots` y `equip.occupied_slots`.
+- `equippable` plano queda como compatibilidad temporal.
+- `DataValidator` detecta contradicciones entre `equippable` plano y `equip.equippable`.
+- En M23 el unico slot valido es `right_hand`.
+- `InventoryComponent` valida internamente si un item puede equiparse antes de aceptar la operacion.
+- Agua, comida y scrap no se pueden equipar ni por UI ni por llamada interna.
+- Agua y comida siguen usando `Use`.
+- `InventoryDebugPanel` muestra Equipped separado de Storage.
+- `InventoryDebugPanel` muestra `Equip` solo si `InventoryComponent` confirma que el item puede equiparse en `right_hand`.
+- `ActorInteractionContext` / `InteractionSystem` siguen obteniendo el item equipado mediante `GetEquippedItemDefinitionId()`.
+- Validado en Unity: con crowbar equipada, `force_door` y `pry_open_container` siguen disponibles.
+- Validado en Unity: loot final queda Scrap x501, Water x500, Food x500, Crowbar x1.
+- Validado en Unity: data load 0 errors / 0 warnings.
+- Validado en Unity: F7, F8, I, Hunger/Thirst, `GameplayFeedbackLog`, `ItemStorageDebugPanel` y loot de cajas siguen funcionando.
+- No se implemento `equip_visual`.
+- No se implementaron `left_hand`, `both_hands`, ropa/armadura, NPCs, cadaveres, salud, muerte, IA, combate real, save system ni UI final.
+- Estado: validated.
+
+### Hotfix - Cleanup legacy equipped index warning
+
+- Milestone 23.0.1 implementado y validado como hotfix de warning en `InventoryComponent`.
+- Se elimino el warning CS0414 del campo legacy de indice equipado.
+- `rightHandItemInstanceId` sigue siendo la fuente real del equipamiento.
+- `GetEquippedItemDefinitionId()` sigue devolviendo el item equipado en `right_hand`.
+- No se cambio el flujo de `right_hand`.
+- No se toco `InteractionSystem`, docs, escena, Unity/batchmode, commit ni push durante el hotfix.
+- Estado: validated.
+
+### Hotfix - Revalidate Action Requirements Before Execution
+
+- Milestone 23.0.2 implementado y validado como proteccion contra menus contextuales viejos.
+- `ContextualActionDebugPanel` revalida la accion antes de iniciar `DebugActionProgressController`.
+- La revalidacion reconstruye el contexto actual del actor, target, item equipado y action context.
+- La revalidacion usa el flujo existente de `InteractionSystem` / disponibilidad de acciones.
+- Si la accion ya no esta disponible, no inicia progreso.
+- Si la accion ya no esta disponible, muestra feedback/log debug indicando que la accion ya no esta disponible o que los requisitos cambiaron.
+- Validado en Unity: desequipar la palanca despues de abrir un menu viejo bloquea `force_door` y `pry_open_container`.
+- No se hizo refactor grande de `InteractionSystem`.
+- No se implementaron acciones instantaneas/repetidas, NPCs, salud, cadaveres, IA ni combate.
+- Estado: validated.
+
+### Hotfix - Refresh Context Menu Availability
+
+- Milestone 23.0.3 implementado y validado como refresco visual del menu contextual debug.
+- Mientras `ContextualActionDebugPanel` esta abierto, compara el equipped item actual con el ultimo observado.
+- Si cambia el item equipado, refresca acciones disponibles usando `InteractionSystem.GetAvailableActions()`.
+- La linea `Item` del menu cambia entre `rusted_crowbar_01` y `(none)`.
+- `force_door` y `pry_open_container` desaparecen al desequipar la palanca.
+- `force_door` y `pry_open_container` vuelven a aparecer al reequipar la palanca si el target sigue valido.
+- La revalidacion de M23.0.2 sigue siendo la proteccion real antes de ejecutar.
+- No se duplicaron reglas de tags/items/stats en el panel.
+- No se agrego sistema de eventos grande ni refactor grande de `InteractionSystem`.
+- Estado: validated.
+
 ### Deuda Tecnica Menor Detectada
 
 - GameDataManager mostraba warning de DontDestroyOnLoad porque no estaba en un root GameObject.
@@ -847,6 +911,27 @@ Milestone 22.1.2 validado:
 - la palanca sigue equipable;
 - agua, comida y scrap no muestran `Equip`;
 - agua/comida siguen mostrando `Use`.
+
+Milestone 23 validado:
+
+- `InventoryComponent` separa Storage y Equipped como base de inventario de actor;
+- `right_hand` es el primer slot runtime funcional;
+- `rightHandItemInstanceId` es la fuente real del item equipado;
+- el item equipado sigue dentro de `ItemStorage`;
+- la palanca se equipa solo en `right_hand` desde JSON;
+- `equip.equippable`, `equip.allowed_slots` y `equip.occupied_slots` estan soportados;
+- `equippable` plano queda como compatibilidad temporal;
+- `DataValidator` detecta contradicciones entre `equippable` plano y `equip.equippable`;
+- `InventoryComponent` rechaza internamente items invalidos;
+- `InventoryDebugPanel` muestra Equipped separado de Storage;
+- agua/comida/scrap no se equipan;
+- agua/comida siguen usando `Use`;
+- `InteractionSystem` sigue habilitando `force_door` y `pry_open_container` con la palanca equipada;
+- las acciones se revalidan antes de ejecutarse;
+- el menu contextual se refresca si cambia el item equipado;
+- data load 0 errors / 0 warnings;
+- F7, F8, I, Hunger/Thirst, `GameplayFeedbackLog`, `ItemStorageDebugPanel` y loot de cajas siguen funcionando;
+- loot final validado: Scrap x501, Water x500, Food x500, Crowbar x1.
 
 Con `InventoryComponent` asignado:
 

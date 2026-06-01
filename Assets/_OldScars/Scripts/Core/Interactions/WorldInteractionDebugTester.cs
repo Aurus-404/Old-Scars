@@ -200,7 +200,7 @@ namespace OldScars.Core.Interactions
                 return;
             }
 
-            debugPanel.ShowActions(availableActions, targetTags, equippedItemDefinitionId, mousePosition, actorInteractionContext);
+            debugPanel.ShowActions(availableActions, targetTags, equippedItemDefinitionId, mousePosition, actorInteractionContext, RequiredActionContext);
         }
 
         private void ShowAvailabilityDiagnostics(ActionAvailabilityDiagnosticReport report)

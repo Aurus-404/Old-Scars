@@ -65,6 +65,29 @@ namespace OldScars.Core.Items
             return IsIndexValid(index) ? entries[index] : null;
         }
 
+        public ItemStorageEntry GetEntryByInstanceId(string instanceId)
+        {
+            int index = GetEntryIndexByInstanceId(instanceId);
+            return index >= 0 ? entries[index] : null;
+        }
+
+        public int GetEntryIndexByInstanceId(string instanceId)
+        {
+            if (string.IsNullOrWhiteSpace(instanceId))
+                return -1;
+
+            string trimmedInstanceId = instanceId.Trim();
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                ItemInstance item = entry != null ? entry.Item : null;
+                if (item != null && item.InstanceId == trimmedInstanceId)
+                    return index;
+            }
+
+            return -1;
+        }
+
         public bool RemoveAt(int index)
         {
             if (!IsIndexValid(index))

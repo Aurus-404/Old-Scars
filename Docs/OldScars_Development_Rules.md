@@ -1,5 +1,5 @@
 # Old Scars — Development Rules for ChatGPT + Codex
-Version: 0.4
+Version: 0.5
 Purpose: shared compact rule file for ChatGPT and Codex. This file stores specific technical/work rules that should not live in ChatGPT memory. Keep it concise, updated, and versioned in the repo.
 
 Recommended repo path:
@@ -46,6 +46,10 @@ When a new specific rule is defined or changed:
 - `max_stack = 1` means non-stackable.
 - `max_stack > 1` allows simple merge in `ItemStorage`.
 - `equippable` is a functional boolean in `ItemDefinition`, not a tag.
+- `equip.equippable` is the current source for slot-aware equipment when an `equip` block exists.
+- Flat `equippable` remains temporary compatibility and must not contradict `equip.equippable`.
+- Equipment slot IDs must be technical IDs; currently validated runtime slot: `right_hand`.
+- `equip.allowed_slots` and `equip.occupied_slots` must use valid slot IDs.
 - Consumables use the closed `consumable.restore_needs` block.
 - Consumable effects are data-driven parameters for closed C# logic, not free JSON scripting.
 
@@ -216,12 +220,18 @@ Migration rule:
 
 ## 9. Actor inventory / NPC loot profile rules
 
+- Actor inventory should separate Storage from Equipped conceptually.
+- `ItemStorage` remains the common runtime base for actor storage, containers, corpse loot, and future backpacks/pockets.
+- Equipped actor items may remain in Storage and be referenced by `ItemInstance.InstanceId`.
+- Do not use storage indices as the durable source of equipped state when an instance id is available.
+- In the current validated runtime, `right_hand` uses `rightHandItemInstanceId`.
+- Inventory/equipment UI must not be the only guard: actor inventory code must internally reject invalid equipment.
 - NPC/actor starting inventory should be defined through data profiles/templates, not hardcoded per scene object when avoidable.
 - JSON may define actor inventory candidates by storage/slot, such as right_hand candidates and base_storage contents.
 - Candidate lists should reference existing item definition IDs and use simple weights/probabilities/quantities.
 - Runtime spawning picks from those candidates and creates ItemInstances; the JSON profile is not the live inventory after spawn.
 - Save data must store the picked runtime inventory/instances, not reroll the profile.
-- Equipped item candidates must respect equippable data now, and future slot rules when right_hand/left_hand/body slots exist.
+- Equipped item candidates must respect equip data and validated slot rules.
 - Lootable dead actors should expose their actor inventory/storages; they should not be converted into generic static containers unless explicitly approved for a limited debug shortcut.
 - Reuse ItemStorage for actor storage, corpse loot, containers, and future backpacks/pockets.
 - Keep the first NPC loot profile minimal and validated before adding many NPC archetypes.

@@ -2,9 +2,9 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario jugable v0 con pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, consumibles cerrados por JSON, UI debug de survival y saqueo manual de contenedores.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario de actor v0 con Storage y Equipped separados conceptualmente, pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, consumibles cerrados por JSON, UI debug de survival y saqueo manual de contenedores.
 
-Milestone 22, Milestone 22.1, Milestone 22.1.1 y Milestone 22.1.2 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2 y Milestone 23.0.3 estan validados en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
@@ -17,10 +17,14 @@ Ultimo milestone validado:
 - Milestone 22.1: Survival UI, Action Feedback & Manual Container Loot v0.
 - Milestone 22.1.1: Hotfix - Wire Survival and Storage Debug UI.
 - Milestone 22.1.2: Hotfix - Equippable Item Flag.
+- Milestone 23: Actor Inventory Foundation v0.
+- Milestone 23.0.1: Hotfix - Cleanup legacy equipped index warning.
+- Milestone 23.0.2: Hotfix - Revalidate Action Requirements Before Execution.
+- Milestone 23.0.3: Hotfix - Refresh Context Menu Availability.
 
 Proximo recomendado:
 
-- Milestone 23: Actor Inventory Foundation v0 queda como proximo milestone pendiente, sin definir implementacion completa todavia.
+- Milestone 23.1: Lootable Debug Actor + Health v0 queda como proximo milestone pendiente. Debe usar la base de inventario de actor de M23, sin definir implementacion completa todavia.
 
 
 ## Milestones Validados
@@ -464,6 +468,62 @@ Validado en Unity:
 - Cantidades, stacking, `Use` e `ItemStorageDebugPanel` siguen funcionando.
 - Data load sigue OK con 0 errors y 0 warnings.
 
+### Milestone 23: Actor Inventory Foundation v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `InventoryComponent` separa conceptualmente Storage y Equipped.
+- `right_hand` es el primer slot runtime funcional.
+- `right_hand` usa `rightHandItemInstanceId`, no indice.
+- El item equipado sigue existiendo dentro de `ItemStorage`.
+- `rusted_crowbar_01` se equipa solo en `right_hand` segun JSON.
+- `equip.equippable`, `equip.allowed_slots` y `equip.occupied_slots` estan soportados.
+- `equippable` plano queda como compatibilidad temporal.
+- `DataValidator` detecta contradicciones entre `equippable` plano y `equip.equippable`.
+- `InventoryComponent` valida internamente si un item puede equiparse.
+- `InventoryDebugPanel` muestra Equipped separado de Storage.
+- Agua/comida/scrap no se pueden equipar.
+- Agua/comida siguen mostrando `Use`.
+- `InteractionSystem` sigue detectando la palanca equipada y habilita `force_door` / `pry_open_container`.
+- Loot final validado: Scrap x501, Water x500, Food x500, Crowbar x1.
+- Data load sigue OK con 0 errors y 0 warnings.
+- F7, F8, I, Hunger/Thirst, `GameplayFeedbackLog`, `ItemStorageDebugPanel` y loot de cajas siguen funcionando.
+
+### Milestone 23.0.1: Hotfix - Cleanup legacy equipped index warning
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- Se elimino el warning CS0414 del indice legacy de equip en `InventoryComponent`.
+- `rightHandItemInstanceId` sigue siendo la fuente real del equipamiento.
+- `GetEquippedItemDefinitionId()` sigue devolviendo el item equipado en `right_hand`.
+
+### Milestone 23.0.2: Hotfix - Revalidate Action Requirements Before Execution
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `ContextualActionDebugPanel` revalida la accion antes de iniciar `DebugActionProgressController`.
+- La revalidacion usa el flujo existente de `InteractionSystem` y disponibilidad de acciones.
+- Si la accion ya no esta disponible, no inicia progreso y muestra feedback debug.
+- Cubre `force_door` y `pry_open_container` si la palanca fue desequipada despues de abrir el menu.
+
+### Milestone 23.0.3: Hotfix - Refresh Context Menu Availability
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- Mientras `ContextualActionDebugPanel` esta abierto, compara el item equipado actual con el ultimo observado.
+- Si el item equipado cambia, refresca acciones disponibles con `InteractionSystem.GetAvailableActions`.
+- La linea `Item` cambia entre `rusted_crowbar_01` y `(none)`.
+- `force_door` / `pry_open_container` desaparecen al desequipar y vuelven al reequipar si el target sigue valido.
+- La revalidacion de M23.0.2 sigue protegiendo antes de ejecutar.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -472,7 +532,7 @@ Validado en Unity:
 - C# ejecuta logica.
 - `GameDataLoader` carga `StreamingAssets/Mods/Core`.
 - `GameDatabase` expone definiciones cargadas.
-- `DataValidator` valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles y warnings no destructivos de `weapon_tags`.
+- `DataValidator` valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
 
 ### Interaction System
 
@@ -494,17 +554,22 @@ Validado en Unity:
 - `ItemInstance` representa una instancia runtime minima de un item definition.
 - `ItemInstance` guarda `InstanceId`, `DefinitionId` y `Condition`.
 - `ItemStorage` es una clase C# pura runtime-only para almacenar entries de items con cantidades simples.
+- `ItemStorage` permite resolver entries por `ItemInstance.InstanceId` para referencias seguras desde Equipped.
 - `ItemStorage` mergea stacks por mismo `definitionId` hasta `max_stack` cuando `max_stack > 1`.
 - `ItemStorageEntry` representa un `ItemInstance` y una `Quantity >= 1`.
 - La cantidad pertenece al storage; no se agrego `Quantity` a `ItemInstance`.
 - `max_stack` en `ItemDefinition` define el stackeo simple; `max_stack = 1` significa no stackeable.
-- `equippable` en `ItemDefinition` es un boolean funcional, no un tag.
+- `equip.equippable` es la fuente actual de equipabilidad por slot cuando existe el bloque `equip`.
+- `equippable` plano en `ItemDefinition` queda como compatibilidad temporal y no debe contradecir `equip.equippable`.
+- `equip.allowed_slots` y `equip.occupied_slots` usan IDs tecnicos; en M23 solo `right_hand` esta validado.
 - `consumable.restore_needs` define efectos cerrados de consumibles por `need_id` y `amount`.
 - `LootTableDefinition` representa una tabla v0 deterministica de loot.
-- `InventoryComponent` v0 usa `ItemStorage` internamente.
-- `InventoryComponent` permite `AddItemByDefinitionId`, `AddItemByDefinitionId` con cantidad simple, `EquipIndex` y `Unequip`.
+- `InventoryComponent` v0 usa `ItemStorage` internamente como Storage.
+- `InventoryComponent` expone Equipped separado conceptualmente, con `right_hand` como primer slot runtime.
+- `InventoryComponent` usa `rightHandItemInstanceId` para referenciar el item equipado.
+- `InventoryComponent` permite `AddItemByDefinitionId`, `AddItemByDefinitionId` con cantidad simple, equipar/unequipar `right_hand` y compatibilidad con metodos legacy de equip.
 - `InventoryComponent` no autoequipa al recoger.
-- `InventoryDebugPanel` lee entries de storage, muestra cantidades, permite `Use` en consumibles y muestra `Equip` solo si `equippable == true`.
+- `InventoryDebugPanel` muestra Equipped separado de Storage, lee entries de storage, muestra cantidades, permite `Use` en consumibles y muestra `Equip` solo si `InventoryComponent` confirma que el item puede equiparse en `right_hand`.
 - `InventoryItemUseService` aplica consumibles a `ActorNeedsComponent` y consume cantidad solo si hubo efecto valido.
 - `ItemStorageDebugPanel` es panel debug reusable para ver y tomar contenido de storages accesibles.
 - `DebugInventory` crea instancias runtime al iniciar cuando `GameDataManager` esta listo.
@@ -591,7 +656,7 @@ Validado en Unity:
 
 - `WorldInteractionDebugTester` coordina input de interaccion, raycast y bridge hacia UI.
 - `WorldInteractionDebugTester.logAvailabilityDetails` activa logs detallados opcionales de disponibilidad.
-- `ContextualActionDebugPanel` muestra acciones disponibles con OnGUI.
+- `ContextualActionDebugPanel` muestra acciones disponibles con OnGUI, revalida antes de ejecutar y refresca el menu si cambia el item equipado.
 - `ContextualActionDebugProgressPanel` muestra progreso debug de accion activa.
 - `ContextualActionDebugResultPanel` muestra resultados debug.
 - `InventoryDebugPanel` muestra inventario v0 con OnGUI y se abre con `I`.
@@ -650,9 +715,9 @@ Validado en Unity:
 
 ## Proximo Recomendado
 
-Milestone 23: Actor Inventory Foundation v0 queda como proximo milestone pendiente.
+Milestone 23.1: Lootable Debug Actor + Health v0 queda como proximo milestone pendiente.
 
-En M23 se empieza a pensar inventario de actores/personajes/cadaveres, usando `ItemStorage` como base comun. No hay implementacion completa definida todavia.
+M23.1 debe usar la base de inventario de actor validada en M23. No hay implementacion completa definida todavia.
 
 Milestone 16 fue validado con:
 

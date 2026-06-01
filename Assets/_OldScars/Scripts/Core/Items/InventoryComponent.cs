@@ -15,13 +15,15 @@ namespace OldScars.Core.Items
     public sealed class InventoryComponent : MonoBehaviour
     {
         private const string NoItemId = "none";
+        public const string RightHandSlotId = "right_hand";
 
-        [SerializeField] private int equippedItemIndex = -1;
+        [SerializeField] private string rightHandItemInstanceId;
 
         private readonly ItemStorage storage = new ItemStorage();
         private readonly List<ItemInstance> itemInstancesView = new List<ItemInstance>();
 
-        public int EquippedItemIndex => equippedItemIndex;
+        public string RightHandItemInstanceId => rightHandItemInstanceId;
+        public int EquippedItemIndex => GetRightHandItemIndex();
         public IReadOnlyList<ItemStorageEntry> Entries => storage.Entries;
         public bool IsEmpty => storage.IsEmpty;
 
@@ -109,6 +111,7 @@ namespace OldScars.Core.Items
             }
 
             bool removesEntry = quantity >= entry.Quantity;
+            string removedInstanceId = removesEntry && entry.Item != null ? entry.Item.InstanceId : null;
             if (!storage.RemoveAt(index, quantity))
             {
                 Debug.LogWarning($"[InventoryComponent] Failed to remove quantity {quantity} from item index {index}.");
@@ -116,7 +119,7 @@ namespace OldScars.Core.Items
             }
 
             if (removesEntry)
-                AdjustEquippedIndexAfterEntryRemoval(index);
+                ClearRightHandIfInstanceId(removedInstanceId);
 
             return true;
         }
@@ -151,62 +154,184 @@ namespace OldScars.Core.Items
 
         public ItemInstance GetEquippedItemInstance()
         {
-            ItemStorageEntry equippedEntry = GetEquippedStorageEntry();
-            return equippedEntry != null ? equippedEntry.Item : null;
+            return GetRightHandItemInstance();
         }
 
         public ItemStorageEntry GetEquippedStorageEntry()
         {
-            return IsEquippedItemIndexValid() ? storage.GetEntry(equippedItemIndex) : null;
+            return GetRightHandStorageEntry();
         }
 
         public string GetEquippedItemDefinitionId()
         {
-            ItemInstance equippedItem = GetEquippedItemInstance();
-            return equippedItem != null ? equippedItem.DefinitionId : null;
+            return GetRightHandItemDefinitionId();
+        }
+
+        public ItemInstance GetRightHandItemInstance()
+        {
+            ItemStorageEntry entry = GetRightHandStorageEntry();
+            return entry != null ? entry.Item : null;
+        }
+
+        public ItemStorageEntry GetRightHandStorageEntry()
+        {
+            if (IsNoItemId(rightHandItemInstanceId))
+                return null;
+
+            ItemStorageEntry entry = storage.GetEntryByInstanceId(rightHandItemInstanceId);
+            if (entry == null)
+                rightHandItemInstanceId = null;
+
+            return entry;
+        }
+
+        public string GetRightHandItemDefinitionId()
+        {
+            ItemInstance item = GetRightHandItemInstance();
+            return item != null ? item.DefinitionId : null;
+        }
+
+        public int GetRightHandItemIndex()
+        {
+            if (IsNoItemId(rightHandItemInstanceId))
+                return -1;
+
+            int index = storage.GetEntryIndexByInstanceId(rightHandItemInstanceId);
+            if (index < 0)
+                rightHandItemInstanceId = null;
+
+            return index;
+        }
+
+        public bool IsRightHandEquippedIndex(int index)
+        {
+            return IsRightHandStorageEntry(storage.GetEntry(index));
+        }
+
+        public bool IsRightHandStorageEntry(ItemStorageEntry entry)
+        {
+            ItemInstance item = entry != null ? entry.Item : null;
+            return item != null && !IsNoItemId(rightHandItemInstanceId) && item.InstanceId == rightHandItemInstanceId;
+        }
+
+        public bool CanEquipIndexToRightHand(int index)
+        {
+            return CanEquipIndexToSlot(index, RightHandSlotId, out _);
         }
 
         public bool EquipIndex(int index)
         {
-            ItemStorageEntry entry = storage.GetEntry(index);
-            if (entry == null || entry.Item == null)
-            {
-                Debug.LogWarning($"[InventoryComponent] Cannot equip invalid item index {index}.");
-                return false;
-            }
+            return TryEquipIndexToRightHand(index);
+        }
 
-            equippedItemIndex = index;
-            ItemInstance equippedItem = entry.Item;
-            Debug.Log($"[InventoryComponent] Equipped item {equippedItem.DefinitionId} [{equippedItem.InstanceId}] at index {equippedItemIndex}.");
-            RecordItemEquipped(equippedItem);
-            return true;
+        public bool TryEquipIndexToRightHand(int index)
+        {
+            return TryEquipIndexToSlot(index, RightHandSlotId);
         }
 
         public void Unequip()
         {
-            ItemInstance unequippedItem = GetEquippedItemInstance();
-            equippedItemIndex = -1;
-            Debug.Log("[InventoryComponent] Equipped item cleared.");
+            UnequipRightHand();
+        }
+
+        public void UnequipRightHand()
+        {
+            ItemInstance unequippedItem = GetRightHandItemInstance();
+            rightHandItemInstanceId = null;
+            Debug.Log("[InventoryComponent] Right hand slot cleared.");
 
             if (unequippedItem != null)
                 RecordItemUnequipped(unequippedItem);
         }
 
-        private bool IsEquippedItemIndexValid()
+        private bool TryEquipIndexToSlot(int index, string slotId)
         {
-            return equippedItemIndex >= 0 && equippedItemIndex < storage.EntryCount;
+            if (!CanEquipIndexToSlot(index, slotId, out string reason))
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot equip item index {index} to '{SafeText(slotId)}': {reason}");
+                return false;
+            }
+
+            ItemStorageEntry entry = storage.GetEntry(index);
+            ItemInstance item = entry.Item;
+            if (item.InstanceId == rightHandItemInstanceId)
+                return true;
+
+            ItemInstance previousItem = GetRightHandItemInstance();
+            rightHandItemInstanceId = item.InstanceId;
+
+            Debug.Log($"[InventoryComponent] Equipped item {item.DefinitionId} [{item.InstanceId}] to {slotId}.");
+
+            if (previousItem != null)
+                RecordItemUnequipped(previousItem);
+
+            RecordItemEquipped(item);
+            return true;
         }
 
-        private void AdjustEquippedIndexAfterEntryRemoval(int removedIndex)
+        private bool CanEquipIndexToSlot(int index, string slotId, out string reason)
         {
-            if (equippedItemIndex == removedIndex)
+            reason = null;
+
+            if (slotId != RightHandSlotId)
             {
-                equippedItemIndex = -1;
+                reason = $"slot '{SafeText(slotId)}' is not supported in Milestone 23.";
+                return false;
             }
-            else if (equippedItemIndex > removedIndex)
+
+            ItemStorageEntry entry = storage.GetEntry(index);
+            if (entry == null || entry.Item == null)
             {
-                equippedItemIndex--;
+                reason = "invalid storage entry.";
+                return false;
             }
+
+            if (entry.Quantity > 1)
+            {
+                reason = "stacked entries cannot be equipped in Milestone 23.";
+                return false;
+            }
+
+            ItemDefinition definition = GetItemDefinition(entry.DefinitionId);
+            if (definition == null)
+            {
+                reason = $"item definition '{SafeText(entry.DefinitionId)}' was not found.";
+                return false;
+            }
+
+            if (!IsDefinitionEquipEnabled(definition))
+            {
+                reason = $"item '{SafeText(entry.DefinitionId)}' is not equipable.";
+                return false;
+            }
+
+            if (definition.equip == null)
+            {
+                reason = $"item '{SafeText(entry.DefinitionId)}' has no equip block.";
+                return false;
+            }
+
+            if (!ContainsSlot(definition.equip.allowed_slots, slotId))
+            {
+                reason = $"item '{SafeText(entry.DefinitionId)}' is not allowed in slot '{slotId}'.";
+                return false;
+            }
+
+            if (!ContainsSlot(definition.equip.occupied_slots, slotId))
+            {
+                reason = $"item '{SafeText(entry.DefinitionId)}' does not occupy slot '{slotId}'.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ClearRightHandIfInstanceId(string instanceId)
+        {
+            if (IsNoItemId(instanceId) || instanceId != rightHandItemInstanceId)
+                return;
+
+            rightHandItemInstanceId = null;
         }
 
         private static string NormalizeItemId(string itemId)
@@ -217,6 +342,43 @@ namespace OldScars.Core.Items
         private static bool IsNoItemId(string itemId)
         {
             return string.IsNullOrWhiteSpace(itemId) || itemId.ToLowerInvariant() == NoItemId;
+        }
+
+        private static ItemDefinition GetItemDefinition(string definitionId)
+        {
+            if (string.IsNullOrWhiteSpace(definitionId))
+                return null;
+
+            if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+                return null;
+
+            GameDatabase database = GameDataManager.Instance.Database;
+            return database != null ? database.GetItem(definitionId) : null;
+        }
+
+        private static bool IsDefinitionEquipEnabled(ItemDefinition definition)
+        {
+            if (definition == null)
+                return false;
+
+            if (definition.equip != null && definition.equip.equippable.HasValue)
+                return definition.equip.equippable.Value;
+
+            return definition.equippable.GetValueOrDefault(false);
+        }
+
+        private static bool ContainsSlot(string[] slots, string slotId)
+        {
+            if (slots == null || string.IsNullOrWhiteSpace(slotId))
+                return false;
+
+            for (int index = 0; index < slots.Length; index++)
+            {
+                if (slots[index] == slotId)
+                    return true;
+            }
+
+            return false;
         }
 
         private void RecordItemEquipped(ItemInstance item)

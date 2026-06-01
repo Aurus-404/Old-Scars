@@ -16,7 +16,7 @@ namespace OldScars.Core.Items
     public sealed class InventoryDebugPanel : MonoBehaviour
     {
         private const float PanelWidth = 560f;
-        private const float PanelHeight = 360f;
+        private const float PanelHeight = 410f;
 
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorNeedsComponent actorNeeds;
@@ -82,29 +82,22 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            GUILayout.Label($"Equipped: {GetEquippedItemLabel()}");
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Unequip", GUILayout.Height(24f)))
-                inventory.Unequip();
-
-            if (GUILayout.Button("Close", GUILayout.Height(24f)))
-                Hide();
-            GUILayout.EndHorizontal();
+            DrawEquippedSection();
 
             GUILayout.Space(8f);
 
             if (!string.IsNullOrWhiteSpace(lastUseMessage))
                 GUILayout.Label(lastUseMessage);
 
+            GUILayout.Label("Storage:");
             IReadOnlyList<ItemStorageEntry> entries = inventory.GetStorageEntries();
             if (entries == null || entries.Count == 0)
             {
-                GUILayout.Label("Inventory is empty.");
+                GUILayout.Label("Storage is empty.");
             }
             else
             {
-                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(210f));
+                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(230f));
 
                 for (int index = 0; index < entries.Count; index++)
                     DrawItemRow(index, entries[index]);
@@ -115,19 +108,37 @@ namespace OldScars.Core.Items
             GUILayout.EndArea();
         }
 
+        private void DrawEquippedSection()
+        {
+            GUILayout.Label("Equipped:");
+            GUILayout.BeginHorizontal(GUI.skin.box);
+            GUILayout.Label($"Right Hand: {GetEquippedItemLabel()}", GUILayout.Width(340f));
+
+            bool hasRightHandItem = inventory.GetRightHandStorageEntry() != null;
+            GUI.enabled = hasRightHandItem;
+            if (GUILayout.Button("Unequip", GUILayout.Height(24f), GUILayout.Width(90f)))
+                inventory.UnequipRightHand();
+            GUI.enabled = true;
+
+            if (GUILayout.Button("Close", GUILayout.Height(24f), GUILayout.Width(90f)))
+                Hide();
+
+            GUILayout.EndHorizontal();
+        }
+
         private void DrawItemRow(int index, ItemStorageEntry entry)
         {
             ItemInstance item = entry != null ? entry.Item : null;
 
             GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label(GetItemLabel(index, entry), GUILayout.Width(300f));
+            GUILayout.Label(GetItemLabel(index, entry), GUILayout.Width(330f));
 
-            if (IsEquippable(entry))
+            bool isEquipped = inventory.IsRightHandEquippedIndex(index);
+            if (isEquipped || inventory.CanEquipIndexToRightHand(index))
             {
-                bool isEquipped = inventory.EquippedItemIndex == index;
                 GUI.enabled = item != null && !isEquipped;
-                if (GUILayout.Button(isEquipped ? "Equipped" : "Equip", GUILayout.Height(24f)))
-                    inventory.EquipIndex(index);
+                if (GUILayout.Button(isEquipped ? "Equipped" : "Equip", GUILayout.Height(24f), GUILayout.Width(80f)))
+                    inventory.TryEquipIndexToRightHand(index);
                 GUI.enabled = true;
             }
 
@@ -154,7 +165,7 @@ namespace OldScars.Core.Items
         {
             ItemStorageEntry entry = inventory.GetEquippedStorageEntry();
             if (entry == null || entry.Item == null)
-                return "(none)";
+                return "Empty";
 
             return FormatItemDisplayName(entry);
         }
@@ -165,7 +176,8 @@ namespace OldScars.Core.Items
             if (item == null)
                 return $"{index}: (none)";
 
-            return $"{index}: {FormatItemDisplayName(entry)} [{item.InstanceId}] condition {item.Condition}";
+            string equippedMarker = inventory != null && inventory.IsRightHandEquippedIndex(index) ? " (Equipped)" : string.Empty;
+            return $"{index}: {FormatItemDisplayName(entry)}{equippedMarker} [{item.InstanceId}] condition {item.Condition}";
         }
 
         private string FormatItemDisplayName(ItemStorageEntry entry)
@@ -175,12 +187,6 @@ namespace OldScars.Core.Items
 
             string displayName = GetItemDisplayName(entry.Item.DefinitionId);
             return $"{displayName} x{entry.Quantity}";
-        }
-
-        private static bool IsEquippable(ItemStorageEntry entry)
-        {
-            ItemDefinition definition = GetItemDefinition(entry != null ? entry.DefinitionId : null);
-            return definition != null && definition.equippable;
         }
 
         private static string GetItemDisplayName(string definitionId)

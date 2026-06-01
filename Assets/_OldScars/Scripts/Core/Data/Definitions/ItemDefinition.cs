@@ -16,7 +16,7 @@ namespace OldScars.Core.Data.Definitions
         public string[] categories; // UI grouping only; not system logic.
         public string[] tags;       // System-facing identifiers.
         public int max_stack = 1;   // Simple runtime storage stacking limit.
-        public bool equippable;     // Explicit equip eligibility. Defaults to false if omitted.
+        public bool? equippable;    // Transitional flat equip eligibility. Prefer equip.equippable.
         public ItemPhysical physical;
         public ItemEconomy economy;
         public ItemEquip equip;     // Optional equipment metadata for equippable items.
@@ -49,17 +49,20 @@ namespace OldScars.Core.Data.Definitions
     [System.Serializable]
     public sealed class ItemEquip
     {
+        public bool? equippable;
+
         /// <summary>
         /// Equipment slots this item can occupy.
         ///
-        /// Important Milestone 1 decision:
-        /// We do not use required_sockets yet. A future EquipmentSystem should
-        /// check whether the actor/entity has the selected slot/socket.
-        ///
-        /// Example: allowed_slots ["right_hand", "left_hand"] means the item
-        /// can be equipped in either hand, not both at the same time.
+        /// Milestone 23 supports only right_hand. A future EquipmentSystem
+        /// should expand this without changing item storage ownership.
         /// </summary>
         public string[] allowed_slots;
+
+        /// <summary>
+        /// Equipment slots occupied once the item is equipped.
+        /// </summary>
+        public string[] occupied_slots;
     }
 
     [System.Serializable]

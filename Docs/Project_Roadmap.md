@@ -29,8 +29,10 @@ Old Scars tiene una base debug/prototipo validada para:
 - inspeccion dependiente de `RuntimeTags` y reglas defensivas de acceso a storage de contenedores validadas en `SampleScene`.
 - necesidades runtime genericas de actor, consumibles cerrados por JSON, UI debug de survival y saqueo manual de contenedores validados en `SampleScene`.
 - stackeo simple por `max_stack`, cajas debug de suministros y flag funcional `equippable` validados en Unity.
+- base de inventario de actor validada: `InventoryComponent` separa conceptualmente Storage y Equipped, con slot runtime `right_hand` basado en `rightHandItemInstanceId`.
+- acciones contextuales revalidadas antes de ejecutar y menu contextual debug refrescado cuando cambia el item equipado.
 
-Milestone 22, Milestone 22.1, Milestone 22.1.1 y Milestone 22.1.2 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2 y Milestone 23.0.3 estan validados en Unity.
 
 ## Estados Permitidos
 
@@ -70,7 +72,11 @@ Milestone 22, Milestone 22.1, Milestone 22.1.1 y Milestone 22.1.2 estan validado
 | Milestone 22.1: Survival UI, Action Feedback & Manual Container Loot v0 | Agregar UI debug de survival, feedback de uso de items, stackeo por max_stack y saqueo manual de contenedores. | validated | Validado: UI Hunger/Thirst visible, ItemUsed en GameplayFeedbackLog, search_container abre ItemStorageDebugPanel y looted_container solo aparece al vaciar storage. |
 | Milestone 22.1.1: Hotfix - Wire Survival and Storage Debug UI | Corregir wiring de paneles debug de necesidades/storage y colores de cajas debug. | validated | Validado: ActorNeedsDebugPanel e ItemStorageDebugPanel aparecen y bloquean clicks; crates nuevas reflejan estado por color. |
 | Milestone 22.1.2: Hotfix - Equippable Item Flag | Agregar flag booleano equippable para controlar el boton Equip en InventoryDebugPanel. | validated | Validado: solo la palanca muestra Equip; agua/comida no se equipan y siguen pudiendo usarse. |
-| Milestone 23: Actor Inventory Foundation v0 | Empezar a pensar inventario de actores/personajes/cadaveres usando ItemStorage como base comun. | planned | Pendiente; sin alcance de implementacion definido todavia. |
+| Milestone 23: Actor Inventory Foundation v0 | Separar Storage y Equipped en `InventoryComponent` y validar `right_hand` como primer slot runtime de actor. | validated | Validado: crowbar se equipa solo en `right_hand` desde JSON; agua/comida/scrap no se equipan; force_door/pry_open_container siguen funcionando. |
+| Milestone 23.0.1: Hotfix - Cleanup legacy equipped index warning | Eliminar el warning CS0414 del indice legacy de equip sin cambiar `rightHandItemInstanceId`. | validated | Validado: `rightHandItemInstanceId` queda como fuente real y `GetEquippedItemDefinitionId()` sigue devolviendo el item de `right_hand`. |
+| Milestone 23.0.2: Hotfix - Revalidate Action Requirements Before Execution | Revalidar acciones contextuales antes de iniciar progreso. | validated | Validado: menus viejos no pueden iniciar acciones si la palanca fue desequipada. |
+| Milestone 23.0.3: Hotfix - Refresh Context Menu Availability | Refrescar el menu contextual debug cuando cambia el item equipado. | validated | Validado: `Item` pasa a `(none)` y las acciones de palanca desaparecen/reaparecen segun `right_hand`. |
+| Milestone 23.1: Lootable Debug Actor + Health v0 | Agregar actor debug looteable con salud basica usando la base de inventario de actor de M23. | planned | Proximo recomendado; no definir implementacion completa todavia. |
 
 ## Milestone Actual
 
@@ -79,10 +85,14 @@ No hay milestone implementado pendiente de validacion.
 El ultimo milestone cerrado como `validated` es:
 
 - Milestone 22.1.2: Hotfix - Equippable Item Flag (`validated`).
+- Milestone 23: Actor Inventory Foundation v0 (`validated`).
+- Milestone 23.0.1: Hotfix - Cleanup legacy equipped index warning (`validated`).
+- Milestone 23.0.2: Hotfix - Revalidate Action Requirements Before Execution (`validated`).
+- Milestone 23.0.3: Hotfix - Refresh Context Menu Availability (`validated`).
 
 ## Proximo Recomendado
 
-Milestone 23 queda como proximo milestone pendiente: Actor Inventory Foundation v0. Se debe empezar a pensar inventario de actores/personajes/cadaveres usando `ItemStorage` como base comun, sin definir implementacion completa todavia.
+Milestone 23.1 queda como proximo milestone pendiente: Lootable Debug Actor + Health v0. Debe usar la base de inventario de actor validada en M23, sin definir implementacion completa todavia.
 
 Milestone 11 dejo validado:
 
@@ -365,6 +375,46 @@ Milestone 22.1.2 dejo validado:
 - cantidades, stackeo, `Use` e `ItemStorageDebugPanel` siguen funcionando;
 - data load sigue OK con 0 errors y 0 warnings.
 
+Milestone 23 dejo validado:
+
+- `InventoryComponent` separa conceptualmente Storage y Equipped;
+- `right_hand` es el primer slot runtime funcional;
+- `right_hand` usa `rightHandItemInstanceId`, no indice;
+- el item equipado sigue existiendo dentro de `ItemStorage`;
+- `rusted_crowbar_01` se equipa solo en `right_hand` segun JSON;
+- `equip.equippable`, `equip.allowed_slots` y `equip.occupied_slots` estan soportados;
+- `equippable` plano queda como compatibilidad temporal;
+- `DataValidator` detecta contradicciones entre `equippable` plano y `equip.equippable`;
+- `InventoryComponent` valida internamente si un item puede equiparse;
+- `InventoryDebugPanel` muestra Equipped separado de Storage;
+- agua, comida y scrap no se pueden equipar;
+- agua/comida siguen usando `Use`;
+- `InteractionSystem` sigue detectando la palanca equipada y habilita `force_door` / `pry_open_container`;
+- loot final validado: Scrap x501, Water x500, Food x500, Crowbar x1;
+- data load sigue OK con 0 errors y 0 warnings;
+- F7, F8, I, Hunger/Thirst, `GameplayFeedbackLog`, `ItemStorageDebugPanel` y loot de cajas siguen funcionando.
+
+Milestone 23.0.1 dejo validado:
+
+- se elimino el warning CS0414 por el indice legacy de equip;
+- `rightHandItemInstanceId` sigue siendo la fuente real del equipamiento;
+- `GetEquippedItemDefinitionId()` sigue devolviendo el item equipado en `right_hand`.
+
+Milestone 23.0.2 dejo validado:
+
+- `ContextualActionDebugPanel` revalida requisitos antes de iniciar `DebugActionProgressController`;
+- la revalidacion usa el flujo existente de `InteractionSystem` / disponibilidad de acciones;
+- si la accion ya no esta disponible, no inicia progreso y muestra feedback debug;
+- desequipar la palanca con un menu viejo abierto bloquea `force_door` y `pry_open_container`.
+
+Milestone 23.0.3 dejo validado:
+
+- mientras `ContextualActionDebugPanel` esta abierto, detecta cambios del item equipado actual;
+- si cambia el item equipado, refresca acciones disponibles con `InteractionSystem.GetAvailableActions`;
+- la linea `Item` cambia entre `rusted_crowbar_01` y `(none)`;
+- `force_door` / `pry_open_container` desaparecen al desequipar y vuelven al reequipar si el target sigue valido;
+- la revalidacion de M23.0.2 sigue siendo la proteccion real antes de ejecutar.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -405,13 +455,16 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `max_stack` en `ItemDefinition` es la fuente de stackeo simple.
 - `max_stack = 1` significa no stackeable.
 - `max_stack > 1` permite merge simple en `ItemStorage` por mismo `definitionId` hasta el limite del stack.
-- `equippable` en `ItemDefinition` es un boolean funcional, no un tag.
-- `InventoryDebugPanel` solo muestra `Equip` cuando `itemDefinition.equippable == true`.
+- `equip.equippable` es la fuente actual de equipabilidad por slot cuando existe el bloque `equip`.
+- `equippable` plano en `ItemDefinition` queda como compatibilidad temporal y no debe contradecir `equip.equippable`.
+- `equip.allowed_slots` y `equip.occupied_slots` declaran slots tecnicos; en M23 solo `right_hand` esta validado.
+- El item equipado en `right_hand` se referencia por `rightHandItemInstanceId`, no por indice de storage.
+- `InventoryDebugPanel` solo muestra `Equip` cuando `InventoryComponent` confirma que el item puede equiparse en `right_hand`.
 - `consumable.restore_needs` define efectos cerrados de consumibles por `need_id` y `amount`.
 - `ActorNeedsComponent` es generico para actores y no exclusivo del jugador.
 - `ActorNeedsComponent` mantiene configuracion/perfil separado de estado runtime.
 - `DebugInventory` es debug temporal y no es inventario final.
-- `InventoryComponent` es inventario jugable v0, usa `ItemStorage` internamente y no es inventario final.
+- `InventoryComponent` es inventario de actor v0, usa `ItemStorage` para Storage y expone Equipped con `right_hand`; no es inventario final.
 - `ActorInteractionContext` resuelve item equipado con prioridad `InventoryComponent` -> `DebugInventory` -> `equippedItemDefinitionId` legacy.
 - Si `InventoryComponent` esta asignado al actor, define exclusivamente el item equipado; si devuelve sin item, no se usa fallback.
 - Si no hay `InventoryComponent` y `DebugInventory` esta asignado, `DebugInventory` define el item equipado; si devuelve sin item, no se usa fallback legacy.
@@ -458,7 +511,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `GameDataLoader`: carga JSON desde mods.
 - `GameDatabase`: guarda definiciones cargadas.
 - `TagRegistry`: registra tags validos.
-- `DataValidator`: valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles y warnings no destructivos de `weapon_tags`.
+- `DataValidator`: valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
 - `ActionAvailabilityEvaluator`: evalua requirements y puede devolver resultado explicable.
 - `InteractionSystem`: arma contexto y devuelve acciones disponibles.
 - `ActorInteractionContext`: datos minimos del actor para interactuar.
@@ -471,9 +524,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `InventoryItemUseService`: aplica consumibles cerrados a `ActorNeedsComponent` y consume cantidad si hubo efecto valido.
 - `InventoryItemUseResult`: resultado simple de uso de item para UI/debug.
 - `LootTableDefinition`: definicion v0 de loot deterministico.
-- `InventoryComponent`: inventario v0 runtime-only apoyado en `ItemStorage` y equip por indice.
+- `InventoryComponent`: inventario de actor v0 runtime-only apoyado en `ItemStorage`, con Storage y Equipped separados conceptualmente y slot `right_hand` por `rightHandItemInstanceId`.
 - `DebugInventory`: inventario debug temporal para crear item instances y exponer item equipado.
-- `InventoryDebugPanel`: UI debug OnGUI de inventario v0, uso de consumibles y equip filtrado por `equippable`.
+- `InventoryDebugPanel`: UI debug OnGUI de inventario v0, muestra Equipped separado de Storage, uso de consumibles y equip validado por `InventoryComponent`.
 - `ActorNeedsDebugPanel`: UI debug fija para Hunger/Thirst.
 - `ItemStorageDebugPanel`: UI debug reusable para inspeccionar y transferir contenido de storages accesibles.
 - `WorldItemPickup`: componente debug para recoger un item de mundo configurado.
@@ -485,7 +538,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `DebugActionProgressController`: controla acciones debug en progreso.
 - `DebugActionExecutor`: ejecuta effects debug cerrados.
 - `DebugActionExecutionContext`: contexto minimo para pasar actor, target e item equipado al executor.
-- `ContextualActionDebugPanel`: menu contextual debug OnGUI.
+- `ContextualActionDebugPanel`: menu contextual debug OnGUI; revalida acciones antes de ejecutar y refresca disponibilidad si cambia el item equipado.
 - `ContextualActionDebugProgressPanel`: feedback debug de accion en progreso.
 - `ContextualActionDebugResultPanel`: resultado debug OnGUI.
 - `GameplayFeedbackEntryType`: categorias cerradas de feedback runtime, incluyendo `ItemUsed`.
@@ -507,7 +560,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 
 ## Sistemas Que Todavia NO Existen
 
-- inventario real;
+- inventario final;
 - loot final o avanzado;
 - contenedores reales;
 - save system;
@@ -520,7 +573,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - pathfinding/NavMesh;
 - sistema de dialogos;
 - POIs multiples o de produccion;
-- equipment system real;
+- equipment system completo;
 - actor inventory final;
 - cadaveres lootables finales;
 - UI final;

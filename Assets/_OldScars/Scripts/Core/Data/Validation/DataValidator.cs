@@ -20,6 +20,7 @@ namespace OldScars.Core.Data.Validation
         private const string EffectTypePickUpItem = "pick_up_item";
         private const string EffectTypeSearchContainer = "search_container";
         private const string EffectTargetTarget = "target";
+        private const string RightHandSlotId = "right_hand";
 
         private readonly GameDatabase database;
         private readonly TagRegistry tags;
@@ -122,9 +123,6 @@ namespace OldScars.Core.Data.Validation
                 if (item.max_stack < 1)
                     report.Error($"{ctx}: 'max_stack' must be >= 1 (got {item.max_stack}).");
 
-                if (item.equippable && item.equip == null)
-                    report.Error($"{ctx}: 'equippable' is true but 'equip' block is missing.");
-
                 if (item.physical == null)
                 {
                     report.Error($"{ctx}: 'physical' block is required.");
@@ -147,19 +145,68 @@ namespace OldScars.Core.Data.Validation
                         report.Error($"{ctx}: 'economy.base_sell_value' must be >= 0.");
                 }
 
-                if (item.equip != null)
-                {
-                    if (item.equip.allowed_slots == null || item.equip.allowed_slots.Length == 0)
-                        report.Error($"{ctx}: 'equip.allowed_slots' must not be empty.");
-                    else
-                        ValidateSnakeCaseList(item.equip.allowed_slots, $"{ctx}: equip.allowed_slots");
-                }
+                ValidateItemEquip(item, ctx);
 
                 if (item.combat != null)
                     ValidateItemCombat(item, ctx);
 
                 if (item.consumable != null)
                     ValidateItemConsumable(item, ctx);
+            }
+        }
+
+        private void ValidateItemEquip(ItemDefinition item, string ctx)
+        {
+            bool hasFlatEquippable = item.equippable.HasValue;
+            bool flatEquippable = item.equippable.GetValueOrDefault();
+            bool hasNestedEquippable = item.equip != null && item.equip.equippable.HasValue;
+            bool nestedEquippable = hasNestedEquippable && item.equip.equippable.Value;
+
+            if (hasFlatEquippable && hasNestedEquippable && flatEquippable != nestedEquippable)
+                report.Error($"{ctx}: 'equippable' and 'equip.equippable' must not contradict each other.");
+
+            bool isEquippable = hasNestedEquippable ? nestedEquippable : hasFlatEquippable && flatEquippable;
+            if (isEquippable && item.equip == null)
+            {
+                report.Error($"{ctx}: equipable items must declare an 'equip' block.");
+                return;
+            }
+
+            if (item.equip == null)
+                return;
+
+            ValidateEquipSlotArray(item.equip.allowed_slots, $"{ctx}: equip.allowed_slots", isEquippable);
+            ValidateEquipSlotArray(item.equip.occupied_slots, $"{ctx}: equip.occupied_slots", isEquippable);
+
+            if (!isEquippable)
+                return;
+
+            if (!ContainsValue(item.equip.allowed_slots, RightHandSlotId))
+                report.Error($"{ctx}: equip.allowed_slots must contain '{RightHandSlotId}' for Milestone 23.");
+
+            if (!ContainsValue(item.equip.occupied_slots, RightHandSlotId))
+                report.Error($"{ctx}: equip.occupied_slots must contain '{RightHandSlotId}' for Milestone 23.");
+        }
+
+        private void ValidateEquipSlotArray(string[] slots, string context, bool isRequired)
+        {
+            if (slots == null || slots.Length == 0)
+            {
+                if (isRequired)
+                    report.Error($"{context} must not be empty for equipable items.");
+
+                return;
+            }
+
+            ValidateSnakeCaseList(slots, context);
+
+            foreach (string slot in slots)
+            {
+                if (string.IsNullOrWhiteSpace(slot))
+                    continue;
+
+                if (slot != RightHandSlotId)
+                    report.Error($"{context}: slot '{slot}' is not supported in Milestone 23. Allowed value: '{RightHandSlotId}'.");
             }
         }
 
@@ -501,6 +548,20 @@ namespace OldScars.Core.Data.Validation
                 if (!SnakeCasePattern.IsMatch(value))
                     report.Error($"{context}: value '{value}' must use snake_case.");
             }
+        }
+
+        private static bool ContainsValue(string[] values, string expected)
+        {
+            if (values == null)
+                return false;
+
+            foreach (string value in values)
+            {
+                if (value == expected)
+                    return true;
+            }
+
+            return false;
         }
 
         private void RequireType(string actual, string expected, string context)
