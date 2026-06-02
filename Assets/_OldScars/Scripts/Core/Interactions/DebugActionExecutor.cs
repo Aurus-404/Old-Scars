@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Feedback;
@@ -14,6 +15,9 @@ namespace OldScars.Core.Interactions
         private const string EffectTypeShowTargetInfo = "show_target_info";
         private const string EffectTypePickUpItem = "pick_up_item";
         private const string EffectTypeSearchContainer = "search_container";
+        private const string EffectTypeApplyDamage = "apply_damage";
+        private const string EffectTypeKillActor = "kill_actor";
+        private const string EffectTypeSearchActorInventory = "search_actor_inventory";
         private const string EffectTargetTarget = "target";
 
         public static DebugActionExecutionResult Execute(ActionDefinition action, WorldObjectTags target, string itemId)
@@ -173,6 +177,21 @@ namespace OldScars.Core.Interactions
                 return ExecuteSearchContainer(effectContext, executionContext, action);
             }
 
+            if (effect.type == EffectTypeApplyDamage)
+            {
+                return ExecuteApplyDamage(effect, effectContext, executionContext);
+            }
+
+            if (effect.type == EffectTypeKillActor)
+            {
+                return ExecuteKillActor(effectContext, executionContext);
+            }
+
+            if (effect.type == EffectTypeSearchActorInventory)
+            {
+                return ExecuteSearchActorInventory(effectContext, executionContext, action);
+            }
+
             Debug.LogWarning($"[DebugActionExecutor] {effectContext}: unsupported effect type '{effect.type}'.");
             return DebugActionExecutionResult.None();
         }
@@ -215,6 +234,89 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Buscar contenedor", "No se pudo crear Storage Debug Panel.");
 
             storagePanel.Show(containerLoot, inventory, executionContext, action);
+            return DebugActionExecutionResult.None();
+        }
+
+        private static DebugActionExecutionResult ExecuteApplyDamage(ActionEffectDefinition effect, string effectContext, DebugActionExecutionContext executionContext)
+        {
+            WorldObjectTags target = executionContext.Target;
+            ActorHealthComponent health = target != null ? target.GetComponent<ActorHealthComponent>() : null;
+            if (health == null)
+            {
+                string message = "Target has no ActorHealthComponent component.";
+                Debug.LogWarning($"[DebugActionExecutor] {effectContext}: {message}");
+                return DebugActionExecutionResult.Info("Debug damage actor", message);
+            }
+
+            float amount = effect != null ? effect.amount : 0f;
+            if (amount <= 0f)
+            {
+                string message = "Damage amount must be > 0.";
+                Debug.LogWarning($"[DebugActionExecutor] {effectContext}: {message}");
+                return DebugActionExecutionResult.Info("Debug damage actor", message);
+            }
+
+            bool applied = health.ApplyDamage(amount);
+            string messageText = applied
+                ? $"Damage applied: {amount:0.#}. Health: {health.CurrentHealth:0.#}/{health.MaxHealth:0.#}."
+                : "Damage was not applied.";
+
+            Debug.Log($"[DebugActionExecutor] {effectContext}: {messageText}");
+            return DebugActionExecutionResult.Info("Debug damage actor", messageText);
+        }
+
+        private static DebugActionExecutionResult ExecuteKillActor(string effectContext, DebugActionExecutionContext executionContext)
+        {
+            WorldObjectTags target = executionContext.Target;
+            ActorHealthComponent health = target != null ? target.GetComponent<ActorHealthComponent>() : null;
+            if (health == null)
+            {
+                string message = "Target has no ActorHealthComponent component.";
+                Debug.LogWarning($"[DebugActionExecutor] {effectContext}: {message}");
+                return DebugActionExecutionResult.Info("Matar actor", message);
+            }
+
+            health.Kill();
+            string messageText = "Actor killed. Body is now lootable if it has inventory content.";
+            Debug.Log($"[DebugActionExecutor] {effectContext}: {messageText}");
+            return DebugActionExecutionResult.Info("Matar actor", messageText);
+        }
+
+        private static DebugActionExecutionResult ExecuteSearchActorInventory(string effectContext, DebugActionExecutionContext executionContext, ActionDefinition action)
+        {
+            WorldObjectTags target = executionContext.Target;
+            LootableActorInventoryComponent lootableActor = target != null ? target.GetComponent<LootableActorInventoryComponent>() : null;
+            if (lootableActor == null)
+            {
+                string message = "Target has no LootableActorInventoryComponent component.";
+                Debug.LogWarning($"[DebugActionExecutor] {effectContext}: {message}");
+                return DebugActionExecutionResult.Info("Revisar cuerpo", message);
+            }
+
+            ActorInteractionContext actorContext = executionContext.ActorContext;
+            if (actorContext == null)
+            {
+                string message = "Error: actor no configurado para saquear.";
+                Debug.LogWarning($"[DebugActionExecutor] {effectContext}: {message}");
+                return DebugActionExecutionResult.Info("Revisar cuerpo", message);
+            }
+
+            InventoryComponent inventory = actorContext.GetInventoryComponent();
+            if (inventory == null)
+            {
+                string message = "Error: el actor no tiene inventario v0 configurado.";
+                Debug.LogWarning($"[DebugActionExecutor] {effectContext}: {message}");
+                return DebugActionExecutionResult.Info("Revisar cuerpo", message);
+            }
+
+            if (!lootableActor.CanOpenStorage(out string accessReason))
+                return DebugActionExecutionResult.Info("Revisar cuerpo", accessReason);
+
+            ItemStorageDebugPanel storagePanel = ItemStorageDebugPanel.GetOrCreate();
+            if (storagePanel == null)
+                return DebugActionExecutionResult.Info("Revisar cuerpo", "No se pudo crear Storage Debug Panel.");
+
+            storagePanel.Show(lootableActor, inventory, executionContext, action);
             return DebugActionExecutionResult.None();
         }
 

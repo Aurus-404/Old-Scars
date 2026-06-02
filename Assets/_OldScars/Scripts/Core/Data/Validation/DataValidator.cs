@@ -19,6 +19,9 @@ namespace OldScars.Core.Data.Validation
         private const string EffectTypeShowTargetInfo = "show_target_info";
         private const string EffectTypePickUpItem = "pick_up_item";
         private const string EffectTypeSearchContainer = "search_container";
+        private const string EffectTypeApplyDamage = "apply_damage";
+        private const string EffectTypeKillActor = "kill_actor";
+        private const string EffectTypeSearchActorInventory = "search_actor_inventory";
         private const string EffectTargetTarget = "target";
         private const string RightHandSlotId = "right_hand";
 
@@ -212,11 +215,20 @@ namespace OldScars.Core.Data.Validation
 
         private void ValidateItemConsumable(ItemDefinition item, string ctx)
         {
-            if (item.consumable.restore_needs == null || item.consumable.restore_needs.Length == 0)
+            bool hasRestoreNeeds = item.consumable.restore_needs != null && item.consumable.restore_needs.Length > 0;
+            bool hasRestoreHealth = item.consumable.restore_health != null && item.consumable.restore_health.amount > 0f;
+
+            if (!hasRestoreNeeds && !hasRestoreHealth)
             {
-                report.Error($"{ctx}: 'consumable.restore_needs' must not be empty when 'consumable' block is present.");
+                report.Error($"{ctx}: 'consumable' must declare 'restore_needs' or 'restore_health.amount'.");
                 return;
             }
+
+            if (item.consumable.restore_health != null && item.consumable.restore_health.amount <= 0f)
+                report.Error($"{ctx}: 'consumable.restore_health.amount' must be > 0 when 'restore_health' is present.");
+
+            if (item.consumable.restore_needs == null)
+                return;
 
             for (int index = 0; index < item.consumable.restore_needs.Length; index++)
             {
@@ -467,13 +479,24 @@ namespace OldScars.Core.Data.Validation
                     {
                         requiresTag = true;
                     }
-                    else if (effect.type == EffectTypeShowTargetInfo || effect.type == EffectTypePickUpItem || effect.type == EffectTypeSearchContainer)
+                    else if (
+                        effect.type == EffectTypeShowTargetInfo ||
+                        effect.type == EffectTypePickUpItem ||
+                        effect.type == EffectTypeSearchContainer ||
+                        effect.type == EffectTypeKillActor ||
+                        effect.type == EffectTypeSearchActorInventory)
                     {
                         disallowsTag = true;
                     }
+                    else if (effect.type == EffectTypeApplyDamage)
+                    {
+                        disallowsTag = true;
+                        if (effect.amount <= 0f)
+                            report.Error($"{effectCtx}: 'amount' must be > 0 for '{EffectTypeApplyDamage}'.");
+                    }
                     else
                     {
-                        report.Error($"{effectCtx}: unsupported effect type '{effect.type}'. Allowed values: '{EffectTypeAddTag}', '{EffectTypeRemoveTag}', '{EffectTypeShowTargetInfo}', '{EffectTypePickUpItem}', '{EffectTypeSearchContainer}'.");
+                        report.Error($"{effectCtx}: unsupported effect type '{effect.type}'. Allowed values: '{EffectTypeAddTag}', '{EffectTypeRemoveTag}', '{EffectTypeShowTargetInfo}', '{EffectTypePickUpItem}', '{EffectTypeSearchContainer}', '{EffectTypeApplyDamage}', '{EffectTypeKillActor}', '{EffectTypeSearchActorInventory}'.");
                     }
                 }
 

@@ -77,12 +77,19 @@ namespace OldScars.Core.Data.Definitions
     public sealed class ItemConsumable
     {
         public ItemNeedRestore[] restore_needs;
+        public ItemHealthRestore restore_health;
     }
 
     [System.Serializable]
     public sealed class ItemNeedRestore
     {
         public string need_id;
+        public float amount;
+    }
+
+    [System.Serializable]
+    public sealed class ItemHealthRestore
+    {
         public float amount;
     }
 

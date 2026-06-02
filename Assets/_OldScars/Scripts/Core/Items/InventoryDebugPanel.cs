@@ -20,6 +20,7 @@ namespace OldScars.Core.Items
 
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorNeedsComponent actorNeeds;
+        [SerializeField] private ActorHealthComponent actorHealth;
 
         private bool isVisible;
         private Vector2 scrollPosition;
@@ -30,11 +31,13 @@ namespace OldScars.Core.Items
         private void Awake()
         {
             ResolveActorNeeds();
+            ResolveActorHealth();
         }
 
         private void OnEnable()
         {
             ResolveActorNeeds();
+            ResolveActorHealth();
         }
 
         public void Hide()
@@ -154,8 +157,9 @@ namespace OldScars.Core.Items
         private void UseItem(int index)
         {
             ResolveActorNeeds();
+            ResolveActorHealth();
 
-            InventoryItemUseResult result = InventoryItemUseService.TryUseItem(inventory, index, actorNeeds);
+            InventoryItemUseResult result = InventoryItemUseService.TryUseItem(inventory, index, actorNeeds, actorHealth);
             lastUseMessage = result.Message;
             if (!result.Success)
                 Debug.Log($"[InventoryDebugPanel] Use failed: {result.Message}");
@@ -239,6 +243,18 @@ namespace OldScars.Core.Items
 
             if (actorNeeds == null)
                 actorNeeds = FindAnyObjectByType<ActorNeedsComponent>();
+        }
+
+        private void ResolveActorHealth()
+        {
+            if (actorHealth != null)
+                return;
+
+            if (inventory != null)
+                actorHealth = inventory.GetComponentInParent<ActorHealthComponent>();
+
+            if (actorHealth == null)
+                actorHealth = FindAnyObjectByType<ActorHealthComponent>();
         }
 
         private static string SafeText(string value)

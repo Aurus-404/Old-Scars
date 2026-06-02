@@ -16,6 +16,11 @@ namespace OldScars.Core.Items
 
         public static InventoryItemUseResult TryUseItem(InventoryComponent inventory, int itemIndex, ActorNeedsComponent actorNeeds)
         {
+            return TryUseItem(inventory, itemIndex, actorNeeds, null);
+        }
+
+        public static InventoryItemUseResult TryUseItem(InventoryComponent inventory, int itemIndex, ActorNeedsComponent actorNeeds, ActorHealthComponent actorHealth)
+        {
             if (inventory == null)
             {
                 return InventoryItemUseResult.Failed("No inventory available.");
@@ -33,46 +38,48 @@ namespace OldScars.Core.Items
                 return InventoryItemUseResult.Failed("Item is not consumable.");
             }
 
-            if (actorNeeds == null)
-            {
-                return InventoryItemUseResult.Failed("No ActorNeedsComponent available.");
-            }
-
-            ItemNeedRestore[] restoreNeeds = item.consumable.restore_needs;
+            ItemNeedRestore[] restoreNeeds = item.consumable != null ? item.consumable.restore_needs : null;
+            ItemHealthRestore restoreHealth = item.consumable != null ? item.consumable.restore_health : null;
             var restorableEffects = new List<RestorableNeedEffect>();
 
-            for (int i = 0; i < restoreNeeds.Length; i++)
+            if (actorNeeds != null && restoreNeeds != null)
             {
-                ItemNeedRestore restore = restoreNeeds[i];
-                if (restore == null || string.IsNullOrWhiteSpace(restore.need_id) || restore.amount <= 0f)
+                for (int i = 0; i < restoreNeeds.Length; i++)
                 {
-                    continue;
-                }
+                    ItemNeedRestore restore = restoreNeeds[i];
+                    if (restore == null || string.IsNullOrWhiteSpace(restore.need_id) || restore.amount <= 0f)
+                    {
+                        continue;
+                    }
 
-                if (!actorNeeds.HasNeed(restore.need_id))
-                {
-                    continue;
-                }
+                    if (!actorNeeds.HasNeed(restore.need_id))
+                    {
+                        continue;
+                    }
 
-                if (actorNeeds.CanRestoreNeed(restore.need_id, restore.amount))
-                {
-                    restorableEffects.Add(new RestorableNeedEffect(
-                        restore.need_id,
-                        actorNeeds.GetNeedDisplayName(restore.need_id),
-                        restore.amount,
-                        actorNeeds.GetNeedValue(restore.need_id),
-                        actorNeeds.GetNeedMaxValue(restore.need_id)));
+                    if (actorNeeds.CanRestoreNeed(restore.need_id, restore.amount))
+                    {
+                        restorableEffects.Add(new RestorableNeedEffect(
+                            restore.need_id,
+                            actorNeeds.GetNeedDisplayName(restore.need_id),
+                            restore.amount,
+                            actorNeeds.GetNeedValue(restore.need_id),
+                            actorNeeds.GetNeedMaxValue(restore.need_id)));
+                    }
                 }
             }
 
-            if (restorableEffects.Count == 0 && !HasAnyMatchingNeed(actorNeeds, restoreNeeds))
+            bool hasHealthRestore = restoreHealth != null && restoreHealth.amount > 0f;
+            bool canRestoreHealth = hasHealthRestore && actorHealth != null && actorHealth.CanHeal(restoreHealth.amount);
+
+            if (restorableEffects.Count == 0 && !canRestoreHealth && !HasAnyMatchingEffect(actorNeeds, restoreNeeds, actorHealth, hasHealthRestore))
             {
-                return InventoryItemUseResult.Failed("Actor has no matching need for this item.");
+                return InventoryItemUseResult.Failed("Actor has no matching need or health target for this item.");
             }
 
-            if (restorableEffects.Count == 0)
+            if (restorableEffects.Count == 0 && !canRestoreHealth)
             {
-                return InventoryItemUseResult.Failed("Matching needs are already full.");
+                return InventoryItemUseResult.Failed("Matching needs or health are already full.");
             }
 
             if (!inventory.TryRemoveItemAt(itemIndex, 1))
@@ -92,9 +99,19 @@ namespace OldScars.Core.Items
                 }
             }
 
+            if (canRestoreHealth)
+            {
+                float beforeValue = actorHealth.CurrentHealth;
+                if (actorHealth.Heal(restoreHealth.amount))
+                {
+                    RecordHealthItemUsed(inventory, item, beforeValue, actorHealth.CurrentHealth, actorHealth.MaxHealth);
+                    appliedCount++;
+                }
+            }
+
             if (appliedCount == 0)
             {
-                return InventoryItemUseResult.Failed("No need was restored.");
+                return InventoryItemUseResult.Failed("No need or health was restored.");
             }
 
             string displayName = item.display != null && !string.IsNullOrWhiteSpace(item.display.name)
@@ -103,19 +120,20 @@ namespace OldScars.Core.Items
             return InventoryItemUseResult.Succeeded($"Used {displayName}.");
         }
 
-        private static bool HasAnyMatchingNeed(ActorNeedsComponent actorNeeds, ItemNeedRestore[] restoreNeeds)
+        private static bool HasAnyMatchingEffect(ActorNeedsComponent actorNeeds, ItemNeedRestore[] restoreNeeds, ActorHealthComponent actorHealth, bool hasHealthRestore)
         {
-            if (actorNeeds == null || restoreNeeds == null)
-            {
-                return false;
-            }
+            if (hasHealthRestore && actorHealth != null)
+                return true;
 
-            for (int i = 0; i < restoreNeeds.Length; i++)
+            if (actorNeeds != null && restoreNeeds != null)
             {
-                ItemNeedRestore restore = restoreNeeds[i];
-                if (restore != null && actorNeeds.HasNeed(restore.need_id))
+                for (int i = 0; i < restoreNeeds.Length; i++)
                 {
-                    return true;
+                    ItemNeedRestore restore = restoreNeeds[i];
+                    if (restore != null && actorNeeds.HasNeed(restore.need_id))
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -135,7 +153,12 @@ namespace OldScars.Core.Items
 
         private static bool HasConsumableEffects(ItemDefinition item)
         {
-            return item?.consumable?.restore_needs != null && item.consumable.restore_needs.Length > 0;
+            if (item?.consumable == null)
+                return false;
+
+            bool hasNeedRestore = item.consumable.restore_needs != null && item.consumable.restore_needs.Length > 0;
+            bool hasHealthRestore = item.consumable.restore_health != null && item.consumable.restore_health.amount > 0f;
+            return hasNeedRestore || hasHealthRestore;
         }
 
         private static void RecordItemUsed(InventoryComponent inventory, ItemDefinition item, RestorableNeedEffect restore, float afterValue)
@@ -155,6 +178,25 @@ namespace OldScars.Core.Items
                 needValueBefore: restore.BeforeValue,
                 needValueAfter: afterValue,
                 needMaxValue: restore.MaxValue));
+        }
+
+        private static void RecordHealthItemUsed(InventoryComponent inventory, ItemDefinition item, float beforeValue, float afterValue, float maxValue)
+        {
+            string itemDisplayName = GetItemDisplayName(item);
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.ItemUsed,
+                $"Usaste {itemDisplayName}.",
+                actorId: inventory != null ? inventory.name : null,
+                actorDisplayName: inventory != null ? inventory.name : null,
+                itemId: item != null ? item.id : null,
+                itemDisplayName: itemDisplayName,
+                quantity: 1,
+                needId: "health",
+                needDisplayName: "Health",
+                needAmount: afterValue - beforeValue,
+                needValueBefore: beforeValue,
+                needValueAfter: afterValue,
+                needMaxValue: maxValue));
         }
 
         private static string GetItemDisplayName(ItemDefinition item)

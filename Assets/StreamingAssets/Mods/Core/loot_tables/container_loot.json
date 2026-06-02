@@ -21,6 +21,10 @@
         {
           "item_id": "food_ration_01",
           "count": 500
+        },
+        {
+          "item_id": "bandage_01",
+          "count": 500
         }
       ]
     },

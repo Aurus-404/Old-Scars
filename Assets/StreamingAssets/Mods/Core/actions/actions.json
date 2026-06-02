@@ -6,8 +6,8 @@
       "contexts": ["combat"],
       "display": {
         "name": "Golpe",
-        "description": "Un golpe directo con el objeto empuñado.",
-        "failure_text": "No tenés suficiente espacio o control para golpear."
+        "description": "Un golpe directo con el objeto empuÃ±ado.",
+        "failure_text": "No tenÃ©s suficiente espacio o control para golpear."
       },
       "requirements": {
         "weapon_tags": ["weapon"]
@@ -28,8 +28,8 @@
       "contexts": ["combat"],
       "display": {
         "name": "Golpe fuerte",
-        "description": "Un golpe pesado. Más dañino, pero más lento y agotador.",
-        "failure_text": "No tenés suficiente fuerza o estabilidad para un golpe así."
+        "description": "Un golpe pesado. MÃ¡s daÃ±ino, pero mÃ¡s lento y agotador.",
+        "failure_text": "No tenÃ©s suficiente fuerza o estabilidad para un golpe asÃ­."
       },
       "requirements": {
         "actor_min_stats": {
@@ -53,8 +53,8 @@
       "contexts": ["world_interaction"],
       "display": {
         "name": "Forzar puerta",
-        "description": "Usás una herramienta adecuada para forzar la puerta.",
-        "failure_text": "Necesitás una herramienta adecuada o más fuerza."
+        "description": "UsÃ¡s una herramienta adecuada para forzar la puerta.",
+        "failure_text": "NecesitÃ¡s una herramienta adecuada o mÃ¡s fuerza."
       },
       "requirements": {
         "actor_min_stats": {
@@ -164,6 +164,69 @@
       },
       "effects": [
         { "type": "search_container", "target": "target" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "debug_damage_actor",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Debug Damage Actor",
+        "description": "Applies debug damage to a living actor.",
+        "failure_text": "Cannot apply debug damage to this actor."
+      },
+      "requirements": {
+        "target_tags": ["alive_actor"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 0.5
+      },
+      "effects": [
+        { "type": "apply_damage", "target": "target", "amount": 25 }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "debug_kill_actor",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Matar actor",
+        "description": "Mata inmediatamente al actor para probar cuerpo looteable.",
+        "failure_text": "No podes matar este actor."
+      },
+      "requirements": {
+        "target_tags": ["alive_actor"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 0.5
+      },
+      "effects": [
+        { "type": "kill_actor", "target": "target" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "search_body",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Revisar cuerpo",
+        "description": "Revisas el inventario del actor muerto.",
+        "failure_text": "No podes revisar este cuerpo."
+      },
+      "requirements": {
+        "target_tags": ["dead_actor", "lootable_actor"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 1.0
+      },
+      "effects": [
+        { "type": "search_actor_inventory", "target": "target" }
       ],
       "interruptible": true
     }

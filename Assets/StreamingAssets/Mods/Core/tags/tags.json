@@ -23,6 +23,12 @@
     { "id": "sealed_container", "description": "Contenedor sellado que puede abrirse con una herramienta adecuada." },
     { "id": "opened_container", "description": "Estado debug de un contenedor abierto." },
     { "id": "lootable_container", "description": "Contenedor que todavia puede saquearse durante runtime." },
-    { "id": "looted_container", "description": "Estado runtime de un contenedor ya saqueado." }
+    { "id": "looted_container", "description": "Estado runtime de un contenedor ya saqueado." },
+    { "id": "alive_actor", "description": "Actor vivo durante runtime." },
+    { "id": "damaged_actor", "description": "Actor vivo con health por debajo del maximo durante runtime." },
+    { "id": "low_health_actor", "description": "Actor vivo con salud baja durante runtime." },
+    { "id": "dead_actor", "description": "Actor muerto durante runtime." },
+    { "id": "lootable_actor", "description": "Actor muerto cuyo inventario puede ser saqueado durante runtime." },
+    { "id": "medical", "description": "Item medico simple para efectos cerrados de salud." }
   ]
 }

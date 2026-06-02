@@ -134,6 +134,36 @@
           }
         ]
       }
+    },
+    {
+      "type": "item",
+      "id": "bandage_01",
+      "display": {
+        "name": "Bandage",
+        "description": "A simple clean bandage for debug health testing."
+      },
+      "categories": ["consumable", "medical"],
+      "tags": [
+        "item",
+        "consumable",
+        "medical"
+      ],
+      "max_stack": 999,
+      "equippable": false,
+      "physical": {
+        "weight_kg": 0.05,
+        "volume_l": 0.1,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 6,
+        "base_sell_value": 2
+      },
+      "consumable": {
+        "restore_health": {
+          "amount": 25
+        }
+      }
     }
   ]
 }

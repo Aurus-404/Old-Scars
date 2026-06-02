@@ -12,7 +12,7 @@ namespace OldScars.Core.Items
         private const float PanelWidth = 560f;
         private const float PanelHeight = 360f;
 
-        private ContainerLootComponent container;
+        private IItemStorageDebugSource storageSource;
         private InventoryComponent targetInventory;
         private DebugActionExecutionContext executionContext;
         private ActionDefinition action;
@@ -37,11 +37,16 @@ namespace OldScars.Core.Items
 
         public void Show(ContainerLootComponent sourceContainer, InventoryComponent inventory, DebugActionExecutionContext context, ActionDefinition sourceAction)
         {
-            container = sourceContainer;
+            Show(sourceContainer as IItemStorageDebugSource, inventory, context, sourceAction);
+        }
+
+        public void Show(IItemStorageDebugSource source, InventoryComponent inventory, DebugActionExecutionContext context, ActionDefinition sourceAction)
+        {
+            storageSource = source;
             targetInventory = inventory;
             executionContext = context;
             action = sourceAction;
-            title = BuildTitle(sourceContainer, context.Target);
+            title = source != null ? source.GetStorageDebugTitle(context.Target) : BuildTitle(null, context.Target);
             lastMessage = null;
             scrollPosition = Vector2.zero;
             isVisible = true;
@@ -50,7 +55,7 @@ namespace OldScars.Core.Items
         public void Hide()
         {
             isVisible = false;
-            container = null;
+            storageSource = null;
             targetInventory = null;
             executionContext = new DebugActionExecutionContext(null, null, null);
             action = null;
@@ -97,7 +102,7 @@ namespace OldScars.Core.Items
                 GUILayout.Label(lastMessage);
             }
 
-            if (container == null)
+            if (storageSource == null)
             {
                 GUILayout.Label("No storage source.");
                 DrawCloseButton();
@@ -105,7 +110,7 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            IReadOnlyList<ItemStorageEntry> entries = container.StorageEntries;
+            IReadOnlyList<ItemStorageEntry> entries = storageSource.StorageEntries;
             if (entries == null || entries.Count == 0)
             {
                 GUILayout.Label("Storage is empty.");
@@ -175,13 +180,13 @@ namespace OldScars.Core.Items
 
         private void Take(int index, int quantity)
         {
-            if (container == null)
+            if (storageSource == null)
             {
                 lastMessage = "No storage source.";
                 return;
             }
 
-            int transferredQuantity = container.TakeItem(index, quantity, targetInventory, executionContext, action, out string message);
+            int transferredQuantity = storageSource.TakeItem(index, quantity, targetInventory, executionContext, action, out string message);
             lastMessage = !string.IsNullOrWhiteSpace(message)
                 ? message
                 : transferredQuantity > 0 ? $"Transferred x{transferredQuantity}." : "Nothing transferred.";
@@ -189,22 +194,22 @@ namespace OldScars.Core.Items
 
         private void TakeAll()
         {
-            if (container == null)
+            if (storageSource == null)
             {
                 lastMessage = "No storage source.";
                 return;
             }
 
             int totalTransferred = 0;
-            while (container.HasStoredItems)
+            while (storageSource.HasStoredItems)
             {
-                IReadOnlyList<ItemStorageEntry> entries = container.StorageEntries;
+                IReadOnlyList<ItemStorageEntry> entries = storageSource.StorageEntries;
                 if (entries == null || entries.Count == 0 || entries[0] == null)
                 {
                     break;
                 }
 
-                int transferredQuantity = container.TakeItem(0, entries[0].Quantity, targetInventory, executionContext, action, out string message);
+                int transferredQuantity = storageSource.TakeItem(0, entries[0].Quantity, targetInventory, executionContext, action, out string message);
                 if (transferredQuantity <= 0)
                 {
                     lastMessage = message;

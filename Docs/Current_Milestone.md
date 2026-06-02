@@ -2,9 +2,9 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario de actor v0 con Storage y Equipped separados conceptualmente, pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, consumibles cerrados por JSON, UI debug de survival y saqueo manual de contenedores.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario de actor v0 con Storage y Equipped separados conceptualmente, pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, health runtime v0 de actor, consumibles cerrados por JSON, UI debug de survival/health, saqueo manual de contenedores y loot de actor muerto debug.
 
-Milestone 23, Milestone 23.0.1, Milestone 23.0.2 y Milestone 23.0.3 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1 y Milestone 23.1.2 estan validados en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
@@ -21,10 +21,13 @@ Ultimo milestone validado:
 - Milestone 23.0.1: Hotfix - Cleanup legacy equipped index warning.
 - Milestone 23.0.2: Hotfix - Revalidate Action Requirements Before Execution.
 - Milestone 23.0.3: Hotfix - Refresh Context Menu Availability.
+- Milestone 23.1: Lootable Debug Actor + Health v0.
+- Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage.
+- Milestone 23.1.2: Hotfix - Debug Player Health Feedback.
 
 Proximo recomendado:
 
-- Milestone 23.1: Lootable Debug Actor + Health v0 queda como proximo milestone pendiente. Debe usar la base de inventario de actor de M23, sin definir implementacion completa todavia.
+- Hacer una limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico. No hay implementacion completa definida todavia.
 
 
 ## Milestones Validados
@@ -524,6 +527,64 @@ Validado en Unity:
 - `force_door` / `pry_open_container` desaparecen al desequipar y vuelven al reequipar si el target sigue valido.
 - La revalidacion de M23.0.2 sigue protegiendo antes de ejecutar.
 
+### Milestone 23.1: Lootable Debug Actor + Health v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `ActorHealthComponent` v0 funciona para Player y Debug NPC Capsule.
+- Health usa max/current health, low health threshold y estados runtime.
+- Estados validados: `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`.
+- Health no pinta colores directamente; actualiza tags runtime y `WorldObjectStateView` representa estados.
+- Player y NPC se ven verdes vivos; low health se ve rojo; actor muerto se ve negro.
+- Debug NPC Capsule puede recibir dano por accion debug contextual.
+- Debug NPC muerto agrega `dead_actor + lootable_actor` si tiene inventario.
+- `search_body` aparece solo con `dead_actor + lootable_actor`.
+- `search_body` abre `ItemStorageDebugPanel` reutilizado mediante fuente reusable de storage.
+- El cadaver no usa `ContainerLootComponent`.
+- Loot del cuerpo transfiere item instances al inventario del player.
+- Al vaciar el cuerpo, se remueve `lootable_actor` y `search_body` desaparece, manteniendo `dead_actor`.
+- `DebugActorInventorySeeder` existe solo como componente debug, no como sistema de perfiles de NPC.
+- `bandage_01` es consumible medico simple, no equipable, con `restore_health.amount = 25`.
+- Bandage cura al Player y consume 1 solo si restaura health; full health no consume.
+- Survival Supply Debug Crate mantiene el loot table ID existente y contiene Water Bottle x500, Food Ration x500 y Bandage x500.
+- Agua/comida siguen restaurando Hunger/Thirst.
+- Cajas normales siguen usando `ContainerLootComponent`.
+- `ItemStorageDebugPanel` sigue funcionando con cajas y actor muerto.
+- M23 sigue funcionando: `right_hand`, crowbar, `force_door`, `pry_open_container`, revalidacion de acciones y refresh del menu contextual.
+- Data load sigue OK con 0 errors y 0 warnings.
+- F7, F8, I, Hunger/Thirst, `GameplayFeedbackLog`, `ItemStorageDebugPanel` y loot manual siguen funcionando.
+
+### Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `damaged_actor` se agrega cuando currentHealth < maxHealth y el actor sigue vivo.
+- Full health vivo usa `alive_actor`.
+- Danado vivo usa `alive_actor + damaged_actor`.
+- Baja salud vivo usa `alive_actor + damaged_actor + low_health_actor`.
+- Muerto NPC usa `dead_actor + lootable_actor` si tiene loot, o `dead_actor` si fue vaciado.
+- Player puede recibir dano por boton debug en `ActorNeedsDebugPanel`.
+- Player en 0 health es solo estado debug visual/numerico: sin muerte real, game over, bloqueo de movimiento/acciones ni `lootable_actor`.
+- `ActorNeedsDebugPanel` muestra Hunger, Thirst, Health y boton `Debug Damage Player`.
+- Debug NPC Capsule muestra textos de examinar distintos segun estado: full health, danado, low health y muerto.
+
+### Milestone 23.1.2: Hotfix - Debug Player Health Feedback
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- `Debug Damage Player` registra una entrada `Info` en `GameplayFeedbackLog`.
+- La entrada incluye actor/player, dano aplicado y health antes/despues.
+- El boton sigue danando al Player.
+- Player sigue cambiando de color por estado de salud.
+- Bandage sigue curando.
+- NPC damage y `search_body` siguen funcionando igual.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -563,6 +624,7 @@ Validado en Unity:
 - `equippable` plano en `ItemDefinition` queda como compatibilidad temporal y no debe contradecir `equip.equippable`.
 - `equip.allowed_slots` y `equip.occupied_slots` usan IDs tecnicos; en M23 solo `right_hand` esta validado.
 - `consumable.restore_needs` define efectos cerrados de consumibles por `need_id` y `amount`.
+- `consumable.restore_health.amount` define restauracion cerrada de health.
 - `LootTableDefinition` representa una tabla v0 deterministica de loot.
 - `InventoryComponent` v0 usa `ItemStorage` internamente como Storage.
 - `InventoryComponent` expone Equipped separado conceptualmente, con `right_hand` como primer slot runtime.
@@ -570,8 +632,10 @@ Validado en Unity:
 - `InventoryComponent` permite `AddItemByDefinitionId`, `AddItemByDefinitionId` con cantidad simple, equipar/unequipar `right_hand` y compatibilidad con metodos legacy de equip.
 - `InventoryComponent` no autoequipa al recoger.
 - `InventoryDebugPanel` muestra Equipped separado de Storage, lee entries de storage, muestra cantidades, permite `Use` en consumibles y muestra `Equip` solo si `InventoryComponent` confirma que el item puede equiparse en `right_hand`.
-- `InventoryItemUseService` aplica consumibles a `ActorNeedsComponent` y consume cantidad solo si hubo efecto valido.
+- `InventoryItemUseService` aplica consumibles a `ActorNeedsComponent` / `ActorHealthComponent` y consume cantidad solo si hubo efecto valido.
 - `ItemStorageDebugPanel` es panel debug reusable para ver y tomar contenido de storages accesibles.
+- `LootableActorInventoryComponent` expone inventario de actor muerto como fuente reusable para `ItemStorageDebugPanel`.
+- `DebugActorInventorySeeder` es componente debug para sembrar items iniciales en actores debug colocados en escena.
 - `DebugInventory` crea instancias runtime al iniciar cuando `GameDataManager` esta listo.
 - `DebugInventory` no es inventario final, no guarda save data y no implementa equipamiento real.
 
@@ -607,7 +671,15 @@ Validado en Unity:
 - `ActorNeedState` guarda valores runtime visibles para debug.
 - Hunger/Thirst decaen en Play Mode mediante `Time.deltaTime`.
 - Las necesidades se restauran con API cerrada como `RestoreNeed`, `TryRestoreNeed`, `GetNeedValue` y `HasNeed`.
-- `ActorNeedsDebugPanel` muestra Hunger/Thirst como UI debug temporal arriba a la izquierda.
+- `ActorNeedsDebugPanel` muestra Hunger/Thirst/Health y boton `Debug Damage Player` como UI debug temporal arriba a la izquierda.
+
+### Actor Health Runtime
+
+- `ActorHealthComponent` es generico para Player y NPCs debug.
+- Health usa max/current health y `lowHealthThreshold`.
+- Estados runtime actuales: `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`.
+- `ActorHealthComponent` no pinta colores directamente; `WorldObjectStateView` lee tags y representa estados.
+- Player en 0 health es solo debug visual/numerico: sin muerte real, game over, bloqueo de movimiento/acciones ni `lootable_actor`.
 
 ### Debug Action Execution
 
@@ -619,12 +691,17 @@ Validado en Unity:
   - `remove_tag`;
   - `show_target_info`;
   - `pick_up_item`;
-  - `search_container`.
+  - `search_container`;
+  - `apply_damage`;
+  - `kill_actor`;
+  - `search_actor_inventory`.
 - `add_tag` y `remove_tag` afectan solo al target.
 - `show_target_info` lee `WorldObjectDebugInfo`.
 - `pick_up_item` ejecuta `WorldItemPickup` sobre el target.
 - `search_container` ejecuta `ContainerLootComponent` sobre el target y transfiere contenido existente del storage del contenedor.
 - En el flujo actual, `search_container` abre `ItemStorageDebugPanel` para saqueo manual cuando el storage es accesible.
+- `search_actor_inventory` abre `ItemStorageDebugPanel` sobre el inventario de actor muerto looteable.
+- `apply_damage` y `kill_actor` son acciones debug de health, no combate real.
 - `ContainerLootComponent` valida acceso al storage antes de transferir loot.
 - Al examinar un contenedor, `[DEBUG STORAGE]` muestra estado runtime del storage como debug/readability.
 
@@ -660,7 +737,7 @@ Validado en Unity:
 - `ContextualActionDebugProgressPanel` muestra progreso debug de accion activa.
 - `ContextualActionDebugResultPanel` muestra resultados debug.
 - `InventoryDebugPanel` muestra inventario v0 con OnGUI y se abre con `I`.
-- `ActorNeedsDebugPanel` muestra necesidades debug del actor.
+- `ActorNeedsDebugPanel` muestra necesidades/health debug del actor.
 - `ItemStorageDebugPanel` muestra contenido de storage y permite `Take 1`, `Take Stack`, `Take All` y `Close`.
 - `DebugFeedbackLogPanel` muestra feedback estructurado runtime-only del POI como UI debug y se alterna con F7.
 - `DebugActionAvailabilityPanel` muestra diagnostico de disponibilidad runtime-only como UI debug y se alterna con F8.
@@ -688,6 +765,7 @@ Validado en Unity:
   - `ActorInteractionContext`;
   - `InventoryComponent` v0 vacio para Milestone 14;
   - `ActorNeedsComponent` para hunger/thirst debug;
+  - `ActorHealthComponent` para health debug;
   - `DebugInventory` opcional para Milestone 12;
   - `PointClickMovementController`;
   - `CharacterController`.
@@ -708,16 +786,14 @@ Validado en Unity:
 - Camara principal como hija del CameraRig.
 - `GameplayFeedbackDebug` bajo `Debug_UI` con `GameplayFeedbackLog` y `DebugFeedbackLogPanel` para leer feedback runtime del POI.
 - `ActionAvailabilityDiagnosticsDebug` bajo `Debug_UI` con `DebugActionAvailabilityPanel` para leer diagnostics runtime del POI.
-- `ActorNeedsDebugPanel` visible arriba a la izquierda para Hunger/Thirst.
-- `ItemStorageDebugPanel` disponible para saqueo manual de contenedores accesibles.
+- `ActorNeedsDebugPanel` visible arriba a la izquierda para Hunger/Thirst/Health y dano debug del Player.
+- `ItemStorageDebugPanel` disponible para saqueo manual de contenedores accesibles y actor muerto looteable.
 - `DebugFeedbackLogPanel` y `DebugActionAvailabilityPanel` arrancan ocultos por defecto.
 - Objetos principales del POI pueden usar `WorldObjectStateView` para reflejar runtime tags visualmente sin controlar gameplay.
 
 ## Proximo Recomendado
 
-Milestone 23.1: Lootable Debug Actor + Health v0 queda como proximo milestone pendiente.
-
-M23.1 debe usar la base de inventario de actor validada en M23. No hay implementacion completa definida todavia.
+Hacer una limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico. No hay implementacion completa definida todavia.
 
 Milestone 16 fue validado con:
 

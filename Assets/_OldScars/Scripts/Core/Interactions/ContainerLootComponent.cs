@@ -13,7 +13,7 @@ namespace OldScars.Core.Interactions
     /// This is not a final container inventory, loot UI, random loot system,
     /// save state, stack limits, crafting system, or economy system.
     /// </summary>
-    public sealed class ContainerLootComponent : MonoBehaviour
+    public sealed class ContainerLootComponent : MonoBehaviour, IItemStorageDebugSource
     {
         private const string OpenedContainerTag = "opened_container";
         private const string SealedContainerTag = "sealed_container";
@@ -198,6 +198,14 @@ namespace OldScars.Core.Interactions
                 $"\nEntry count: {storage.EntryCount}" +
                 $"\nTotal quantity: {storage.TotalQuantity}" +
                 $"\nContents: {FormatStorageContentsByDefinitionId()}";
+        }
+
+        public string GetStorageDebugTitle(WorldObjectTags target)
+        {
+            string targetName = target != null ? target.name : name;
+            WorldObjectDebugInfo debugInfo = target != null ? target.GetComponent<WorldObjectDebugInfo>() : null;
+            string displayName = debugInfo != null ? debugInfo.GetDisplayNameOrFallback(targetName, target) : targetName;
+            return $"{displayName} Contents (Debug)";
         }
 
         private bool EnsureStorageInitialized()

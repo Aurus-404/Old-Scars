@@ -29,6 +29,7 @@ namespace OldScars.Core.Data.Definitions
         public string type;
         public string target;
         public string tag;
+        public float amount;
     }
 
     [System.Serializable]

@@ -1,5 +1,5 @@
 # Old Scars — Development Rules for ChatGPT + Codex
-Version: 0.5
+Version: 0.6
 Purpose: shared compact rule file for ChatGPT and Codex. This file stores specific technical/work rules that should not live in ChatGPT memory. Keep it concise, updated, and versioned in the repo.
 
 Recommended repo path:
@@ -51,6 +51,7 @@ When a new specific rule is defined or changed:
 - Equipment slot IDs must be technical IDs; currently validated runtime slot: `right_hand`.
 - `equip.allowed_slots` and `equip.occupied_slots` must use valid slot IDs.
 - Consumables use the closed `consumable.restore_needs` block.
+- Medical consumables may use the closed `consumable.restore_health.amount` block.
 - Consumable effects are data-driven parameters for closed C# logic, not free JSON scripting.
 
 ## 2.1 Item JSON model rules
@@ -163,6 +164,8 @@ Migration rule:
 - Visual systems may read tags but must not own gameplay logic.
 - State-changing systems must be the ones that record state changes.
 - Do not duplicate state-change reports from observers.
+- Actor health state is represented through runtime tags such as `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor`, and `lootable_actor`.
+- Visual health state should be read from tags by WorldObjectStateView; health code must not paint renderers directly.
 
 ## 5. Interaction/action rules
 
@@ -235,6 +238,9 @@ Migration rule:
 - Lootable dead actors should expose their actor inventory/storages; they should not be converted into generic static containers unless explicitly approved for a limited debug shortcut.
 - Reuse ItemStorage for actor storage, corpse loot, containers, and future backpacks/pockets.
 - Keep the first NPC loot profile minimal and validated before adding many NPC archetypes.
+- ActorHealthComponent is the current small runtime health base for actors; it should stay generic for Player and NPC debug actors.
+- Player at 0 health is not real death yet: no game over, no movement/action blocking, and no `lootable_actor` unless a future milestone explicitly changes that.
+- DebugActorInventorySeeder is a scene debug seeder, not an NPC profile/spawn/loot-table system.
 
 ## 10. Documentation and Git rules
 

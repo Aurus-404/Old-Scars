@@ -34,7 +34,10 @@
   - remove_tag;
   - show_target_info;
   - pick_up_item;
-  - search_container.
+  - search_container;
+  - apply_damage;
+  - kill_actor;
+  - search_actor_inventory.
 - Target soportado por ahora:
   - target.
 - Esto no es scripting libre dentro de JSON.
@@ -964,10 +967,70 @@ Con equipped item definition id none o vacio:
 - las acciones que requieren weapon_tags no aparecen;
 - examine_object puede aparecer si el target tiene inspectable.
 
+### Milestone 23.1: Lootable Debug Actor + Health v0
+
+- Milestone 23.1 implementado y validado como base debug de health y actor muerto looteable.
+- `ActorHealthComponent` v0 funciona para Player y Debug NPC Capsule.
+- Health usa max/current health, low health threshold y estados runtime.
+- Estados runtime validados: `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`.
+- Health no pinta colores directamente; actualiza tags runtime y `WorldObjectStateView` representa estados.
+- Player y NPC se ven verdes vivos.
+- Actor con low health se ve rojo.
+- Actor muerto se ve negro.
+- Debug NPC Capsule puede recibir dano por accion debug contextual.
+- Debug NPC muerto agrega `dead_actor + lootable_actor` si tiene inventario.
+- `search_body` aparece solo con `dead_actor + lootable_actor`.
+- `search_body` abre `ItemStorageDebugPanel` reutilizado mediante fuente reusable de storage.
+- El cadaver no usa `ContainerLootComponent`.
+- Loot del cuerpo transfiere item instances al inventario del player.
+- Al vaciar el cuerpo, se remueve `lootable_actor` y `search_body` desaparece, manteniendo `dead_actor`.
+- `DebugActorInventorySeeder` existe solo como componente debug, no como sistema de perfiles de NPC.
+- `bandage_01` fue agregado como consumible medico simple.
+- `bandage_01` usa `consumable.restore_health.amount = 25`.
+- Bandage no se equipa.
+- Bandage cura al Player y consume 1 solo si restaura health.
+- Si Player esta full health, Bandage no se consume.
+- Survival Supply Debug Crate mantiene el loot table ID existente y contiene Water Bottle x500, Food Ration x500 y Bandage x500.
+- Agua/comida siguen restaurando Hunger/Thirst.
+- Cajas normales siguen usando `ContainerLootComponent`.
+- `ItemStorageDebugPanel` sigue funcionando con cajas y actor muerto.
+- M23 sigue funcionando: `right_hand`, crowbar, `force_door`, `pry_open_container`, revalidacion de acciones y refresh del menu contextual.
+- Data Load validado: 0 errors / 0 warnings.
+- F7, F8, I, Hunger/Thirst, `GameplayFeedbackLog`, `ItemStorageDebugPanel` y loot manual siguen funcionando.
+- No se creo IA, combate real, enemigos reales, companeros reales, muerte real del jugador, game over, heridas complejas, save system, UI final ni perfiles JSON complejos de NPC.
+- Estado: validated.
+
+### Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage
+
+- Milestone 23.1.1 implementado y validado como hotfix de lectura/validacion de health.
+- `damaged_actor` se agrega cuando currentHealth < maxHealth y el actor sigue vivo.
+- Full health vivo queda como `alive_actor`.
+- Danado vivo queda como `alive_actor + damaged_actor`.
+- Baja salud viva queda como `alive_actor + damaged_actor + low_health_actor`.
+- Muerto NPC queda como `dead_actor + lootable_actor` si tiene loot, o `dead_actor` si fue vaciado.
+- Player puede recibir dano por boton debug en `ActorNeedsDebugPanel`.
+- Player en 0 health sigue siendo solo debug visual/numerico: sin muerte real, game over, bloqueo de movimiento/acciones ni `lootable_actor`.
+- `ActorNeedsDebugPanel` muestra Hunger, Thirst, Health y boton `Debug Damage Player`.
+- Debug NPC Capsule muestra textos de examinar distintos segun estado: vivo full health, danado, low health y muerto.
+- Estado: validated.
+
+### Milestone 23.1.2: Hotfix - Debug Player Health Feedback
+
+- Milestone 23.1.2 implementado y validado como hotfix de trazabilidad debug.
+- `Debug Damage Player` registra una entrada `Info` en `GameplayFeedbackLog`.
+- La entrada incluye actor/player, dano aplicado y health antes/despues.
+- No se convirtio en `ActionDefinition`.
+- No pasa por `DebugActionProgressController`.
+- El boton sigue danando al Player.
+- Player sigue cambiando de color por estado de salud.
+- Bandage sigue curando.
+- NPC damage y `search_body` siguen funcionando igual.
+- Estado: validated.
+
 ## Decisiones De Scope
 
 - No hay inventario final.
-- No hay equipamiento runtime real.
+- No hay equipment system final.
 - No hay entidades runtime complejas.
 - No hay combate real.
 - No hay save system.

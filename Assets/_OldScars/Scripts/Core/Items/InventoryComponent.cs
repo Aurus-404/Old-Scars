@@ -152,6 +152,29 @@ namespace OldScars.Core.Items
             return source.TransferTo(storage, sourceIndex, quantity);
         }
 
+        public int TransferItemTo(InventoryComponent targetInventory, int sourceIndex, int quantity)
+        {
+            if (targetInventory == null)
+            {
+                Debug.LogWarning("[InventoryComponent] Cannot transfer an item to a null inventory.");
+                return 0;
+            }
+
+            if (ReferenceEquals(targetInventory, this))
+            {
+                Debug.LogWarning("[InventoryComponent] Cannot transfer an item to the same inventory.");
+                return 0;
+            }
+
+            if (quantity < 1)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot transfer quantity {quantity}. Quantity must be >= 1.");
+                return 0;
+            }
+
+            return targetInventory.TransferItemFrom(storage, sourceIndex, quantity);
+        }
+
         public ItemInstance GetEquippedItemInstance()
         {
             return GetRightHandItemInstance();

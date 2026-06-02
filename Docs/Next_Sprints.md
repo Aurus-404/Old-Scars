@@ -8,7 +8,7 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 23, Milestone 23.0.1, Milestone 23.0.2 y Milestone 23.0.3 estan `validated`.
+- Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1 y Milestone 23.1.2 estan `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
 - El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario de actor v0, pickup, equip `right_hand`, acciones con duracion, runtime tags, loot tables v0, container loot v0, storage runtime-only de items y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
@@ -41,6 +41,18 @@ Estado actual:
 - `InventoryDebugPanel` muestra Equipped separado de Storage.
 - `InteractionSystem` sigue habilitando `force_door` y `pry_open_container` con la palanca equipada.
 - `ContextualActionDebugPanel` revalida acciones antes de ejecutar y refresca disponibilidad si cambia el item equipado.
+- `ActorHealthComponent` v0 funciona para Player y Debug NPC Capsule.
+- Health runtime usa `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`.
+- `WorldObjectStateView` representa health por tags: vivo verde, low health rojo y muerto negro.
+- Player puede recibir dano debug desde `ActorNeedsDebugPanel`; 0 health del Player es solo estado debug visual/numerico, sin muerte real ni `lootable_actor`.
+- `ActorNeedsDebugPanel` muestra Hunger, Thirst, Health y boton `Debug Damage Player`.
+- `Debug Damage Player` registra `Info` en `GameplayFeedbackLog` con actor, dano y health antes/despues.
+- Debug NPC Capsule muestra textos de examinar distintos para full health, danado, low health y muerto.
+- `search_body` aparece solo con `dead_actor + lootable_actor` y abre `ItemStorageDebugPanel` sobre el inventario del actor muerto.
+- El cadaver no usa `ContainerLootComponent`; el loot del cuerpo transfiere item instances al player.
+- Al vaciar el cuerpo, se remueve `lootable_actor` y se mantiene `dead_actor`.
+- `bandage_01` restaura health con `restore_health.amount = 25`, no se equipa y solo se consume si cura.
+- Survival Supply Debug Crate mantiene su loot table ID y contiene Water Bottle x500, Food Ration x500 y Bandage x500.
 - Loot final validado: Scrap x501, Water x500, Food x500, Crowbar x1.
 - El POI ahora tiene una base runtime-only de feedback estructurado mediante `GameplayFeedbackLog` y `DebugFeedbackLogPanel`.
 - El feedback registra `ItemPickedUp`, `ItemEquipped`, `ItemUnequipped`, `ActionCompleted`, `LootReceived` y `TargetStateChanged`.
@@ -60,8 +72,7 @@ Estado actual:
 
 Proxima accion recomendada:
 
-- Milestone 23.1: Lootable Debug Actor + Health v0 queda como proximo milestone pendiente.
-- M23.1 debe usar la base de inventario de actor validada en M23.
+- Hacer una limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico.
 - No definir implementacion completa todavia.
 
 Base validada:
@@ -485,11 +496,9 @@ Pruebas validadas de Milestone 18:
 - Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
 
-### Milestone 23.1
+### Post-M23.1 / M23.2
 
-- Lootable Debug Actor + Health v0.
-- Pendiente.
-- Debe usar la base de inventario de actor validada en M23.
+- Recomendado: limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico.
 - No definir implementacion completa todavia.
 
 ## Pospuestos / No Tocar Todavia
