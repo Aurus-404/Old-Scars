@@ -17,6 +17,7 @@ namespace OldScars.Core.Data.Loading
     /// - actions
     /// - items
     /// - loot_tables
+    /// - actor_profiles
     ///
     /// No entities, save system, IA, firearms or protection profiles yet.
     /// </summary>
@@ -113,6 +114,7 @@ namespace OldScars.Core.Data.Loading
             LoadActionsFrom(Path.Combine(modDirectory, "actions"));
             LoadItemsFrom(Path.Combine(modDirectory, "items"));
             LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"));
+            LoadActorProfilesFrom(Path.Combine(modDirectory, "actor_profiles"));
         }
 
         private void LoadTagsFrom(string directory)
@@ -205,6 +207,24 @@ namespace OldScars.Core.Data.Loading
             }
         }
 
+        private void LoadActorProfilesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                ActorProfilesWrapper wrapper = Parse<ActorProfilesWrapper>(file);
+                if (wrapper == null || wrapper.actor_profiles == null)
+                {
+                    report.Warning($"No 'actor_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (ActorProfileDefinition actorProfile in wrapper.actor_profiles)
+                    Database.RegisterActorProfile(actorProfile, report);
+
+                Debug.Log($"[GameDataLoader] ActorProfiles: {wrapper.actor_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
         private IEnumerable<string> JsonFilesIn(string directory)
         {
             if (!Directory.Exists(directory))
@@ -241,5 +261,6 @@ namespace OldScars.Core.Data.Loading
         [Serializable] private sealed class ActionsWrapper { public ActionDefinition[] actions; }
         [Serializable] private sealed class ItemsWrapper { public ItemDefinition[] items; }
         [Serializable] private sealed class LootTablesWrapper { public LootTableDefinition[] loot_tables; }
+        [Serializable] private sealed class ActorProfilesWrapper { public ActorProfileDefinition[] actor_profiles; }
     }
 }

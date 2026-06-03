@@ -1,0 +1,33 @@
+namespace OldScars.Core.Data.Definitions
+{
+    /// <summary>
+    /// Immutable actor profile definition loaded from JSON.
+    ///
+    /// Milestone 24.1 scope: data load and registration only. Runtime
+    /// application to scene actors belongs to a later pass.
+    /// </summary>
+    [System.Serializable]
+    public sealed class ActorProfileDefinition
+    {
+        public string type; // must be "actor_profile"
+        public string id;
+        public string display_name;
+        public string[] initial_tags;
+        public ActorProfileHealth health;
+        public ActorProfileInventoryEntry[] initial_inventory;
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileHealth
+    {
+        public float max_health;
+        public float current_health;
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileInventoryEntry
+    {
+        public string item_id;
+        public int quantity;
+    }
+}

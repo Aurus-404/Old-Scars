@@ -20,11 +20,13 @@ namespace OldScars.Core.Data
         private readonly Dictionary<string, WeaponProfileDefinition> _weaponProfiles = new Dictionary<string, WeaponProfileDefinition>();
         private readonly Dictionary<string, ActionDefinition> _actions = new Dictionary<string, ActionDefinition>();
         private readonly Dictionary<string, LootTableDefinition> _lootTables = new Dictionary<string, LootTableDefinition>();
+        private readonly Dictionary<string, ActorProfileDefinition> _actorProfiles = new Dictionary<string, ActorProfileDefinition>();
 
         public int ItemCount => _items.Count;
         public int WeaponProfileCount => _weaponProfiles.Count;
         public int ActionCount => _actions.Count;
         public int LootTableCount => _lootTables.Count;
+        public int ActorProfileCount => _actorProfiles.Count;
 
         // Registration --------------------------------------------------------
 
@@ -46,6 +48,11 @@ namespace OldScars.Core.Data
         public void RegisterLootTable(LootTableDefinition definition, DataLoadReport report)
         {
             Register(_lootTables, definition != null ? definition.id : null, definition, "LootTable", report);
+        }
+
+        public void RegisterActorProfile(ActorProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_actorProfiles, definition != null ? definition.id : null, definition, "ActorProfile", report);
         }
 
         private static void Register<T>(Dictionary<string, T> dictionary, string id, T definition, string typeName, DataLoadReport report) where T : class
@@ -93,6 +100,11 @@ namespace OldScars.Core.Data
             return Lookup(_lootTables, id);
         }
 
+        public ActorProfileDefinition GetActorProfile(string id)
+        {
+            return Lookup(_actorProfiles, id);
+        }
+
         private static T Lookup<T>(Dictionary<string, T> dictionary, string id) where T : class
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -124,13 +136,19 @@ namespace OldScars.Core.Data
             return _lootTables.Values;
         }
 
+        public IEnumerable<ActorProfileDefinition> GetAllActorProfiles()
+        {
+            return _actorProfiles.Values;
+        }
+
         public void LogStats()
         {
             Debug.Log("[GameDatabase] Loaded definitions:" +
                       $"\n  Items:           {_items.Count}" +
                       $"\n  WeaponProfiles:  {_weaponProfiles.Count}" +
                       $"\n  Actions:         {_actions.Count}" +
-                      $"\n  LootTables:      {_lootTables.Count}");
+                      $"\n  LootTables:      {_lootTables.Count}" +
+                      $"\n  ActorProfiles:   {_actorProfiles.Count}");
         }
     }
 }
