@@ -17,6 +17,14 @@ namespace OldScars.Core.Data.Validation
         private static readonly Regex SnakeCasePattern = new Regex("^[a-z0-9_]+$", RegexOptions.Compiled);
         private const string EffectTargetTarget = "target";
         private const string RightHandSlotId = "right_hand";
+        private static readonly HashSet<string> RuntimeHealthTags = new HashSet<string>
+        {
+            "alive_actor",
+            "damaged_actor",
+            "low_health_actor",
+            "dead_actor",
+            "lootable_actor"
+        };
 
         private readonly GameDatabase database;
         private readonly TagRegistry tags;
@@ -35,6 +43,119 @@ namespace OldScars.Core.Data.Validation
             ValidateWeaponProfiles();
             ValidateItems();
             ValidateLootTables();
+            ValidateActorProfiles();
+        }
+
+        private void ValidateActorProfiles()
+        {
+            foreach (ActorProfileDefinition actorProfile in database.GetAllActorProfiles())
+            {
+                string ctx = $"ActorProfile '{SafeId(actorProfile != null ? actorProfile.id : null)}'";
+
+                if (actorProfile == null)
+                {
+                    report.Error("ActorProfile: null actor profile definition loaded.");
+                    continue;
+                }
+
+                RequireType(actorProfile.type, "actor_profile", ctx);
+                RequireSnakeCase(actorProfile.id, "id", ctx);
+
+                if (string.IsNullOrWhiteSpace(actorProfile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+
+                ValidateActorProfileInitialTags(actorProfile.initial_tags, $"{ctx}: initial_tags");
+                ValidateActorProfileHealth(actorProfile.health, $"{ctx}: health");
+                ValidateActorProfileInventory(actorProfile.initial_inventory, $"{ctx}: initial_inventory");
+
+                if (actorProfile.equipped != null)
+                    report.Error($"{ctx}: 'equipped' is not supported yet in Milestone 24.2.");
+            }
+        }
+
+        private void ValidateActorProfileInitialTags(string[] initialTags, string context)
+        {
+            if (initialTags == null || initialTags.Length == 0)
+            {
+                report.Error($"{context} array is required and must not be empty.");
+                return;
+            }
+
+            var seenTags = new HashSet<string>();
+
+            for (int index = 0; index < initialTags.Length; index++)
+            {
+                string tag = initialTags[index];
+
+                if (string.IsNullOrWhiteSpace(tag))
+                {
+                    report.Error($"{context}: contains an empty tag.");
+                    continue;
+                }
+
+                if (!SnakeCasePattern.IsMatch(tag))
+                    report.Error($"{context}: tag '{tag}' must use snake_case.");
+
+                if (!tags.IsValid(tag))
+                    report.Error($"{context}: tag '{tag}' is not registered in tags.json.");
+
+                if (!seenTags.Add(tag))
+                    report.Error($"{context}: duplicate tag '{tag}'.");
+
+                if (RuntimeHealthTags.Contains(tag))
+                    report.Error($"{context}: runtime health tag '{tag}' must not be declared in actor profile JSON.");
+            }
+        }
+
+        private void ValidateActorProfileHealth(ActorProfileHealth health, string context)
+        {
+            if (health == null)
+            {
+                report.Error($"{context} block is required.");
+                return;
+            }
+
+            if (health.max_health <= 0f)
+                report.Error($"{context}: 'max_health' must be > 0 (got {health.max_health}).");
+
+            if (health.current_health < 0f)
+                report.Error($"{context}: 'current_health' must be >= 0 (got {health.current_health}).");
+
+            if (health.current_health > health.max_health)
+                report.Error($"{context}: 'current_health' ({health.current_health}) must be <= 'max_health' ({health.max_health}).");
+        }
+
+        private void ValidateActorProfileInventory(ActorProfileInventoryEntry[] initialInventory, string context)
+        {
+            if (initialInventory == null || initialInventory.Length == 0)
+                return;
+
+            for (int index = 0; index < initialInventory.Length; index++)
+                ValidateActorProfileInventoryEntry(initialInventory[index], $"{context}[{index}]");
+        }
+
+        private void ValidateActorProfileInventoryEntry(ActorProfileInventoryEntry entry, string context)
+        {
+            if (entry == null)
+            {
+                report.Error($"{context}: entry must not be null.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.item_id))
+            {
+                report.Error($"{context}: 'item_id' is required.");
+            }
+            else
+            {
+                RequireSnakeCase(entry.item_id, "item_id", context);
+
+                if (database.GetItem(entry.item_id) == null)
+                    report.Error($"{context}: item_id '{entry.item_id}' references an item that was not loaded.");
+            }
+
+            if (entry.quantity <= 0)
+                report.Error($"{context}: 'quantity' must be > 0 (got {entry.quantity}).");
         }
 
         private void ValidateLootTables()

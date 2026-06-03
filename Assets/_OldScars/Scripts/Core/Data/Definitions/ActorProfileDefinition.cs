@@ -15,6 +15,7 @@ namespace OldScars.Core.Data.Definitions
         public string[] initial_tags;
         public ActorProfileHealth health;
         public ActorProfileInventoryEntry[] initial_inventory;
+        public ActorProfileEquipped equipped; // Unsupported until a later M24 pass.
     }
 
     [System.Serializable]
@@ -29,5 +30,11 @@ namespace OldScars.Core.Data.Definitions
     {
         public string item_id;
         public int quantity;
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileEquipped
+    {
+        public string right_hand;
     }
 }
