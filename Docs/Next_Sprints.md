@@ -8,7 +8,7 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1 y Milestone 23.1.2 estan `validated`.
+- Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2 y Functional Audit / Cleanup Pass post-M23.1 estan `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
 - El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario de actor v0, pickup, equip `right_hand`, acciones con duracion, runtime tags, loot tables v0, container loot v0, storage runtime-only de items y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
@@ -64,6 +64,8 @@ Estado actual:
 - Puerta y contenedor comunican estados runtime por color debug estable, sin rotaciones ni cambios de geometria.
 - La palanca sigue ocultandose con `SetActive` cuando tiene `picked_up`.
 - Data load sigue OK con 0 errors y 0 warnings.
+- La auditoria funcional post-M23.1 quedo cerrada con tres cleanup passes validados antes de M24.
+- `ActionEffectTypes` centraliza los effect type strings compartidos por `DataValidator` y `DebugActionExecutor`.
 - `InteractionSystem` sigue desacoplado.
 - No se creo UI final, save system, EventBus, listeners/subscriptions/callbacks, IA ni combate.
 - No se creo journal, quest log, UI final, save system, EventBus, listeners/subscriptions/callbacks ni sistemas grandes.
@@ -72,7 +74,7 @@ Estado actual:
 
 Proxima accion recomendada:
 
-- Hacer una limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico.
+- Preparar Milestone 24 con alcance chico y derivado del roadmap vivo.
 - No definir implementacion completa todavia.
 
 Base validada:
@@ -496,9 +498,17 @@ Pruebas validadas de Milestone 18:
 - Evaluar solo ajustes chicos de legibilidad o feedback debug si una proxima prueba los justifica.
 - No convertir el POI en mapa grande ni crear sistemas nuevos para decoracion.
 
-### Post-M23.1 / M23.2
+### Post-M23.1 Functional Audit / Cleanup Pass
 
-- Recomendado: limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico.
+- Estado: `validated`.
+- Se elimino deuda debug/legacy confirmada como no referenciada.
+- Se removio de `SampleScene` el GameObject inactivo `Deprecated_ActorInteractionContext_Legacy`.
+- `ActionEffectTypes` centraliza los effect types cerrados usados por `DataValidator` y `DebugActionExecutor`.
+- No cambio comportamiento de actions, JSON ni sistemas jugables.
+
+### Preparar M24
+
+- Recomendado: preparar un alcance chico de Milestone 24 derivado del roadmap vivo.
 - No definir implementacion completa todavia.
 
 ## Pospuestos / No Tocar Todavia

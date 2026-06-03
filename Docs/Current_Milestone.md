@@ -2,9 +2,9 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario de actor v0 con Storage y Equipped separados conceptualmente, pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, health runtime v0 de actor, consumibles cerrados por JSON, UI debug de survival/health, saqueo manual de contenedores y loot de actor muerto debug.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario de actor v0 con Storage y Equipped separados conceptualmente, pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, health runtime v0 de actor, consumibles cerrados por JSON, UI debug de survival/health, saqueo manual de contenedores, loot de actor muerto debug y auditoria funcional post-M23.1 cerrada antes de M24.
 
-Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1 y Milestone 23.1.2 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2 y Functional Audit / Cleanup Pass post-M23.1 estan validados en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
@@ -24,10 +24,11 @@ Ultimo milestone validado:
 - Milestone 23.1: Lootable Debug Actor + Health v0.
 - Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage.
 - Milestone 23.1.2: Hotfix - Debug Player Health Feedback.
+- Post-M23.1 Functional Audit / Cleanup Pass.
 
 Proximo recomendado:
 
-- Hacer una limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico. No hay implementacion completa definida todavia.
+- Preparar Milestone 24 con alcance chico y derivado del roadmap vivo. No hay implementacion completa definida todavia.
 
 
 ## Milestones Validados
@@ -585,6 +586,22 @@ Validado en Unity:
 - Bandage sigue curando.
 - NPC damage y `search_body` siguen funcionando igual.
 
+### Post-M23.1 Functional Audit / Cleanup Pass
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- Cleanup Pass 1 elimino scripts debug/legacy no usados y sus `.meta`: `GameDataDebugTester`, `ActionAvailabilityDebugTester` y `DebugPlayerContext`.
+- Cleanup Pass 2 elimino de `SampleScene` el GameObject inactivo `Deprecated_ActorInteractionContext_Legacy`.
+- Debug Player conserva el `ActorInteractionContext` activo usado por `WorldInteractionDebugTester`.
+- Cleanup Pass 3 agrego `ActionEffectTypes` y centralizo `add_tag`, `remove_tag`, `show_target_info`, `pick_up_item`, `search_container`, `apply_damage`, `kill_actor` y `search_actor_inventory`.
+- `DataValidator` y `DebugActionExecutor` usan las mismas constantes de effect type.
+- No se cambio JSON, actions, effects ni semantica de ejecucion.
+- Data Load OK con 0 errors y 0 warnings.
+- Siguen funcionando: Crowbar pickup, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor + lootable_actor`, `search_body` y bandage.
+- El warning de Unity.AI.Toolkit Account API no pertenece a Old Scars.
+
 ## Sistemas Activos
 
 ### Data Layer
@@ -594,6 +611,7 @@ Validado en Unity:
 - `GameDataLoader` carga `StreamingAssets/Mods/Core`.
 - `GameDatabase` expone definiciones cargadas.
 - `DataValidator` valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
+- `ActionEffectTypes` centraliza constantes de effect types cerrados compartidas por `DataValidator` y `DebugActionExecutor`.
 
 ### Interaction System
 
@@ -793,7 +811,7 @@ Validado en Unity:
 
 ## Proximo Recomendado
 
-Hacer una limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico. No hay implementacion completa definida todavia.
+Preparar Milestone 24 con alcance chico y derivado del roadmap vivo. No hay implementacion completa definida todavia.
 
 Milestone 16 fue validado con:
 

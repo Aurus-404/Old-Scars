@@ -32,8 +32,9 @@ Old Scars tiene una base debug/prototipo validada para:
 - base de inventario de actor validada: `InventoryComponent` separa conceptualmente Storage y Equipped, con slot runtime `right_hand` basado en `rightHandItemInstanceId`.
 - acciones contextuales revalidadas antes de ejecutar y menu contextual debug refrescado cuando cambia el item equipado.
 - base de salud runtime de actor validada con estados `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`, lectura visual por `WorldObjectStateView` y loot de actor muerto mediante `ItemStorageDebugPanel`.
+- auditoria funcional post-M23.1 y tres cleanup passes validados antes de M24, sin cambios de comportamiento jugable.
 
-Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1 y Milestone 23.1.2 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2 y Functional Audit / Cleanup Pass post-M23.1 estan validados en Unity.
 
 ## Estados Permitidos
 
@@ -80,6 +81,7 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 23.1: Lootable Debug Actor + Health v0 | Agregar actor debug looteable con salud basica usando la base de inventario de actor de M23. | validated | Validado: ActorHealthComponent v0, Debug NPC Capsule, search_body, loot de cuerpo por ItemStorageDebugPanel y bandage_01 funcionan sin romper M23. |
 | Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage | Agregar estado damaged_actor, textos de inspeccion por salud y dano debug al Player. | validated | Validado: actor full/damaged/low/dead muestra textos distintos; Player recibe dano debug sin muerte real ni lootable_actor. |
 | Milestone 23.1.2: Hotfix - Debug Player Health Feedback | Registrar feedback debug al danar al Player desde ActorNeedsDebugPanel. | validated | Validado: Debug Damage Player registra Info en GameplayFeedbackLog con actor, dano y health antes/despues. |
+| Post-M23.1 Functional Audit / Cleanup Pass | Auditar y limpiar deuda funcional menor antes de M24 sin cambiar comportamiento jugable. | validated | Validado: scripts debug/legacy sin referencias eliminados, objeto legacy inactivo removido de SampleScene, `ActionEffectTypes` centraliza effect types y los flujos M23/M23.1 siguen funcionando. |
 
 ## Milestone Actual
 
@@ -95,10 +97,11 @@ El ultimo milestone cerrado como `validated` es:
 - Milestone 23.1: Lootable Debug Actor + Health v0 (`validated`).
 - Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage (`validated`).
 - Milestone 23.1.2: Hotfix - Debug Player Health Feedback (`validated`).
+- Post-M23.1 Functional Audit / Cleanup Pass (`validated`).
 
 ## Proximo Recomendado
 
-Hacer una limpieza/auditoria corta post-M23.1 o preparar M23.2 con alcance chico. No hay implementacion completa definida todavia.
+Preparar Milestone 24 con alcance chico y derivado del roadmap vivo. No hay implementacion completa definida todavia.
 
 Milestone 11 dejo validado:
 
@@ -529,6 +532,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `weapon_tags` es un nombre legacy compatible; una migracion futura podria introducir `required_item_tags`, pero no existe todavia.
 - Tags iniciales de `WorldObjectTags` son configuracion del Inspector.
 - Runtime tags de `WorldObjectTags` son estado mutable solo durante Play.
+- Los effect types cerrados se centralizan en `ActionEffectTypes` para que `DataValidator` y `DebugActionExecutor` usen las mismas constantes.
 - `add_tag` y `remove_tag` afectan al target en runtime.
 - `show_target_info` es un effect cerrado que lee `WorldObjectDebugInfo`.
 - `pick_up_item` es un effect cerrado que ejecuta `WorldItemPickup` y agrega una `ItemInstance` al `InventoryComponent` del actor.
@@ -571,6 +575,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `GameDatabase`: guarda definiciones cargadas.
 - `TagRegistry`: registra tags validos.
 - `DataValidator`: valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
+- `ActionEffectTypes`: centraliza constantes de effect types cerrados compartidas por `DataValidator` y `DebugActionExecutor`.
 - `ActionAvailabilityEvaluator`: evalua requirements y puede devolver resultado explicable.
 - `InteractionSystem`: arma contexto y devuelve acciones disponibles.
 - `ActorInteractionContext`: datos minimos del actor para interactuar.

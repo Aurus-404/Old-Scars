@@ -1027,6 +1027,20 @@ Con equipped item definition id none o vacio:
 - NPC damage y `search_body` siguen funcionando igual.
 - Estado: validated.
 
+### Post-M23.1 Functional Audit / Cleanup Pass
+
+- Functional Audit / Cleanup Pass post-M23.1 cerrada y validada antes de M24.
+- Cleanup Pass 1 elimino scripts debug/legacy confirmados como no referenciados: `GameDataDebugTester`, `ActionAvailabilityDebugTester` y `DebugPlayerContext`, junto con sus `.meta`.
+- Cleanup Pass 2 elimino de `SampleScene` el GameObject inactivo `Deprecated_ActorInteractionContext_Legacy`.
+- Debug Player conserva el `ActorInteractionContext` activo usado por `WorldInteractionDebugTester`.
+- Cleanup Pass 3 agrego `ActionEffectTypes` en `Assets/_OldScars/Scripts/Core/Actions/`.
+- `DataValidator` y `DebugActionExecutor` usan las mismas constantes para `add_tag`, `remove_tag`, `show_target_info`, `pick_up_item`, `search_container`, `apply_damage`, `kill_actor` y `search_actor_inventory`.
+- No se cambio JSON, no se cambiaron actions/effects y no se cambio semantica de ejecucion.
+- Validado en Unity: Data Load OK con 0 errors y 0 warnings.
+- Validado en Unity: Crowbar pickup, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor + lootable_actor`, `search_body` y bandage siguen funcionando.
+- El warning de Unity.AI.Toolkit Account API no pertenece a Old Scars.
+- Estado: validated.
+
 ## Decisiones De Scope
 
 - No hay inventario final.
