@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OldScars.Core.Actions;
 using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
@@ -10,14 +11,6 @@ namespace OldScars.Core.Interactions
 {
     public static class DebugActionExecutor
     {
-        private const string EffectTypeAddTag = "add_tag";
-        private const string EffectTypeRemoveTag = "remove_tag";
-        private const string EffectTypeShowTargetInfo = "show_target_info";
-        private const string EffectTypePickUpItem = "pick_up_item";
-        private const string EffectTypeSearchContainer = "search_container";
-        private const string EffectTypeApplyDamage = "apply_damage";
-        private const string EffectTypeKillActor = "kill_actor";
-        private const string EffectTypeSearchActorInventory = "search_actor_inventory";
         private const string EffectTargetTarget = "target";
 
         public static DebugActionExecutionResult Execute(ActionDefinition action, WorldObjectTags target, string itemId)
@@ -106,7 +99,7 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.None();
             }
 
-            if (effect.type == EffectTypeRemoveTag)
+            if (effect.type == ActionEffectTypes.RemoveTag)
             {
                 if (string.IsNullOrWhiteSpace(effect.tag))
                 {
@@ -134,7 +127,7 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.None();
             }
 
-            if (effect.type == EffectTypeAddTag)
+            if (effect.type == ActionEffectTypes.AddTag)
             {
                 if (string.IsNullOrWhiteSpace(effect.tag))
                 {
@@ -162,32 +155,32 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.None();
             }
 
-            if (effect.type == EffectTypeShowTargetInfo)
+            if (effect.type == ActionEffectTypes.ShowTargetInfo)
             {
                 return BuildTargetInfoResult(target, effectContext);
             }
 
-            if (effect.type == EffectTypePickUpItem)
+            if (effect.type == ActionEffectTypes.PickUpItem)
             {
                 return ExecutePickUpItem(effectContext, executionContext);
             }
 
-            if (effect.type == EffectTypeSearchContainer)
+            if (effect.type == ActionEffectTypes.SearchContainer)
             {
                 return ExecuteSearchContainer(effectContext, executionContext, action);
             }
 
-            if (effect.type == EffectTypeApplyDamage)
+            if (effect.type == ActionEffectTypes.ApplyDamage)
             {
                 return ExecuteApplyDamage(effect, effectContext, executionContext);
             }
 
-            if (effect.type == EffectTypeKillActor)
+            if (effect.type == ActionEffectTypes.KillActor)
             {
                 return ExecuteKillActor(effectContext, executionContext);
             }
 
-            if (effect.type == EffectTypeSearchActorInventory)
+            if (effect.type == ActionEffectTypes.SearchActorInventory)
             {
                 return ExecuteSearchActorInventory(effectContext, executionContext, action);
             }
@@ -208,7 +201,7 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Recoger", message);
             }
 
-            Debug.Log($"[DebugActionExecutor] {effectContext}: pick_up_item for '{SafeText(pickup.ItemDefinitionId)}'.");
+            Debug.Log($"[DebugActionExecutor] {effectContext}: {ActionEffectTypes.PickUpItem} for '{SafeText(pickup.ItemDefinitionId)}'.");
             return pickup.PickUp(executionContext.ActorContext, target);
         }
 
@@ -224,7 +217,7 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Buscar contenedor", message);
             }
 
-            Debug.Log($"[DebugActionExecutor] {effectContext}: search_container for loot table '{SafeText(containerLoot.LootTableId)}'.");
+            Debug.Log($"[DebugActionExecutor] {effectContext}: {ActionEffectTypes.SearchContainer} for loot table '{SafeText(containerLoot.LootTableId)}'.");
             DebugActionExecutionResult result = containerLoot.Search(executionContext, action, out bool canOpenStoragePanel, out InventoryComponent inventory);
             if (!canOpenStoragePanel)
                 return result;
@@ -325,7 +318,7 @@ namespace OldScars.Core.Interactions
             if (effect == null)
                 return false;
 
-            return effect.type == EffectTypeAddTag || effect.type == EffectTypeRemoveTag;
+            return effect.type == ActionEffectTypes.AddTag || effect.type == ActionEffectTypes.RemoveTag;
         }
 
         private static void LogTargetTagsAfterMutation(WorldObjectTags target, string targetName)
@@ -394,7 +387,7 @@ namespace OldScars.Core.Interactions
             string title = debugInfo.GetDisplayNameOrFallback(targetName, target);
             string body = debugInfo.GetInspectTextOrFallback(target);
             body = AppendContainerDebugStorageSummary(body, target);
-            Debug.Log($"[DebugActionExecutor] {effectContext}: show_target_info for '{title}'.");
+            Debug.Log($"[DebugActionExecutor] {effectContext}: {ActionEffectTypes.ShowTargetInfo} for '{title}'.");
             return DebugActionExecutionResult.Info(title, body);
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using OldScars.Core.Actions;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Data.Loading;
 
@@ -14,14 +15,6 @@ namespace OldScars.Core.Data.Validation
     public sealed class DataValidator
     {
         private static readonly Regex SnakeCasePattern = new Regex("^[a-z0-9_]+$", RegexOptions.Compiled);
-        private const string EffectTypeAddTag = "add_tag";
-        private const string EffectTypeRemoveTag = "remove_tag";
-        private const string EffectTypeShowTargetInfo = "show_target_info";
-        private const string EffectTypePickUpItem = "pick_up_item";
-        private const string EffectTypeSearchContainer = "search_container";
-        private const string EffectTypeApplyDamage = "apply_damage";
-        private const string EffectTypeKillActor = "kill_actor";
-        private const string EffectTypeSearchActorInventory = "search_actor_inventory";
         private const string EffectTargetTarget = "target";
         private const string RightHandSlotId = "right_hand";
 
@@ -475,28 +468,28 @@ namespace OldScars.Core.Data.Validation
                     if (!SnakeCasePattern.IsMatch(effect.type))
                         report.Error($"{effectCtx}: type '{effect.type}' must use snake_case.");
 
-                    if (effect.type == EffectTypeAddTag || effect.type == EffectTypeRemoveTag)
+                    if (effect.type == ActionEffectTypes.AddTag || effect.type == ActionEffectTypes.RemoveTag)
                     {
                         requiresTag = true;
                     }
                     else if (
-                        effect.type == EffectTypeShowTargetInfo ||
-                        effect.type == EffectTypePickUpItem ||
-                        effect.type == EffectTypeSearchContainer ||
-                        effect.type == EffectTypeKillActor ||
-                        effect.type == EffectTypeSearchActorInventory)
+                        effect.type == ActionEffectTypes.ShowTargetInfo ||
+                        effect.type == ActionEffectTypes.PickUpItem ||
+                        effect.type == ActionEffectTypes.SearchContainer ||
+                        effect.type == ActionEffectTypes.KillActor ||
+                        effect.type == ActionEffectTypes.SearchActorInventory)
                     {
                         disallowsTag = true;
                     }
-                    else if (effect.type == EffectTypeApplyDamage)
+                    else if (effect.type == ActionEffectTypes.ApplyDamage)
                     {
                         disallowsTag = true;
                         if (effect.amount <= 0f)
-                            report.Error($"{effectCtx}: 'amount' must be > 0 for '{EffectTypeApplyDamage}'.");
+                            report.Error($"{effectCtx}: 'amount' must be > 0 for '{ActionEffectTypes.ApplyDamage}'.");
                     }
                     else
                     {
-                        report.Error($"{effectCtx}: unsupported effect type '{effect.type}'. Allowed values: '{EffectTypeAddTag}', '{EffectTypeRemoveTag}', '{EffectTypeShowTargetInfo}', '{EffectTypePickUpItem}', '{EffectTypeSearchContainer}', '{EffectTypeApplyDamage}', '{EffectTypeKillActor}', '{EffectTypeSearchActorInventory}'.");
+                        report.Error($"{effectCtx}: unsupported effect type '{effect.type}'. Allowed values: '{ActionEffectTypes.AddTag}', '{ActionEffectTypes.RemoveTag}', '{ActionEffectTypes.ShowTargetInfo}', '{ActionEffectTypes.PickUpItem}', '{ActionEffectTypes.SearchContainer}', '{ActionEffectTypes.ApplyDamage}', '{ActionEffectTypes.KillActor}', '{ActionEffectTypes.SearchActorInventory}'.");
                     }
                 }
 
