@@ -3550,15 +3550,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2700000000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 08006dedba014eba8aa56adde118b192, type: 3}
+  m_Script: {fileID: 11500000, guid: 3a984f960e146d741b641319b4c73250, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.DebugActorInventorySeeder
-  inventory: {fileID: 2700000007}
-  startingItems:
-  - itemDefinitionId: bandage_01
-    quantity: 3
-  - itemDefinitionId: scrap_metal_01
-    quantity: 2
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorProfileComponent
+  actorProfileId: debug_npc_capsule_01
 --- !u!114 &2700000011
 MonoBehaviour:
   m_ObjectHideFlags: 0
