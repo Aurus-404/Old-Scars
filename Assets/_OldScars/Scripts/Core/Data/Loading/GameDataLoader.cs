@@ -18,6 +18,7 @@ namespace OldScars.Core.Data.Loading
     /// - items
     /// - loot_tables
     /// - actor_profiles
+    /// - world_object_profiles
     ///
     /// No entities, save system, IA, firearms or protection profiles yet.
     /// </summary>
@@ -115,6 +116,7 @@ namespace OldScars.Core.Data.Loading
             LoadItemsFrom(Path.Combine(modDirectory, "items"));
             LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"));
             LoadActorProfilesFrom(Path.Combine(modDirectory, "actor_profiles"));
+            LoadWorldObjectProfilesFrom(Path.Combine(modDirectory, "world_object_profiles"));
         }
 
         private void LoadTagsFrom(string directory)
@@ -225,6 +227,24 @@ namespace OldScars.Core.Data.Loading
             }
         }
 
+        private void LoadWorldObjectProfilesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                WorldObjectProfilesWrapper wrapper = Parse<WorldObjectProfilesWrapper>(file);
+                if (wrapper == null || wrapper.world_object_profiles == null)
+                {
+                    report.Warning($"No 'world_object_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (WorldObjectProfileDefinition worldObjectProfile in wrapper.world_object_profiles)
+                    Database.RegisterWorldObjectProfile(worldObjectProfile, report);
+
+                Debug.Log($"[GameDataLoader] WorldObjectProfiles: {wrapper.world_object_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
         private IEnumerable<string> JsonFilesIn(string directory)
         {
             if (!Directory.Exists(directory))
@@ -262,5 +282,6 @@ namespace OldScars.Core.Data.Loading
         [Serializable] private sealed class ItemsWrapper { public ItemDefinition[] items; }
         [Serializable] private sealed class LootTablesWrapper { public LootTableDefinition[] loot_tables; }
         [Serializable] private sealed class ActorProfilesWrapper { public ActorProfileDefinition[] actor_profiles; }
+        [Serializable] private sealed class WorldObjectProfilesWrapper { public WorldObjectProfileDefinition[] world_object_profiles; }
     }
 }

@@ -25,6 +25,16 @@ namespace OldScars.Core.Data.Validation
             "dead_actor",
             "lootable_actor"
         };
+        private static readonly HashSet<string> RuntimeWorldObjectProfileTags = new HashSet<string>
+        {
+            "looted_container",
+            "opened_container",
+            "forced_open",
+            "dead_actor",
+            "lootable_actor",
+            "damaged_actor",
+            "low_health_actor"
+        };
 
         private readonly GameDatabase database;
         private readonly TagRegistry tags;
@@ -44,6 +54,66 @@ namespace OldScars.Core.Data.Validation
             ValidateItems();
             ValidateLootTables();
             ValidateActorProfiles();
+            ValidateWorldObjectProfiles();
+        }
+
+        private void ValidateWorldObjectProfiles()
+        {
+            foreach (WorldObjectProfileDefinition worldObjectProfile in database.GetAllWorldObjectProfiles())
+            {
+                string ctx = $"WorldObjectProfile '{SafeId(worldObjectProfile != null ? worldObjectProfile.id : null)}'";
+
+                if (worldObjectProfile == null)
+                {
+                    report.Error("WorldObjectProfile: null world object profile definition loaded.");
+                    continue;
+                }
+
+                RequireType(worldObjectProfile.type, "world_object_profile", ctx);
+                RequireSnakeCase(worldObjectProfile.id, "id", ctx);
+
+                if (string.IsNullOrWhiteSpace(worldObjectProfile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+
+                ValidateWorldObjectProfileInitialTags(worldObjectProfile.initial_tags, $"{ctx}: initial_tags");
+
+                if (worldObjectProfile.loot_table_id != null)
+                    report.Error($"{ctx}: 'loot_table_id' is not supported in World Object Profile v0.");
+            }
+        }
+
+        private void ValidateWorldObjectProfileInitialTags(string[] initialTags, string context)
+        {
+            if (initialTags == null || initialTags.Length == 0)
+            {
+                report.Error($"{context} array is required and must not be empty.");
+                return;
+            }
+
+            var seenTags = new HashSet<string>();
+
+            for (int index = 0; index < initialTags.Length; index++)
+            {
+                string tag = initialTags[index];
+
+                if (string.IsNullOrWhiteSpace(tag))
+                {
+                    report.Error($"{context}: contains an empty tag.");
+                    continue;
+                }
+
+                if (!SnakeCasePattern.IsMatch(tag))
+                    report.Error($"{context}: tag '{tag}' must use snake_case.");
+
+                if (!tags.IsValid(tag))
+                    report.Error($"{context}: tag '{tag}' is not registered in tags.json.");
+
+                if (!seenTags.Add(tag))
+                    report.Error($"{context}: duplicate tag '{tag}'.");
+
+                if (RuntimeWorldObjectProfileTags.Contains(tag))
+                    report.Error($"{context}: runtime state tag '{tag}' must not be declared in world object profile JSON.");
+            }
         }
 
         private void ValidateActorProfiles()

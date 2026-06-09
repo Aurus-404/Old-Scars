@@ -1,0 +1,10 @@
+{
+  "world_object_profiles": [
+    {
+      "type": "world_object_profile",
+      "id": "debug_locked_door_01",
+      "display_name": "Debug Locked Door",
+      "initial_tags": ["locked_door", "inspectable"]
+    }
+  ]
+}

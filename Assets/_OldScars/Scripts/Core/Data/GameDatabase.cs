@@ -21,12 +21,14 @@ namespace OldScars.Core.Data
         private readonly Dictionary<string, ActionDefinition> _actions = new Dictionary<string, ActionDefinition>();
         private readonly Dictionary<string, LootTableDefinition> _lootTables = new Dictionary<string, LootTableDefinition>();
         private readonly Dictionary<string, ActorProfileDefinition> _actorProfiles = new Dictionary<string, ActorProfileDefinition>();
+        private readonly Dictionary<string, WorldObjectProfileDefinition> _worldObjectProfiles = new Dictionary<string, WorldObjectProfileDefinition>();
 
         public int ItemCount => _items.Count;
         public int WeaponProfileCount => _weaponProfiles.Count;
         public int ActionCount => _actions.Count;
         public int LootTableCount => _lootTables.Count;
         public int ActorProfileCount => _actorProfiles.Count;
+        public int WorldObjectProfileCount => _worldObjectProfiles.Count;
 
         // Registration --------------------------------------------------------
 
@@ -53,6 +55,11 @@ namespace OldScars.Core.Data
         public void RegisterActorProfile(ActorProfileDefinition definition, DataLoadReport report)
         {
             Register(_actorProfiles, definition != null ? definition.id : null, definition, "ActorProfile", report);
+        }
+
+        public void RegisterWorldObjectProfile(WorldObjectProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_worldObjectProfiles, definition != null ? definition.id : null, definition, "WorldObjectProfile", report);
         }
 
         private static void Register<T>(Dictionary<string, T> dictionary, string id, T definition, string typeName, DataLoadReport report) where T : class
@@ -105,6 +112,11 @@ namespace OldScars.Core.Data
             return Lookup(_actorProfiles, id);
         }
 
+        public WorldObjectProfileDefinition GetWorldObjectProfile(string id)
+        {
+            return Lookup(_worldObjectProfiles, id);
+        }
+
         private static T Lookup<T>(Dictionary<string, T> dictionary, string id) where T : class
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -141,6 +153,11 @@ namespace OldScars.Core.Data
             return _actorProfiles.Values;
         }
 
+        public IEnumerable<WorldObjectProfileDefinition> GetAllWorldObjectProfiles()
+        {
+            return _worldObjectProfiles.Values;
+        }
+
         public void LogStats()
         {
             Debug.Log("[GameDatabase] Loaded definitions:" +
@@ -148,7 +165,8 @@ namespace OldScars.Core.Data
                       $"\n  WeaponProfiles:  {_weaponProfiles.Count}" +
                       $"\n  Actions:         {_actions.Count}" +
                       $"\n  LootTables:      {_lootTables.Count}" +
-                      $"\n  ActorProfiles:   {_actorProfiles.Count}");
+                      $"\n  ActorProfiles:   {_actorProfiles.Count}" +
+                      $"\n  WorldObjectProfiles: {_worldObjectProfiles.Count}");
         }
     }
 }

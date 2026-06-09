@@ -852,6 +852,7 @@ GameObject:
   - component: {fileID: 989393221}
   - component: {fileID: 989393226}
   - component: {fileID: 2300001001}
+  - component: {fileID: 2800000001}
   m_Layer: 6
   m_Name: Debug Locked Door
   m_TagString: Untagged
@@ -871,9 +872,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
-  tags:
-  - locked_door
-  - inspectable
+  tags: []
 --- !u!65 &989393222
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -980,7 +979,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
-  displayName: Puerta oxidada trabada
+  displayName:
   inspectText: La puerta esta trabada por oxido. Una herramienta de palanca podria
     forzarla.
   conditionalInspectionTexts:
@@ -1000,6 +999,19 @@ MonoBehaviour:
     displayName: Puerta forzada
     inspectText: La puerta quedo forzada y abierta. El marco esta torcido, pero ya
       no bloquea el paso.
+--- !u!114 &2800000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 989393220}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ed8a294dd394a20be1044c365972fca, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectProfileComponent
+  worldObjectProfileId: debug_locked_door_01
 --- !u!1 &1022389976
 GameObject:
   m_ObjectHideFlags: 0
