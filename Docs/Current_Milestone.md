@@ -2,9 +2,9 @@
 
 ## Estado Actual Del Prototipo
 
-El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario de actor v0 con Storage y Equipped separados conceptualmente, pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, health runtime v0 de actor, consumibles cerrados por JSON, UI debug de survival/health, saqueo manual de contenedores, loot de actor muerto debug y auditoria funcional post-M23.1 cerrada antes de M24.
+El prototipo actual tiene una base debug validada para interacciones contextuales data-driven, acciones con duracion debug, movimiento point-and-click, camara debug, limpieza tecnica de escena, evaluacion auditable de requisitos de herramienta equipada, inventario de actor v0 con Storage y Equipped separados conceptualmente, pickup loop, container loot v0, primer POI jugable compacto, feedback de gameplay estructurado runtime-only, diagnostico runtime-only de disponibilidad de acciones, lectura visual debug estable de estados runtime por color, storage runtime-only de items con cantidades simples, inspeccion dependiente de `RuntimeTags`, defensas de acceso al storage de contenedores, necesidades runtime genericas de actor, health runtime v0 de actor, consumibles cerrados por JSON, UI debug de survival/health, saqueo manual de contenedores, loot de actor muerto debug, auditoria funcional post-M23.1 y primer pipeline data-driven de Actor Profiles.
 
-Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2 y Functional Audit / Cleanup Pass post-M23.1 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2, Functional Audit / Cleanup Pass post-M23.1 y Milestone 24 con sus passes M24.1-M24.4 estan validados en Unity.
 
 No hay milestone implementado pendiente de validacion.
 
@@ -25,10 +25,15 @@ Ultimo milestone validado:
 - Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage.
 - Milestone 23.1.2: Hotfix - Debug Player Health Feedback.
 - Post-M23.1 Functional Audit / Cleanup Pass.
+- Milestone 24: Actor Profile Pipeline v0.
+- Milestone 24.1: Actor Profile Data Load.
+- Milestone 24.2: Actor Profile Validation.
+- Milestone 24.3: Actor Profile Runtime Apply.
+- Milestone 24.4: Debug NPC Capsule Actor Profile Migration.
 
 Proximo recomendado:
 
-- Preparar Milestone 24 con alcance chico y derivado del roadmap vivo. No hay implementacion completa definida todavia.
+- Preparar Milestone 25: Storage Transfer v0 / Bidirectional Item Transfer. No hay implementacion definida todavia.
 
 
 ## Milestones Validados
@@ -602,16 +607,42 @@ Validado en Unity:
 - Siguen funcionando: Crowbar pickup, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor + lootable_actor`, `search_body` y bandage.
 - El warning de Unity.AI.Toolkit Account API no pertenece a Old Scars.
 
+### Milestone 24: Actor Profile Pipeline v0
+
+Estado: `validated`.
+
+Validado en Unity:
+
+- M24.1 agrego `ActorProfileDefinition`, `actor_profiles.json`, carga desde `actor_profiles/*.json`, registro y consulta en `GameDatabase`.
+- M24.2 agrego validacion fuerte de type, id, display name, initial tags, health e initial inventory, y rechaza `equipped` no soportado.
+- M24.3 agrego `ActorProfileComponent` para aplicar una sola vez display name, initial tags, health e initial inventory sobre componentes existentes.
+- M24.4 migro Debug NPC Capsule a `actorProfileId = debug_npc_capsule_01` y retiro `DebugActorInventorySeeder` de ese actor.
+- Debug NPC Capsule recibe `bandage_01 x3` y `scrap_metal_01 x2` desde `actor_profiles.json`.
+- No se duplico inventario.
+- `DebugActorInventorySeeder.cs` sigue existiendo como candidato legacy/debug para futura limpieza controlada.
+- Data Load OK con 0 errors, 0 warnings y `ActorProfiles: 1`.
+- Siguen funcionando `pick_up_item`, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor`, `lootable_actor` y `search_body`.
+
 ## Sistemas Activos
 
 ### Data Layer
 
 - JSON define contenido.
 - C# ejecuta logica.
-- `GameDataLoader` carga `StreamingAssets/Mods/Core`.
-- `GameDatabase` expone definiciones cargadas.
-- `DataValidator` valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
+- `GameDataLoader` carga `StreamingAssets/Mods/Core`, incluyendo `actor_profiles/*.json`.
+- `GameDatabase` expone definiciones cargadas, incluyendo Actor Profiles por ID.
+- `DataValidator` valida IDs, types, tags, referencias, effects, loot tables, Actor Profiles, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
 - `ActionEffectTypes` centraliza constantes de effect types cerrados compartidas por `DataValidator` y `DebugActionExecutor`.
+
+### Actor Profile Runtime
+
+- `ActorProfileDefinition` define display name, initial tags, health e initial inventory.
+- `ActorProfileComponent` consulta el perfil por ID y lo aplica una sola vez sobre componentes existentes.
+- El componente no auto-crea componentes faltantes; registra warning/error y omite esa parte del perfil.
+- Los health runtime tags siguen siendo responsabilidad de `ActorHealthComponent` y no se declaran en Actor Profiles.
+- `equipped` / `right_hand` no forman parte del schema validado de M24.
+- Debug NPC Capsule usa `actorProfileId = debug_npc_capsule_01`.
+- `DebugActorInventorySeeder` ya no esta conectado a Debug NPC Capsule; el script queda como candidato legacy/debug.
 
 ### Interaction System
 
@@ -653,7 +684,7 @@ Validado en Unity:
 - `InventoryItemUseService` aplica consumibles a `ActorNeedsComponent` / `ActorHealthComponent` y consume cantidad solo si hubo efecto valido.
 - `ItemStorageDebugPanel` es panel debug reusable para ver y tomar contenido de storages accesibles.
 - `LootableActorInventoryComponent` expone inventario de actor muerto como fuente reusable para `ItemStorageDebugPanel`.
-- `DebugActorInventorySeeder` es componente debug para sembrar items iniciales en actores debug colocados en escena.
+- `DebugActorInventorySeeder` es candidato legacy/debug para limpieza controlada y ya no se usa en Debug NPC Capsule.
 - `DebugInventory` crea instancias runtime al iniciar cuando `GameDataManager` esta listo.
 - `DebugInventory` no es inventario final, no guarda save data y no implementa equipamiento real.
 
@@ -808,10 +839,11 @@ Validado en Unity:
 - `ItemStorageDebugPanel` disponible para saqueo manual de contenedores accesibles y actor muerto looteable.
 - `DebugFeedbackLogPanel` y `DebugActionAvailabilityPanel` arrancan ocultos por defecto.
 - Objetos principales del POI pueden usar `WorldObjectStateView` para reflejar runtime tags visualmente sin controlar gameplay.
+- Debug NPC Capsule con `ActorProfileComponent.actorProfileId = debug_npc_capsule_01` y sin `DebugActorInventorySeeder`.
 
 ## Proximo Recomendado
 
-Preparar Milestone 24 con alcance chico y derivado del roadmap vivo. No hay implementacion completa definida todavia.
+Preparar Milestone 25: Storage Transfer v0 / Bidirectional Item Transfer. Objetivo futuro: permitir poner items dentro de contenedores y cuerpos usando `ItemStorage` / `InventoryComponent`, sin romper el saqueo actual. No hay implementacion definida todavia.
 
 Milestone 16 fue validado con:
 

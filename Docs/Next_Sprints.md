@@ -8,7 +8,7 @@ Este documento funciona como backlog ordenado de sprints recomendados. La fuente
 
 Estado actual:
 
-- Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2 y Functional Audit / Cleanup Pass post-M23.1 estan `validated`.
+- Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2, Functional Audit / Cleanup Pass post-M23.1 y Milestone 24 con sus passes M24.1-M24.4 estan `validated`.
 - `SampleScene` funciona como primer POI jugable compacto tipo pequeno taller / bahia de mantenimiento industrial.
 - El POI usa sistemas validados: movimiento point-and-click, camara debug, inventario de actor v0, pickup, equip `right_hand`, acciones con duracion, runtime tags, loot tables v0, container loot v0, storage runtime-only de items y feedback runtime-only.
 - El loop completo funciona: recoger palanca -> equipar -> abrir/forzar obstaculo -> abrir contenedor -> buscar loot -> obtener Scrap Metal -> dejar estados runtime correctos.
@@ -66,6 +66,9 @@ Estado actual:
 - Data load sigue OK con 0 errors y 0 warnings.
 - La auditoria funcional post-M23.1 quedo cerrada con tres cleanup passes validados antes de M24.
 - `ActionEffectTypes` centraliza los effect type strings compartidos por `DataValidator` y `DebugActionExecutor`.
+- Actor Profiles ya tienen carga, validacion y aplicacion runtime basica.
+- Debug NPC Capsule usa `actorProfileId = debug_npc_capsule_01` y recibe Bandage x3 + Scrap Metal x2 desde JSON sin duplicar inventario.
+- `DebugActorInventorySeeder` ya no se usa en Debug NPC Capsule; el script queda como candidato legacy/debug para limpieza controlada.
 - `InteractionSystem` sigue desacoplado.
 - No se creo UI final, save system, EventBus, listeners/subscriptions/callbacks, IA ni combate.
 - No se creo journal, quest log, UI final, save system, EventBus, listeners/subscriptions/callbacks ni sistemas grandes.
@@ -74,7 +77,7 @@ Estado actual:
 
 Proxima accion recomendada:
 
-- Preparar Milestone 24 con alcance chico y derivado del roadmap vivo.
+- Preparar Milestone 25: Storage Transfer v0 / Bidirectional Item Transfer.
 - No definir implementacion completa todavia.
 
 Base validada:
@@ -506,9 +509,18 @@ Pruebas validadas de Milestone 18:
 - `ActionEffectTypes` centraliza los effect types cerrados usados por `DataValidator` y `DebugActionExecutor`.
 - No cambio comportamiento de actions, JSON ni sistemas jugables.
 
-### Preparar M24
+### Milestone 24: Actor Profile Pipeline v0
 
-- Recomendado: preparar un alcance chico de Milestone 24 derivado del roadmap vivo.
+- Estado: `validated`.
+- M24.1-M24.4 dejaron carga, validacion, aplicacion runtime y migracion inicial de Debug NPC Capsule.
+- Debug NPC Capsule ya no depende de `DebugActorInventorySeeder` para su inventario inicial.
+- `DebugActorInventorySeeder.cs` se mantiene como candidato legacy/debug para futura limpieza controlada.
+- Data Load validado: 0 errors, 0 warnings y `ActorProfiles: 1`.
+
+### Preparar M25: Storage Transfer v0 / Bidirectional Item Transfer
+
+- Objetivo futuro: permitir poner items dentro de contenedores y cuerpos usando `ItemStorage` / `InventoryComponent`.
+- Mantener intactos el saqueo actual, `search_container`, `search_body` y las transferencias existentes.
 - No definir implementacion completa todavia.
 
 ## Pospuestos / No Tocar Todavia

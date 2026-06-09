@@ -1041,6 +1041,18 @@ Con equipped item definition id none o vacio:
 - El warning de Unity.AI.Toolkit Account API no pertenece a Old Scars.
 - Estado: validated.
 
+### Milestone 24: Actor Profile Pipeline v0
+
+- M24.1 agrego `ActorProfileDefinition`, `actor_profiles/actor_profiles.json`, carga en `GameDataLoader` y registro/consulta en `GameDatabase`.
+- M24.2 agrego validacion fuerte en `DataValidator` para type, id, display name, initial tags, health e initial inventory; `equipped` se rechaza porque todavia no esta soportado.
+- M24.3 agrego `ActorProfileComponent` para aplicar una sola vez display name, initial tags, health e initial inventory sobre componentes existentes.
+- M24.4 migro Debug NPC Capsule en `SampleScene` a `actorProfileId = debug_npc_capsule_01` y retiro `DebugActorInventorySeeder` de ese actor.
+- Debug NPC Capsule recibe `bandage_01 x3` y `scrap_metal_01 x2` desde `actor_profiles.json` sin duplicar inventario.
+- `DebugActorInventorySeeder.cs` no fue eliminado y queda como candidato legacy/debug para una futura limpieza controlada.
+- Validado en Unity: Data Load OK con 0 errors, 0 warnings y `ActorProfiles: 1`.
+- Validado en Unity: `pick_up_item`, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor`, `lootable_actor` y `search_body` siguen funcionando.
+- Estado: validated.
+
 ## Decisiones De Scope
 
 - No hay inventario final.

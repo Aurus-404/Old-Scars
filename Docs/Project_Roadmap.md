@@ -33,8 +33,9 @@ Old Scars tiene una base debug/prototipo validada para:
 - acciones contextuales revalidadas antes de ejecutar y menu contextual debug refrescado cuando cambia el item equipado.
 - base de salud runtime de actor validada con estados `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`, lectura visual por `WorldObjectStateView` y loot de actor muerto mediante `ItemStorageDebugPanel`.
 - auditoria funcional post-M23.1 y tres cleanup passes validados antes de M24, sin cambios de comportamiento jugable.
+- primer pipeline data-driven de Actor Profiles validado: carga, validacion y aplicacion runtime basica sobre actores colocados en escena.
 
-Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2 y Functional Audit / Cleanup Pass post-M23.1 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2, Functional Audit / Cleanup Pass post-M23.1 y Milestone 24 con sus passes M24.1-M24.4 estan validados en Unity.
 
 ## Estados Permitidos
 
@@ -82,6 +83,11 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage | Agregar estado damaged_actor, textos de inspeccion por salud y dano debug al Player. | validated | Validado: actor full/damaged/low/dead muestra textos distintos; Player recibe dano debug sin muerte real ni lootable_actor. |
 | Milestone 23.1.2: Hotfix - Debug Player Health Feedback | Registrar feedback debug al danar al Player desde ActorNeedsDebugPanel. | validated | Validado: Debug Damage Player registra Info en GameplayFeedbackLog con actor, dano y health antes/despues. |
 | Post-M23.1 Functional Audit / Cleanup Pass | Auditar y limpiar deuda funcional menor antes de M24 sin cambiar comportamiento jugable. | validated | Validado: scripts debug/legacy sin referencias eliminados, objeto legacy inactivo removido de SampleScene, `ActionEffectTypes` centraliza effect types y los flujos M23/M23.1 siguen funcionando. |
+| Milestone 24: Actor Profile Pipeline v0 | Crear una primera base data-driven de perfiles de actor con carga, validacion y aplicacion runtime. | validated | Validado: Debug NPC Capsule recibe identidad, tags iniciales, health e inventario desde `debug_npc_capsule_01` sin duplicar items. |
+| Milestone 24.1: Actor Profile Data Load | Cargar `actor_profiles/*.json` y registrar `ActorProfileDefinition` en `GameDatabase`. | validated | Validado: Data Load OK, 0 errors, 0 warnings y `ActorProfiles: 1`. |
+| Milestone 24.2: Actor Profile Validation | Validar schema, IDs, tags, health, inventario y referencias de actor profiles. | validated | Validado: `DataValidator` acepta el perfil actual y rechaza datos invalidos o `equipped` no soportado. |
+| Milestone 24.3: Actor Profile Runtime Apply | Aplicar un actor profile una sola vez sobre componentes existentes del actor. | validated | Validado: `ActorProfileComponent` aplica display name, initial tags, health e initial inventory sin auto-crear componentes. |
+| Milestone 24.4: Debug NPC Capsule Actor Profile Migration | Migrar Debug NPC Capsule al perfil data-driven y retirar su seeder manual. | validated | Validado: usa `actorProfileId = debug_npc_capsule_01`; recibe Bandage x3 y Scrap Metal x2 sin duplicacion. |
 
 ## Milestone Actual
 
@@ -98,10 +104,15 @@ El ultimo milestone cerrado como `validated` es:
 - Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage (`validated`).
 - Milestone 23.1.2: Hotfix - Debug Player Health Feedback (`validated`).
 - Post-M23.1 Functional Audit / Cleanup Pass (`validated`).
+- Milestone 24: Actor Profile Pipeline v0 (`validated`).
+- Milestone 24.1: Actor Profile Data Load (`validated`).
+- Milestone 24.2: Actor Profile Validation (`validated`).
+- Milestone 24.3: Actor Profile Runtime Apply (`validated`).
+- Milestone 24.4: Debug NPC Capsule Actor Profile Migration (`validated`).
 
 ## Proximo Recomendado
 
-Preparar Milestone 24 con alcance chico y derivado del roadmap vivo. No hay implementacion completa definida todavia.
+Preparar Milestone 25: Storage Transfer v0 / Bidirectional Item Transfer. Objetivo futuro: permitir poner items dentro de contenedores y cuerpos usando `ItemStorage` / `InventoryComponent`, sin romper el flujo actual de saqueo. No hay implementacion definida todavia.
 
 Milestone 11 dejo validado:
 
@@ -471,6 +482,17 @@ Milestone 23.1.2 dejo validado:
 - Bandage sigue curando;
 - NPC damage y `search_body` siguen funcionando igual.
 
+Milestone 24 dejo validado:
+
+- M24.1 agrego `ActorProfileDefinition`, carga de `actor_profiles/*.json`, registro y consulta en `GameDatabase`;
+- M24.2 agrego validacion fuerte de type, id, display name, initial tags, health e initial inventory, y rechaza `equipped` mientras no esta soportado;
+- M24.3 agrego `ActorProfileComponent`, que aplica una sola vez display name, initial tags, health e initial inventory sobre componentes existentes;
+- M24.4 migro Debug NPC Capsule a `actorProfileId = debug_npc_capsule_01` y retiro `DebugActorInventorySeeder` de ese actor;
+- Debug NPC Capsule recibe `bandage_01 x3` y `scrap_metal_01 x2` desde `actor_profiles.json` sin duplicar inventario;
+- `DebugActorInventorySeeder.cs` no fue eliminado y queda como candidato legacy/debug para una futura limpieza controlada;
+- Data Load validado: 0 errors, 0 warnings y `ActorProfiles: 1`;
+- siguen funcionando `pick_up_item`, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor`, `lootable_actor` y `search_body`.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -522,6 +544,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `ActorNeedsComponent` mantiene configuracion/perfil separado de estado runtime.
 - `ActorHealthComponent` es health runtime v0 para actores y no debe pintar visuales directamente.
 - Health runtime actualiza tags como `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`.
+- `ActorProfileDefinition` define identidad y estado inicial data-driven de actores; el estado mutable sigue viviendo en componentes runtime.
+- `ActorProfileComponent` aplica un perfil una sola vez sobre componentes existentes y no auto-crea componentes faltantes.
+- Los Actor Profiles no declaran health runtime tags ni `equipped`; esos datos siguen fuera del schema validado de M24.
 - La muerte real del Player no existe todavia: 0 health del Player es solo estado debug visual/numerico, sin game over, bloqueo de movimiento/acciones ni `lootable_actor`.
 - `DebugInventory` es debug temporal y no es inventario final.
 - `InventoryComponent` es inventario de actor v0, usa `ItemStorage` para Storage y expone Equipped con `right_hand`; no es inventario final.
@@ -571,10 +596,10 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 
 ## Sistemas Existentes
 
-- `GameDataLoader`: carga JSON desde mods.
-- `GameDatabase`: guarda definiciones cargadas.
+- `GameDataLoader`: carga JSON desde mods, incluyendo `actor_profiles/*.json`.
+- `GameDatabase`: guarda definiciones cargadas y expone Actor Profiles por ID.
 - `TagRegistry`: registra tags validos.
-- `DataValidator`: valida IDs, types, tags, referencias, effects, loot tables, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
+- `DataValidator`: valida IDs, types, tags, referencias, effects, loot tables, Actor Profiles, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
 - `ActionEffectTypes`: centraliza constantes de effect types cerrados compartidas por `DataValidator` y `DebugActionExecutor`.
 - `ActionAvailabilityEvaluator`: evalua requirements y puede devolver resultado explicable.
 - `InteractionSystem`: arma contexto y devuelve acciones disponibles.
@@ -584,10 +609,12 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `ItemStorageEntry`: entrada runtime de storage con `ItemInstance` representativo y `Quantity`.
 - `ActorNeedsComponent`: necesidades runtime genericas de actor con hunger/thirst debug.
 - `ActorHealthComponent`: health runtime v0 de actores con max/current health, low health threshold y tags de estado.
+- `ActorProfileDefinition`: definicion data-driven v0 de identidad, initial tags, health e initial inventory de actor.
+- `ActorProfileComponent`: aplica un Actor Profile una sola vez sobre componentes runtime existentes.
 - `ActorNeedProfile`: configuracion serializable de necesidades.
 - `ActorNeedState`: estado runtime visible para debug.
 - `LootableActorInventoryComponent`: expone el inventario de un actor muerto looteable como fuente reusable para `ItemStorageDebugPanel`.
-- `DebugActorInventorySeeder`: componente debug para sembrar items iniciales en un actor debug colocado en escena.
+- `DebugActorInventorySeeder`: componente legacy/debug candidato a limpieza controlada; ya no se usa en Debug NPC Capsule.
 - `InventoryItemUseService`: aplica consumibles cerrados a `ActorNeedsComponent` / `ActorHealthComponent` y consume cantidad si hubo efecto valido.
 - `InventoryItemUseResult`: resultado simple de uso de item para UI/debug.
 - `LootTableDefinition`: definicion v0 de loot deterministico.
