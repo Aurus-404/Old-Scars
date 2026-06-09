@@ -18,6 +18,8 @@ namespace OldScars.Core.Data
     {
         private readonly Dictionary<string, ItemDefinition> _items = new Dictionary<string, ItemDefinition>();
         private readonly Dictionary<string, WeaponProfileDefinition> _weaponProfiles = new Dictionary<string, WeaponProfileDefinition>();
+        private readonly Dictionary<string, FirearmProfileDefinition> _firearmProfiles = new Dictionary<string, FirearmProfileDefinition>();
+        private readonly Dictionary<string, AmmoProfileDefinition> _ammoProfiles = new Dictionary<string, AmmoProfileDefinition>();
         private readonly Dictionary<string, ActionDefinition> _actions = new Dictionary<string, ActionDefinition>();
         private readonly Dictionary<string, LootTableDefinition> _lootTables = new Dictionary<string, LootTableDefinition>();
         private readonly Dictionary<string, ActorProfileDefinition> _actorProfiles = new Dictionary<string, ActorProfileDefinition>();
@@ -25,6 +27,8 @@ namespace OldScars.Core.Data
 
         public int ItemCount => _items.Count;
         public int WeaponProfileCount => _weaponProfiles.Count;
+        public int FirearmProfileCount => _firearmProfiles.Count;
+        public int AmmoProfileCount => _ammoProfiles.Count;
         public int ActionCount => _actions.Count;
         public int LootTableCount => _lootTables.Count;
         public int ActorProfileCount => _actorProfiles.Count;
@@ -40,6 +44,16 @@ namespace OldScars.Core.Data
         public void RegisterWeaponProfile(WeaponProfileDefinition definition, DataLoadReport report)
         {
             Register(_weaponProfiles, definition != null ? definition.id : null, definition, "WeaponProfile", report);
+        }
+
+        public void RegisterFirearmProfile(FirearmProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_firearmProfiles, definition != null ? definition.id : null, definition, "FirearmProfile", report);
+        }
+
+        public void RegisterAmmoProfile(AmmoProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_ammoProfiles, definition != null ? definition.id : null, definition, "AmmoProfile", report);
         }
 
         public void RegisterAction(ActionDefinition definition, DataLoadReport report)
@@ -97,6 +111,16 @@ namespace OldScars.Core.Data
             return Lookup(_weaponProfiles, id);
         }
 
+        public FirearmProfileDefinition GetFirearmProfile(string id)
+        {
+            return Lookup(_firearmProfiles, id);
+        }
+
+        public AmmoProfileDefinition GetAmmoProfile(string id)
+        {
+            return Lookup(_ammoProfiles, id);
+        }
+
         public ActionDefinition GetAction(string id)
         {
             return Lookup(_actions, id);
@@ -138,6 +162,16 @@ namespace OldScars.Core.Data
             return _weaponProfiles.Values;
         }
 
+        public IEnumerable<FirearmProfileDefinition> GetAllFirearmProfiles()
+        {
+            return _firearmProfiles.Values;
+        }
+
+        public IEnumerable<AmmoProfileDefinition> GetAllAmmoProfiles()
+        {
+            return _ammoProfiles.Values;
+        }
+
         public IEnumerable<ActionDefinition> GetAllActions()
         {
             return _actions.Values;
@@ -163,6 +197,8 @@ namespace OldScars.Core.Data
             Debug.Log("[GameDatabase] Loaded definitions:" +
                       $"\n  Items:           {_items.Count}" +
                       $"\n  WeaponProfiles:  {_weaponProfiles.Count}" +
+                      $"\n  FirearmProfiles: {_firearmProfiles.Count}" +
+                      $"\n  AmmoProfiles:    {_ammoProfiles.Count}" +
                       $"\n  Actions:         {_actions.Count}" +
                       $"\n  LootTables:      {_lootTables.Count}" +
                       $"\n  ActorProfiles:   {_actorProfiles.Count}" +

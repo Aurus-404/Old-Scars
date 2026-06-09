@@ -51,6 +51,8 @@ namespace OldScars.Core.Data.Validation
         {
             ValidateActions();
             ValidateWeaponProfiles();
+            ValidateFirearmProfiles();
+            ValidateAmmoProfiles();
             ValidateItems();
             ValidateLootTables();
             ValidateActorProfiles();
@@ -339,6 +341,42 @@ namespace OldScars.Core.Data.Validation
 
                 if (item.consumable != null)
                     ValidateItemConsumable(item, ctx);
+
+                ValidateItemFirearmAndAmmoProfiles(item, ctx);
+            }
+        }
+
+        private void ValidateItemFirearmAndAmmoProfiles(ItemDefinition item, string ctx)
+        {
+            bool hasFirearmProfile = !string.IsNullOrWhiteSpace(item.firearm_profile_id);
+            bool hasAmmoProfile = !string.IsNullOrWhiteSpace(item.ammo_profile_id);
+
+            if (hasFirearmProfile && hasAmmoProfile)
+                report.Error($"{ctx}: an item cannot reference both 'firearm_profile_id' and 'ammo_profile_id'.");
+
+            if (hasFirearmProfile)
+            {
+                RequireSnakeCase(item.firearm_profile_id, "firearm_profile_id", ctx);
+
+                if (database.GetFirearmProfile(item.firearm_profile_id) == null)
+                    report.Error($"{ctx}: 'firearm_profile_id' references '{item.firearm_profile_id}' which was not loaded.");
+
+                if (!IsItemEquipEnabled(item))
+                    report.Error($"{ctx}: items with 'firearm_profile_id' must be equipable.");
+            }
+
+            if (hasAmmoProfile)
+            {
+                RequireSnakeCase(item.ammo_profile_id, "ammo_profile_id", ctx);
+
+                if (database.GetAmmoProfile(item.ammo_profile_id) == null)
+                    report.Error($"{ctx}: 'ammo_profile_id' references '{item.ammo_profile_id}' which was not loaded.");
+
+                if (item.max_stack <= 1)
+                    report.Error($"{ctx}: ammo items must be stackable with 'max_stack' > 1.");
+
+                if (IsItemEquipEnabled(item))
+                    report.Error($"{ctx}: ammo items must not be equipable in Milestone 29.");
             }
         }
 
@@ -522,6 +560,92 @@ namespace OldScars.Core.Data.Validation
                             report.Error($"{ctx}: 'default_actions' references '{actionId}' which was not loaded.");
                     }
                 }
+            }
+        }
+
+        private void ValidateFirearmProfiles()
+        {
+            foreach (FirearmProfileDefinition profile in database.GetAllFirearmProfiles())
+            {
+                string ctx = $"FirearmProfile '{SafeId(profile != null ? profile.id : null)}'";
+
+                if (profile == null)
+                {
+                    report.Error("FirearmProfile: null definition loaded.");
+                    continue;
+                }
+
+                RequireType(profile.type, "firearm_profile", ctx);
+                RequireSnakeCase(profile.id, "id", ctx);
+
+                if (string.IsNullOrWhiteSpace(profile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+
+                if (profile.accepted_ammo_profile_ids == null || profile.accepted_ammo_profile_ids.Length == 0)
+                {
+                    report.Error($"{ctx}: 'accepted_ammo_profile_ids' is required and must not be empty.");
+                }
+                else
+                {
+                    var seenAmmoProfiles = new HashSet<string>();
+                    for (int index = 0; index < profile.accepted_ammo_profile_ids.Length; index++)
+                    {
+                        string ammoProfileId = profile.accepted_ammo_profile_ids[index];
+                        RequireSnakeCase(ammoProfileId, $"accepted_ammo_profile_ids[{index}]", ctx);
+
+                        if (!string.IsNullOrWhiteSpace(ammoProfileId) && database.GetAmmoProfile(ammoProfileId) == null)
+                            report.Error($"{ctx}: accepted ammo profile '{ammoProfileId}' was not loaded.");
+
+                        if (!string.IsNullOrWhiteSpace(ammoProfileId) && !seenAmmoProfiles.Add(ammoProfileId))
+                            report.Error($"{ctx}: duplicate accepted ammo profile '{ammoProfileId}'.");
+                    }
+                }
+
+                if (profile.magazine_capacity != 1)
+                    report.Error($"{ctx}: 'magazine_capacity' must be 1 for Milestone 29 single-shot v0 (got {profile.magazine_capacity}).");
+
+                if (profile.range <= 0f)
+                    report.Error($"{ctx}: 'range' must be > 0 (got {profile.range}).");
+
+                if (profile.cycle_time < 0f)
+                    report.Error($"{ctx}: 'cycle_time' must be >= 0 (got {profile.cycle_time}).");
+
+                if (profile.muzzle_offset <= 0f)
+                    report.Error($"{ctx}: 'muzzle_offset' must be > 0 (got {profile.muzzle_offset}).");
+
+                if (profile.debug_accuracy_spread < 0f)
+                    report.Error($"{ctx}: 'debug_accuracy_spread' must be >= 0 (got {profile.debug_accuracy_spread}).");
+            }
+        }
+
+        private void ValidateAmmoProfiles()
+        {
+            foreach (AmmoProfileDefinition profile in database.GetAllAmmoProfiles())
+            {
+                string ctx = $"AmmoProfile '{SafeId(profile != null ? profile.id : null)}'";
+
+                if (profile == null)
+                {
+                    report.Error("AmmoProfile: null definition loaded.");
+                    continue;
+                }
+
+                RequireType(profile.type, "ammo_profile", ctx);
+                RequireSnakeCase(profile.id, "id", ctx);
+
+                if (string.IsNullOrWhiteSpace(profile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+
+                RequireSnakeCase(profile.caliber_tag, "caliber_tag", ctx);
+                if (!string.IsNullOrWhiteSpace(profile.caliber_tag) && !tags.IsValid(profile.caliber_tag))
+                    report.Error($"{ctx}: caliber_tag '{profile.caliber_tag}' is not registered in tags.json.");
+
+                if (profile.damage <= 0f)
+                    report.Error($"{ctx}: 'damage' must be > 0 (got {profile.damage}).");
+
+                ValidateTagList(profile.tags, $"{ctx}: tags");
+                if (profile.tags == null || !ContainsValue(profile.tags, profile.caliber_tag))
+                    report.Error($"{ctx}: 'tags' must contain caliber_tag '{SafeId(profile.caliber_tag)}'.");
             }
         }
 
@@ -770,6 +894,17 @@ namespace OldScars.Core.Data.Validation
             }
 
             return false;
+        }
+
+        private static bool IsItemEquipEnabled(ItemDefinition item)
+        {
+            if (item == null)
+                return false;
+
+            if (item.equip != null && item.equip.equippable.HasValue)
+                return item.equip.equippable.Value;
+
+            return item.equippable.GetValueOrDefault(false);
         }
 
         private void RequireType(string actual, string expected, string context)

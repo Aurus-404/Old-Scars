@@ -31,6 +31,11 @@
     { "id": "low_health_actor", "description": "Actor vivo con salud baja durante runtime." },
     { "id": "dead_actor", "description": "Actor muerto durante runtime." },
     { "id": "lootable_actor", "description": "Actor muerto cuyo inventario puede ser saqueado durante runtime." },
-    { "id": "medical", "description": "Item medico simple para efectos cerrados de salud." }
+    { "id": "medical", "description": "Item medico simple para efectos cerrados de salud." },
+    { "id": "firearm", "description": "Arma de fuego asociada a un Firearm Profile." },
+    { "id": "rifle", "description": "Arma larga tipo rifle." },
+    { "id": "ammo", "description": "Municion consumible por armas de fuego compatibles." },
+    { "id": "rifle_ammo", "description": "Municion compatible con rifles." },
+    { "id": "caliber_303", "description": "Municion de calibre .303 British." }
   ]
 }

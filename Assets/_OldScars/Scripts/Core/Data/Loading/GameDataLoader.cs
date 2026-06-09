@@ -19,8 +19,10 @@ namespace OldScars.Core.Data.Loading
     /// - loot_tables
     /// - actor_profiles
     /// - world_object_profiles
+    /// - firearm_profiles
+    /// - ammo_profiles
     ///
-    /// No entities, save system, IA, firearms or protection profiles yet.
+    /// No entities, save system, IA, final combat or protection profiles yet.
     /// </summary>
     public sealed class GameDataLoader
     {
@@ -112,6 +114,8 @@ namespace OldScars.Core.Data.Loading
         {
             LoadTagsFrom(Path.Combine(modDirectory, "tags"));
             LoadWeaponProfilesFrom(Path.Combine(modDirectory, "profiles"));
+            LoadFirearmProfilesFrom(Path.Combine(modDirectory, "firearm_profiles"));
+            LoadAmmoProfilesFrom(Path.Combine(modDirectory, "ammo_profiles"));
             LoadActionsFrom(Path.Combine(modDirectory, "actions"));
             LoadItemsFrom(Path.Combine(modDirectory, "items"));
             LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"));
@@ -152,6 +156,42 @@ namespace OldScars.Core.Data.Loading
                     Database.RegisterWeaponProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] WeaponProfiles: {wrapper.weapon_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadFirearmProfilesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                FirearmProfilesWrapper wrapper = Parse<FirearmProfilesWrapper>(file);
+                if (wrapper == null || wrapper.firearm_profiles == null)
+                {
+                    report.Warning($"No 'firearm_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (FirearmProfileDefinition profile in wrapper.firearm_profiles)
+                    Database.RegisterFirearmProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] FirearmProfiles: {wrapper.firearm_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadAmmoProfilesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                AmmoProfilesWrapper wrapper = Parse<AmmoProfilesWrapper>(file);
+                if (wrapper == null || wrapper.ammo_profiles == null)
+                {
+                    report.Warning($"No 'ammo_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (AmmoProfileDefinition profile in wrapper.ammo_profiles)
+                    Database.RegisterAmmoProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] AmmoProfiles: {wrapper.ammo_profiles.Length} entries from {FileName(file)}");
             }
         }
 
@@ -278,6 +318,8 @@ namespace OldScars.Core.Data.Loading
 
         [Serializable] private sealed class TagsWrapper { public TagDefinition[] tags; }
         [Serializable] private sealed class WeaponProfilesWrapper { public WeaponProfileDefinition[] weapon_profiles; }
+        [Serializable] private sealed class FirearmProfilesWrapper { public FirearmProfileDefinition[] firearm_profiles; }
+        [Serializable] private sealed class AmmoProfilesWrapper { public AmmoProfileDefinition[] ammo_profiles; }
         [Serializable] private sealed class ActionsWrapper { public ActionDefinition[] actions; }
         [Serializable] private sealed class ItemsWrapper { public ItemDefinition[] items; }
         [Serializable] private sealed class LootTablesWrapper { public LootTableDefinition[] loot_tables; }

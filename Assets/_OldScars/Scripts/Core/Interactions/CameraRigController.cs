@@ -27,7 +27,7 @@ namespace OldScars.Core.Interactions
         [SerializeField] private float yawDegreesPerMousePixel = 0.2f;
 
         [Header("Recenter")]
-        [SerializeField] private bool enableRecenterKey = true;
+        [SerializeField] private bool enableRecenterInput = true;
 
         private Vector2 rightMouseDownPosition;
         private bool rightMouseIsDown;
@@ -190,10 +190,10 @@ namespace OldScars.Core.Interactions
 
         private void HandleRecenterInput()
         {
-            if (!enableRecenterKey || Keyboard.current == null)
+            if (!enableRecenterInput || Mouse.current == null)
                 return;
 
-            if (Keyboard.current.fKey.wasPressedThisFrame)
+            if (Mouse.current.middleButton.wasPressedThisFrame)
                 RecenterOnTarget();
         }
     }

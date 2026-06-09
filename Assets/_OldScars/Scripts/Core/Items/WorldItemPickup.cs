@@ -41,6 +41,11 @@ namespace OldScars.Core.Items
             }
         }
 
+        private void Start()
+        {
+            WorldItemDebugVisualBuilder.Build(transform, ItemDefinitionId);
+        }
+
         public int ReceiveDroppedItem(InventoryComponent sourceInventory, int sourceIndex, int quantity)
         {
             if (sourceInventory == null || !storage.IsEmpty || quantity < 1)

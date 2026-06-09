@@ -1,0 +1,15 @@
+{
+  "firearm_profiles": [
+    {
+      "type": "firearm_profile",
+      "id": "lee_enfield_rifle_01_profile",
+      "display_name": "Lee-Enfield Rifle",
+      "accepted_ammo_profile_ids": ["ammo_303_british_01_profile"],
+      "magazine_capacity": 1,
+      "range": 80,
+      "cycle_time": 1.25,
+      "muzzle_offset": 0.9,
+      "debug_accuracy_spread": 0
+    }
+  ]
+}

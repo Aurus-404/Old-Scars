@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using OldScars.Core.Actors;
+using OldScars.Core.Combat;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace OldScars.Core.Items
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorNeedsComponent actorNeeds;
         [SerializeField] private ActorHealthComponent actorHealth;
+        [SerializeField] private FirearmDebugController firearmController;
 
         private bool isVisible;
         private Vector2 scrollPosition;
@@ -32,12 +34,14 @@ namespace OldScars.Core.Items
         {
             ResolveActorNeeds();
             ResolveActorHealth();
+            ResolveFirearmController();
         }
 
         private void OnEnable()
         {
             ResolveActorNeeds();
             ResolveActorHealth();
+            ResolveFirearmController();
         }
 
         public void Hide()
@@ -86,6 +90,7 @@ namespace OldScars.Core.Items
             }
 
             DrawEquippedSection();
+            DrawFirearmSection();
 
             GUILayout.Space(8f);
 
@@ -125,6 +130,20 @@ namespace OldScars.Core.Items
 
             if (GUILayout.Button("Close", GUILayout.Height(24f), GUILayout.Width(90f)))
                 Hide();
+
+            GUILayout.EndHorizontal();
+        }
+
+        private void DrawFirearmSection()
+        {
+            ResolveFirearmController();
+            if (firearmController == null || !firearmController.HasEquippedFirearm)
+                return;
+
+            GUILayout.BeginHorizontal(GUI.skin.box);
+            GUILayout.Label($"Equipped Firearm: {firearmController.EquippedFirearmDisplayName}", GUILayout.Width(330f));
+            GUILayout.Label(firearmController.StatusText, GUILayout.Width(240f));
+            GUILayout.Label("F: Toggle Aim", GUILayout.Width(100f));
 
             GUILayout.EndHorizontal();
         }
@@ -294,6 +313,18 @@ namespace OldScars.Core.Items
 
             if (actorHealth == null)
                 actorHealth = FindAnyObjectByType<ActorHealthComponent>();
+        }
+
+        private void ResolveFirearmController()
+        {
+            if (firearmController != null)
+                return;
+
+            if (inventory != null)
+                firearmController = inventory.GetComponentInParent<FirearmDebugController>();
+
+            if (firearmController == null)
+                firearmController = FindAnyObjectByType<FirearmDebugController>();
         }
 
         private static string SafeText(string value)

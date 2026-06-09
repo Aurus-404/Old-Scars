@@ -22,6 +22,8 @@ namespace OldScars.Core.Data.Definitions
         public ItemEquip equip;     // Optional equipment metadata for equippable items.
         public ItemCombat combat;   // null if not usable as a weapon.
         public ItemConsumable consumable; // null if not consumable.
+        public string firearm_profile_id; // references FirearmProfileDefinition.id
+        public string ammo_profile_id;    // references AmmoProfileDefinition.id
     }
 
     [System.Serializable]

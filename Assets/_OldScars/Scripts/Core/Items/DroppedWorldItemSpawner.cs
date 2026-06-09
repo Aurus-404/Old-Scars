@@ -49,7 +49,6 @@ namespace OldScars.Core.Items
                 return false;
             }
 
-            BuildPlaceholderVisual(worldItem.transform, definitionId);
             bool rightHandCleared = wasEquipped && inventory.GetRightHandItemInstance() == null;
 
             RecordDrop(
@@ -112,66 +111,6 @@ namespace OldScars.Core.Items
                 return hit.point + Vector3.up * 0.05f;
 
             return candidate + Vector3.up * 0.15f;
-        }
-
-        private static void BuildPlaceholderVisual(Transform root, string definitionId)
-        {
-            if (definitionId == "rusted_crowbar_01")
-            {
-                CreatePrimitive(root, PrimitiveType.Cylinder, new Vector3(0f, 0.25f, 0f), new Vector3(0.08f, 0.65f, 0.08f), new Vector3(0f, 0f, 90f), new Color(0.45f, 0.48f, 0.5f));
-                return;
-            }
-
-            if (definitionId == "bandage_01")
-            {
-                CreatePrimitive(root, PrimitiveType.Cube, new Vector3(0f, 0.2f, 0f), new Vector3(0.5f, 0.18f, 0.35f), Vector3.zero, new Color(0.9f, 0.9f, 0.82f));
-                return;
-            }
-
-            if (definitionId == "water_bottle_01")
-            {
-                CreatePrimitive(root, PrimitiveType.Cylinder, new Vector3(0f, 0.3f, 0f), new Vector3(0.22f, 0.3f, 0.22f), Vector3.zero, new Color(0.15f, 0.45f, 0.9f));
-                return;
-            }
-
-            if (definitionId == "food_ration_01")
-            {
-                CreatePrimitive(root, PrimitiveType.Cube, new Vector3(0f, 0.2f, 0f), new Vector3(0.55f, 0.25f, 0.4f), Vector3.zero, new Color(0.75f, 0.35f, 0.08f));
-                return;
-            }
-
-            if (definitionId == "scrap_metal_01")
-            {
-                CreatePrimitive(root, PrimitiveType.Cube, new Vector3(0f, 0.2f, 0f), new Vector3(0.45f, 0.25f, 0.45f), new Vector3(8f, 22f, 12f), new Color(0.22f, 0.24f, 0.26f));
-                return;
-            }
-
-            CreatePrimitive(root, PrimitiveType.Cube, new Vector3(0f, 0.25f, 0f), new Vector3(0.45f, 0.45f, 0.45f), Vector3.zero, new Color(0.65f, 0.25f, 0.7f));
-        }
-
-        private static void CreatePrimitive(
-            Transform root,
-            PrimitiveType primitiveType,
-            Vector3 localPosition,
-            Vector3 localScale,
-            Vector3 localEulerAngles,
-            Color color)
-        {
-            GameObject visual = GameObject.CreatePrimitive(primitiveType);
-            visual.name = "Debug Visual";
-            visual.layer = root.gameObject.layer;
-            visual.transform.SetParent(root, false);
-            visual.transform.localPosition = localPosition;
-            visual.transform.localScale = localScale;
-            visual.transform.localEulerAngles = localEulerAngles;
-
-            Collider visualCollider = visual.GetComponent<Collider>();
-            if (visualCollider != null)
-                Object.Destroy(visualCollider);
-
-            Renderer renderer = visual.GetComponent<Renderer>();
-            if (renderer != null)
-                renderer.material.color = color;
         }
 
         private static void RecordDrop(

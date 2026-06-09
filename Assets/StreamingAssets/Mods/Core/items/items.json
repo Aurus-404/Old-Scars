@@ -164,6 +164,65 @@
           "amount": 25
         }
       }
+    },
+    {
+      "type": "item",
+      "id": "lee_enfield_rifle_01",
+      "display": {
+        "name": "Rifle Lee-Enfield",
+        "description": "Un rifle Lee-Enfield de cerrojo preparado para la prueba single-shot v0."
+      },
+      "categories": ["weapon", "firearm"],
+      "tags": [
+        "item",
+        "weapon",
+        "firearm",
+        "rifle"
+      ],
+      "max_stack": 1,
+      "equippable": true,
+      "physical": {
+        "weight_kg": 4.1,
+        "volume_l": 6.5,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 120,
+        "base_sell_value": 45
+      },
+      "equip": {
+        "equippable": true,
+        "allowed_slots": ["right_hand"],
+        "occupied_slots": ["right_hand"]
+      },
+      "firearm_profile_id": "lee_enfield_rifle_01_profile"
+    },
+    {
+      "type": "item",
+      "id": "ammo_303_british_01",
+      "display": {
+        "name": "Balas .303",
+        "description": "Cartuchos .303 British para el Rifle Lee-Enfield."
+      },
+      "categories": ["ammo"],
+      "tags": [
+        "item",
+        "ammo",
+        "rifle_ammo",
+        "caliber_303"
+      ],
+      "max_stack": 999,
+      "equippable": false,
+      "physical": {
+        "weight_kg": 0.025,
+        "volume_l": 0.02,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 2,
+        "base_sell_value": 1
+      },
+      "ammo_profile_id": "ammo_303_british_01_profile"
     }
   ]
 }

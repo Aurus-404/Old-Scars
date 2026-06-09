@@ -35,6 +35,10 @@
         {
           "item_id": "scrap_metal_01",
           "count": 500
+        },
+        {
+          "item_id": "ammo_303_british_01",
+          "count": 20
         }
       ]
     }
