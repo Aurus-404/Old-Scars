@@ -78,6 +78,18 @@ namespace OldScars.Core.Actors
             ProcessDeath();
         }
 
+        public void ApplyInitialHealth(float newMaxHealth, float newCurrentHealth)
+        {
+            maxHealth = Mathf.Max(1f, newMaxHealth);
+            currentHealth = Mathf.Clamp(newCurrentHealth, 0f, maxHealth);
+            deathProcessed = false;
+
+            if (IsDead)
+                ProcessDeath();
+            else
+                SyncLivingTags();
+        }
+
         private void ResolveWorldObjectTags()
         {
             if (worldObjectTags == null)

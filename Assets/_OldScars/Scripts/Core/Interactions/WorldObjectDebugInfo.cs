@@ -21,6 +21,12 @@ namespace OldScars.Core.Interactions
         public string DisplayName => displayName;
         public string InspectText => inspectText;
 
+        public void SetRuntimeDisplayName(string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                displayName = value;
+        }
+
         public string GetDisplayNameOrFallback(string fallbackName)
         {
             return !string.IsNullOrWhiteSpace(displayName) ? displayName : fallbackName;

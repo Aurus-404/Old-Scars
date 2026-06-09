@@ -60,6 +60,12 @@ namespace OldScars.Core.Interactions
             InitializeRuntimeTags();
         }
 
+        public void ApplyInitialTags(string[] initialTags)
+        {
+            tags = BuildUniqueTags(initialTags);
+            InitializeRuntimeTags();
+        }
+
         public string[] GetTags()
         {
             return GetRuntimeTags();
@@ -102,6 +108,25 @@ namespace OldScars.Core.Interactions
             }
 
             runtimeTagsInitialized = true;
+        }
+
+        private static string[] BuildUniqueTags(string[] sourceTags)
+        {
+            if (sourceTags == null || sourceTags.Length == 0)
+                return new string[0];
+
+            var result = new List<string>();
+
+            for (int index = 0; index < sourceTags.Length; index++)
+            {
+                string tag = sourceTags[index];
+                if (string.IsNullOrWhiteSpace(tag) || result.Contains(tag))
+                    continue;
+
+                result.Add(tag);
+            }
+
+            return result.ToArray();
         }
     }
 }
