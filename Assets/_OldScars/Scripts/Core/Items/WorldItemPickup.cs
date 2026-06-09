@@ -7,11 +7,11 @@ using UnityEngine;
 namespace OldScars.Core.Items
 {
     /// <summary>
-    /// Minimal world item pickup bridge for Milestone 14.
+    /// Minimal world item pickup bridge for configured and runtime-dropped items.
     ///
-    /// This is not a final pickup/drop, loot, container, ownership, or save
-    /// system. It only lets a configured world object create one runtime
-    /// ItemInstance in the actor inventory when the debug action completes.
+    /// This is not a final loot, ownership, persistence, or world item system.
+    /// It owns one runtime ItemStorage entry so pickup can reuse the same
+    /// instance-preserving transfer rules as inventories and containers.
     /// </summary>
     public sealed class WorldItemPickup : MonoBehaviour
     {
@@ -20,7 +20,41 @@ namespace OldScars.Core.Items
 
         [SerializeField] private string itemDefinitionId;
 
-        public string ItemDefinitionId => itemDefinitionId;
+        private readonly ItemStorage storage = new ItemStorage();
+        private bool destroyAfterPickup;
+
+        public string ItemDefinitionId
+        {
+            get
+            {
+                ItemStorageEntry entry = storage.GetEntry(0);
+                return entry != null ? entry.DefinitionId : itemDefinitionId;
+            }
+        }
+
+        public int Quantity
+        {
+            get
+            {
+                ItemStorageEntry entry = storage.GetEntry(0);
+                return entry != null ? entry.Quantity : 0;
+            }
+        }
+
+        public int ReceiveDroppedItem(InventoryComponent sourceInventory, int sourceIndex, int quantity)
+        {
+            if (sourceInventory == null || !storage.IsEmpty || quantity < 1)
+                return 0;
+
+            int transferredQuantity = sourceInventory.TransferItemTo(storage, sourceIndex, quantity);
+            if (transferredQuantity <= 0)
+                return 0;
+
+            ItemStorageEntry entry = storage.GetEntry(0);
+            itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
+            destroyAfterPickup = true;
+            return transferredQuantity;
+        }
 
         public DebugActionExecutionResult PickUp(ActorInteractionContext actorContext, WorldObjectTags targetTags)
         {
@@ -39,8 +73,7 @@ namespace OldScars.Core.Items
             if (targetTags.HasTag(PickedUpTag) || !targetTags.HasTag(PickupableTag))
                 return DebugActionExecutionResult.Info("Recoger", "Este objeto ya fue recogido o no se puede recoger.");
 
-            ItemDefinition definition = GetItemDefinition(itemDefinitionId);
-            if (definition == null)
+            if (!EnsureConfiguredItemStorage())
             {
                 Debug.LogWarning($"[WorldItemPickup] Item definition '{SafeText(itemDefinitionId)}' was not found or data is not ready.");
                 return DebugActionExecutionResult.Info("Recoger", $"No se pudo validar '{SafeText(itemDefinitionId)}'.");
@@ -53,8 +86,11 @@ namespace OldScars.Core.Items
                 return DebugActionExecutionResult.Info("Recoger", "El actor no tiene inventario v0 configurado.");
             }
 
-            ItemInstance item = inventory.AddItemByDefinitionId(definition.id);
-            if (item == null)
+            ItemStorageEntry pickupEntry = storage.GetEntry(0);
+            ItemInstance item = pickupEntry != null ? pickupEntry.Item : null;
+            int pickupQuantity = pickupEntry != null ? pickupEntry.Quantity : 0;
+            int transferredQuantity = inventory.TransferItemFrom(storage, 0, pickupQuantity);
+            if (item == null || transferredQuantity <= 0)
                 return DebugActionExecutionResult.Info("Recoger", $"No se pudo recoger '{SafeText(itemDefinitionId)}'.");
 
             bool addedPickedUp = targetTags.AddTag(PickedUpTag);
@@ -62,11 +98,28 @@ namespace OldScars.Core.Items
             DisableVisiblePickupParts();
 
             string displayName = GetItemDisplayName(item.DefinitionId);
-            RecordItemPickedUp(actorContext, targetTags, item, displayName);
+            RecordItemPickedUp(actorContext, targetTags, item, displayName, transferredQuantity);
             RecordTargetStateChanged(actorContext, targetTags, addedPickedUp, removedPickupable);
 
-            Debug.Log($"[WorldItemPickup] Picked up {item.DefinitionId} [{item.InstanceId}].");
-            return DebugActionExecutionResult.Info("Recoger", $"Recogiste {displayName}.");
+            Debug.Log($"[WorldItemPickup] Picked up {item.DefinitionId} x{transferredQuantity} [{item.InstanceId}].");
+
+            if (destroyAfterPickup)
+                Destroy(gameObject);
+
+            return DebugActionExecutionResult.Info("Recoger", $"Recogiste {displayName} x{transferredQuantity}.");
+        }
+
+        private bool EnsureConfiguredItemStorage()
+        {
+            if (!storage.IsEmpty)
+                return true;
+
+            ItemDefinition definition = GetItemDefinition(itemDefinitionId);
+            if (definition == null)
+                return false;
+
+            storage.AddItem(new ItemInstance(definition));
+            return true;
         }
 
         private void DisableVisiblePickupParts()
@@ -89,18 +142,23 @@ namespace OldScars.Core.Items
             return definition.display.name;
         }
 
-        private static void RecordItemPickedUp(ActorInteractionContext actorContext, WorldObjectTags targetTags, ItemInstance item, string itemDisplayName)
+        private static void RecordItemPickedUp(
+            ActorInteractionContext actorContext,
+            WorldObjectTags targetTags,
+            ItemInstance item,
+            string itemDisplayName,
+            int quantity)
         {
             GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
                 GameplayFeedbackEntryType.ItemPickedUp,
-                $"Recogiste {SafeText(itemDisplayName)}.",
+                $"Picked up {SafeText(itemDisplayName)} x{quantity}.",
                 actorId: GetActorName(actorContext),
                 actorDisplayName: GetActorName(actorContext),
                 targetId: GetTargetName(targetTags),
                 targetDisplayName: GetTargetDisplayName(targetTags),
                 itemId: item != null ? item.DefinitionId : null,
                 itemDisplayName: itemDisplayName,
-                quantity: item != null ? 1 : 0));
+                quantity: quantity));
         }
 
         private static void RecordTargetStateChanged(ActorInteractionContext actorContext, WorldObjectTags targetTags, bool addedPickedUp, bool removedPickupable)

@@ -34,8 +34,12 @@ Old Scars tiene una base debug/prototipo validada para:
 - base de salud runtime de actor validada con estados `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor` y `lootable_actor`, lectura visual por `WorldObjectStateView` y loot de actor muerto mediante `ItemStorageDebugPanel`.
 - auditoria funcional post-M23.1 y tres cleanup passes validados antes de M24, sin cambios de comportamiento jugable.
 - primer pipeline data-driven de Actor Profiles validado: carga, validacion y aplicacion runtime basica sobre actores colocados en escena.
+- primer pipeline data-driven de World Object Profiles validado: carga, validacion y aplicacion runtime basica sobre objetos colocados en escena.
+- transferencia bidireccional validada entre inventario de actor y storage abierto, conservando instancias en transferencias completas y dividiendo stacks en transferencias parciales.
+- `ItemStorageDebugPanel` validado con Player Inventory a la izquierda y Open Storage a la derecha.
+- separacion validada entre primera revision de contenedor natural mediante `search_container` y acceso posterior mediante `open_storage`, incluso cuando el storage esta vacio.
 
-Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2, Functional Audit / Cleanup Pass post-M23.1 y Milestone 24 con sus passes M24.1-M24.4 estan validados en Unity.
+Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23.1, Milestone 23.1.1, Milestone 23.1.2, Functional Audit / Cleanup Pass post-M23.1, Milestone 24 con sus passes M24.1-M24.4, Milestone 25, Milestone 26, Milestone 26.0.1 y Milestone 27 estan validados en Unity.
 
 ## Estados Permitidos
 
@@ -88,31 +92,30 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 24.2: Actor Profile Validation | Validar schema, IDs, tags, health, inventario y referencias de actor profiles. | validated | Validado: `DataValidator` acepta el perfil actual y rechaza datos invalidos o `equipped` no soportado. |
 | Milestone 24.3: Actor Profile Runtime Apply | Aplicar un actor profile una sola vez sobre componentes existentes del actor. | validated | Validado: `ActorProfileComponent` aplica display name, initial tags, health e initial inventory sin auto-crear componentes. |
 | Milestone 24.4: Debug NPC Capsule Actor Profile Migration | Migrar Debug NPC Capsule al perfil data-driven y retirar su seeder manual. | validated | Validado: usa `actorProfileId = debug_npc_capsule_01`; recibe Bandage x3 y Scrap Metal x2 sin duplicacion. |
+| Milestone 25: World Object Profile v0 | Crear un pipeline data-driven minimo para identidad y tags iniciales reutilizables de objetos del mundo. | validated | Validado: Data Load OK, 0 errors, 0 warnings; Debug Locked Door usa `debug_locked_door_01` y `force_door` sigue funcionando. |
+| Milestone 26: Storage Transfer v0 / Bidirectional Item Transfer | Permitir transferencias en ambas direcciones entre inventario del jugador y storage abierto. | validated | Validado con contenedores y cuerpo de Debug NPC Capsule; no duplica items, conserva instancias completas y divide stacks parciales. |
+| Milestone 26.0.1: Storage Panel Layout Swap | Reordenar visualmente el panel debug de storage sin cambiar su logica. | validated | Validado visualmente: Player Inventory a la izquierda, Open Storage a la derecha; Deposit y Take mantienen su direccion correcta. |
+| Milestone 27: Search vs Open Storage v0 | Separar primera revision de contenedor natural de la apertura posterior de su storage. | validated | Validado: `search_container` descubre el storage una vez y `open_storage` permite reabrirlo incluso vacio sin generar loot nuevo. |
+| Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
 No hay milestone implementado pendiente de validacion.
 
-El ultimo milestone cerrado como `validated` es:
+Los ultimos milestones cerrados como `validated` son:
 
-- Milestone 22.1.2: Hotfix - Equippable Item Flag (`validated`).
-- Milestone 23: Actor Inventory Foundation v0 (`validated`).
-- Milestone 23.0.1: Hotfix - Cleanup legacy equipped index warning (`validated`).
-- Milestone 23.0.2: Hotfix - Revalidate Action Requirements Before Execution (`validated`).
-- Milestone 23.0.3: Hotfix - Refresh Context Menu Availability (`validated`).
-- Milestone 23.1: Lootable Debug Actor + Health v0 (`validated`).
-- Milestone 23.1.1: Hotfix - Health Examine Texts + Player Debug Damage (`validated`).
-- Milestone 23.1.2: Hotfix - Debug Player Health Feedback (`validated`).
-- Post-M23.1 Functional Audit / Cleanup Pass (`validated`).
-- Milestone 24: Actor Profile Pipeline v0 (`validated`).
-- Milestone 24.1: Actor Profile Data Load (`validated`).
-- Milestone 24.2: Actor Profile Validation (`validated`).
-- Milestone 24.3: Actor Profile Runtime Apply (`validated`).
-- Milestone 24.4: Debug NPC Capsule Actor Profile Migration (`validated`).
+- Milestone 25: World Object Profile v0.
+- Milestone 26: Storage Transfer v0 / Bidirectional Item Transfer.
+- Milestone 26.0.1: Storage Panel Layout Swap.
+- Milestone 27: Search vs Open Storage v0.
 
 ## Proximo Recomendado
 
-Preparar Milestone 25: Storage Transfer v0 / Bidirectional Item Transfer. Objetivo futuro: permitir poner items dentro de contenedores y cuerpos usando `ItemStorage` / `InventoryComponent`, sin romper el flujo actual de saqueo. No hay implementacion definida todavia.
+Preparar Milestone 28: Container State / Naming Cleanup v0.
+
+Objetivo recomendado: limpiar nombres y estados debug de contenedores despues de M27, reducir la dependencia futura de `lootable_container` / `looted_container` sin romper compatibilidad y corregir titulos debug inconsistentes como `Contenedor saqueado Contents (Debug)`.
+
+M28 no debe redisenar storage, `search_body`, loot, inventario, UI final ni save system.
 
 Milestone 11 dejo validado:
 
@@ -493,6 +496,33 @@ Milestone 24 dejo validado:
 - Data Load validado: 0 errors, 0 warnings y `ActorProfiles: 1`;
 - siguen funcionando `pick_up_item`, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor`, `lootable_actor` y `search_body`.
 
+Milestone 25 dejo validado:
+
+- `WorldObjectProfileDefinition`, `world_object_profiles.json`, carga en `GameDataLoader`, registro en `GameDatabase` y validacion en `DataValidator`;
+- `WorldObjectProfileComponent` aplica una sola vez `display_name` e `initial_tags` sobre componentes existentes;
+- Debug Locked Door usa `worldObjectProfileId = debug_locked_door_01`;
+- Data Load OK con 0 errors, 0 warnings y `WorldObjectProfiles: 1`;
+- `force_door` sigue funcionando con la puerta cargada desde profile.
+
+Milestone 26 y Milestone 26.0.1 dejaron validado:
+
+- transferencia bidireccional entre `InventoryComponent` y storages abiertos;
+- `Take 1`, `Take Stack`, `Take All`, `Deposit 1` y `Deposit All`;
+- transferencias completas conservan la instancia; transferencias parciales dividen stacks sin duplicar ni destruir items;
+- al depositar completamente un item equipado se limpia `right_hand`;
+- contenedores y cuerpos restauran estado de contenido al depositar cuando corresponde;
+- `ItemStorageDebugPanel` muestra Player Inventory a la izquierda y Open Storage a la derecha sin cambiar la logica de transferencia.
+
+Milestone 27 dejo validado:
+
+- `search_container` representa solo la primera revision de un contenedor natural abierto y no revisado;
+- `search_container` requiere `opened_container + unsearched_container`, conserva barra de carga, remueve `unsearched_container`, agrega `storage_accessible` y abre el panel;
+- `open_storage` es una accion/effect cerrado separado, requiere `storage_accessible`, dura 0 y abre el mismo panel incluso vacio;
+- Debug Sealed Container, Survival Supply Debug Crate y Misc Debug Crate usan el nuevo modelo;
+- `search_body` no fue redisenado;
+- `lootable_container` y `looted_container` siguen existiendo por compatibilidad;
+- Data Load OK con 0 errors y 0 warnings; M26 sigue funcionando.
+
 ## Milestones Pospuestos / No Tocar Todavia
 
 - combate real;
@@ -547,6 +577,8 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `ActorProfileDefinition` define identidad y estado inicial data-driven de actores; el estado mutable sigue viviendo en componentes runtime.
 - `ActorProfileComponent` aplica un perfil una sola vez sobre componentes existentes y no auto-crea componentes faltantes.
 - Los Actor Profiles no declaran health runtime tags ni `equipped`; esos datos siguen fuera del schema validado de M24.
+- `WorldObjectProfileDefinition` define identidad y tags iniciales reutilizables de objetos del mundo; no guarda estado runtime.
+- `WorldObjectProfileComponent` aplica una sola vez `display_name` e `initial_tags` sobre componentes existentes y no lee JSON directamente.
 - La muerte real del Player no existe todavia: 0 health del Player es solo estado debug visual/numerico, sin game over, bloqueo de movimiento/acciones ni `lootable_actor`.
 - `DebugInventory` es debug temporal y no es inventario final.
 - `InventoryComponent` es inventario de actor v0, usa `ItemStorage` para Storage y expone Equipped con `right_hand`; no es inventario final.
@@ -561,11 +593,12 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `add_tag` y `remove_tag` afectan al target en runtime.
 - `show_target_info` es un effect cerrado que lee `WorldObjectDebugInfo`.
 - `pick_up_item` es un effect cerrado que ejecuta `WorldItemPickup` y agrega una `ItemInstance` al `InventoryComponent` del actor.
-- `search_container` es un effect cerrado que ejecuta `ContainerLootComponent`; actualmente abre `ItemStorageDebugPanel` para saqueo manual del storage accesible.
+- `search_container` es un effect cerrado para la primera revision de un contenedor natural con `opened_container + unsearched_container`; al completarse habilita `storage_accessible` y abre `ItemStorageDebugPanel`.
+- `open_storage` es un effect cerrado separado para reabrir un storage ya descubierto, incluso vacio, sin generar loot nuevo ni repetir la revision inicial.
 - `search_body` es la accion contextual debug para revisar actor muerto looteable mediante effect cerrado `search_actor_inventory`.
 - Los cadaveres/actores muertos looteables no deben reutilizar `ContainerLootComponent`; exponen su inventario mediante una fuente reusable de storage.
 - `ContainerLootComponent` valida acceso al storage antes de transferir loot y expone resumen debug de storage para inspeccion.
-- `ItemStorageDebugPanel` es debug reusable para storage y no es UI final.
+- `ItemStorageDebugPanel` es debug reusable para storage, permite transferencias bidireccionales y no es UI final.
 - `LootTableDefinition` v0 es deterministica: solo `item_id` y `count`.
 - `GameplayFeedbackLog` es runtime-only, append/read y no persistente.
 - `GameplayFeedbackLog` no es EventBus: no tiene listeners, subscriptions, callbacks, dispatch ni payload generico.
@@ -596,10 +629,10 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 
 ## Sistemas Existentes
 
-- `GameDataLoader`: carga JSON desde mods, incluyendo `actor_profiles/*.json`.
-- `GameDatabase`: guarda definiciones cargadas y expone Actor Profiles por ID.
+- `GameDataLoader`: carga JSON desde mods, incluyendo `actor_profiles/*.json` y `world_object_profiles/*.json`.
+- `GameDatabase`: guarda definiciones cargadas y expone Actor Profiles y World Object Profiles por ID.
 - `TagRegistry`: registra tags validos.
-- `DataValidator`: valida IDs, types, tags, referencias, effects, loot tables, Actor Profiles, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
+- `DataValidator`: valida IDs, types, tags, referencias, effects, loot tables, Actor Profiles, World Object Profiles, `max_stack`, consumibles, datos `equip` y warnings no destructivos de `weapon_tags`.
 - `ActionEffectTypes`: centraliza constantes de effect types cerrados compartidas por `DataValidator` y `DebugActionExecutor`.
 - `ActionAvailabilityEvaluator`: evalua requirements y puede devolver resultado explicable.
 - `InteractionSystem`: arma contexto y devuelve acciones disponibles.
@@ -611,6 +644,8 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `ActorHealthComponent`: health runtime v0 de actores con max/current health, low health threshold y tags de estado.
 - `ActorProfileDefinition`: definicion data-driven v0 de identidad, initial tags, health e initial inventory de actor.
 - `ActorProfileComponent`: aplica un Actor Profile una sola vez sobre componentes runtime existentes.
+- `WorldObjectProfileDefinition`: definicion data-driven v0 de display name e initial tags reutilizables para objetos del mundo.
+- `WorldObjectProfileComponent`: aplica un World Object Profile una sola vez sobre `WorldObjectDebugInfo` y `WorldObjectTags` existentes.
 - `ActorNeedProfile`: configuracion serializable de necesidades.
 - `ActorNeedState`: estado runtime visible para debug.
 - `LootableActorInventoryComponent`: expone el inventario de un actor muerto looteable como fuente reusable para `ItemStorageDebugPanel`.
@@ -622,7 +657,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `DebugInventory`: inventario debug temporal para crear item instances y exponer item equipado.
 - `InventoryDebugPanel`: UI debug OnGUI de inventario v0, muestra Equipped separado de Storage, uso de consumibles y equip validado por `InventoryComponent`.
 - `ActorNeedsDebugPanel`: UI debug fija para Hunger/Thirst/Health y dano debug del Player.
-- `ItemStorageDebugPanel`: UI debug reusable para inspeccionar y transferir contenido de storages accesibles.
+- `ItemStorageDebugPanel`: UI debug reusable para inspeccionar y transferir contenido en ambas direcciones entre Player Inventory y Open Storage.
 - `WorldItemPickup`: componente debug para recoger un item de mundo configurado.
 - `ContainerLootComponent`: componente debug para inicializar storage desde loot table, reportar storage debug y transferir contenido solo cuando el contenedor es accesible.
 - `WorldObjectTags`: initial tags y runtime tags.
@@ -649,8 +684,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 
 ## Deuda Tecnica Menor
 
-- No hay deuda tecnica menor bloqueante registrada.
-- No hay deuda tecnica menor bloqueante registrada despues de Milestone 13.
+- Los tags legacy `lootable_container` y `looted_container` siguen existiendo por compatibilidad despues de M27; conviene limpiarlos gradualmente sin romper contenido ni estados visuales existentes.
+- Algunos titulos debug combinan nombres de estado con el sufijo ingles `Contents (Debug)`, por ejemplo `Contenedor saqueado Contents (Debug)`; conviene normalizarlos en M28.
+- Esta deuda no bloquea el loop validado de M27.
 
 ## Sistemas Que Todavia NO Existen
 

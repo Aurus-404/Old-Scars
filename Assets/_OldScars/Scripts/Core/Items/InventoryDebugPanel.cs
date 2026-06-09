@@ -15,8 +15,8 @@ namespace OldScars.Core.Items
     /// </summary>
     public sealed class InventoryDebugPanel : MonoBehaviour
     {
-        private const float PanelWidth = 560f;
-        private const float PanelHeight = 410f;
+        private const float PanelWidth = 760f;
+        private const float PanelHeight = 430f;
 
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorNeedsComponent actorNeeds;
@@ -24,7 +24,7 @@ namespace OldScars.Core.Items
 
         private bool isVisible;
         private Vector2 scrollPosition;
-        private string lastUseMessage;
+        private string lastMessage;
 
         public bool IsVisible => isVisible;
 
@@ -89,8 +89,8 @@ namespace OldScars.Core.Items
 
             GUILayout.Space(8f);
 
-            if (!string.IsNullOrWhiteSpace(lastUseMessage))
-                GUILayout.Label(lastUseMessage);
+            if (!string.IsNullOrWhiteSpace(lastMessage))
+                GUILayout.Label(lastMessage);
 
             GUILayout.Label("Storage:");
             IReadOnlyList<ItemStorageEntry> entries = inventory.GetStorageEntries();
@@ -151,7 +151,46 @@ namespace OldScars.Core.Items
                     UseItem(index);
             }
 
+            DrawDropButtons(index, entry);
+
             GUILayout.EndHorizontal();
+        }
+
+        private void DrawDropButtons(int index, ItemStorageEntry entry)
+        {
+            if (entry == null || entry.Item == null)
+                return;
+
+            if (entry.Quantity <= 1)
+            {
+                if (GUILayout.Button("Drop", GUILayout.Height(24f), GUILayout.Width(90f)))
+                    DropItem(index, 1, "drop", "Drop");
+
+                return;
+            }
+
+            if (GUILayout.Button("Drop 1", GUILayout.Height(24f), GUILayout.Width(90f)))
+                DropItem(index, 1, "drop_1", "Drop 1");
+
+            if (GUILayout.Button("Drop Stack", GUILayout.Height(24f), GUILayout.Width(100f)))
+                DropItem(index, entry.Quantity, "drop_stack", "Drop Stack");
+        }
+
+        private void DropItem(int index, int quantity, string actionId, string actionDisplayName)
+        {
+            bool dropped = DroppedWorldItemSpawner.TryDrop(
+                inventory,
+                index,
+                quantity,
+                actionId,
+                actionDisplayName,
+                out string message);
+
+            lastMessage = message;
+            if (!dropped)
+                Debug.LogWarning($"[InventoryDebugPanel] {message}");
+
+            GUIUtility.ExitGUI();
         }
 
         private void UseItem(int index)
@@ -160,7 +199,7 @@ namespace OldScars.Core.Items
             ResolveActorHealth();
 
             InventoryItemUseResult result = InventoryItemUseService.TryUseItem(inventory, index, actorNeeds, actorHealth);
-            lastUseMessage = result.Message;
+            lastMessage = result.Message;
             if (!result.Success)
                 Debug.Log($"[InventoryDebugPanel] Use failed: {result.Message}");
         }

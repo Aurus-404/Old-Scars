@@ -2354,7 +2354,7 @@ MonoBehaviour:
   worldObjectTags: {fileID: 1709637211}
   rules:
   - stateName: sealed_container
-    priority: 0
+    priority: 50
     requiredTags:
     - sealed_container
     forbiddenTags: []
@@ -2368,12 +2368,12 @@ MonoBehaviour:
     colorRenderers:
     - {fileID: 2300002013}
     applyDebugColor: 1
-    debugColor: {r: 1, g: 0.45, b: 0.05, a: 1}
-  - stateName: opened_lootable_container
-    priority: 10
+    debugColor: {r: 0.55, g: 0.05, b: 0.05, a: 1}
+  - stateName: opened_unsearched_container
+    priority: 40
     requiredTags:
     - opened_container
-    - lootable_container
+    - unsearched_container
     forbiddenTags: []
     activateGameObjects:
     - {fileID: 2300002010}
@@ -2385,12 +2385,66 @@ MonoBehaviour:
     colorRenderers:
     - {fileID: 2300002013}
     applyDebugColor: 1
-    debugColor: {r: 0.05, g: 0.85, b: 1, a: 1}
-  - stateName: looted_container
-    priority: 20
+    debugColor: {r: 1, g: 0.55, b: 0.05, a: 1}
+  - stateName: accessible_empty_container
+    priority: 35
     requiredTags:
+    - storage_accessible
     - looted_container
     forbiddenTags: []
+    activateGameObjects:
+    - {fileID: 2300002010}
+    deactivateGameObjects:
+    - {fileID: 2300002020}
+    - {fileID: 2300002030}
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2300002013}
+    applyDebugColor: 1
+    debugColor: {r: 0.12, g: 0.32, b: 0.38, a: 1}
+  - stateName: storage_accessible
+    priority: 30
+    requiredTags:
+    - storage_accessible
+    forbiddenTags:
+    - looted_container
+    activateGameObjects:
+    - {fileID: 2300002010}
+    deactivateGameObjects:
+    - {fileID: 2300002020}
+    - {fileID: 2300002030}
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2300002013}
+    applyDebugColor: 1
+    debugColor: {r: 0.05, g: 0.85, b: 1, a: 1}
+  - stateName: opened_lootable_container_legacy
+    priority: 20
+    requiredTags:
+    - opened_container
+    - lootable_container
+    forbiddenTags:
+    - storage_accessible
+    - looted_container
+    activateGameObjects:
+    - {fileID: 2300002010}
+    deactivateGameObjects:
+    - {fileID: 2300002020}
+    - {fileID: 2300002030}
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2300002013}
+    applyDebugColor: 1
+    debugColor: {r: 0.05, g: 0.85, b: 1, a: 1}
+  - stateName: looted_container_legacy
+    priority: 10
+    requiredTags:
+    - looted_container
+    forbiddenTags:
+    - storage_accessible
     activateGameObjects:
     - {fileID: 2300002010}
     deactivateGameObjects:
@@ -3092,11 +3146,51 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 2500000105}
   rules:
-  - stateName: opened_lootable_container
-    priority: 10
+  - stateName: sealed_container
+    priority: 50
+    requiredTags:
+    - sealed_container
+    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000103}
+    applyDebugColor: 1
+    debugColor: {r: 0.55, g: 0.05, b: 0.05, a: 1}
+  - stateName: opened_unsearched_container
+    priority: 40
     requiredTags:
     - opened_container
-    - lootable_container
+    - unsearched_container
+    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000103}
+    applyDebugColor: 1
+    debugColor: {r: 1, g: 0.55, b: 0.05, a: 1}
+  - stateName: accessible_empty_container
+    priority: 35
+    requiredTags:
+    - storage_accessible
+    - looted_container
+    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000103}
+    applyDebugColor: 1
+    debugColor: {r: 0.12, g: 0.32, b: 0.38, a: 1}
+  - stateName: storage_accessible
+    priority: 30
+    requiredTags:
+    - storage_accessible
     forbiddenTags:
     - looted_container
     activateGameObjects: []
@@ -3107,12 +3201,28 @@ MonoBehaviour:
     - {fileID: 2500000103}
     applyDebugColor: 1
     debugColor: {r: 0.05, g: 0.85, b: 1, a: 1}
-  - stateName: looted_container
+  - stateName: opened_lootable_container_legacy
     priority: 20
     requiredTags:
     - opened_container
+    - lootable_container
+    forbiddenTags:
+    - storage_accessible
     - looted_container
-    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000103}
+    applyDebugColor: 1
+    debugColor: {r: 0.05, g: 0.85, b: 1, a: 1}
+  - stateName: looted_container_legacy
+    priority: 10
+    requiredTags:
+    - looted_container
+    forbiddenTags:
+    - storage_accessible
     activateGameObjects: []
     deactivateGameObjects: []
     rotateTransform: {fileID: 0}
@@ -3295,11 +3405,51 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 2500000205}
   rules:
-  - stateName: opened_lootable_container
-    priority: 10
+  - stateName: sealed_container
+    priority: 50
+    requiredTags:
+    - sealed_container
+    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000203}
+    applyDebugColor: 1
+    debugColor: {r: 0.55, g: 0.05, b: 0.05, a: 1}
+  - stateName: opened_unsearched_container
+    priority: 40
     requiredTags:
     - opened_container
-    - lootable_container
+    - unsearched_container
+    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000203}
+    applyDebugColor: 1
+    debugColor: {r: 1, g: 0.55, b: 0.05, a: 1}
+  - stateName: accessible_empty_container
+    priority: 35
+    requiredTags:
+    - storage_accessible
+    - looted_container
+    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000203}
+    applyDebugColor: 1
+    debugColor: {r: 0.12, g: 0.32, b: 0.38, a: 1}
+  - stateName: storage_accessible
+    priority: 30
+    requiredTags:
+    - storage_accessible
     forbiddenTags:
     - looted_container
     activateGameObjects: []
@@ -3310,12 +3460,28 @@ MonoBehaviour:
     - {fileID: 2500000203}
     applyDebugColor: 1
     debugColor: {r: 0.05, g: 0.85, b: 1, a: 1}
-  - stateName: looted_container
+  - stateName: opened_lootable_container_legacy
     priority: 20
     requiredTags:
     - opened_container
+    - lootable_container
+    forbiddenTags:
+    - storage_accessible
     - looted_container
-    forbiddenTags: []
+    activateGameObjects: []
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2500000203}
+    applyDebugColor: 1
+    debugColor: {r: 0.05, g: 0.85, b: 1, a: 1}
+  - stateName: looted_container_legacy
+    priority: 10
+    requiredTags:
+    - looted_container
+    forbiddenTags:
+    - storage_accessible
     activateGameObjects: []
     deactivateGameObjects: []
     rotateTransform: {fileID: 0}

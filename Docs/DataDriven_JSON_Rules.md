@@ -119,6 +119,35 @@ Reglas:
 - `debug_sealed_container_loot_01` carga desde `container_loot.json`.
 - No usar chance, pesos, rarezas, condiciones, economia ni random avanzado todavia.
 
+## World Object Profiles v0
+
+Los World Object Profiles definen datos iniciales reutilizables para objetos del mundo colocados en escena.
+
+Ejemplo:
+
+{
+  "world_object_profiles": [
+    {
+      "type": "world_object_profile",
+      "id": "debug_locked_door_01",
+      "display_name": "Debug Locked Door",
+      "initial_tags": ["locked_door", "inspectable"]
+    }
+  ]
+}
+
+Reglas:
+
+- `type` debe ser `world_object_profile`.
+- `id` es obligatorio, unico y snake_case.
+- `display_name` es obligatorio.
+- `initial_tags` es obligatorio, no vacio, sin duplicados y solo puede usar tags registrados.
+- El profile define configuracion inicial reutilizable; no guarda estado runtime.
+- La escena referencia el profile ID mediante `WorldObjectProfileComponent`.
+- Los objetos no leen JSON directamente; la carga pasa por `GameDataLoader` y `GameDatabase`.
+- `GameDataLoader` carga `world_object_profiles/*.json`; el perfil Core actual vive en `world_object_profiles/world_object_profiles.json`.
+- No soportar `loot_table_id`, storage, contenedores ni estado runtime dentro del profile v0.
+
 ## Equipamiento
 
 Por ahora usar solo:
@@ -157,6 +186,10 @@ Por ahora solo se permiten estos effect type:
 - show_target_info
 - pick_up_item
 - search_container
+- open_storage
+- apply_damage
+- kill_actor
+- search_actor_inventory
 
 Por ahora el unico target valido es:
 
@@ -168,7 +201,9 @@ show_target_info no requiere tag. No contiene texto narrativo ni scripts en JSON
 
 pick_up_item no requiere tag. Es un effect cerrado de C# validado en Milestone 14 que llama a WorldItemPickup en el target y agrega una ItemInstance al InventoryComponent del actor. No es scripting libre, loot generico, contenedor, drop system ni save system.
 
-search_container no requiere tag. Es un effect cerrado de C# validado en Milestone 15 que llama a ContainerLootComponent en el target, lee una LootTableDefinition v0 y agrega ItemInstances al InventoryComponent del actor. No es scripting libre, loot avanzado, contenedor final, UI de loot, save system, stacks, economia, crafting, combate ni IA.
+search_container no requiere tag. Desde Milestone 27 representa solo la primera revision de un contenedor natural con `opened_container + unsearched_container`; C# remueve `unsearched_container`, agrega `storage_accessible` y abre el panel de storage existente.
+
+open_storage no requiere tag. Es un effect cerrado separado que abre un storage con `storage_accessible`, incluso vacio, sin generar loot nuevo ni repetir la primera revision.
 
 Ejemplo:
 
@@ -202,6 +237,14 @@ Ejemplo de container loot v0:
 {
   "effects": [
     { "type": "search_container", "target": "target" }
+  ]
+}
+
+Ejemplo de apertura posterior de storage:
+
+{
+  "effects": [
+    { "type": "open_storage", "target": "target" }
   ]
 }
 

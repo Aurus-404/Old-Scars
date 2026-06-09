@@ -1053,6 +1053,58 @@ Con equipped item definition id none o vacio:
 - Validado en Unity: `pick_up_item`, `right_hand`, `force_door`, `pry_open_container`, `search_container`, `debug_damage_actor`, `low_health_actor`, `dead_actor`, `lootable_actor` y `search_body` siguen funcionando.
 - Estado: validated.
 
+### Milestone 25: World Object Profile v0
+
+- Se agrego el pipeline minimo data-driven de World Object Profiles.
+- `WorldObjectProfileDefinition` representa `display_name` e `initial_tags` reutilizables.
+- `world_object_profiles.json` agrega `debug_locked_door_01`.
+- `GameDataLoader` carga World Object Profiles.
+- `GameDatabase` registra, consulta y reporta World Object Profiles.
+- `DataValidator` valida type, id, snake_case, unicidad, display name, initial tags y referencias de tags.
+- `WorldObjectProfileComponent` espera a que `GameDataManager` este ready y aplica el profile una sola vez sobre componentes existentes.
+- Debug Locked Door fue migrado a `worldObjectProfileId = debug_locked_door_01`.
+- Validado en Unity: Data Load OK con 0 errors, 0 warnings y `WorldObjectProfiles: 1`.
+- Validado en Unity: Debug Locked Door recibe nombre/tags desde profile y `force_door` sigue funcionando.
+- Estado: validated.
+
+### Milestone 26: Storage Transfer v0 / Bidirectional Item Transfer
+
+- `ItemStorageDebugPanel` permite mover items desde storage hacia Player Inventory y desde Player Inventory hacia storage.
+- Se agregaron `Take 1`, `Take Stack`, `Take All`, `Deposit 1` y `Deposit All`.
+- Transferencias completas conservan la `ItemInstance`.
+- Transferencias parciales dividen stacks correctamente.
+- La transferencia evita duplicar o destruir items.
+- Si se deposita completamente el item equipado, se limpia `right_hand`.
+- Contenedores y cuerpos restauran estado de contenido al depositar cuando corresponde.
+- Validado en Unity con Debug Sealed Container, Survival Supply Debug Crate, Misc Debug Crate y cuerpo de Debug NPC Capsule.
+- Estado: validated.
+
+### Milestone 26.0.1: Storage Panel Layout Swap
+
+- Se cambio solo el layout visual de `ItemStorageDebugPanel`.
+- Player Inventory queda a la izquierda.
+- Open Storage queda a la derecha.
+- Deposit mueve izquierda -> derecha.
+- Take mueve derecha -> izquierda.
+- No cambio la logica de transferencia.
+- Validado visualmente en Unity.
+- Estado: validated.
+
+### Milestone 27: Search vs Open Storage v0
+
+- Se separo la primera revision de un contenedor natural del acceso posterior a su storage.
+- Se agregaron los tags `unsearched_container` y `storage_accessible`.
+- `search_container` requiere `opened_container + unsearched_container`, conserva barra de carga, remueve `unsearched_container`, agrega `storage_accessible` y abre `ItemStorageDebugPanel`.
+- Se agrego la accion/effect cerrado `open_storage`.
+- `open_storage` requiere `storage_accessible`, dura 0, abre el mismo panel aunque el storage este vacio y no genera loot nuevo.
+- Vaciar un contenedor no elimina `storage_accessible`.
+- Debug Sealed Container, Survival Supply Debug Crate y Misc Debug Crate fueron migrados al nuevo modelo.
+- `search_body` y `LootableActorInventoryComponent` no fueron redisenados.
+- `lootable_container` y `looted_container` siguen existiendo por compatibilidad.
+- Validado en Unity: Data Load OK con 0 errors y 0 warnings.
+- Validado en Unity: pry -> search inicial -> open posterior funciona; `open_storage` abre storage vacio y M26 sigue funcionando.
+- Estado: validated.
+
 ## Decisiones De Scope
 
 - No hay inventario final.
@@ -1065,4 +1117,6 @@ Con equipped item definition id none o vacio:
 - No hay journal.
 - No hay quest log.
 - No hay EventBus de gameplay.
+- Los tags legacy `lootable_container` y `looted_container` se mantienen temporalmente por compatibilidad.
+- Los titulos debug de storage necesitan una limpieza de naming futura.
 - Los sistemas actuales son prototipos debug para probar flujo data-driven.

@@ -10,6 +10,8 @@ namespace OldScars.Core.Feedback
         LootReceived,
         TargetStateChanged,
         Info,
-        Warning
+        Warning,
+        ItemDropped,
+        WorldItemSpawned
     }
 }
