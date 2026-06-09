@@ -11,5 +11,6 @@ namespace OldScars.Core.Items
 
         string GetStorageDebugTitle(WorldObjectTags target);
         int TakeItem(int storageIndex, int quantity, InventoryComponent targetInventory, DebugActionExecutionContext executionContext, ActionDefinition action, out string message);
+        int DepositItem(int inventoryIndex, int quantity, InventoryComponent sourceInventory, DebugActionExecutionContext executionContext, ActionDefinition action, out string message);
     }
 }

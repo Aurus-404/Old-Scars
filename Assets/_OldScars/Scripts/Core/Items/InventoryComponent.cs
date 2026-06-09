@@ -152,6 +152,43 @@ namespace OldScars.Core.Items
             return source.TransferTo(storage, sourceIndex, quantity);
         }
 
+        public int TransferItemTo(ItemStorage targetStorage, int sourceIndex, int quantity)
+        {
+            if (targetStorage == null)
+            {
+                Debug.LogWarning("[InventoryComponent] Cannot transfer an item to a null storage.");
+                return 0;
+            }
+
+            if (ReferenceEquals(targetStorage, storage))
+            {
+                Debug.LogWarning("[InventoryComponent] Cannot transfer an item to the same storage.");
+                return 0;
+            }
+
+            if (quantity < 1)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot transfer quantity {quantity}. Quantity must be >= 1.");
+                return 0;
+            }
+
+            ItemStorageEntry sourceEntry = storage.GetEntry(sourceIndex);
+            if (sourceEntry == null || sourceEntry.Item == null)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot transfer an invalid item index {sourceIndex}.");
+                return 0;
+            }
+
+            int sourceQuantity = sourceEntry.Quantity;
+            string sourceInstanceId = sourceEntry.Item.InstanceId;
+            int transferredQuantity = storage.TransferTo(targetStorage, sourceIndex, quantity);
+
+            if (transferredQuantity >= sourceQuantity)
+                ClearRightHandIfInstanceId(sourceInstanceId);
+
+            return transferredQuantity;
+        }
+
         public int TransferItemTo(InventoryComponent targetInventory, int sourceIndex, int quantity)
         {
             if (targetInventory == null)
@@ -172,7 +209,7 @@ namespace OldScars.Core.Items
                 return 0;
             }
 
-            return targetInventory.TransferItemFrom(storage, sourceIndex, quantity);
+            return TransferItemTo(targetInventory.storage, sourceIndex, quantity);
         }
 
         public ItemInstance GetEquippedItemInstance()

@@ -94,6 +94,62 @@ namespace OldScars.Core.Actors
             return transferredQuantity;
         }
 
+        public int DepositItem(int inventoryIndex, int quantity, InventoryComponent sourceInventory, DebugActionExecutionContext executionContext, ActionDefinition action, out string message)
+        {
+            ResolveReferences();
+            message = null;
+
+            if (quantity < 1)
+            {
+                message = "Cantidad invalida.";
+                return 0;
+            }
+
+            if (!CanDepositIntoActorInventory(out string accessReason))
+            {
+                message = accessReason;
+                return 0;
+            }
+
+            if (inventory == null)
+            {
+                message = "El actor muerto no tiene InventoryComponent.";
+                return 0;
+            }
+
+            if (sourceInventory == null)
+            {
+                message = "El actor no tiene inventario v0 configurado.";
+                return 0;
+            }
+
+            if (ReferenceEquals(sourceInventory, inventory))
+            {
+                message = "No se puede depositar en el mismo inventario.";
+                return 0;
+            }
+
+            ItemStorageEntry entry = sourceInventory.GetEntry(inventoryIndex);
+            if (entry == null || entry.Item == null)
+            {
+                message = "Slot de inventario invalido.";
+                return 0;
+            }
+
+            string definitionId = entry.DefinitionId;
+            int requestedQuantity = Mathf.Min(quantity, entry.Quantity);
+            int transferredQuantity = sourceInventory.TransferItemTo(inventory, inventoryIndex, requestedQuantity);
+            if (transferredQuantity <= 0)
+            {
+                message = "No se pudo depositar contenido.";
+                return 0;
+            }
+
+            SyncLootableTag();
+            message = $"Depositaste {GetItemDisplayName(definitionId)} x{transferredQuantity}.";
+            return transferredQuantity;
+        }
+
         private bool CanAccessActorInventory(out string reason)
         {
             ResolveReferences();
@@ -121,6 +177,26 @@ namespace OldScars.Core.Actors
             {
                 SyncLootableTag();
                 reason = "No queda contenido en este cuerpo.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool CanDepositIntoActorInventory(out string reason)
+        {
+            ResolveReferences();
+            reason = null;
+
+            if (worldObjectTags == null)
+            {
+                reason = "Error: actor sin tags de mundo.";
+                return false;
+            }
+
+            if (!worldObjectTags.HasTag(ActorHealthComponent.DeadActorTag))
+            {
+                reason = "Este actor no esta muerto.";
                 return false;
             }
 

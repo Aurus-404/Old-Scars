@@ -145,7 +145,15 @@ namespace OldScars.Core.Items
 
             ItemStorageEntry entry = entries[index];
             int transferredQuantity = Math.Min(quantity, entry.Quantity);
-            ItemInstance transferredItem = transferredQuantity < entry.Quantity ? entry.Item.CreateStackSibling() : entry.Item;
+            bool splitsSourceEntry = transferredQuantity < entry.Quantity;
+            bool fullyMergesIntoTarget = target.GetAvailableMergeCapacity(entry.Item) >= transferredQuantity;
+
+            // A split needs a sibling only when the target must keep a separate
+            // representative entry. Fully merged quantities can reuse the source instance safely.
+            ItemInstance transferredItem = splitsSourceEntry && !fullyMergesIntoTarget
+                ? entry.Item.CreateStackSibling()
+                : entry.Item;
+
             target.AddItem(transferredItem, transferredQuantity);
             RemoveAt(index, transferredQuantity);
             return transferredQuantity;
@@ -154,6 +162,24 @@ namespace OldScars.Core.Items
         private bool IsIndexValid(int index)
         {
             return index >= 0 && index < entries.Count;
+        }
+
+        private int GetAvailableMergeCapacity(ItemInstance item)
+        {
+            if (item == null || item.MaxStack <= 1)
+                return 0;
+
+            int totalCapacity = 0;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (entry == null || entry.DefinitionId != item.DefinitionId)
+                    continue;
+
+                totalCapacity += entry.AvailableStackSpace;
+            }
+
+            return totalCapacity;
         }
 
         private void MergeIntoExistingStacks(ItemInstance item, ref int remainingQuantity, ref ItemStorageEntry firstChangedEntry)

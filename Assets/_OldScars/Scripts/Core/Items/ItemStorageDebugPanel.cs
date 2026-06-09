@@ -9,14 +9,17 @@ namespace OldScars.Core.Items
 {
     public sealed class ItemStorageDebugPanel : MonoBehaviour
     {
-        private const float PanelWidth = 560f;
-        private const float PanelHeight = 360f;
+        private const float PanelWidth = 1120f;
+        private const float PanelHeight = 470f;
+        private const float ColumnWidth = 535f;
+        private const float ColumnScrollHeight = 280f;
 
         private IItemStorageDebugSource storageSource;
         private InventoryComponent targetInventory;
         private DebugActionExecutionContext executionContext;
         private ActionDefinition action;
-        private Vector2 scrollPosition;
+        private Vector2 storageScrollPosition;
+        private Vector2 inventoryScrollPosition;
         private string title;
         private string lastMessage;
         private bool isVisible;
@@ -48,7 +51,8 @@ namespace OldScars.Core.Items
             action = sourceAction;
             title = source != null ? source.GetStorageDebugTitle(context.Target) : BuildTitle(null, context.Target);
             lastMessage = null;
-            scrollPosition = Vector2.zero;
+            storageScrollPosition = Vector2.zero;
+            inventoryScrollPosition = Vector2.zero;
             isVisible = true;
         }
 
@@ -110,25 +114,9 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            IReadOnlyList<ItemStorageEntry> entries = storageSource.StorageEntries;
-            if (entries == null || entries.Count == 0)
-            {
-                GUILayout.Label("Storage is empty.");
-                DrawCloseButton();
-                GUILayout.EndArea();
-                return;
-            }
-
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Take All", GUILayout.Height(24f)))
-            {
-                TakeAll();
-                GUILayout.EndHorizontal();
-                GUILayout.EndArea();
-                return;
-            }
-
-            if (GUILayout.Button("Close", GUILayout.Height(24f)))
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Close", GUILayout.Height(24f), GUILayout.Width(100f)))
             {
                 Hide();
                 GUILayout.EndHorizontal();
@@ -139,22 +127,106 @@ namespace OldScars.Core.Items
 
             GUILayout.Space(8f);
 
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(250f));
-            for (int index = 0; index < entries.Count; index++)
+            GUILayout.BeginHorizontal();
+            if (DrawInventoryColumn())
             {
-                if (DrawEntry(index, entries[index]))
-                {
-                    GUILayout.EndScrollView();
-                    GUILayout.EndArea();
-                    return;
-                }
+                GUILayout.EndHorizontal();
+                GUILayout.EndArea();
+                return;
             }
-            GUILayout.EndScrollView();
 
+            GUILayout.Space(8f);
+
+            if (DrawStorageColumn())
+            {
+                GUILayout.EndHorizontal();
+                GUILayout.EndArea();
+                return;
+            }
+
+            GUILayout.EndHorizontal();
             GUILayout.EndArea();
         }
 
-        private bool DrawEntry(int index, ItemStorageEntry entry)
+        private bool DrawInventoryColumn()
+        {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(ColumnWidth));
+            GUILayout.Label("Player Inventory");
+
+            if (GUILayout.Button("Deposit All", GUILayout.Height(24f)))
+            {
+                DepositAll();
+                GUILayout.EndVertical();
+                return true;
+            }
+
+            GUILayout.Space(4f);
+            IReadOnlyList<ItemStorageEntry> inventoryEntries = targetInventory != null ? targetInventory.GetStorageEntries() : null;
+            if (targetInventory == null)
+            {
+                GUILayout.Label("No InventoryComponent assigned.");
+            }
+            else if (inventoryEntries == null || inventoryEntries.Count == 0)
+            {
+                GUILayout.Label("Inventory is empty.");
+            }
+            else
+            {
+                inventoryScrollPosition = GUILayout.BeginScrollView(inventoryScrollPosition, GUILayout.Height(ColumnScrollHeight));
+                for (int index = 0; index < inventoryEntries.Count; index++)
+                {
+                    if (DrawInventoryEntry(index, inventoryEntries[index]))
+                    {
+                        GUILayout.EndScrollView();
+                        GUILayout.EndVertical();
+                        return true;
+                    }
+                }
+                GUILayout.EndScrollView();
+            }
+
+            GUILayout.EndVertical();
+            return false;
+        }
+
+        private bool DrawStorageColumn()
+        {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(ColumnWidth));
+            GUILayout.Label("Open Storage");
+
+            if (GUILayout.Button("Take All", GUILayout.Height(24f)))
+            {
+                TakeAll();
+                GUILayout.EndVertical();
+                return true;
+            }
+
+            GUILayout.Space(4f);
+            IReadOnlyList<ItemStorageEntry> entries = storageSource.StorageEntries;
+            if (entries == null || entries.Count == 0)
+            {
+                GUILayout.Label("Storage is empty.");
+            }
+            else
+            {
+                storageScrollPosition = GUILayout.BeginScrollView(storageScrollPosition, GUILayout.Height(ColumnScrollHeight));
+                for (int index = 0; index < entries.Count; index++)
+                {
+                    if (DrawStorageEntry(index, entries[index]))
+                    {
+                        GUILayout.EndScrollView();
+                        GUILayout.EndVertical();
+                        return true;
+                    }
+                }
+                GUILayout.EndScrollView();
+            }
+
+            GUILayout.EndVertical();
+            return false;
+        }
+
+        private bool DrawStorageEntry(int index, ItemStorageEntry entry)
         {
             GUILayout.BeginHorizontal(GUI.skin.box);
             GUILayout.Label(GetEntryLabel(index, entry), GUILayout.Width(310f));
@@ -170,6 +242,30 @@ namespace OldScars.Core.Items
             if (GUILayout.Button("Take Stack", GUILayout.Height(24f), GUILayout.Width(95f)))
             {
                 Take(index, stackQuantity);
+                GUILayout.EndHorizontal();
+                return true;
+            }
+
+            GUILayout.EndHorizontal();
+            return false;
+        }
+
+        private bool DrawInventoryEntry(int index, ItemStorageEntry entry)
+        {
+            GUILayout.BeginHorizontal(GUI.skin.box);
+            GUILayout.Label(GetEntryLabel(index, entry), GUILayout.Width(310f));
+
+            if (GUILayout.Button("Deposit 1", GUILayout.Height(24f), GUILayout.Width(75f)))
+            {
+                Deposit(index, 1);
+                GUILayout.EndHorizontal();
+                return true;
+            }
+
+            int stackQuantity = entry != null ? entry.Quantity : 0;
+            if (GUILayout.Button("Deposit All", GUILayout.Height(24f), GUILayout.Width(95f)))
+            {
+                Deposit(index, stackQuantity);
                 GUILayout.EndHorizontal();
                 return true;
             }
@@ -220,6 +316,54 @@ namespace OldScars.Core.Items
             }
 
             lastMessage = totalTransferred > 0 ? $"Transferred all: x{totalTransferred}." : "Nothing transferred.";
+        }
+
+        private void Deposit(int index, int quantity)
+        {
+            if (storageSource == null)
+            {
+                lastMessage = "No storage source.";
+                return;
+            }
+
+            int transferredQuantity = storageSource.DepositItem(index, quantity, targetInventory, executionContext, action, out string message);
+            lastMessage = !string.IsNullOrWhiteSpace(message)
+                ? message
+                : transferredQuantity > 0 ? $"Deposited x{transferredQuantity}." : "Nothing deposited.";
+        }
+
+        private void DepositAll()
+        {
+            if (storageSource == null)
+            {
+                lastMessage = "No storage source.";
+                return;
+            }
+
+            if (targetInventory == null)
+            {
+                lastMessage = "No InventoryComponent assigned.";
+                return;
+            }
+
+            int totalTransferred = 0;
+            while (!targetInventory.IsEmpty)
+            {
+                IReadOnlyList<ItemStorageEntry> entries = targetInventory.GetStorageEntries();
+                if (entries == null || entries.Count == 0 || entries[0] == null)
+                    break;
+
+                int transferredQuantity = storageSource.DepositItem(0, entries[0].Quantity, targetInventory, executionContext, action, out string message);
+                if (transferredQuantity <= 0)
+                {
+                    lastMessage = message;
+                    return;
+                }
+
+                totalTransferred += transferredQuantity;
+            }
+
+            lastMessage = totalTransferred > 0 ? $"Deposited all: x{totalTransferred}." : "Nothing deposited.";
         }
 
         private static string GetEntryLabel(int index, ItemStorageEntry entry)

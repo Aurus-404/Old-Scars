@@ -160,6 +160,63 @@ namespace OldScars.Core.Interactions
             return transferredQuantity;
         }
 
+        public int DepositItem(int inventoryIndex, int quantity, InventoryComponent sourceInventory, DebugActionExecutionContext executionContext, ActionDefinition action, out string message)
+        {
+            message = null;
+
+            if (quantity < 1)
+            {
+                message = "Cantidad invalida.";
+                return 0;
+            }
+
+            WorldObjectTags targetTags = executionContext.Target != null ? executionContext.Target : GetComponent<WorldObjectTags>();
+            string depositBlockReason = GetDepositAccessBlockReason(targetTags);
+            if (!string.IsNullOrWhiteSpace(depositBlockReason))
+            {
+                message = depositBlockReason;
+                return 0;
+            }
+
+            if (sourceInventory == null)
+            {
+                message = "El actor no tiene inventario v0 configurado.";
+                return 0;
+            }
+
+            if (!TryGetReadyDatabase(out GameDatabase database, out string databaseError))
+            {
+                message = databaseError;
+                return 0;
+            }
+
+            if (!EnsureStorageInitialized(database, out string storageError))
+            {
+                message = storageError;
+                return 0;
+            }
+
+            ItemStorageEntry entry = sourceInventory.GetEntry(inventoryIndex);
+            if (entry == null || entry.Item == null)
+            {
+                message = "Slot de inventario invalido.";
+                return 0;
+            }
+
+            string definitionId = entry.DefinitionId;
+            int requestedQuantity = Mathf.Min(quantity, entry.Quantity);
+            int transferredQuantity = sourceInventory.TransferItemTo(storage, inventoryIndex, requestedQuantity);
+            if (transferredQuantity <= 0)
+            {
+                message = "No se pudo depositar contenido.";
+                return 0;
+            }
+
+            RestoreContainerContentState(targetTags);
+            message = $"Depositaste {GetItemDisplayName(definitionId, database)} x{transferredQuantity}.";
+            return transferredQuantity;
+        }
+
         public bool CanAccessStorage(WorldObjectTags targetTags)
         {
             return string.IsNullOrWhiteSpace(GetAccessBlockReason(targetTags));
@@ -187,6 +244,20 @@ namespace OldScars.Core.Interactions
 
             if (!targetTags.HasTag(LootableContainerTag))
                 return "Este contenedor ya no se puede saquear.";
+
+            return null;
+        }
+
+        private static string GetDepositAccessBlockReason(WorldObjectTags targetTags)
+        {
+            if (targetTags == null)
+                return "Error: contenedor sin tags de mundo.";
+
+            if (targetTags.HasTag(SealedContainerTag))
+                return "Este contenedor esta sellado.";
+
+            if (!targetTags.HasTag(OpenedContainerTag))
+                return "Este contenedor no esta abierto.";
 
             return null;
         }
@@ -397,6 +468,22 @@ namespace OldScars.Core.Interactions
                 return;
 
             MarkContainerLooted(targetTags, executionContext, action);
+        }
+
+        private void RestoreContainerContentState(WorldObjectTags targetTags)
+        {
+            if (targetTags == null || storage.IsEmpty)
+                return;
+
+            bool removedLooted = targetTags.RemoveTag(LootedContainerTag);
+            bool addedLootable = targetTags.AddTag(LootableContainerTag);
+            if (!removedLooted && !addedLootable)
+                return;
+
+            Debug.Log(
+                "[ContainerLootComponent] Container content state restored after deposit." +
+                $"\n  Target: {targetTags.name}" +
+                $"\n  Runtime tags: {FormatTags(targetTags.RuntimeTags)}");
         }
 
         private static string FormatAddedLoot(Dictionary<string, int> addedCounts, GameDatabase database)
