@@ -156,7 +156,7 @@
         "failure_text": "No podes saquear este contenedor."
       },
       "requirements": {
-        "target_tags": ["opened_container", "lootable_container"]
+        "target_tags": ["opened_container", "unsearched_container"]
       },
       "cost": {
         "stamina": 0,
@@ -164,6 +164,27 @@
       },
       "effects": [
         { "type": "search_container", "target": "target" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "open_storage",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Abrir contenedor",
+        "description": "Abres el almacenamiento ya revisado del contenedor.",
+        "failure_text": "No podes abrir este almacenamiento."
+      },
+      "requirements": {
+        "target_tags": ["storage_accessible"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 0.0
+      },
+      "effects": [
+        { "type": "open_storage", "target": "target" }
       ],
       "interruptible": true
     },

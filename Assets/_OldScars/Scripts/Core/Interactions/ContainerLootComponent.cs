@@ -17,6 +17,8 @@ namespace OldScars.Core.Interactions
     {
         private const string OpenedContainerTag = "opened_container";
         private const string SealedContainerTag = "sealed_container";
+        private const string UnsearchedContainerTag = "unsearched_container";
+        private const string StorageAccessibleTag = "storage_accessible";
         private const string LootableContainerTag = "lootable_container";
         private const string LootedContainerTag = "looted_container";
 
@@ -61,40 +63,41 @@ namespace OldScars.Core.Interactions
                 return DebugActionExecutionResult.Info("Buscar contenedor", accessBlockReason);
             }
 
-            ActorInteractionContext actorContext = executionContext.ActorContext;
-            if (actorContext == null)
-            {
-                Debug.LogWarning("[ContainerLootComponent] Cannot search container without an actor context.");
-                return DebugActionExecutionResult.Info("Buscar contenedor", "Error: actor no configurado para saquear.");
-            }
-
-            inventory = actorContext.GetInventoryComponent();
-            if (inventory == null)
-            {
-                Debug.LogWarning("[ContainerLootComponent] Actor has no InventoryComponent.");
-                return DebugActionExecutionResult.Info("Buscar contenedor", "Error: el actor no tiene inventario v0 configurado.");
-            }
-
-            if (!TryGetReadyDatabase(out GameDatabase database, out string databaseError))
-            {
-                Debug.LogWarning($"[ContainerLootComponent] {databaseError}");
-                return DebugActionExecutionResult.Info("Buscar contenedor", $"Error: {databaseError}");
-            }
-
-            if (!EnsureStorageInitialized(database, out string storageError))
+            if (!TryPrepareStorageAccess(executionContext, out inventory, out string storageError))
             {
                 Debug.LogWarning($"[ContainerLootComponent] {storageError}");
                 return DebugActionExecutionResult.Info("Buscar contenedor", $"Error: {storageError}");
             }
 
-            if (storage.IsEmpty)
+            MarkContainerSearched(targetTags, executionContext, action);
+            canOpenStoragePanel = true;
+            string message = storage.IsEmpty
+                ? "Primera revision completada. El almacenamiento esta vacio."
+                : "Primera revision completada. Contenido disponible en Storage Debug Panel.";
+            return DebugActionExecutionResult.Info("Buscar contenedor", message);
+        }
+
+        public DebugActionExecutionResult OpenStorage(DebugActionExecutionContext executionContext, out bool canOpenStoragePanel, out InventoryComponent inventory)
+        {
+            WorldObjectTags targetTags = executionContext.Target;
+            canOpenStoragePanel = false;
+            inventory = null;
+
+            string accessBlockReason = GetOpenStorageBlockReason(targetTags);
+            if (!string.IsNullOrWhiteSpace(accessBlockReason))
             {
-                MarkContainerLootedIfEmpty(targetTags, executionContext, action);
-                return DebugActionExecutionResult.Info("Buscar contenedor", "No queda contenido en este contenedor.");
+                Debug.Log($"[ContainerLootComponent] Open storage blocked: {accessBlockReason}");
+                return DebugActionExecutionResult.Info("Abrir contenedor", accessBlockReason);
+            }
+
+            if (!TryPrepareOpenedStorageAccess(executionContext, out inventory, out string storageError))
+            {
+                Debug.LogWarning($"[ContainerLootComponent] {storageError}");
+                return DebugActionExecutionResult.Info("Abrir contenedor", $"Error: {storageError}");
             }
 
             canOpenStoragePanel = true;
-            return DebugActionExecutionResult.Info("Buscar contenedor", "Contenido disponible en Storage Debug Panel.");
+            return DebugActionExecutionResult.Info("Abrir contenedor", "Storage Debug Panel disponible.");
         }
 
         public int TakeItem(int storageIndex, int quantity, InventoryComponent inventory, DebugActionExecutionContext executionContext, ActionDefinition action, out string message)
@@ -224,7 +227,7 @@ namespace OldScars.Core.Interactions
 
         public bool CanSearch(DebugActionExecutionContext executionContext, out string reason)
         {
-            reason = GetAccessBlockReason(executionContext.Target);
+            reason = GetSearchBlockReason(executionContext.Target);
             return string.IsNullOrWhiteSpace(reason);
         }
 
@@ -233,8 +236,28 @@ namespace OldScars.Core.Interactions
             if (targetTags == null)
                 return "Error: contenedor sin tags de mundo.";
 
+            if (targetTags.HasTag(SealedContainerTag))
+                return "Este contenedor esta sellado.";
+
+            if (!targetTags.HasTag(OpenedContainerTag))
+                return "Este contenedor no esta abierto.";
+
+            if (targetTags.HasTag(StorageAccessibleTag))
+                return null;
+
             if (targetTags.HasTag(LootedContainerTag))
                 return "Este contenedor ya fue saqueado.";
+
+            if (!targetTags.HasTag(LootableContainerTag))
+                return "Este contenedor ya no se puede saquear.";
+
+            return null;
+        }
+
+        private static string GetSearchBlockReason(WorldObjectTags targetTags)
+        {
+            if (targetTags == null)
+                return "Error: contenedor sin tags de mundo.";
 
             if (targetTags.HasTag(SealedContainerTag))
                 return "Este contenedor esta sellado.";
@@ -242,8 +265,25 @@ namespace OldScars.Core.Interactions
             if (!targetTags.HasTag(OpenedContainerTag))
                 return "Este contenedor no esta abierto.";
 
-            if (!targetTags.HasTag(LootableContainerTag))
-                return "Este contenedor ya no se puede saquear.";
+            if (!targetTags.HasTag(UnsearchedContainerTag))
+                return "Este contenedor ya fue revisado.";
+
+            return null;
+        }
+
+        private static string GetOpenStorageBlockReason(WorldObjectTags targetTags)
+        {
+            if (targetTags == null)
+                return "Error: contenedor sin tags de mundo.";
+
+            if (targetTags.HasTag(SealedContainerTag))
+                return "Este contenedor esta sellado.";
+
+            if (!targetTags.HasTag(OpenedContainerTag))
+                return "Este contenedor no esta abierto.";
+
+            if (!targetTags.HasTag(StorageAccessibleTag))
+                return "Este almacenamiento todavia no fue descubierto.";
 
             return null;
         }
@@ -292,6 +332,53 @@ namespace OldScars.Core.Interactions
 
             string storageError;
             return EnsureStorageInitialized(database, out storageError);
+        }
+
+        private bool TryPrepareStorageAccess(DebugActionExecutionContext executionContext, out InventoryComponent inventory, out string error)
+        {
+            if (!TryGetActorInventory(executionContext, out inventory, out error))
+                return false;
+
+            if (!TryGetReadyDatabase(out GameDatabase database, out error))
+                return false;
+
+            return EnsureStorageInitialized(database, out error);
+        }
+
+        private bool TryPrepareOpenedStorageAccess(DebugActionExecutionContext executionContext, out InventoryComponent inventory, out string error)
+        {
+            if (!TryGetActorInventory(executionContext, out inventory, out error))
+                return false;
+
+            if (!storageInitialized)
+            {
+                error = "el storage todavia no fue inicializado.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryGetActorInventory(DebugActionExecutionContext executionContext, out InventoryComponent inventory, out string error)
+        {
+            inventory = null;
+            error = null;
+
+            ActorInteractionContext actorContext = executionContext.ActorContext;
+            if (actorContext == null)
+            {
+                error = "actor no configurado para saquear.";
+                return false;
+            }
+
+            inventory = actorContext.GetInventoryComponent();
+            if (inventory == null)
+            {
+                error = "el actor no tiene inventario v0 configurado.";
+                return false;
+            }
+
+            return true;
         }
 
         private bool EnsureStorageInitialized(GameDatabase database, out string error)
@@ -462,6 +549,19 @@ namespace OldScars.Core.Interactions
             RecordTargetStateChanged(executionContext, action, addedLooted, removedLootable);
         }
 
+        private static void MarkContainerSearched(WorldObjectTags targetTags, DebugActionExecutionContext executionContext, ActionDefinition action)
+        {
+            bool removedUnsearched = targetTags.RemoveTag(UnsearchedContainerTag);
+            bool addedStorageAccessible = targetTags.AddTag(StorageAccessibleTag);
+
+            Debug.Log(
+                "[ContainerLootComponent] First container search completed." +
+                $"\n  Target: {targetTags.name}" +
+                $"\n  Runtime tags: {FormatTags(targetTags.RuntimeTags)}");
+
+            RecordContainerSearched(executionContext, action, addedStorageAccessible, removedUnsearched);
+        }
+
         private void MarkContainerLootedIfEmpty(WorldObjectTags targetTags, DebugActionExecutionContext executionContext, ActionDefinition action)
         {
             if (targetTags == null || !storage.IsEmpty)
@@ -548,6 +648,26 @@ namespace OldScars.Core.Interactions
                 actionDisplayName: GetActionDisplayName(action),
                 addedTags: addedLooted ? new[] { LootedContainerTag } : null,
                 removedTags: removedLootable ? new[] { LootableContainerTag } : null,
+                debugOnly: true));
+        }
+
+        private static void RecordContainerSearched(DebugActionExecutionContext executionContext, ActionDefinition action, bool addedStorageAccessible, bool removedUnsearched)
+        {
+            if (!addedStorageAccessible && !removedUnsearched)
+                return;
+
+            string targetDisplayName = GetTargetDisplayName(executionContext.Target);
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.TargetStateChanged,
+                $"Estado actualizado: {SafeText(targetDisplayName)}.",
+                actorId: GetActorName(executionContext.ActorContext),
+                actorDisplayName: GetActorName(executionContext.ActorContext),
+                targetId: GetTargetName(executionContext.Target),
+                targetDisplayName: targetDisplayName,
+                actionId: action != null ? action.id : null,
+                actionDisplayName: GetActionDisplayName(action),
+                addedTags: addedStorageAccessible ? new[] { StorageAccessibleTag } : null,
+                removedTags: removedUnsearched ? new[] { UnsearchedContainerTag } : null,
                 debugOnly: true));
         }
 

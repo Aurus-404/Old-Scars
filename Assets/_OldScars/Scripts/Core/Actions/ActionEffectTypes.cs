@@ -7,6 +7,7 @@ namespace OldScars.Core.Actions
         public const string ShowTargetInfo = "show_target_info";
         public const string PickUpItem = "pick_up_item";
         public const string SearchContainer = "search_container";
+        public const string OpenStorage = "open_storage";
         public const string ApplyDamage = "apply_damage";
         public const string KillActor = "kill_actor";
         public const string SearchActorInventory = "search_actor_inventory";

@@ -22,6 +22,8 @@
     { "id": "forced_open", "description": "Estado debug de un objeto forzado abierto." },
     { "id": "sealed_container", "description": "Contenedor sellado que puede abrirse con una herramienta adecuada." },
     { "id": "opened_container", "description": "Estado debug de un contenedor abierto." },
+    { "id": "unsearched_container", "description": "Contenedor natural todavia no revisado por primera vez." },
+    { "id": "storage_accessible", "description": "Objeto cuyo storage puede abrirse aunque este vacio." },
     { "id": "lootable_container", "description": "Contenedor que todavia puede saquearse durante runtime." },
     { "id": "looted_container", "description": "Estado runtime de un contenedor ya saqueado." },
     { "id": "alive_actor", "description": "Actor vivo durante runtime." },

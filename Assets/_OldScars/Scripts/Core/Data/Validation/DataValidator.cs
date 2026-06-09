@@ -667,6 +667,7 @@ namespace OldScars.Core.Data.Validation
                         effect.type == ActionEffectTypes.ShowTargetInfo ||
                         effect.type == ActionEffectTypes.PickUpItem ||
                         effect.type == ActionEffectTypes.SearchContainer ||
+                        effect.type == ActionEffectTypes.OpenStorage ||
                         effect.type == ActionEffectTypes.KillActor ||
                         effect.type == ActionEffectTypes.SearchActorInventory)
                     {
@@ -680,7 +681,7 @@ namespace OldScars.Core.Data.Validation
                     }
                     else
                     {
-                        report.Error($"{effectCtx}: unsupported effect type '{effect.type}'. Allowed values: '{ActionEffectTypes.AddTag}', '{ActionEffectTypes.RemoveTag}', '{ActionEffectTypes.ShowTargetInfo}', '{ActionEffectTypes.PickUpItem}', '{ActionEffectTypes.SearchContainer}', '{ActionEffectTypes.ApplyDamage}', '{ActionEffectTypes.KillActor}', '{ActionEffectTypes.SearchActorInventory}'.");
+                        report.Error($"{effectCtx}: unsupported effect type '{effect.type}'. Allowed values: '{ActionEffectTypes.AddTag}', '{ActionEffectTypes.RemoveTag}', '{ActionEffectTypes.ShowTargetInfo}', '{ActionEffectTypes.PickUpItem}', '{ActionEffectTypes.SearchContainer}', '{ActionEffectTypes.OpenStorage}', '{ActionEffectTypes.ApplyDamage}', '{ActionEffectTypes.KillActor}', '{ActionEffectTypes.SearchActorInventory}'.");
                     }
                 }
 

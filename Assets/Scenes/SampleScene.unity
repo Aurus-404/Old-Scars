@@ -1472,7 +1472,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - sealed_container
-  - lootable_container
+  - unsearched_container
   - inspectable
 --- !u!65 &1709637212
 BoxCollider:
@@ -3048,7 +3048,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
-  - lootable_container
+  - unsearched_container
   - inspectable
 --- !u!114 &2500000106
 MonoBehaviour:
@@ -3251,7 +3251,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
-  - lootable_container
+  - unsearched_container
   - inspectable
 --- !u!114 &2500000206
 MonoBehaviour:

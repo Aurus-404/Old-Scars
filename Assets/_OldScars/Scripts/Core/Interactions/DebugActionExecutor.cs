@@ -170,6 +170,11 @@ namespace OldScars.Core.Interactions
                 return ExecuteSearchContainer(effectContext, executionContext, action);
             }
 
+            if (effect.type == ActionEffectTypes.OpenStorage)
+            {
+                return ExecuteOpenStorage(effectContext, executionContext, action);
+            }
+
             if (effect.type == ActionEffectTypes.ApplyDamage)
             {
                 return ExecuteApplyDamage(effect, effectContext, executionContext);
@@ -225,6 +230,31 @@ namespace OldScars.Core.Interactions
             ItemStorageDebugPanel storagePanel = ItemStorageDebugPanel.GetOrCreate();
             if (storagePanel == null)
                 return DebugActionExecutionResult.Info("Buscar contenedor", "No se pudo crear Storage Debug Panel.");
+
+            storagePanel.Show(containerLoot, inventory, executionContext, action);
+            return DebugActionExecutionResult.None();
+        }
+
+        private static DebugActionExecutionResult ExecuteOpenStorage(string effectContext, DebugActionExecutionContext executionContext, ActionDefinition action)
+        {
+            WorldObjectTags target = executionContext.Target;
+            ContainerLootComponent containerLoot = target != null ? target.GetComponent<ContainerLootComponent>() : null;
+
+            if (containerLoot == null)
+            {
+                string message = "Target has no ContainerLootComponent component.";
+                Debug.LogWarning($"[DebugActionExecutor] {effectContext}: {message}");
+                return DebugActionExecutionResult.Info("Abrir contenedor", message);
+            }
+
+            Debug.Log($"[DebugActionExecutor] {effectContext}: {ActionEffectTypes.OpenStorage} for loot table '{SafeText(containerLoot.LootTableId)}'.");
+            DebugActionExecutionResult result = containerLoot.OpenStorage(executionContext, out bool canOpenStoragePanel, out InventoryComponent inventory);
+            if (!canOpenStoragePanel)
+                return result;
+
+            ItemStorageDebugPanel storagePanel = ItemStorageDebugPanel.GetOrCreate();
+            if (storagePanel == null)
+                return DebugActionExecutionResult.Info("Abrir contenedor", "No se pudo crear Storage Debug Panel.");
 
             storagePanel.Show(containerLoot, inventory, executionContext, action);
             return DebugActionExecutionResult.None();
