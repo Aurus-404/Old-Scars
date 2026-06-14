@@ -19,8 +19,8 @@ namespace OldScars.Core.Interactions
 
         [Header("Zoom")]
         [SerializeField] private float zoomSpeed = 0.02f;
-        [SerializeField] private float minZoomDistance = 4f;
-        [SerializeField] private float maxZoomDistance = 18f;
+        [SerializeField] private float minZoomDistance = 2.5f;
+        [SerializeField] private float maxZoomDistance = 28f;
 
         [Header("Rotation")]
         [SerializeField] private float rightDragThresholdPixels = 8f;

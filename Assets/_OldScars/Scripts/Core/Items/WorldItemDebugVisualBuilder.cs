@@ -3,17 +3,26 @@ using UnityEngine;
 namespace OldScars.Core.Items
 {
     /// <summary>
-    /// Builds the shared primitive placeholder for a world item definition.
-    /// Placed and runtime-dropped items use this same path through WorldItemPickup.
+    /// Builds the shared visual for a world item definition.
+    /// Curated visual prefabs are preferred and debug primitives remain the fallback.
     /// </summary>
     public static class WorldItemDebugVisualBuilder
     {
-        private const string VisualRootName = "World Item Debug Visual";
+        private const string VisualRootName = "Visual";
+        private const string LegacyVisualRootName = "World Item Debug Visual";
 
         public static void Build(Transform worldItemRoot, string itemDefinitionId)
         {
             if (worldItemRoot == null || string.IsNullOrWhiteSpace(itemDefinitionId))
                 return;
+
+            Transform existingVisual = worldItemRoot.Find(VisualRootName);
+            if (HasRenderer(existingVisual))
+            {
+                existingVisual.gameObject.SetActive(true);
+                DisablePlaceholderRenderers(worldItemRoot, existingVisual);
+                return;
+            }
 
             RemoveExistingGeneratedVisual(worldItemRoot);
 
@@ -21,6 +30,9 @@ namespace OldScars.Core.Items
             visualRootObject.layer = worldItemRoot.gameObject.layer;
             Transform visualRoot = visualRootObject.transform;
             visualRoot.SetParent(worldItemRoot, false);
+
+            if (WorldItemVisualResolver.TryBuild(visualRoot, itemDefinitionId))
+                return;
 
             switch (itemDefinitionId)
             {
@@ -63,11 +75,35 @@ namespace OldScars.Core.Items
         private static void RemoveExistingGeneratedVisual(Transform worldItemRoot)
         {
             Transform existingVisual = worldItemRoot.Find(VisualRootName);
-            if (existingVisual == null)
+            RemoveVisual(existingVisual);
+
+            Transform legacyVisual = worldItemRoot.Find(LegacyVisualRootName);
+            RemoveVisual(legacyVisual);
+        }
+
+        private static void RemoveVisual(Transform visual)
+        {
+            if (visual == null)
                 return;
 
-            existingVisual.gameObject.SetActive(false);
-            Object.Destroy(existingVisual.gameObject);
+            visual.gameObject.SetActive(false);
+            Object.Destroy(visual.gameObject);
+        }
+
+        private static bool HasRenderer(Transform visual)
+        {
+            return visual != null && visual.GetComponentInChildren<Renderer>(true) != null;
+        }
+
+        private static void DisablePlaceholderRenderers(Transform worldItemRoot, Transform visual)
+        {
+            Renderer[] renderers = worldItemRoot.GetComponentsInChildren<Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer != null && !renderer.transform.IsChildOf(visual))
+                    renderer.enabled = false;
+            }
         }
 
         private static void CreatePrimitive(

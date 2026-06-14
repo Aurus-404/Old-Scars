@@ -13,10 +13,15 @@ namespace OldScars.Core.Items
     /// It owns one runtime ItemStorage entry so pickup can reuse the same
     /// instance-preserving transfer rules as inventories and containers.
     /// </summary>
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(BoxCollider))]
+    [RequireComponent(typeof(Rigidbody))]
     public sealed class WorldItemPickup : MonoBehaviour
     {
         private const string PickupableTag = "pickupable";
         private const string PickedUpTag = "picked_up";
+        private static readonly Vector3 DefaultColliderCenter = new Vector3(0f, 0.25f, 0f);
+        private static readonly Vector3 DefaultColliderSize = new Vector3(0.8f, 0.5f, 0.8f);
 
         [SerializeField] private string itemDefinitionId;
 
@@ -39,6 +44,11 @@ namespace OldScars.Core.Items
                 ItemStorageEntry entry = storage.GetEntry(0);
                 return entry != null ? entry.Quantity : 0;
             }
+        }
+
+        private void Awake()
+        {
+            EnsureSimplePhysics();
         }
 
         private void Start()
@@ -101,6 +111,7 @@ namespace OldScars.Core.Items
             bool addedPickedUp = targetTags.AddTag(PickedUpTag);
             bool removedPickupable = targetTags.RemoveTag(PickupableTag);
             DisableVisiblePickupParts();
+            DisablePhysics();
 
             string displayName = GetItemDisplayName(item.DefinitionId);
             RecordItemPickedUp(actorContext, targetTags, item, displayName, transferredQuantity);
@@ -125,6 +136,40 @@ namespace OldScars.Core.Items
 
             storage.AddItem(new ItemInstance(definition));
             return true;
+        }
+
+        private void EnsureSimplePhysics()
+        {
+            BoxCollider boxCollider = GetComponent<BoxCollider>();
+            if (boxCollider == null)
+            {
+                boxCollider = gameObject.AddComponent<BoxCollider>();
+                boxCollider.center = DefaultColliderCenter;
+                boxCollider.size = DefaultColliderSize;
+            }
+
+            boxCollider.isTrigger = false;
+            boxCollider.enabled = true;
+
+            Rigidbody rigidbody = GetComponent<Rigidbody>();
+            if (rigidbody == null)
+                rigidbody = gameObject.AddComponent<Rigidbody>();
+
+            rigidbody.useGravity = true;
+            rigidbody.isKinematic = false;
+            rigidbody.detectCollisions = true;
+        }
+
+        private void DisablePhysics()
+        {
+            Rigidbody rigidbody = GetComponent<Rigidbody>();
+            if (rigidbody == null)
+                return;
+
+            rigidbody.Sleep();
+            rigidbody.useGravity = false;
+            rigidbody.detectCollisions = false;
+            rigidbody.isKinematic = true;
         }
 
         private void DisableVisiblePickupParts()

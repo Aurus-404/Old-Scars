@@ -1,0 +1,7 @@
+Asset name: PSX Industrial Pack
+Author: Tomitos
+Source URL: https://sketchfab.com/3d-models/psx-industrial-pack-12cb749961974f94a4063e67dafb2d76
+License: Creative Commons Attribution (CC BY), as listed on the source page
+Usage in Old Scars: temporary development placeholder
+Modified: yes - wrapper transform only; source files are unchanged
+Notes: not intended as final shipping art. Source identity is based on the matching pack name, texture names, and model contents.

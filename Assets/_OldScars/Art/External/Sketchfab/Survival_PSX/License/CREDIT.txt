@@ -1,0 +1,7 @@
+Asset name: Survival PSX
+Author: Elbolillo / Elbolilloduro
+Source URL: https://sketchfab.com/3d-models/survival-psx-6e6b12cbcd864d8a949c5334bc473b55
+License: Creative Commons Attribution (CC BY), as listed on the Sketchfab source page
+Usage in Old Scars: temporary development placeholder
+Modified: yes - wrapper transform only; source files are unchanged
+Notes: not intended as final shipping art. The author's itch.io listing also states CC0; retain attribution while source provenance is confirmed.
