@@ -153,11 +153,11 @@ Transform:
   - {fileID: 1150529138}
   - {fileID: 344824650}
   - {fileID: 1022389977}
-  - {fileID: 2200000201}
+  - {fileID: 3200000101}
   - {fileID: 2500000101}
   - {fileID: 2500000201}
   - {fileID: 2700000001}
-  - {fileID: 2900000101}
+  - {fileID: 3200000201}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330585543
@@ -461,8 +461,8 @@ MonoBehaviour:
   targetOffset: {x: 0, y: 0, z: 0}
   enableScreenEdgePan: 0
   screenEdgeSize: 20
-  zoomSpeed: 0.02
-  minZoomDistance: 2.5
+  zoomSpeed: 1
+  minZoomDistance: 1
   maxZoomDistance: 28
   rightDragThresholdPixels: 8
   yawDegreesPerMousePixel: 0.2
@@ -715,6 +715,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContextualActionDebugPanel
   progressController: {fileID: 803616387}
+  resultPanel: {fileID: 0}
 --- !u!4 &541554165
 Transform:
   m_ObjectHideFlags: 0
@@ -1000,19 +1001,6 @@ MonoBehaviour:
     displayName: Puerta forzada
     inspectText: La puerta quedo forzada y abierta. El marco esta torcido, pero ya
       no bloquea el paso.
---- !u!114 &2800000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 989393220}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ed8a294dd394a20be1044c365972fca, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectProfileComponent
-  worldObjectProfileId: debug_locked_door_01
 --- !u!1 &1022389976
 GameObject:
   m_ObjectHideFlags: 0
@@ -1844,30 +1832,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId:
---- !u!114 &2900000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63d53727bd3b47cc887a44eb6b5706e7, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Combat.FirearmDebugController
-  inventory: {fileID: 2200000001}
-  inputCamera: {fileID: 330585545}
-  uiInputBlocker: {fileID: 2080113302}
-  movementInput: {fileID: 2080113303}
-  groundLayerMask:
-    serializedVersion: 2
-    m_Bits: 8
-  hitLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  muzzleHeight: 0
-  tracerDuration: 0.12
 --- !u!1 &2200000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -1916,327 +1880,6 @@ MonoBehaviour:
   actorNeeds: {fileID: 2500000001}
   actorHealth: {fileID: 2500000003}
   firearmController: {fileID: 2900000001}
---- !u!1 &2200000200
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2200000201}
-  - component: {fileID: 2200000202}
-  - component: {fileID: 2200000203}
-  - component: {fileID: 2200000204}
-  - component: {fileID: 2200000205}
-  - component: {fileID: 2200000206}
-  - component: {fileID: 2200000207}
-  - component: {fileID: 2300003001}
-  m_Layer: 6
-  m_Name: Debug World Crowbar
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2200000201
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1.45, y: 0.35, z: -9.45}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2300003011}
-  m_Father: {fileID: 34060390}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &2200000202
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &2200000203
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  m_Enabled: 0
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2200000204
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.8, y: 0.5, z: 0.8}
-  m_Center: {x: 0, y: 0.25, z: 0}
---- !u!114 &2200000205
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
-  tags:
-  - world_item
-  - pickupable
-  - inspectable
---- !u!114 &2200000206
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
-  displayName: Palanca oxidada
-  inspectText: Una palanca vieja tirada junto al banco de trabajo. Podria servir
-    como herramienta.
-  conditionalInspectionTexts: []
---- !u!114 &2200000207
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b86dd43b64c94a0d9e847e8f5f8e3f1d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.WorldItemPickup
-  itemDefinitionId: rusted_crowbar_01
---- !u!1 &2900000100
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2900000101}
-  - component: {fileID: 2900000102}
-  - component: {fileID: 2900000103}
-  - component: {fileID: 2900000104}
-  - component: {fileID: 2900000105}
-  - component: {fileID: 2900000106}
-  - component: {fileID: 2900000107}
-  m_Layer: 6
-  m_Name: Debug World Lee-Enfield Rifle
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2900000101
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2900000100}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.35, y: 0.35, z: -9.45}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 34060390}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &2900000102
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2900000100}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &2900000103
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2900000100}
-  m_Enabled: 0
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2900000104
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2900000100}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.8, y: 0.5, z: 0.8}
-  m_Center: {x: 0, y: 0.25, z: 0}
---- !u!114 &2900000105
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2900000100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
-  tags:
-  - world_item
-  - pickupable
-  - inspectable
---- !u!114 &2900000106
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2900000100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
-  displayName: Rifle Lee-Enfield
-  inspectText: Un Rifle Lee-Enfield preparado para la prueba single-shot v0.
-  conditionalInspectionTexts: []
---- !u!114 &2900000107
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2900000100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b86dd43b64c94a0d9e847e8f5f8e3f1d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.WorldItemPickup
-  itemDefinitionId: lee_enfield_rifle_01
 --- !u!1 &2200000300
 GameObject:
   m_ObjectHideFlags: 0
@@ -2913,138 +2556,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &2300003001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2200000200}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
-  worldObjectTags: {fileID: 2200000205}
-  rules:
-  - stateName: pickupable
-    priority: 0
-    requiredTags:
-    - pickupable
-    forbiddenTags:
-    - picked_up
-    activateGameObjects:
-    - {fileID: 2300003010}
-    deactivateGameObjects: []
-    rotateTransform: {fileID: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    colorRenderers:
-    - {fileID: 2300003013}
-    applyDebugColor: 1
-    debugColor: {r: 0.9, g: 0.85, b: 0.6, a: 1}
-  - stateName: picked_up
-    priority: 10
-    requiredTags:
-    - picked_up
-    forbiddenTags: []
-    activateGameObjects: []
-    deactivateGameObjects:
-    - {fileID: 2300003010}
-    rotateTransform: {fileID: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    colorRenderers: []
-    applyDebugColor: 0
-    debugColor: {r: 1, g: 1, b: 1, a: 1}
---- !u!1 &2300003010
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2300003011}
-  - component: {fileID: 2300003012}
-  - component: {fileID: 2300003013}
-  m_Layer: 0
-  m_Name: CrowbarVisual
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &2300003011
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2300003010}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2200000201}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &2300003012
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2300003010}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &2300003013
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2300003010}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &2500000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3305,7 +2816,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Survival Supply Debug Crate
-  inspectText: Una caja debug abierta con agua, raciones y vendajes para probar necesidades y salud.
+  inspectText: Una caja debug abierta con agua, raciones y vendajes para probar necesidades
+    y salud.
   conditionalInspectionTexts: []
 --- !u!114 &2500000107
 MonoBehaviour:
@@ -3679,6 +3191,98 @@ MonoBehaviour:
     - {fileID: 2500000203}
     applyDebugColor: 1
     debugColor: {r: 0.18, g: 0.18, b: 0.18, a: 1}
+--- !u!1 &2600000100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2600000101}
+  - component: {fileID: 2600000102}
+  m_Layer: 0
+  m_Name: ActorNeedsDebugPanel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2600000101
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2600000100}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1468729046}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2600000102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2600000100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62f54b8a40984a1bbf1046a0d0a1f6b1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorNeedsDebugPanel
+  actorNeeds: {fileID: 2500000001}
+  actorHealth: {fileID: 2500000003}
+  debugDamageAmount: 25
+  visible: 1
+--- !u!1 &2600000200
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2600000201}
+  - component: {fileID: 2600000202}
+  m_Layer: 0
+  m_Name: ItemStorageDebugPanel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2600000201
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2600000200}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1468729046}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2600000202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2600000200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c02d4e47a244154bf45c68d0f15b826, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.ItemStorageDebugPanel
 --- !u!1 &2700000000
 GameObject:
   m_ObjectHideFlags: 0
@@ -3862,7 +3466,8 @@ MonoBehaviour:
     - dead_actor
     forbiddenTags: []
     displayName: Debug NPC Capsule
-    inspectText: El actor debug esta muerto. Su inventario puede revisarse si queda loot.
+    inspectText: El actor debug esta muerto. Su inventario puede revisarse si queda
+      loot.
 --- !u!114 &2700000007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3978,98 +3583,40 @@ MonoBehaviour:
     - {fileID: 2700000003}
     applyDebugColor: 1
     debugColor: {r: 0.02, g: 0.02, b: 0.02, a: 1}
---- !u!1 &2600000100
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2600000101}
-  - component: {fileID: 2600000102}
-  m_Layer: 0
-  m_Name: ActorNeedsDebugPanel
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2600000101
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2600000100}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1468729046}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2600000102
+--- !u!114 &2800000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2600000100}
+  m_GameObject: {fileID: 989393220}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62f54b8a40984a1bbf1046a0d0a1f6b1, type: 3}
+  m_Script: {fileID: 11500000, guid: 6ed8a294dd394a20be1044c365972fca, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorNeedsDebugPanel
-  actorNeeds: {fileID: 2500000001}
-  actorHealth: {fileID: 2500000003}
-  debugDamageAmount: 25
-  visible: 1
---- !u!1 &2600000200
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2600000201}
-  - component: {fileID: 2600000202}
-  m_Layer: 0
-  m_Name: ItemStorageDebugPanel
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2600000201
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2600000200}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1468729046}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2600000202
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectProfileComponent
+  worldObjectProfileId: debug_locked_door_01
+--- !u!114 &2900000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2600000200}
+  m_GameObject: {fileID: 1022389976}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c02d4e47a244154bf45c68d0f15b826, type: 3}
+  m_Script: {fileID: 11500000, guid: 63d53727bd3b47cc887a44eb6b5706e7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.ItemStorageDebugPanel
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Combat.FirearmDebugController
+  inventory: {fileID: 2200000001}
+  inputCamera: {fileID: 330585545}
+  uiInputBlocker: {fileID: 2080113302}
+  movementInput: {fileID: 2080113303}
+  hitLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  muzzleHeight: 0
+  tracerDuration: 0.12
 --- !u!114 &3000000101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4109,6 +3656,138 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.WorldObjectVisualBinder
   visualPrefabId: PFB_VIS_Crate_PSX
+--- !u!1001 &3200000100
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 34060390}
+    m_Modifications:
+    - target: {fileID: 100000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_Name
+      value: Debug World Crowbar
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_RootOrder
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.45
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -9.45
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+--- !u!4 &3200000101 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: ef4793db244444d4ad3cf160cd38a6f0, type: 3}
+  m_PrefabInstance: {fileID: 3200000100}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &3200000200
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 34060390}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_Name
+      value: Debug World Lee-Enfield Rifle
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_RootOrder
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -9.45
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+--- !u!4 &3200000201 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 467e5bf72932448ba32dff728cb9aea2, type: 3}
+  m_PrefabInstance: {fileID: 3200000200}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
