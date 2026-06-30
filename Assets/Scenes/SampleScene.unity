@@ -286,7 +286,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 133373097}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: DoorVisualPivot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -826,7 +826,8 @@ GameObject:
   - component: {fileID: 237270555}
   - component: {fileID: 237270557}
   - component: {fileID: 237270556}
-  m_Layer: 0
+  - component: {fileID: 3100001002}
+  m_Layer: 6
   m_Name: DoorVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2361,7 +2362,8 @@ GameObject:
   - component: {fileID: 717896526}
   - component: {fileID: 717896528}
   - component: {fileID: 717896527}
-  m_Layer: 0
+  - component: {fileID: 3100002002}
+  m_Layer: 6
   m_Name: DoorVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3259,17 +3261,36 @@ MonoBehaviour:
     - locked_door
     forbiddenTags:
     - forced_open
-    displayName: Puerta oxidada trabada
-    inspectText: La puerta sigue trabada por oxido. La union del marco no cede sin
-      una herramienta de palanca.
+    - closed_door
+    - opened_door
+    displayName: Puerta bloqueada
+    inspectText: La puerta esta bloqueada. Una herramienta de palanca podria forzarla.
+  - priority: 15
+    requiredTags:
+    - closed_door
+    forbiddenTags:
+    - locked_door
+    - forced_open
+    - opened_door
+    displayName: Puerta cerrada
+    inspectText: La puerta esta cerrada, pero no bloqueada. Se puede abrir normalmente.
   - priority: 20
+    requiredTags:
+    - opened_door
+    forbiddenTags:
+    - locked_door
+    - closed_door
+    displayName: Puerta abierta
+    inspectText: La puerta esta abierta y ya no bloquea el paso.
+  - priority: 5
     requiredTags:
     - forced_open
     forbiddenTags:
     - locked_door
-    displayName: Puerta forzada
-    inspectText: La puerta quedo forzada y abierta. El marco esta torcido, pero ya
-      no bloquea el paso.
+    - closed_door
+    - opened_door
+    displayName: Puerta forzada legacy
+    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado canonico abierto es opened_door.
 --- !u!1001 &994822253
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3932,7 +3953,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1201045974}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: DoorVisualPivot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4588,6 +4609,7 @@ GameObject:
   - component: {fileID: 1535098512}
   - component: {fileID: 1535098511}
   - component: {fileID: 1535098510}
+  - component: {fileID: 3100001001}
   m_Layer: 6
   m_Name: Debug Locked House Door Entrance
   m_TagString: Untagged
@@ -4652,10 +4674,39 @@ MonoBehaviour:
     - {fileID: 237270556}
     applyDebugColor: 1
     debugColor: {r: 0.45, g: 0.05, b: 0.04, a: 1}
-  - stateName: forced_open
-    priority: 10
+  - stateName: closed_door
+    priority: 5
+    requiredTags:
+    - closed_door
+    forbiddenTags: []
+    activateGameObjects:
+    - {fileID: 1201045973}
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 237270556}
+    applyDebugColor: 1
+    debugColor: {r: 0.95, g: 0.72, b: 0.18, a: 1}
+  - stateName: forced_open_legacy
+    priority: 8
     requiredTags:
     - forced_open
+    forbiddenTags:
+    - opened_door
+    activateGameObjects:
+    - {fileID: 1201045973}
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 237270556}
+    applyDebugColor: 1
+    debugColor: {r: 0.25, g: 0.9, b: 0.25, a: 1}
+  - stateName: opened_door
+    priority: 10
+    requiredTags:
+    - opened_door
     forbiddenTags: []
     activateGameObjects:
     - {fileID: 1201045973}
@@ -4687,17 +4738,36 @@ MonoBehaviour:
     - locked_door
     forbiddenTags:
     - forced_open
-    displayName: Puerta oxidada trabada
-    inspectText: La puerta sigue trabada por oxido. La union del marco no cede sin
-      una herramienta de palanca.
+    - closed_door
+    - opened_door
+    displayName: Puerta bloqueada
+    inspectText: La puerta esta bloqueada. Una herramienta de palanca podria forzarla.
+  - priority: 15
+    requiredTags:
+    - closed_door
+    forbiddenTags:
+    - locked_door
+    - forced_open
+    - opened_door
+    displayName: Puerta cerrada
+    inspectText: La puerta esta cerrada, pero no bloqueada. Se puede abrir normalmente.
   - priority: 20
+    requiredTags:
+    - opened_door
+    forbiddenTags:
+    - locked_door
+    - closed_door
+    displayName: Puerta abierta
+    inspectText: La puerta esta abierta y ya no bloquea el paso.
+  - priority: 5
     requiredTags:
     - forced_open
     forbiddenTags:
     - locked_door
-    displayName: Puerta forzada
-    inspectText: La puerta quedo forzada y abierta. El marco esta torcido, pero ya
-      no bloquea el paso.
+    - closed_door
+    - opened_door
+    displayName: Puerta forzada legacy
+    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado canonico abierto es opened_door.
 --- !u!114 &1535098513
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4728,7 +4798,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -5400,6 +5470,7 @@ GameObject:
   - component: {fileID: 1947774382}
   - component: {fileID: 1947774381}
   - component: {fileID: 1947774380}
+  - component: {fileID: 3100002001}
   m_Layer: 6
   m_Name: Debug Locked House Door Bedroom
   m_TagString: Untagged
@@ -5435,7 +5506,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ed8a294dd394a20be1044c365972fca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectProfileComponent
-  worldObjectProfileId: debug_locked_door_01
+  worldObjectProfileId: debug_closed_door_01
 --- !u!114 &1947774381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5464,10 +5535,39 @@ MonoBehaviour:
     - {fileID: 717896527}
     applyDebugColor: 1
     debugColor: {r: 0.45, g: 0.05, b: 0.04, a: 1}
-  - stateName: forced_open
-    priority: 10
+  - stateName: closed_door
+    priority: 5
+    requiredTags:
+    - closed_door
+    forbiddenTags: []
+    activateGameObjects:
+    - {fileID: 133373096}
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 717896527}
+    applyDebugColor: 1
+    debugColor: {r: 0.95, g: 0.72, b: 0.18, a: 1}
+  - stateName: forced_open_legacy
+    priority: 8
     requiredTags:
     - forced_open
+    forbiddenTags:
+    - opened_door
+    activateGameObjects:
+    - {fileID: 133373096}
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 717896527}
+    applyDebugColor: 1
+    debugColor: {r: 0.25, g: 0.9, b: 0.25, a: 1}
+  - stateName: opened_door
+    priority: 10
+    requiredTags:
+    - opened_door
     forbiddenTags: []
     activateGameObjects:
     - {fileID: 133373096}
@@ -5499,17 +5599,36 @@ MonoBehaviour:
     - locked_door
     forbiddenTags:
     - forced_open
-    displayName: Puerta oxidada trabada
-    inspectText: La puerta sigue trabada por oxido. La union del marco no cede sin
-      una herramienta de palanca.
+    - closed_door
+    - opened_door
+    displayName: Puerta bloqueada
+    inspectText: La puerta esta bloqueada. Una herramienta de palanca podria forzarla.
+  - priority: 15
+    requiredTags:
+    - closed_door
+    forbiddenTags:
+    - locked_door
+    - forced_open
+    - opened_door
+    displayName: Puerta cerrada
+    inspectText: La puerta esta cerrada, pero no bloqueada. Se puede abrir normalmente.
   - priority: 20
+    requiredTags:
+    - opened_door
+    forbiddenTags:
+    - locked_door
+    - closed_door
+    displayName: Puerta abierta
+    inspectText: La puerta esta abierta y ya no bloquea el paso.
+  - priority: 5
     requiredTags:
     - forced_open
     forbiddenTags:
     - locked_door
-    displayName: Puerta forzada
-    inspectText: La puerta quedo forzada y abierta. El marco esta torcido, pero ya
-      no bloquea el paso.
+    - closed_door
+    - opened_door
+    displayName: Puerta forzada legacy
+    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado canonico abierto es opened_door.
 --- !u!114 &1947774383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5540,7 +5659,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -6406,10 +6525,39 @@ MonoBehaviour:
     - {fileID: 2300001023}
     applyDebugColor: 1
     debugColor: {r: 0.45, g: 0.05, b: 0.04, a: 1}
-  - stateName: forced_open
-    priority: 10
+  - stateName: closed_door
+    priority: 5
+    requiredTags:
+    - closed_door
+    forbiddenTags: []
+    activateGameObjects:
+    - {fileID: 2300001010}
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2300001023}
+    applyDebugColor: 1
+    debugColor: {r: 0.95, g: 0.72, b: 0.18, a: 1}
+  - stateName: forced_open_legacy
+    priority: 8
     requiredTags:
     - forced_open
+    forbiddenTags:
+    - opened_door
+    activateGameObjects:
+    - {fileID: 2300001010}
+    deactivateGameObjects: []
+    rotateTransform: {fileID: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    colorRenderers:
+    - {fileID: 2300001023}
+    applyDebugColor: 1
+    debugColor: {r: 0.25, g: 0.9, b: 0.25, a: 1}
+  - stateName: opened_door
+    priority: 10
+    requiredTags:
+    - opened_door
     forbiddenTags: []
     activateGameObjects:
     - {fileID: 2300001010}
@@ -8847,6 +8995,86 @@ MonoBehaviour:
     - {fileID: 1167434492}
     applyDebugColor: 1
     debugColor: {r: 0.18, g: 0.18, b: 0.18, a: 1}
+--- !u!114 &3100001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1535098508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
+  worldObjectTags: {fileID: 1535098513}
+  doorPivot: {fileID: 1201045974}
+  closedLocalYAngle: 0
+  openedLocalYAngle: 90
+  swingSpeed: 8
+  snapOnStart: 1
+  invertSwingDirection: 0
+--- !u!65 &3100001002
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 237270554}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3100002001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1947774378}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
+  worldObjectTags: {fileID: 1947774383}
+  doorPivot: {fileID: 133373097}
+  closedLocalYAngle: 0
+  openedLocalYAngle: 90
+  swingSpeed: 8
+  snapOnStart: 1
+  invertSwingDirection: 0
+--- !u!65 &3100002002
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 717896525}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

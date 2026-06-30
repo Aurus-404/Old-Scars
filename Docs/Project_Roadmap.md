@@ -96,11 +96,13 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 26: Storage Transfer v0 / Bidirectional Item Transfer | Permitir transferencias en ambas direcciones entre inventario del jugador y storage abierto. | validated | Validado con contenedores y cuerpo de Debug NPC Capsule; no duplica items, conserva instancias completas y divide stacks parciales. |
 | Milestone 26.0.1: Storage Panel Layout Swap | Reordenar visualmente el panel debug de storage sin cambiar su logica. | validated | Validado visualmente: Player Inventory a la izquierda, Open Storage a la derecha; Deposit y Take mantienen su direccion correcta. |
 | Milestone 27: Search vs Open Storage v0 | Separar primera revision de contenedor natural de la apertura posterior de su storage. | validated | Validado: `search_container` descubre el storage una vez y `open_storage` permite reabrirlo incluso vacio sin generar loot nuevo. |
+| Milestone 32: Debug Test House Kitchen Containers v0 | Convertir los containers de cocina de la casa debug en containers funcionales. | implemented | Pendiente de validacion manual en Unity. |
+| Milestone 32.2: Real Door System v0 | Agregar puertas reales simples con estados `locked_door`, `closed_door` y `opened_door`. | implemented | Pendiente de validacion manual en Unity; no usa HingeJoint, Rigidbody ni fisica real. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-No hay milestone implementado pendiente de validacion.
+Milestone 32 y Milestone 32.2 estan implementados en el checkout y pendientes de validacion manual en Unity.
 
 Los ultimos milestones cerrados como `validated` son:
 
@@ -111,9 +113,9 @@ Los ultimos milestones cerrados como `validated` son:
 
 ## Proximo Recomendado
 
-Preparar Milestone 28: Container State / Naming Cleanup v0.
+Validar Milestone 32 y Milestone 32.2 en Unity antes de preparar Milestone 28: Container State / Naming Cleanup v0.
 
-Objetivo recomendado: limpiar nombres y estados debug de contenedores despues de M27, reducir la dependencia futura de `lootable_container` / `looted_container` sin romper compatibilidad y corregir titulos debug inconsistentes como `Contenedor saqueado Contents (Debug)`.
+Objetivo recomendado despues de esa validacion: limpiar nombres y estados debug de contenedores despues de M27, reducir la dependencia futura de `lootable_container` / `looted_container` sin romper compatibilidad y corregir titulos debug inconsistentes como `Contenedor saqueado Contents (Debug)`.
 
 M28 no debe redisenar storage, `search_body`, loot, inventario, UI final ni save system.
 
@@ -591,6 +593,8 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - Runtime tags de `WorldObjectTags` son estado mutable solo durante Play.
 - Los effect types cerrados se centralizan en `ActionEffectTypes` para que `DataValidator` y `DebugActionExecutor` usen las mismas constantes.
 - `add_tag` y `remove_tag` afectan al target en runtime.
+- En M32.2, `locked_door`, `closed_door` y `opened_door` son los estados canonicos de puerta; `forced_open` queda como legacy.
+- `DoorSwingController` es presentacion fisica simple de puerta: lee `WorldObjectTags` y rota un pivot visual, sin leer input ni mutar tags.
 - `show_target_info` es un effect cerrado que lee `WorldObjectDebugInfo`.
 - `pick_up_item` es un effect cerrado que ejecuta `WorldItemPickup` y agrega una `ItemInstance` al `InventoryComponent` del actor.
 - `search_container` es un effect cerrado para la primera revision de un contenedor natural con `opened_container + unsearched_container`; al completarse habilita `storage_accessible` y abre `ItemStorageDebugPanel`.
@@ -612,7 +616,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `DebugActionAvailabilityPanel` arranca oculto por defecto y se alterna con F8.
 - `WorldObjectStateView` lee runtime tags y aplica reglas visuales debug sin modificar tags ni gameplay.
 - `WorldObjectStateView` puede aplicar color debug por regla visual usando `MaterialPropertyBlock`.
-- En `SampleScene`, puerta y contenedor comunican estados por color debug estable, sin rotacion ni cambio de geometria.
+- En `SampleScene`, contenedores comunican estados por color debug estable; puertas M32.2 usan `DoorSwingController` para rotar `DoorVisualPivot` segun tags.
 - `WorldObjectDebugInfo` puede seleccionar texto de inspeccion por `RuntimeTags`, `requiredTags`, `forbiddenTags` y prioridad.
 - No hay scripting libre dentro de JSON.
 - No hay inventario final todavia.

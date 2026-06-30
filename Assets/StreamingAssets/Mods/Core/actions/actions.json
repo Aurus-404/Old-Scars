@@ -73,7 +73,51 @@
       },
       "effects": [
         { "type": "remove_tag", "target": "target", "tag": "locked_door" },
-        { "type": "add_tag", "target": "target", "tag": "forced_open" }
+        { "type": "add_tag", "target": "target", "tag": "opened_door" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "open_door",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Abrir puerta",
+        "description": "AbrÃƒÂ­s la puerta.",
+        "failure_text": "No podÃƒÂ©s abrir esta puerta."
+      },
+      "requirements": {
+        "target_tags": ["closed_door"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 0.5
+      },
+      "effects": [
+        { "type": "remove_tag", "target": "target", "tag": "closed_door" },
+        { "type": "add_tag", "target": "target", "tag": "opened_door" }
+      ],
+      "interruptible": true
+    },
+    {
+      "type": "action",
+      "id": "close_door",
+      "contexts": ["world_interaction"],
+      "display": {
+        "name": "Cerrar puerta",
+        "description": "CerrÃƒÂ¡s la puerta.",
+        "failure_text": "No podÃƒÂ©s cerrar esta puerta."
+      },
+      "requirements": {
+        "target_tags": ["opened_door"]
+      },
+      "cost": {
+        "stamina": 0,
+        "time": 0.5
+      },
+      "effects": [
+        { "type": "remove_tag", "target": "target", "tag": "opened_door" },
+        { "type": "add_tag", "target": "target", "tag": "closed_door" }
       ],
       "interruptible": true
     },

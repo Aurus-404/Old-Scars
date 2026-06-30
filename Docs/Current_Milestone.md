@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-Milestone 32: Debug Test House Kitchen Containers v0 esta implementado en el checkout y pendiente de validacion manual en Unity.
+Milestone 32: Debug Test House Kitchen Containers v0 y Milestone 32.2: Real Door System v0 estan implementados en el checkout y pendientes de validacion manual en Unity.
 
 No esta cerrado como `validated` hasta que Play Mode confirme el flujo completo.
 
@@ -30,6 +30,22 @@ Estado: `implemented`.
 - No se tocaron player, movimiento, puertas, armas, animaciones, crates existentes, scripts C# ni prefabs.
 - Pendiente de validar en Play Mode: search inicial con barra, apertura de storage, transferencias bidireccionales, reapertura con `open_storage` sin regenerar loot y regresion de containers debug viejos.
 
+### Milestone 32.2: Real Door System v0
+
+Estado: `implemented`.
+
+- `locked_door`, `closed_door` y `opened_door` son los estados canonicos de puerta para M32.2.
+- `force_door` ahora remueve `locked_door` y agrega `opened_door`.
+- `open_door` remueve `closed_door` y agrega `opened_door`.
+- `close_door` remueve `opened_door` y agrega `closed_door`.
+- `DoorSwingController` rota solo `DoorVisualPivot` leyendo `WorldObjectTags`; no lee input, no muta tags, no ejecuta acciones y no toca inventario.
+- `M32_DebugTestHouse/Doors/Debug Locked House Door Entrance` inicia como `locked_door`.
+- `M32_DebugTestHouse/Doors/Debug Locked House Door Bedroom` inicia como `closed_door`.
+- Ambas puertas M32 conservan root gameplay, `WorldObjectDebugInfo`, `WorldObjectStateView` y un collider interactuable/bloqueador bajo `DoorVisual`.
+- `forced_open` queda como tag legacy de compatibilidad visual/textual; no es el flujo principal nuevo.
+- No se implementaron broken doors, llaves, barricadas, HingeJoint, Rigidbody, fisica real, UI nueva, ruido, IA, pathfinding ni animaciones finales.
+- Pendiente de validar en Play Mode: acciones disponibles por estado, swing fisico, bloqueo de paso cerrado, paso libre abierto y regresion de la puerta debug vieja.
+
 ## Ultimo Estado Validado
 
 ### World Object Profiles
@@ -38,7 +54,8 @@ Estado: `implemented`.
 - `GameDataLoader`, `GameDatabase` y `DataValidator` cargan, registran y validan World Object Profiles.
 - `WorldObjectProfileComponent` aplica una sola vez `display_name` e `initial_tags` sobre componentes existentes.
 - Debug Locked Door usa `worldObjectProfileId = debug_locked_door_01`.
-- `force_door` sigue funcionando con la puerta cargada desde profile.
+- En el estado validado de M25, `force_door` seguia funcionando con la puerta cargada desde profile.
+- El flujo actual de `force_door` fue migrado en M32.2 a `locked_door -> opened_door` y queda pendiente de validacion manual.
 
 ### Storage Bidireccional
 
@@ -79,14 +96,14 @@ Estado: `implemented`.
 
 ## Proximo Recomendado
 
-Preparar Milestone 28: Container State / Naming Cleanup v0.
+Validar Milestone 32 y Milestone 32.2 en Unity antes de cerrar el bloque como `validated`.
 
 Alcance recomendado:
 
-- limpiar nombres y titulos debug de contenedores;
-- aclarar el rol de tags legacy despues de `storage_accessible`;
-- reducir deuda de estado/naming sin cambiar el comportamiento validado;
-- preservar `search_container`, `open_storage`, transferencia bidireccional y `search_body`.
+- validar containers de cocina M32;
+- validar puertas M32.2 con `force_door`, `open_door`, `close_door` y `examine_object`;
+- confirmar Console sin errores rojos;
+- despues de validar, retomar Milestone 28: Container State / Naming Cleanup v0.
 
 No implementar todavia:
 

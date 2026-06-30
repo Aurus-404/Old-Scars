@@ -144,6 +144,12 @@ Ejemplo:
       "id": "debug_locked_door_01",
       "display_name": "Debug Locked Door",
       "initial_tags": ["locked_door", "inspectable"]
+    },
+    {
+      "type": "world_object_profile",
+      "id": "debug_closed_door_01",
+      "display_name": "Debug Closed Door",
+      "initial_tags": ["closed_door", "inspectable"]
     }
   ]
 }
@@ -222,9 +228,18 @@ Ejemplo:
 {
   "effects": [
     { "type": "remove_tag", "target": "target", "tag": "locked_door" },
-    { "type": "add_tag", "target": "target", "tag": "forced_open" }
+    { "type": "add_tag", "target": "target", "tag": "opened_door" }
   ]
 }
+
+Puertas reales v0 usan estados canonicos:
+
+- `locked_door`: puerta bloqueada, solo puede forzarse con una herramienta valida.
+- `closed_door`: puerta cerrada no bloqueada, puede abrirse normalmente.
+- `opened_door`: puerta abierta, puede cerrarse normalmente.
+
+`force_door`, `open_door` y `close_door` usan solo `remove_tag` y `add_tag`.
+`forced_open` queda como tag legacy y no debe usarse como estado principal nuevo.
 
 Todo tag usado por un effect debe existir en tags.json.
 

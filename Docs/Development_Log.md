@@ -1123,6 +1123,26 @@ Con equipped item definition id none o vacio:
 - No se tocaron scripts C#, prefabs ni crates debug existentes.
 - Estado: implemented; pendiente de validacion manual en Unity.
 
+### Milestone 32.2: Real Door System v0
+
+- M32.2 implementado en `SampleScene` y pendiente de validacion manual en Unity.
+- Se agrego `DoorSwingController` como componente chico en `Core/Interactions`.
+- `DoorSwingController` solo lee `WorldObjectTags` y rota `DoorVisualPivot`; no lee input, no muta tags, no ejecuta acciones y no toca inventario.
+- Tags nuevos agregados a `tags.json`: `closed_door` y `opened_door`.
+- `forced_open` queda registrado como tag legacy; no es estado principal nuevo.
+- `actions.json` agrega `open_door` y `close_door` usando solo `remove_tag` y `add_tag`.
+- `force_door` migro de `locked_door -> forced_open` a `locked_door -> opened_door`.
+- `world_object_profiles.json` agrega `debug_closed_door_01` con `closed_door + inspectable`.
+- `M32_DebugTestHouse/Doors/Debug Locked House Door Entrance` conserva `debug_locked_door_01` e inicia como `locked_door`.
+- `M32_DebugTestHouse/Doors/Debug Locked House Door Bedroom` usa `debug_closed_door_01` e inicia como `closed_door`.
+- Ambas puertas M32 recibieron `DoorSwingController` apuntando a su `DoorVisualPivot`.
+- En ambas puertas M32, el `BoxCollider` solido del root quedo deshabilitado para no bloquear siempre.
+- En ambas puertas M32, `DoorVisual` queda en layer `Interactable` con `BoxCollider` solido hijo para bloquear cerrado, rotar abierto y seguir resolviendo `WorldObjectTags` desde el root.
+- `WorldObjectStateView` y `WorldObjectDebugInfo` de las puertas M32 reconocen `locked_door`, `closed_door`, `opened_door` y `forced_open` legacy.
+- La puerta debug vieja fuera de M32 fue actualizada para que `opened_door` tenga reglas/textos coherentes despues del cambio global de `force_door`.
+- No se tocaron containers, loot, inventario, player, movimiento, armas, animaciones del player, UI nueva, crafting, HingeJoint, Rigidbody ni fisica real.
+- Estado: implemented; pendiente de validacion manual en Unity.
+
 ## Decisiones De Scope
 
 - No hay inventario final.
