@@ -46,6 +46,8 @@ Ejemplo de tags de un item:
 
 Todo tag usado por un item, acción o perfil debe existir en tags.json.
 
+Los objetos colocados en escena tambien deben usar tags registrados cuando esos tags conectan sistemas o documentan semantica de gameplay. Para M32 se agregaron tags de cocina como `kitchen`, `food_storage`, `oven`, `cooking_station`, `workstation_candidate`, `countertop`, `food_prep_surface`, `cupboard`, `storage` y `upper_cupboard`. Esos tags son semanticos: no implementan crafting, recetas ni workstation runtime por si mismos.
+
 ## Definitions vs Instances
 
 Una Definition vive en JSON y describe qué es algo.
@@ -118,6 +120,16 @@ Reglas:
 - `DataValidator` valida loot tables sin errores cuando la data es correcta.
 - `debug_sealed_container_loot_01` carga desde `container_loot.json`.
 - No usar chance, pesos, rarezas, condiciones, economia ni random avanzado todavia.
+
+M32 agrega loot contextual deterministico para la casa debug en `container_loot.json`:
+
+- `house_fridge_loot_01`
+- `house_oven_loot_01`
+- `house_countertop_loot_01`
+- `house_cupboard_loot_01`
+- `house_upper_cupboard_loot_01`
+
+Estas tablas usan solo item IDs existentes: `food_ration_01`, `water_bottle_01`, `bandage_01`, `ammo_303_british_01` y `scrap_metal_01`.
 
 ## World Object Profiles v0
 

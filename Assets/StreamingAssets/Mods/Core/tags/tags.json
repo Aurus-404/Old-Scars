@@ -36,6 +36,16 @@
     { "id": "rifle", "description": "Arma larga tipo rifle." },
     { "id": "ammo", "description": "Municion consumible por armas de fuego compatibles." },
     { "id": "rifle_ammo", "description": "Municion compatible con rifles." },
-    { "id": "caliber_303", "description": "Municion de calibre .303 British." }
+    { "id": "caliber_303", "description": "Municion de calibre .303 British." },
+    { "id": "kitchen", "description": "Objeto o area asociada a una cocina." },
+    { "id": "food_storage", "description": "Contenedor o mueble orientado a guardar comida o agua." },
+    { "id": "oven", "description": "Objeto de cocina tipo horno." },
+    { "id": "cooking_station", "description": "Objeto semanticamente asociado a cocinar, sin implementar crafting." },
+    { "id": "workstation_candidate", "description": "Objeto preparado semanticamente para una posible estacion futura." },
+    { "id": "countertop", "description": "Superficie o mueble bajo de cocina." },
+    { "id": "food_prep_surface", "description": "Superficie asociada a preparacion de comida." },
+    { "id": "cupboard", "description": "Mueble o alacena de almacenamiento domestico." },
+    { "id": "storage", "description": "Objeto semanticamente asociado a almacenamiento." },
+    { "id": "upper_cupboard", "description": "Mueble alto o alacena superior de almacenamiento domestico." }
   ]
 }

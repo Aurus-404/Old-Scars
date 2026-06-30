@@ -1105,6 +1105,24 @@ Con equipped item definition id none o vacio:
 - Validado en Unity: pry -> search inicial -> open posterior funciona; `open_storage` abre storage vacio y M26 sigue funcionando.
 - Estado: validated.
 
+### Milestone 32: Debug Test House Kitchen Containers v0
+
+- M32 implementado en `SampleScene` y pendiente de validacion manual en Unity.
+- `M32_DebugTestHouse/Containers/Fridge` fue configurado como container funcional con `house_fridge_loot_01`.
+- `M32_DebugTestHouse/Containers/Oven` fue configurado como container funcional con `house_oven_loot_01`.
+- `M32_DebugTestHouse/Containers/Countertop` fue configurado como container funcional con `house_countertop_loot_01`.
+- `M32_DebugTestHouse/Containers/Cupboard` fue configurado como container funcional con `house_cupboard_loot_01`.
+- `M32_DebugTestHouse/Containers/Upper countertop` fue configurado como container funcional con `house_upper_cupboard_loot_01`.
+- Los cinco objetos reutilizan `WorldObjectTags`, `WorldObjectDebugInfo`, `ContainerLootComponent`, `WorldObjectStateView`, `search_container`, `open_storage` e `ItemStorageDebugPanel`.
+- Cada container quedo en layer `Interactable`, con tags iniciales `opened_container + unsearched_container + inspectable` y tags semanticos propios.
+- Loot tables nuevas agregadas a `container_loot.json`: `house_fridge_loot_01`, `house_oven_loot_01`, `house_countertop_loot_01`, `house_cupboard_loot_01` y `house_upper_cupboard_loot_01`.
+- Item IDs existentes usados: `food_ration_01`, `water_bottle_01`, `bandage_01`, `ammo_303_british_01` y `scrap_metal_01`.
+- Tags nuevos agregados a `tags.json`: `kitchen`, `food_storage`, `oven`, `cooking_station`, `workstation_candidate`, `countertop`, `food_prep_surface`, `cupboard`, `storage` y `upper_cupboard`.
+- `Oven` queda preparado semanticamente como posible workstation futura solo mediante tags.
+- No se implementaron crafting, recetas, WorkstationComponent, UI nueva, puertas, player, movimiento, armas ni animaciones.
+- No se tocaron scripts C#, prefabs ni crates debug existentes.
+- Estado: implemented; pendiente de validacion manual en Unity.
+
 ## Decisiones De Scope
 
 - No hay inventario final.

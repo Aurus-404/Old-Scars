@@ -2,7 +2,9 @@
 
 ## Estado Actual
 
-No hay milestone implementado pendiente de validacion.
+Milestone 32: Debug Test House Kitchen Containers v0 esta implementado en el checkout y pendiente de validacion manual en Unity.
+
+No esta cerrado como `validated` hasta que Play Mode confirme el flujo completo.
 
 Los ultimos milestones cerrados y validados en Unity son:
 
@@ -12,6 +14,21 @@ Los ultimos milestones cerrados y validados en Unity son:
 - Milestone 27: Search vs Open Storage v0.
 
 La validacion confirmada incluye Data Load OK con 0 errors y 0 warnings, regresiones principales funcionando y los cambios pusheados.
+
+## Milestone En Curso / Pendiente De Validacion
+
+### Milestone 32: Debug Test House Kitchen Containers v0
+
+Estado: `implemented`.
+
+- `M32_DebugTestHouse/Containers/Fridge`, `Oven`, `Countertop`, `Cupboard` y `Upper countertop` fueron configurados como containers funcionales en `SampleScene`.
+- Todos reutilizan `WorldObjectTags`, `WorldObjectDebugInfo`, `ContainerLootComponent`, `WorldObjectStateView`, `search_container`, `open_storage` e `ItemStorageDebugPanel`.
+- Cada container tiene display name, inspect text, tags y loot table propios.
+- Loot tables nuevas: `house_fridge_loot_01`, `house_oven_loot_01`, `house_countertop_loot_01`, `house_cupboard_loot_01` y `house_upper_cupboard_loot_01`.
+- Item IDs existentes usados: `food_ration_01`, `water_bottle_01`, `bandage_01`, `ammo_303_british_01` y `scrap_metal_01`.
+- `Oven` queda solo preparado semanticamente para una workstation futura mediante tags; no se implementaron crafting, recetas, WorkstationComponent ni UI nueva.
+- No se tocaron player, movimiento, puertas, armas, animaciones, crates existentes, scripts C# ni prefabs.
+- Pendiente de validar en Play Mode: search inicial con barra, apertura de storage, transferencias bidireccionales, reapertura con `open_storage` sin regenerar loot y regresion de containers debug viejos.
 
 ## Ultimo Estado Validado
 

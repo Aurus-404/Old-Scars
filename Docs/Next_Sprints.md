@@ -4,9 +4,30 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
+### Validar Milestone 32: Debug Test House Kitchen Containers v0
+
+Estado: `implemented`.
+
+Objetivo inmediato:
+
+- validar en Play Mode que Fridge, Oven, Countertop, Cupboard y Upper countertop funcionan como containers reales;
+- confirmar `search_container` inicial con barra, apertura de `ItemStorageDebugPanel`, transferencias bidireccionales y reapertura posterior con `open_storage`;
+- confirmar que no se regenera loot al reabrir;
+- confirmar que Debug Sealed Container, Survival Supply Debug Crate y Misc Debug Crate siguen funcionando;
+- confirmar Console sin errores rojos.
+
+Fuera de scope para esta validacion:
+
+- crafting;
+- recetas;
+- WorkstationComponent;
+- UI nueva;
+- puertas;
+- player, movimiento, armas o animaciones.
+
 ### Milestone 28: Container State / Naming Cleanup v0
 
-Estado: `planned`.
+Estado: `planned`, despues de validar M32 o cuando se retome deuda tecnica de containers.
 
 Objetivo recomendado:
 

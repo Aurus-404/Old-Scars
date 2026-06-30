@@ -41,6 +41,80 @@
           "count": 20
         }
       ]
+    },
+    {
+      "type": "loot_table",
+      "id": "house_fridge_loot_01",
+      "entries": [
+        {
+          "item_id": "food_ration_01",
+          "count": 2
+        },
+        {
+          "item_id": "water_bottle_01",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "type": "loot_table",
+      "id": "house_oven_loot_01",
+      "entries": [
+        {
+          "item_id": "food_ration_01",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "type": "loot_table",
+      "id": "house_countertop_loot_01",
+      "entries": [
+        {
+          "item_id": "food_ration_01",
+          "count": 1
+        },
+        {
+          "item_id": "water_bottle_01",
+          "count": 1
+        },
+        {
+          "item_id": "scrap_metal_01",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "type": "loot_table",
+      "id": "house_cupboard_loot_01",
+      "entries": [
+        {
+          "item_id": "bandage_01",
+          "count": 1
+        },
+        {
+          "item_id": "ammo_303_british_01",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "type": "loot_table",
+      "id": "house_upper_cupboard_loot_01",
+      "entries": [
+        {
+          "item_id": "bandage_01",
+          "count": 1
+        },
+        {
+          "item_id": "ammo_303_british_01",
+          "count": 4
+        },
+        {
+          "item_id": "food_ration_01",
+          "count": 1
+        }
+      ]
     }
   ]
 }
