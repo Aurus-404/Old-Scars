@@ -78,7 +78,29 @@ Los items pueden tener:
 - physical
 - economy
 - equip
+- inventory
 - combat
+
+El bloque espacial de inventario es cerrado y opcional durante la migracion:
+
+```json
+"inventory": {
+  "footprint": {
+    "width": 1,
+    "height": 2
+  },
+  "icon_id": "water_bottle_01"
+}
+```
+
+- `footprint.width` y `footprint.height` deben ser enteros positivos.
+- Todos los footprints rectangulares pueden rotarse intercambiando `width` y `height` mediante `GridPlacement.IsRotated`.
+- Rotar un footprint cuadrado es un exito no-op: conserva geometria, orientacion existente y version del layout.
+- Un item sin `inventory.footprint` usa fallback `1x1` y genera warning de validacion.
+- El placement runtime pertenece a `ItemInstance.InstanceId`; no se define en JSON ni por indice de lista.
+- `inventory.icon_id` es opcional y referencia un Sprite bajo `Resources/OldScars/InventoryIcons/`.
+- `icon_id` no se deriva de `ItemDefinition.id`; distintos items pueden compartirlo y cambiarlo sin modificar C#.
+- Un `icon_id` ausente o sin Sprite disponible usa fallback visual y no bloquea la carga de datos.
 
 Los items no deben declarar dónde aparecen en loot.
 

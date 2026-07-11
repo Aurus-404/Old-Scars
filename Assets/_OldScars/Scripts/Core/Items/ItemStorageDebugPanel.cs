@@ -10,9 +10,9 @@ namespace OldScars.Core.Items
     public sealed class ItemStorageDebugPanel : MonoBehaviour
     {
         private const float PanelWidth = 1120f;
-        private const float PanelHeight = 470f;
+        private const float PanelHeight = 650f;
         private const float ColumnWidth = 535f;
-        private const float ColumnScrollHeight = 280f;
+        private const float ColumnScrollHeight = 430f;
 
         private IItemStorageDebugSource storageSource;
         private InventoryComponent targetInventory;
@@ -23,6 +23,8 @@ namespace OldScars.Core.Items
         private string title;
         private string lastMessage;
         private bool isVisible;
+        private bool showLegacyList;
+        private readonly InventoryGridDebugView gridView = new InventoryGridDebugView();
 
         public bool IsVisible => isVisible;
 
@@ -53,6 +55,8 @@ namespace OldScars.Core.Items
             lastMessage = null;
             storageScrollPosition = Vector2.zero;
             inventoryScrollPosition = Vector2.zero;
+            showLegacyList = false;
+            gridView.Reset();
             isVisible = true;
         }
 
@@ -65,6 +69,8 @@ namespace OldScars.Core.Items
             action = null;
             title = null;
             lastMessage = null;
+            showLegacyList = false;
+            gridView.Reset();
         }
 
         public bool ContainsScreenPosition(Vector2 screenPosition)
@@ -85,10 +91,9 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
+            gridView.HandleKeyboardInput(targetInventory);
+            if (Keyboard.current.escapeKey.wasPressedThisFrame && !gridView.CancelDrag())
                 Hide();
-            }
         }
 
         private void OnGUI()
@@ -153,39 +158,110 @@ namespace OldScars.Core.Items
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(ColumnWidth));
             GUILayout.Label("Player Inventory");
 
+            bool gridBatchBlocked = IsGridBatchTransferBlocked();
+            GUI.enabled = !gridBatchBlocked;
             if (GUILayout.Button("Deposit All", GUILayout.Height(24f)))
             {
                 DepositAll();
                 GUILayout.EndVertical();
+                GUI.enabled = true;
                 return true;
             }
+            GUI.enabled = true;
+
+            if (gridBatchBlocked)
+                GUILayout.Label("Deposit All is unavailable while the player grid participates. Transfer stacks individually.");
 
             GUILayout.Space(4f);
-            IReadOnlyList<ItemStorageEntry> inventoryEntries = targetInventory != null ? targetInventory.GetStorageEntries() : null;
             if (targetInventory == null)
             {
                 GUILayout.Label("No InventoryComponent assigned.");
             }
-            else if (inventoryEntries == null || inventoryEntries.Count == 0)
-            {
-                GUILayout.Label("Inventory is empty.");
-            }
             else
             {
-                inventoryScrollPosition = GUILayout.BeginScrollView(inventoryScrollPosition, GUILayout.Height(ColumnScrollHeight));
-                for (int index = 0; index < inventoryEntries.Count; index++)
+                if (GUILayout.Button(showLegacyList ? "Visual Grid" : "Legacy List", GUILayout.Height(24f)))
+                    showLegacyList = !showLegacyList;
+
+                if (!showLegacyList && targetInventory.UsesGridLayout)
                 {
-                    if (DrawInventoryEntry(index, inventoryEntries[index]))
+                    if (DrawInventoryGrid())
                     {
-                        GUILayout.EndScrollView();
                         GUILayout.EndVertical();
                         return true;
                     }
                 }
-                GUILayout.EndScrollView();
+                else if (DrawLegacyInventoryList())
+                {
+                    GUILayout.EndVertical();
+                    return true;
+                }
             }
 
             GUILayout.EndVertical();
+            return false;
+        }
+
+        private bool DrawInventoryGrid()
+        {
+            GUILayout.Label("Player Grid (drag; R rotates)");
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            Rect gridRect = GUILayoutUtility.GetRect(
+                gridView.GetRequiredWidth(targetInventory.GridWidth),
+                gridView.GetRequiredHeight(targetInventory.GridHeight),
+                GUILayout.Width(gridView.GetRequiredWidth(targetInventory.GridWidth)),
+                GUILayout.Height(gridView.GetRequiredHeight(targetInventory.GridHeight)));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            gridView.Draw(targetInventory, gridRect);
+
+            if (!string.IsNullOrWhiteSpace(gridView.StatusMessage))
+                GUILayout.Label(gridView.StatusMessage);
+
+            if (!gridView.TryGetSelectedEntry(targetInventory, out int index, out ItemStorageEntry entry))
+            {
+                GUILayout.Label("Select an item to deposit it.");
+                return false;
+            }
+
+            GUILayout.Label(GetEntryLabel(index, entry));
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Deposit 1", GUILayout.Height(24f)))
+            {
+                Deposit(index, 1);
+                GUILayout.EndHorizontal();
+                return true;
+            }
+
+            if (GUILayout.Button("Deposit Stack", GUILayout.Height(24f)))
+            {
+                Deposit(index, entry.Quantity);
+                GUILayout.EndHorizontal();
+                return true;
+            }
+            GUILayout.EndHorizontal();
+            return false;
+        }
+
+        private bool DrawLegacyInventoryList()
+        {
+            IReadOnlyList<ItemStorageEntry> inventoryEntries = targetInventory.GetStorageEntries();
+            if (inventoryEntries == null || inventoryEntries.Count == 0)
+            {
+                GUILayout.Label("Inventory is empty.");
+                return false;
+            }
+
+            inventoryScrollPosition = GUILayout.BeginScrollView(inventoryScrollPosition, GUILayout.Height(ColumnScrollHeight));
+            for (int index = 0; index < inventoryEntries.Count; index++)
+            {
+                if (!DrawInventoryEntry(index, inventoryEntries[index]))
+                    continue;
+
+                GUILayout.EndScrollView();
+                return true;
+            }
+            GUILayout.EndScrollView();
             return false;
         }
 
@@ -194,12 +270,19 @@ namespace OldScars.Core.Items
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(ColumnWidth));
             GUILayout.Label("Open Storage");
 
+            bool gridBatchBlocked = IsGridBatchTransferBlocked();
+            GUI.enabled = !gridBatchBlocked;
             if (GUILayout.Button("Take All", GUILayout.Height(24f)))
             {
                 TakeAll();
                 GUILayout.EndVertical();
+                GUI.enabled = true;
                 return true;
             }
+            GUI.enabled = true;
+
+            if (gridBatchBlocked)
+                GUILayout.Label("Take All is unavailable while the player grid participates. Transfer stacks individually.");
 
             GUILayout.Space(4f);
             IReadOnlyList<ItemStorageEntry> entries = storageSource.StorageEntries;
@@ -263,7 +346,7 @@ namespace OldScars.Core.Items
             }
 
             int stackQuantity = entry != null ? entry.Quantity : 0;
-            if (GUILayout.Button("Deposit All", GUILayout.Height(24f), GUILayout.Width(95f)))
+            if (GUILayout.Button("Deposit Stack", GUILayout.Height(24f), GUILayout.Width(95f)))
             {
                 Deposit(index, stackQuantity);
                 GUILayout.EndHorizontal();
@@ -286,10 +369,17 @@ namespace OldScars.Core.Items
             lastMessage = !string.IsNullOrWhiteSpace(message)
                 ? message
                 : transferredQuantity > 0 ? $"Transferred x{transferredQuantity}." : "Nothing transferred.";
+            gridView.ReconcileSelection(targetInventory);
         }
 
         private void TakeAll()
         {
+            if (IsGridBatchTransferBlocked())
+            {
+                lastMessage = "Take All is unavailable while the player grid participates. Transfer stacks individually.";
+                return;
+            }
+
             if (storageSource == null)
             {
                 lastMessage = "No storage source.";
@@ -330,10 +420,17 @@ namespace OldScars.Core.Items
             lastMessage = !string.IsNullOrWhiteSpace(message)
                 ? message
                 : transferredQuantity > 0 ? $"Deposited x{transferredQuantity}." : "Nothing deposited.";
+            gridView.ReconcileSelection(targetInventory);
         }
 
         private void DepositAll()
         {
+            if (IsGridBatchTransferBlocked())
+            {
+                lastMessage = "Deposit All is unavailable while the player grid participates. Transfer stacks individually.";
+                return;
+            }
+
             if (storageSource == null)
             {
                 lastMessage = "No storage source.";
@@ -364,6 +461,11 @@ namespace OldScars.Core.Items
             }
 
             lastMessage = totalTransferred > 0 ? $"Deposited all: x{totalTransferred}." : "Nothing deposited.";
+        }
+
+        private bool IsGridBatchTransferBlocked()
+        {
+            return targetInventory != null && targetInventory.UsesGridLayout;
         }
 
         private static string GetEntryLabel(int index, ItemStorageEntry entry)
@@ -405,7 +507,7 @@ namespace OldScars.Core.Items
         private static Rect GetPanelRect()
         {
             float x = Mathf.Max(0f, (Screen.width - PanelWidth) * 0.5f);
-            float y = 72f;
+            float y = 24f;
             return new Rect(x, y, PanelWidth, PanelHeight);
         }
 

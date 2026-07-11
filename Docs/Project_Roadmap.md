@@ -98,11 +98,16 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 27: Search vs Open Storage v0 | Separar primera revision de contenedor natural de la apertura posterior de su storage. | validated | Validado: `search_container` descubre el storage una vez y `open_storage` permite reabrirlo incluso vacio sin generar loot nuevo. |
 | Milestone 32: Debug Test House Kitchen Containers v0 | Convertir los containers de cocina de la casa debug en containers funcionales. | implemented | Pendiente de validacion manual en Unity. |
 | Milestone 32.2: Real Door System v0 | Agregar puertas reales simples con estados `locked_door`, `closed_door` y `opened_door`. | implemented | Pendiente de validacion manual en Unity; no usa HingeJoint, Rigidbody ni fisica real. |
+| Milestone 32.4: Interior Visibility Raycast v0 | Ocultar dinamicamente piezas de la casa debug que bloquean la vista entre camara y jugador. | implemented | Pendiente de validacion manual en Unity; no cambia camara, movimiento, puertas, containers ni JSON. |
+| Milestone 32.4.1: Door Pivot Repair + Interior Visibility Cast Debug/Stability | Agregar herramienta editor-only para reparar pivots visuales de puertas M32 y estabilizar casts de visibilidad interior. | implemented | Pendiente de validacion manual en Unity; no toca JSON, TagManager, camara, movimiento, containers, loot ni inventario. |
+| Grid Inventory Backend v0 | Agregar capacidad espacial y placements por InstanceId alrededor de ItemStorage sin reemplazar stacks ni APIs existentes. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
+| Milestone 33.1: Visual Grid Inventory UI v0 | Mostrar y reorganizar la grilla `6x8` del jugador mediante OnGUI, con iconos data-driven y Legacy List debug. | validated | Validado manualmente: grilla, iconos, drag, rotacion, seleccion, equipamiento, transfers y Data Load 0/0. |
+| Milestone 33.1.1: Inventory Footprint Rebalance + Universal Rotation | Rebalancear footprints Core y eliminar el opt-in de rotacion por item. | implemented | Pendiente de validacion manual en Unity. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-Milestone 32 y Milestone 32.2 estan implementados en el checkout y pendientes de validacion manual en Unity.
+M33.1 esta validado manualmente en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1 estan implementados en el checkout y pendientes de validacion manual en Unity.
 
 Los ultimos milestones cerrados como `validated` son:
 
@@ -110,10 +115,11 @@ Los ultimos milestones cerrados como `validated` son:
 - Milestone 26: Storage Transfer v0 / Bidirectional Item Transfer.
 - Milestone 26.0.1: Storage Panel Layout Swap.
 - Milestone 27: Search vs Open Storage v0.
+- M33.1: Visual Grid Inventory UI v0.
 
 ## Proximo Recomendado
 
-Validar Milestone 32 y Milestone 32.2 en Unity antes de preparar Milestone 28: Container State / Naming Cleanup v0.
+Validar Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1 en Unity antes de preparar Milestone 28: Container State / Naming Cleanup v0.
 
 Objetivo recomendado despues de esa validacion: limpiar nombres y estados debug de contenedores despues de M27, reducir la dependencia futura de `lootable_container` / `looted_container` sin romper compatibilidad y corregir titulos debug inconsistentes como `Contenedor saqueado Contents (Debug)`.
 
@@ -617,6 +623,10 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `WorldObjectStateView` lee runtime tags y aplica reglas visuales debug sin modificar tags ni gameplay.
 - `WorldObjectStateView` puede aplicar color debug por regla visual usando `MaterialPropertyBlock`.
 - En `SampleScene`, contenedores comunican estados por color debug estable; puertas M32.2 usan `DoorSwingController` para rotar `DoorVisualPivot` segun tags.
+- En M32.4, `BuildingVisibilityManager` oculta renderers de targets estructurales de la casa debug por raycast camara-jugador en `LateUpdate`; los colliders de paredes estructurales se mantienen activos.
+- En M32.4.1, la reparacion de pivots de puertas M32 se hace con herramienta editor-only bajo `M32_DebugTestHouse/Doors`; no se recrean puertas, no se reemplazan roots y no se toca JSON.
+- En M32.4.1, `BuildingVisibilityManager` usa `SphereCastAll` player -> camara, `RaycastAll` como fallback, `OverlapSphere` de camara y debug visual para estabilizar la visibilidad con camara cercana.
+- `BuildingOccluderTarget` separa `renderersToHide` de `collidersToDisableWhileHidden` y restaura el estado inicial exacto de ambos.
 - `WorldObjectDebugInfo` puede seleccionar texto de inspeccion por `RuntimeTags`, `requiredTags`, `forbiddenTags` y prioridad.
 - No hay scripting libre dentro de JSON.
 - No hay inventario final todavia.
@@ -643,6 +653,8 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `ActorInteractionContext`: datos minimos del actor para interactuar.
 - `ItemInstance`: instancia runtime-only minima de un item.
 - `ItemStorage`: storage runtime-only de items con cantidades simples y merge basico por `definitionId` + `max_stack`.
+- `GridInventoryLayout` / `GridInventoryBackend`: capacidad espacial `6x8` del Debug Player, placements por `ItemInstance.InstanceId` y mutaciones transaccionales alrededor de `ItemStorage`.
+- `InventoryGridDebugView` / `InventoryIconResolver`: grilla OnGUI reusable, seleccion/drag por InstanceId e iconos opcionales por `inventory.icon_id`.
 - `ItemStorageEntry`: entrada runtime de storage con `ItemInstance` representativo y `Quantity`.
 - `ActorNeedsComponent`: necesidades runtime genericas de actor con hunger/thirst debug.
 - `ActorHealthComponent`: health runtime v0 de actores con max/current health, low health threshold y tags de estado.
@@ -691,6 +703,7 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - Los tags legacy `lootable_container` y `looted_container` siguen existiendo por compatibilidad despues de M27; conviene limpiarlos gradualmente sin romper contenido ni estados visuales existentes.
 - Algunos titulos debug combinan nombres de estado con el sufijo ingles `Contents (Debug)`, por ejemplo `Contenedor saqueado Contents (Debug)`; conviene normalizarlos en M28.
 - Esta deuda no bloquea el loop validado de M27.
+- Los valores actuales `max_stack = 999` son deuda de balance para una fase posterior; no fueron reducidos en Grid Inventory Backend v0.
 
 ## Sistemas Que Todavia NO Existen
 

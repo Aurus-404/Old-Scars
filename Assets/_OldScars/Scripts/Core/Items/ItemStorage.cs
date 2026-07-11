@@ -10,10 +10,12 @@ namespace OldScars.Core.Items
     public sealed class ItemStorage
     {
         private readonly List<ItemStorageEntry> entries = new List<ItemStorageEntry>();
+        private int mutationVersion;
 
         public IReadOnlyList<ItemStorageEntry> Entries => entries;
         public bool IsEmpty => entries.Count == 0;
         public int EntryCount => entries.Count;
+        internal int Version => mutationVersion;
 
         public int TotalQuantity
         {
@@ -57,6 +59,9 @@ namespace OldScars.Core.Items
                 remainingQuantity -= stackQuantity;
             }
 
+            if (firstChangedEntry != null)
+                mutationVersion++;
+
             return firstChangedEntry;
         }
 
@@ -94,6 +99,7 @@ namespace OldScars.Core.Items
                 return false;
 
             entries.RemoveAt(index);
+            mutationVersion++;
             return true;
         }
 
@@ -107,12 +113,46 @@ namespace OldScars.Core.Items
                 return RemoveAt(index);
 
             entry.RemoveQuantity(quantity);
+            mutationVersion++;
             return true;
         }
 
         public void Clear()
         {
+            if (entries.Count == 0)
+                return;
+
             entries.Clear();
+            mutationVersion++;
+        }
+
+        internal StateSnapshot CaptureState()
+        {
+            var states = new EntryState[entries.Count];
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                states[index] = new EntryState(entry.Item, entry.Quantity);
+            }
+
+            return new StateSnapshot(states);
+        }
+
+        internal void RestoreState(StateSnapshot snapshot)
+        {
+            entries.Clear();
+            EntryState[] states = snapshot.Entries;
+            if (states != null)
+            {
+                for (int index = 0; index < states.Length; index++)
+                {
+                    EntryState state = states[index];
+                    if (state.Item != null && state.Quantity > 0)
+                        entries.Add(new ItemStorageEntry(state.Item, state.Quantity));
+                }
+            }
+
+            mutationVersion++;
         }
 
         public int TransferAllTo(ItemStorage target)
@@ -202,6 +242,28 @@ namespace OldScars.Core.Items
 
                 remainingQuantity -= acceptedQuantity;
             }
+        }
+
+        internal readonly struct EntryState
+        {
+            public EntryState(ItemInstance item, int quantity)
+            {
+                Item = item;
+                Quantity = quantity;
+            }
+
+            public readonly ItemInstance Item;
+            public readonly int Quantity;
+        }
+
+        internal readonly struct StateSnapshot
+        {
+            public StateSnapshot(EntryState[] entries)
+            {
+                Entries = entries;
+            }
+
+            public readonly EntryState[] Entries;
         }
     }
 }

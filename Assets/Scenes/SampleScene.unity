@@ -177,6 +177,7 @@ GameObject:
   - component: {fileID: 118713957}
   - component: {fileID: 118713956}
   - component: {fileID: 118713955}
+  - component: {fileID: 4200001001}
   m_Layer: 0
   m_Name: Wall Back
   m_TagString: Untagged
@@ -301,8 +302,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 133373096}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -5.84, y: -0.202, z: -89.93}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.575, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -466,6 +467,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId: 
+  useGridLayout: 0
+  gridWidth: 6
+  gridHeight: 8
 --- !u!114 &150633522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -715,6 +719,7 @@ GameObject:
   - component: {fileID: 189804685}
   - component: {fileID: 189804684}
   - component: {fileID: 189804683}
+  - component: {fileID: 4200001002}
   m_Layer: 0
   m_Name: Right Wall Bedroom
   m_TagString: Untagged
@@ -842,9 +847,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 237270554}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 5.833, y: 0.199, z: 89.93}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.575, y: -0, z: -0}
+  m_LocalScale: {x: 1.15, y: 2.35, z: 0.12}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1201045974}
@@ -2014,6 +2019,7 @@ GameObject:
   - component: {fileID: 638835107}
   - component: {fileID: 638835106}
   - component: {fileID: 638835105}
+  - component: {fileID: 4200001004}
   m_Layer: 0
   m_Name: Left Wall Front
   m_TagString: Untagged
@@ -2183,6 +2189,7 @@ GameObject:
   - component: {fileID: 694075191}
   - component: {fileID: 694075190}
   - component: {fileID: 694075189}
+  - component: {fileID: 4200001003}
   m_Layer: 0
   m_Name: Wall left
   m_TagString: Untagged
@@ -2292,6 +2299,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 700668412}
+  - component: {fileID: 4200000001}
   m_Layer: 0
   m_Name: M32_DebugTestHouse
   m_TagString: Untagged
@@ -2317,6 +2325,7 @@ Transform:
   - {fileID: 1387656828}
   - {fileID: 1846803189}
   - {fileID: 174544021}
+  - {fileID: 4200000101}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &708373307
@@ -2378,9 +2387,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 717896525}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 5.833, y: 0.199, z: 89.93}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.575, y: -0, z: -0}
+  m_LocalScale: {x: 1.15, y: 2.35, z: 0.12}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 133373097}
@@ -2786,6 +2795,7 @@ GameObject:
   - component: {fileID: 859217635}
   - component: {fileID: 859217634}
   - component: {fileID: 859217633}
+  - component: {fileID: 4200001005}
   m_Layer: 0
   m_Name: CasaPrimerPiso
   m_TagString: Untagged
@@ -2898,6 +2908,7 @@ GameObject:
   - component: {fileID: 859299681}
   - component: {fileID: 859299680}
   - component: {fileID: 859299679}
+  - component: {fileID: 4200001006}
   m_Layer: 0
   m_Name: Left Wall Bedroom
   m_TagString: Untagged
@@ -3010,6 +3021,7 @@ GameObject:
   - component: {fileID: 920117488}
   - component: {fileID: 920117487}
   - component: {fileID: 920117486}
+  - component: {fileID: 4200001007}
   m_Layer: 0
   m_Name: Wall right
   m_TagString: Untagged
@@ -3290,7 +3302,8 @@ MonoBehaviour:
     - closed_door
     - opened_door
     displayName: Puerta forzada legacy
-    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado canonico abierto es opened_door.
+    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado
+      canonico abierto es opened_door.
 --- !u!1001 &994822253
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3968,8 +3981,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1201045973}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -5.84, y: -0.202, z: -89.93}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.575, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4627,7 +4640,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
   m_LocalPosition: {x: 0.04199791, y: -1.418, z: 2.3660002}
-  m_LocalScale: {x: 1.15, y: 2.35, z: 0.12}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1201045974}
@@ -4767,7 +4780,8 @@ MonoBehaviour:
     - closed_door
     - opened_door
     displayName: Puerta forzada legacy
-    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado canonico abierto es opened_door.
+    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado
+      canonico abierto es opened_door.
 --- !u!114 &1535098513
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5488,7 +5502,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
   m_LocalPosition: {x: 5.2649994, y: -1.418, z: 2.37}
-  m_LocalScale: {x: 1.15, y: 2.35, z: 0.12}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 133373097}
@@ -5628,7 +5642,8 @@ MonoBehaviour:
     - closed_door
     - opened_door
     displayName: Puerta forzada legacy
-    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado canonico abierto es opened_door.
+    inspectText: La puerta quedo forzada por el flujo legacy. Para M32.2 el estado
+      canonico abierto es opened_door.
 --- !u!114 &1947774383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5940,6 +5955,7 @@ GameObject:
   - component: {fileID: 2062046938}
   - component: {fileID: 2062046937}
   - component: {fileID: 2062046936}
+  - component: {fileID: 4200001008}
   m_Layer: 0
   m_Name: Right Wall Front
   m_TagString: Untagged
@@ -6324,6 +6340,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId: 
+  useGridLayout: 1
+  gridWidth: 6
+  gridHeight: 8
 --- !u!1 &2200000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -8005,6 +8024,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId: 
+  useGridLayout: 0
+  gridWidth: 6
+  gridHeight: 8
 --- !u!114 &2700000008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8198,6 +8220,86 @@ MonoBehaviour:
   speedScale: 1
   damping: 0.1
   usePlanarVelocityOnly: 1
+--- !u!114 &3100001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1535098508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
+  worldObjectTags: {fileID: 1535098513}
+  doorPivot: {fileID: 1201045974}
+  closedLocalYAngle: 0
+  openedLocalYAngle: 90
+  swingSpeed: 8
+  snapOnStart: 1
+  invertSwingDirection: 0
+--- !u!65 &3100001002
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 237270554}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3100002001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1947774378}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
+  worldObjectTags: {fileID: 1947774383}
+  doorPivot: {fileID: 133373097}
+  closedLocalYAngle: 0
+  openedLocalYAngle: 90
+  swingSpeed: 8
+  snapOnStart: 1
+  invertSwingDirection: 0
+--- !u!65 &3100002002
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 717896525}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &3200000100
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8340,7 +8442,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -8358,7 +8460,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Heladera
   inspectText: Una heladera vieja. Puede contener comida, agua o suministros basicos.
@@ -8373,7 +8475,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_fridge_loot_01
 --- !u!114 &3300000104
@@ -8386,7 +8488,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000101}
   rules:
@@ -8472,7 +8574,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -8492,7 +8594,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Horno
   inspectText: Un horno viejo. Puede contener restos de comida o utensilios.
@@ -8507,7 +8609,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_oven_loot_01
 --- !u!114 &3300000204
@@ -8520,7 +8622,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000201}
   rules:
@@ -8606,7 +8708,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -8625,7 +8727,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Mesada
   inspectText: Una mesada de cocina con espacio para guardar objetos pequenos.
@@ -8640,7 +8742,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_countertop_loot_01
 --- !u!114 &3300000304
@@ -8653,7 +8755,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000301}
   rules:
@@ -8739,7 +8841,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -8758,10 +8860,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Alacena
-  inspectText: Una alacena vieja. Puede contener suministros domesticos, medicina o municion.
+  inspectText: Una alacena vieja. Puede contener suministros domesticos, medicina
+    o municion.
   conditionalInspectionTexts: []
 --- !u!114 &3300000403
 MonoBehaviour:
@@ -8773,7 +8876,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_cupboard_loot_01
 --- !u!114 &3300000404
@@ -8786,7 +8889,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000401}
   rules:
@@ -8872,7 +8975,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -8891,10 +8994,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Alacena superior
-  inspectText: Un mueble alto de cocina. Puede contener objetos pequenos o suministros olvidados.
+  inspectText: Un mueble alto de cocina. Puede contener objetos pequenos o suministros
+    olvidados.
   conditionalInspectionTexts: []
 --- !u!114 &3300000503
 MonoBehaviour:
@@ -8906,7 +9010,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_upper_cupboard_loot_01
 --- !u!114 &3300000504
@@ -8919,7 +9023,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000501}
   rules:
@@ -8995,32 +9099,119 @@ MonoBehaviour:
     - {fileID: 1167434492}
     applyDebugColor: 1
     debugColor: {r: 0.18, g: 0.18, b: 0.18, a: 1}
---- !u!114 &3100001001
+--- !u!114 &4200000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1535098508}
+  m_GameObject: {fileID: 700668411}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
-  worldObjectTags: {fileID: 1535098513}
-  doorPivot: {fileID: 1201045974}
-  closedLocalYAngle: 0
-  openedLocalYAngle: 90
-  swingSpeed: 8
-  snapOnStart: 1
-  invertSwingDirection: 0
---- !u!65 &3100001002
+  m_Script: {fileID: 11500000, guid: 9a57ffbb420c47fd8e85d5ce5e1e7e9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingVisibilityManager
+  mainCamera: {fileID: 330585545}
+  playerContext: {fileID: 1022389978}
+  playerTransform: {fileID: 1022389977}
+  interiorVolumes:
+  - {fileID: 4200000203}
+  occluderTargets:
+  - {fileID: 4200001001}
+  - {fileID: 4200001002}
+  - {fileID: 4200001003}
+  - {fileID: 4200001004}
+  - {fileID: 4200001006}
+  - {fileID: 4200001007}
+  - {fileID: 4200001008}
+  - {fileID: 4200001005}
+  occluderRaycastMask:
+    serializedVersion: 2
+    m_Bits: 1
+  restoreDelay: 0.15
+  useSphereCasts: 1
+  sphereCastRadius: 0.35
+  useCameraOverlap: 1
+  cameraOverlapRadius: 0.45
+  drawDebugCasts: 1
+  logHitChanges: 0
+  debugDrawDuration: 0.05
+  raycastVerticalOffsets:
+  - 1.6
+  - 0.9
+  - 0.25
+--- !u!1 &4200000100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4200000101}
+  m_Layer: 0
+  m_Name: InteriorZones
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4200000101
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4200000100}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4200000201}
+  m_Father: {fileID: 700668412}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4200000200
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4200000201}
+  - component: {fileID: 4200000202}
+  - component: {fileID: 4200000203}
+  m_Layer: 0
+  m_Name: HouseInteriorVolume
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4200000201
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4200000200}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5, y: -1.1, z: 2.37}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4200000101}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4200000202
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 237270554}
+  m_GameObject: {fileID: 4200000200}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -9029,52 +9220,188 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10.5, y: 4, z: 5.5}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &3100002001
+--- !u!114 &4200000203
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1947774378}
+  m_GameObject: {fileID: 4200000200}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
-  worldObjectTags: {fileID: 1947774383}
-  doorPivot: {fileID: 133373097}
-  closedLocalYAngle: 0
-  openedLocalYAngle: 90
-  swingSpeed: 8
-  snapOnStart: 1
-  invertSwingDirection: 0
---- !u!65 &3100002002
-BoxCollider:
+  m_Script: {fileID: 11500000, guid: 48701acc725e482aa80385439da274c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingInteriorVolume
+  buildingId: m32_debug_test_house
+  manager: {fileID: 4200000001}
+  interiorCollider: {fileID: 4200000202}
+--- !u!114 &4200001001
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 717896525}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
+  m_GameObject: {fileID: 118713953}
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 0
+  hideByCameraRaycast: 1
+  hideAlwaysWhenInside: 0
+  floorIndex: 0
+  renderersToHide:
+  - {fileID: 118713956}
+  collidersToDisableWhileHidden: []
+--- !u!114 &4200001002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 189804681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 0
+  hideByCameraRaycast: 1
+  hideAlwaysWhenInside: 0
+  floorIndex: 0
+  renderersToHide:
+  - {fileID: 189804684}
+  collidersToDisableWhileHidden: []
+--- !u!114 &4200001003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 694075187}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 0
+  hideByCameraRaycast: 1
+  hideAlwaysWhenInside: 0
+  floorIndex: 0
+  renderersToHide:
+  - {fileID: 694075190}
+  collidersToDisableWhileHidden: []
+--- !u!114 &4200001004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 638835103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 0
+  hideByCameraRaycast: 1
+  hideAlwaysWhenInside: 0
+  floorIndex: 0
+  renderersToHide:
+  - {fileID: 638835106}
+  collidersToDisableWhileHidden: []
+--- !u!114 &4200001005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 859217631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 2
+  hideByCameraRaycast: 0
+  hideAlwaysWhenInside: 1
+  floorIndex: 1
+  renderersToHide:
+  - {fileID: 859217634}
+  collidersToDisableWhileHidden:
+  - {fileID: 859217633}
+--- !u!114 &4200001006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 859299677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 0
+  hideByCameraRaycast: 1
+  hideAlwaysWhenInside: 0
+  floorIndex: 0
+  renderersToHide:
+  - {fileID: 859299680}
+  collidersToDisableWhileHidden: []
+--- !u!114 &4200001007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920117484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 0
+  hideByCameraRaycast: 1
+  hideAlwaysWhenInside: 0
+  floorIndex: 0
+  renderersToHide:
+  - {fileID: 920117487}
+  collidersToDisableWhileHidden: []
+--- !u!114 &4200001008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2062046934}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
+  buildingId: m32_debug_test_house
+  targetType: 0
+  hideByCameraRaycast: 1
+  hideAlwaysWhenInside: 0
+  floorIndex: 0
+  renderersToHide:
+  - {fileID: 2062046937}
+  collidersToDisableWhileHidden: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

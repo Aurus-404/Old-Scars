@@ -9,8 +9,10 @@ namespace OldScars.Core.Items
     /// <summary>
     /// Runtime-only inventory v0 for the playable debug loop.
     ///
-    /// This is not the final inventory or equipment system. It has no save
-    /// data, capacity, slots, drag/drop, pickup/drop rules, or UI.
+    /// This is not the final inventory or equipment system. The optional grid
+    /// backend adds debug spatial capacity only; there is no save data,
+    /// final equipment model, pickup/drop rules, or final UI. M33.1 exposes
+    /// closed placement movement for the temporary OnGUI drag interface.
     /// </summary>
     public sealed class InventoryComponent : MonoBehaviour
     {
@@ -18,14 +20,26 @@ namespace OldScars.Core.Items
         public const string RightHandSlotId = "right_hand";
 
         [SerializeField] private string rightHandItemInstanceId;
+        [SerializeField] private bool useGridLayout;
+        [SerializeField] private int gridWidth = 6;
+        [SerializeField] private int gridHeight = 8;
 
         private readonly ItemStorage storage = new ItemStorage();
         private readonly List<ItemInstance> itemInstancesView = new List<ItemInstance>();
+        private GridInventoryBackend gridBackend;
 
         public string RightHandItemInstanceId => rightHandItemInstanceId;
         public int EquippedItemIndex => GetRightHandItemIndex();
         public IReadOnlyList<ItemStorageEntry> Entries => storage.Entries;
         public bool IsEmpty => storage.IsEmpty;
+        public bool UsesGridLayout => GetGridBackend().UsesGridLayout;
+        public int GridWidth => GetGridBackend().GridWidth;
+        public int GridHeight => GetGridBackend().GridHeight;
+
+        private void Awake()
+        {
+            InitializeGridBackend();
+        }
 
         public ItemInstance AddItemByDefinitionId(string definitionId)
         {
@@ -67,9 +81,20 @@ namespace OldScars.Core.Items
                 return null;
             }
 
-            var instance = new ItemInstance(definition);
-            ItemStorageEntry addedEntry = storage.AddItem(instance, quantity);
-            ItemInstance storedItem = addedEntry != null ? addedEntry.Item : instance;
+            InventoryMutationResult result = GetGridBackend().Add(definition, quantity);
+            if (!result.Success)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot add '{normalizedDefinitionId}' x{quantity}: {SafeText(result.Message)}");
+                return null;
+            }
+
+            ItemStorageEntry addedEntry = storage.GetEntryByInstanceId(result.DestinationInstanceId);
+            ItemInstance storedItem = addedEntry != null ? addedEntry.Item : null;
+            if (storedItem == null)
+            {
+                Debug.LogError($"[InventoryComponent] Add succeeded but destination instance '{SafeText(result.DestinationInstanceId)}' was not found.");
+                return null;
+            }
 
             Debug.Log(
                 "[InventoryComponent] Added runtime item instance." +
@@ -101,6 +126,13 @@ namespace OldScars.Core.Items
             return storage.GetEntry(index);
         }
 
+        public bool TryGetEntryByInstanceId(string instanceId, out int index, out ItemStorageEntry entry)
+        {
+            index = storage.GetEntryIndexByInstanceId(instanceId);
+            entry = index >= 0 ? storage.GetEntry(index) : null;
+            return entry != null && entry.Item != null;
+        }
+
         public bool TryRemoveItemAt(int index, int quantity)
         {
             ItemStorageEntry entry = storage.GetEntry(index);
@@ -110,16 +142,16 @@ namespace OldScars.Core.Items
                 return false;
             }
 
-            bool removesEntry = quantity >= entry.Quantity;
-            string removedInstanceId = removesEntry && entry.Item != null ? entry.Item.InstanceId : null;
-            if (!storage.RemoveAt(index, quantity))
+            string sourceInstanceId = entry.Item != null ? entry.Item.InstanceId : null;
+            InventoryMutationResult result = GetGridBackend().Remove(sourceInstanceId, quantity);
+            if (!result.Success)
             {
-                Debug.LogWarning($"[InventoryComponent] Failed to remove quantity {quantity} from item index {index}.");
+                Debug.LogWarning($"[InventoryComponent] Failed to remove quantity {quantity} from item index {index}: {SafeText(result.Message)}");
                 return false;
             }
 
-            if (removesEntry)
-                ClearRightHandIfInstanceId(removedInstanceId);
+            if (ContainsInstanceId(result.RemovedInstanceIds, sourceInstanceId))
+                ClearRightHandIfInstanceId(sourceInstanceId);
 
             return true;
         }
@@ -129,6 +161,12 @@ namespace OldScars.Core.Items
             if (source == null)
             {
                 Debug.LogWarning("[InventoryComponent] Cannot transfer items from a null storage.");
+                return 0;
+            }
+
+            if (UsesGridLayout)
+            {
+                Debug.LogWarning("[InventoryComponent] Batch transfer is pending for grid inventory. Use individual or stack transfers.");
                 return 0;
             }
 
@@ -149,7 +187,22 @@ namespace OldScars.Core.Items
                 return 0;
             }
 
-            return source.TransferTo(storage, sourceIndex, quantity);
+            ItemStorageEntry sourceEntry = source.GetEntry(sourceIndex);
+            ItemInstance sourceItem = sourceEntry != null ? sourceEntry.Item : null;
+            if (sourceItem == null)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot transfer an invalid source item index {sourceIndex}.");
+                return 0;
+            }
+
+            InventoryMutationResult result = GetGridBackend().TransferFrom(source, sourceItem.InstanceId, quantity);
+            if (!result.Success)
+            {
+                Debug.LogWarning($"[InventoryComponent] Transfer from storage failed: {SafeText(result.Message)}");
+                return 0;
+            }
+
+            return result.AffectedQuantity;
         }
 
         public int TransferItemTo(ItemStorage targetStorage, int sourceIndex, int quantity)
@@ -179,14 +232,18 @@ namespace OldScars.Core.Items
                 return 0;
             }
 
-            int sourceQuantity = sourceEntry.Quantity;
             string sourceInstanceId = sourceEntry.Item.InstanceId;
-            int transferredQuantity = storage.TransferTo(targetStorage, sourceIndex, quantity);
+            InventoryMutationResult result = GetGridBackend().TransferTo(targetStorage, sourceInstanceId, quantity);
+            if (!result.Success)
+            {
+                Debug.LogWarning($"[InventoryComponent] Transfer to storage failed: {SafeText(result.Message)}");
+                return 0;
+            }
 
-            if (transferredQuantity >= sourceQuantity)
+            if (ContainsInstanceId(result.RemovedInstanceIds, sourceInstanceId))
                 ClearRightHandIfInstanceId(sourceInstanceId);
 
-            return transferredQuantity;
+            return result.AffectedQuantity;
         }
 
         public int TransferItemTo(InventoryComponent targetInventory, int sourceIndex, int quantity)
@@ -209,7 +266,60 @@ namespace OldScars.Core.Items
                 return 0;
             }
 
-            return TransferItemTo(targetInventory.storage, sourceIndex, quantity);
+            ItemStorageEntry sourceEntry = storage.GetEntry(sourceIndex);
+            if (sourceEntry == null || sourceEntry.Item == null)
+            {
+                Debug.LogWarning($"[InventoryComponent] Cannot transfer an invalid item index {sourceIndex}.");
+                return 0;
+            }
+
+            string sourceInstanceId = sourceEntry.Item.InstanceId;
+            InventoryMutationResult result = GetGridBackend().TransferTo(targetInventory.GetGridBackend(), sourceInstanceId, quantity);
+            if (!result.Success)
+            {
+                Debug.LogWarning($"[InventoryComponent] Inventory-to-inventory transfer failed: {SafeText(result.Message)}");
+                return 0;
+            }
+
+            if (ContainsInstanceId(result.RemovedInstanceIds, sourceInstanceId))
+                ClearRightHandIfInstanceId(sourceInstanceId);
+
+            return result.AffectedQuantity;
+        }
+
+        public bool TryGetGridPlacement(string instanceId, out GridPlacement placement)
+        {
+            return GetGridBackend().TryGetPlacement(instanceId, out placement);
+        }
+
+        public bool TryGetGridFootprint(string definitionId, out GridFootprint footprint, out bool usedFallback)
+        {
+            return GetGridBackend().TryResolveFootprint(definitionId, out footprint, out usedFallback, out _);
+        }
+
+        public GridPlacementValidationResult PreviewGridPlacementMove(
+            string instanceId,
+            int x,
+            int y,
+            bool isRotated)
+        {
+            return GetGridBackend().PreviewMovePlacement(instanceId, x, y, isRotated);
+        }
+
+        public InventoryMutationResult MoveGridPlacement(
+            string instanceId,
+            int x,
+            int y,
+            bool isRotated)
+        {
+            InventoryMutationResult result = GetGridBackend().MovePlacement(instanceId, x, y, isRotated);
+            if (!result.Success)
+            {
+                Debug.LogWarning(
+                    $"[InventoryComponent] Grid placement move failed for '{SafeText(instanceId)}': {SafeText(result.Message)}");
+            }
+
+            return result;
         }
 
         public ItemInstance GetEquippedItemInstance()
@@ -392,6 +502,48 @@ namespace OldScars.Core.Items
                 return;
 
             rightHandItemInstanceId = null;
+        }
+
+        private GridInventoryBackend GetGridBackend()
+        {
+            if (gridBackend == null)
+                InitializeGridBackend();
+
+            return gridBackend;
+        }
+
+        private void InitializeGridBackend()
+        {
+            if (gridBackend != null)
+                return;
+
+            gridBackend = new GridInventoryBackend(storage, GetItemDefinition);
+            if (!useGridLayout)
+                return;
+
+            if (gridBackend.TryEnableLayout(gridWidth, gridHeight, out string error))
+                return;
+
+            useGridLayout = false;
+            Debug.LogError(
+                "[InventoryComponent] Grid layout initialization failed; inventory remains linear and no items were changed." +
+                $"\n  Actor: {name}" +
+                $"\n  Requested grid: {gridWidth}x{gridHeight}" +
+                $"\n  Reason: {SafeText(error)}");
+        }
+
+        private static bool ContainsInstanceId(string[] instanceIds, string expected)
+        {
+            if (instanceIds == null || string.IsNullOrWhiteSpace(expected))
+                return false;
+
+            for (int index = 0; index < instanceIds.Length; index++)
+            {
+                if (instanceIds[index] == expected)
+                    return true;
+            }
+
+            return false;
         }
 
         private static string NormalizeItemId(string itemId)

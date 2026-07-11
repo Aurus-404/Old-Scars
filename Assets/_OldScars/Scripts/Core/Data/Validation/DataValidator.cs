@@ -335,6 +335,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 ValidateItemEquip(item, ctx);
+                ValidateItemInventoryMetadata(item, ctx);
 
                 if (item.combat != null)
                     ValidateItemCombat(item, ctx);
@@ -343,6 +344,38 @@ namespace OldScars.Core.Data.Validation
                     ValidateItemConsumable(item, ctx);
 
                 ValidateItemFirearmAndAmmoProfiles(item, ctx);
+            }
+        }
+
+        private void ValidateItemInventoryMetadata(ItemDefinition item, string ctx)
+        {
+            if (!item.inventory.HasValue)
+            {
+                report.Warning($"{ctx}: optional 'inventory' metadata is missing; grid inventory will use fallback footprint 1x1.");
+                return;
+            }
+
+            ItemInventoryMetadata inventory = item.inventory.Value;
+            if (!inventory.footprint.HasValue)
+            {
+                report.Warning($"{ctx}: optional 'inventory.footprint' is missing; grid inventory will use fallback footprint 1x1.");
+                return;
+            }
+
+            ItemFootprintDefinition footprint = inventory.footprint.Value;
+            if (footprint.width <= 0)
+                report.Error($"{ctx}: 'inventory.footprint.width' must be > 0 (got {footprint.width}).");
+
+            if (footprint.height <= 0)
+                report.Error($"{ctx}: 'inventory.footprint.height' must be > 0 (got {footprint.height}).");
+
+            if (inventory.icon_id != null)
+            {
+                string iconId = inventory.icon_id.Trim();
+                if (iconId.Length == 0)
+                    report.Warning($"{ctx}: optional 'inventory.icon_id' is empty; inventory UI will use its visual fallback.");
+                else if (!SnakeCasePattern.IsMatch(iconId))
+                    report.Warning($"{ctx}: optional 'inventory.icon_id' should use snake_case (got '{inventory.icon_id}'); inventory UI will use its visual fallback if the sprite cannot be resolved.");
             }
         }
 

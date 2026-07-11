@@ -9,15 +9,15 @@ using UnityEngine.InputSystem;
 namespace OldScars.Core.Items
 {
     /// <summary>
-    /// OnGUI inventory panel for the Milestone 14 playable debug loop.
+    /// OnGUI inventory panel for the playable debug loop.
     ///
-    /// This is not final inventory UI. It only displays the runtime item list
-    /// and provides explicit equip/unequip buttons for testing.
+    /// This is not final inventory UI. M33.1 adds a visual grid and manual
+    /// placement testing while keeping the legacy list as a debug fallback.
     /// </summary>
     public sealed class InventoryDebugPanel : MonoBehaviour
     {
-        private const float PanelWidth = 760f;
-        private const float PanelHeight = 430f;
+        private const float PanelWidth = 1020f;
+        private const float PanelHeight = 600f;
 
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorNeedsComponent actorNeeds;
@@ -27,6 +27,8 @@ namespace OldScars.Core.Items
         private bool isVisible;
         private Vector2 scrollPosition;
         private string lastMessage;
+        private bool showLegacyList;
+        private readonly InventoryGridDebugView gridView = new InventoryGridDebugView();
 
         public bool IsVisible => isVisible;
 
@@ -47,6 +49,7 @@ namespace OldScars.Core.Items
         public void Hide()
         {
             isVisible = false;
+            gridView.Reset();
         }
 
         public bool ContainsScreenPosition(Vector2 screenPosition)
@@ -65,11 +68,18 @@ namespace OldScars.Core.Items
 
             if (Keyboard.current.iKey.wasPressedThisFrame)
             {
-                isVisible = !isVisible;
+                if (isVisible)
+                    Hide();
+                else
+                    isVisible = true;
                 scrollPosition = Vector2.zero;
             }
 
-            if (isVisible && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (!isVisible)
+                return;
+
+            gridView.HandleKeyboardInput(inventory);
+            if (Keyboard.current.escapeKey.wasPressedThisFrame && !gridView.CancelDrag())
                 Hide();
         }
 
@@ -97,23 +107,106 @@ namespace OldScars.Core.Items
             if (!string.IsNullOrWhiteSpace(lastMessage))
                 GUILayout.Label(lastMessage);
 
-            GUILayout.Label("Storage:");
+            if (!string.IsNullOrWhiteSpace(gridView.StatusMessage))
+                GUILayout.Label(gridView.StatusMessage);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(inventory.UsesGridLayout
+                ? $"Grid backend: {inventory.GridWidth}x{inventory.GridHeight}"
+                : "Grid backend inactive: use Legacy List.");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(showLegacyList ? "Visual Grid" : "Legacy List", GUILayout.Width(110f), GUILayout.Height(24f)))
+                showLegacyList = !showLegacyList;
+            GUILayout.EndHorizontal();
+
+            if (showLegacyList || !inventory.UsesGridLayout)
+                DrawLegacyStorage();
+            else
+                DrawVisualGridStorage();
+
+            GUILayout.EndArea();
+        }
+
+        private void DrawVisualGridStorage()
+        {
+            GUILayout.BeginHorizontal();
+
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(292f));
+            GUILayout.Label("Player Grid (drag; R rotates)");
+            Rect gridRect = GUILayoutUtility.GetRect(
+                gridView.GetRequiredWidth(inventory.GridWidth),
+                gridView.GetRequiredHeight(inventory.GridHeight),
+                GUILayout.Width(gridView.GetRequiredWidth(inventory.GridWidth)),
+                GUILayout.Height(gridView.GetRequiredHeight(inventory.GridHeight)));
+            gridView.Draw(inventory, gridRect);
+            GUILayout.EndVertical();
+
+            GUILayout.Space(8f);
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandWidth(true), GUILayout.Height(390f));
+            DrawSelectedItemDetails();
+            GUILayout.EndVertical();
+
+            GUILayout.EndHorizontal();
+        }
+
+        private void DrawSelectedItemDetails()
+        {
+            GUILayout.Label("Selected Item");
+            if (!gridView.TryGetSelectedEntry(inventory, out int index, out ItemStorageEntry entry))
+            {
+                GUILayout.Label("Click an item in the grid.");
+                return;
+            }
+
+            ItemInstance item = entry.Item;
+            GUILayout.Label(FormatItemDisplayName(entry));
+            GUILayout.Label($"Instance: {item.InstanceId}");
+            GUILayout.Label($"Condition: {item.Condition}");
+            if (inventory.TryGetGridPlacement(item.InstanceId, out GridPlacement placement))
+            {
+                GUILayout.Label(
+                    $"Placement: ({placement.X},{placement.Y}) " +
+                    $"{placement.EffectiveWidth}x{placement.EffectiveHeight} " +
+                    (placement.IsRotated ? "rotated" : "original"));
+            }
+
+            GUILayout.Space(8f);
+            bool isEquipped = inventory.IsRightHandStorageEntry(entry);
+            if (InventoryItemUseService.IsConsumable(entry) && GUILayout.Button("Use", GUILayout.Height(28f)))
+                UseItem(index);
+
+            if (isEquipped)
+            {
+                if (GUILayout.Button("Unequip", GUILayout.Height(28f)))
+                    inventory.UnequipRightHand();
+            }
+            else if (inventory.CanEquipIndexToRightHand(index))
+            {
+                if (GUILayout.Button("Equip", GUILayout.Height(28f)))
+                    inventory.TryEquipIndexToRightHand(index);
+            }
+
+            if (GUILayout.Button("Drop 1", GUILayout.Height(28f)))
+                DropItem(index, 1, "drop_1", "Drop 1");
+
+            if (entry.Quantity > 1 && GUILayout.Button("Drop Stack", GUILayout.Height(28f)))
+                DropItem(index, entry.Quantity, "drop_stack", "Drop Stack");
+        }
+
+        private void DrawLegacyStorage()
+        {
+            GUILayout.Label("Storage (Legacy List):");
             IReadOnlyList<ItemStorageEntry> entries = inventory.GetStorageEntries();
             if (entries == null || entries.Count == 0)
             {
                 GUILayout.Label("Storage is empty.");
-            }
-            else
-            {
-                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(230f));
-
-                for (int index = 0; index < entries.Count; index++)
-                    DrawItemRow(index, entries[index]);
-
-                GUILayout.EndScrollView();
+                return;
             }
 
-            GUILayout.EndArea();
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(330f));
+            for (int index = 0; index < entries.Count; index++)
+                DrawItemRow(index, entries[index]);
+            GUILayout.EndScrollView();
         }
 
         private void DrawEquippedSection()
@@ -153,7 +246,7 @@ namespace OldScars.Core.Items
             ItemInstance item = entry != null ? entry.Item : null;
 
             GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label(GetItemLabel(index, entry), GUILayout.Width(330f));
+            GUILayout.Label(GetItemLabel(index, entry), GUILayout.Width(590f));
 
             bool isEquipped = inventory.IsRightHandEquippedIndex(index);
             if (isEquipped || inventory.CanEquipIndexToRightHand(index))
@@ -209,6 +302,7 @@ namespace OldScars.Core.Items
             if (!dropped)
                 Debug.LogWarning($"[InventoryDebugPanel] {message}");
 
+            gridView.ReconcileSelection(inventory);
             GUIUtility.ExitGUI();
         }
 
@@ -221,6 +315,8 @@ namespace OldScars.Core.Items
             lastMessage = result.Message;
             if (!result.Success)
                 Debug.Log($"[InventoryDebugPanel] Use failed: {result.Message}");
+
+            gridView.ReconcileSelection(inventory);
         }
 
         private string GetEquippedItemLabel()
@@ -239,7 +335,27 @@ namespace OldScars.Core.Items
                 return $"{index}: (none)";
 
             string equippedMarker = inventory != null && inventory.IsRightHandEquippedIndex(index) ? " (Equipped)" : string.Empty;
-            return $"{index}: {FormatItemDisplayName(entry)}{equippedMarker} [{item.InstanceId}] condition {item.Condition}";
+            string gridDiagnostic = GetGridDiagnostic(item);
+            return $"{index}: {FormatItemDisplayName(entry)}{equippedMarker} [{item.InstanceId}] condition {item.Condition} | {gridDiagnostic}";
+        }
+
+        private string GetGridDiagnostic(ItemInstance item)
+        {
+            if (inventory == null || item == null)
+                return "grid unavailable";
+
+            if (!inventory.TryGetGridFootprint(item.DefinitionId, out GridFootprint footprint, out bool usedFallback))
+                return "footprint invalid";
+
+            string fallbackLabel = usedFallback ? ", fallback 1x1" : string.Empty;
+            if (!inventory.UsesGridLayout)
+                return $"footprint {footprint.Width}x{footprint.Height}{fallbackLabel}, placement linear";
+
+            if (!inventory.TryGetGridPlacement(item.InstanceId, out GridPlacement placement))
+                return $"footprint {footprint.Width}x{footprint.Height}{fallbackLabel}, placement missing";
+
+            string orientation = placement.IsRotated ? "rotated" : "original";
+            return $"footprint {footprint.Width}x{footprint.Height}{fallbackLabel}, placement ({placement.X},{placement.Y}), {orientation}";
         }
 
         private string FormatItemDisplayName(ItemStorageEntry entry)

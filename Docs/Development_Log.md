@@ -1143,6 +1143,82 @@ Con equipped item definition id none o vacio:
 - No se tocaron containers, loot, inventario, player, movimiento, armas, animaciones del player, UI nueva, crafting, HingeJoint, Rigidbody ni fisica real.
 - Estado: implemented; pendiente de validacion manual en Unity.
 
+### Milestone 32.4: Interior Visibility Raycast v0
+
+- M32.4 implementado en `SampleScene` y pendiente de validacion manual en Unity.
+- Se agregaron `BuildingInteriorVolume`, `BuildingOccluderTarget` y `BuildingVisibilityManager` en `Core/Interactions`.
+- `BuildingVisibilityManager` usa referencias serializadas a `Main Camera`, `Debug Player`, `HouseInteriorVolume` y targets, con fallback de inicializacion solamente.
+- El sistema corre raycasts en `LateUpdate` solo cuando hay building actual detectado.
+- `BuildingInteriorVolume` usa `OnTriggerEnter/Exit` con `ActorInteractionContext` player y fallback `ContainsPlayer` por bounds/local-space.
+- `BuildingOccluderTarget` separa `renderersToHide` de `collidersToDisableWhileHidden` y guarda estados iniciales para restaurarlos exactamente.
+- Las paredes actuales de `M32_DebugTestHouse/Structure` ocultan solo renderers; sus `BoxCollider` estructurales no se desactivan.
+- `CasaPrimerPiso` queda configurado como `hideAlwaysWhenInside` con renderer y collider opt-in, preservando que ambos arrancan deshabilitados.
+- No se uso `GameObject.SetActive(false)`.
+- No se agrego layer `InteriorOccluder` ni se modifico `TagManager.asset`.
+- No se tocaron puertas, containers, loot, inventario, player movement, armas, animaciones, JSON ni `DataDriven_JSON_Rules.md`.
+- Estado: implemented; pendiente de validacion manual en Unity.
+
+### Milestone 32.4.1: Door Pivot Repair + Interior Visibility Cast Debug/Stability
+
+- M32.4.1 implementado en el checkout y pendiente de validacion manual en Unity.
+- Se agrego `RepairM32DoorPivotsTool` como herramienta editor-only bajo `Assets/_OldScars/Editor/Debug`.
+- La herramienta agrega los menus `Old Scars/Debug/Validate M32 Door Pivots` y `Old Scars/Debug/Repair M32 Door Pivots`.
+- La herramienta opera solo bajo `M32_DebugTestHouse/Doors` y busca puertas con `DoorSwingController`.
+- `Validate M32 Door Pivots` reporta root scale no normalizada, `DoorSwingController` sin `doorPivot`, `DoorVisualPivot` sin `DoorVisual`, visual scale invalida o near zero y posiciones locales absurdas.
+- `Repair M32 Door Pivots` no se ejecuta automaticamente, no recrea puertas, no reemplaza roots funcionales, no borra componentes y no toca JSON.
+- La reparacion normaliza solamente transforms de root, `DoorVisualPivot` y `DoorVisual`.
+- Si root scale no es uno y `DoorVisual.localScale` esta cerca de uno, la herramienta transfiere la escala del root al visual y luego deja root/pivot en scale `1,1,1`.
+- La herramienta deriva `halfWidth` desde `DoorVisual.localScale.x * 0.5`, con fallback `0.575`, y ubica pivot/visual a lados opuestos de la bisagra.
+- `BuildingVisibilityManager` ahora castea desde player hacia camara usando los offsets `1.6`, `0.9` y `0.25`.
+- `SphereCastAll` queda como cast principal con `sphereCastRadius = 0.35`.
+- `RaycastAll` queda como fallback cuando `useSphereCasts` esta desactivado o el radio no es valido.
+- Se agrego `OverlapSphere` alrededor de la camara con `cameraOverlapRadius = 0.45` para casos de camara pegada o dentro de una pared.
+- Los hits se filtran por `BuildingOccluderTarget`, mismo `buildingId`, `hideByCameraRaycast` y ausencia de `WorldObjectTags` en padres.
+- Se agregaron `drawDebugCasts = true`, `logHitChanges = false` y `debugDrawDuration = 0.05`.
+- El debug visual usa lineas/rayos verdes sin hit valido, rojos con hit valido y azul/cyan para overlap de camara; tambien agrega gizmos al seleccionar el manager.
+- `restoreDelay` se mantiene en `0.15`.
+- La politica de colliders no cambio: paredes estructurales ocultan solo renderers; techo/pisos superiores/piezas visuales usan colliders opt-in.
+- No se uso `GameObject.SetActive(false)`.
+- No se movio camara, no se toco player movement y M32.4.1 no depende de cambios nuevos en `TagManager.asset`.
+- No se tocaron containers, loot, inventario, JSON ni actions/tags/profiles; M32.4.1 no agrego cambios nuevos ni depende de `ProjectSettings/TagManager.asset`.
+- Estado: implemented; pendiente de validacion manual en Unity.
+
+### Grid Inventory Backend v0
+
+- Implementado como bloque tecnico pendiente de validacion manual en Unity.
+- `ItemStorage` sigue siendo la fuente de contenido/stacks; `GridInventoryLayout` mantiene placements por `ItemInstance.InstanceId`.
+- Se agregaron preflight, reserva determinista, commit y rollback por snapshots para Add, Remove y Transfer.
+- El Debug Player queda configurado con grilla `6x8`; inventarios NPC/cadaver y storages de container/world item conservan layout lineal.
+- Los siete items Core recibieron `inventory.footprint` explicito; la ausencia de metadata usa fallback `1x1` y warning.
+- `InventoryDebugPanel` muestra InstanceId, footprint, placement, orientacion y fallback en modo diagnostico read-only.
+- `Take All`/`Deposit All` globales quedan deshabilitados si participa la grilla; operaciones individuales y por stack conservan sus APIs existentes.
+- `right_hand` se conserva como compatibilidad temporal y solo se limpia despues de una mutacion exitosa que remueve la instancia.
+- Los `max_stack = 999` existentes quedan registrados como deuda de balance y no se modificaron.
+- No se agregaron tests EditMode, asmdef, UI final, drag-and-drop, peso, nesting, save/load ni equipamiento corporal.
+- Estado: implemented; verificacion estatica solamente, no validated.
+
+### M33.1: Visual Grid Inventory UI v0
+
+- Implementada grilla OnGUI `6x8` reusable en `InventoryDebugPanel` y en la columna del jugador de `ItemStorageDebugPanel`.
+- Los items se dibujan desde `GridPlacement` y `EffectiveWidth/EffectiveHeight`; la UI no ejecuta first-fit ni muta layout/storage directamente.
+- Seleccion y drag usan `InstanceId`; preview/commit de recolocacion viven en `GridInventoryBackend` y solo actualizan `GridInventoryLayout`.
+- Se agregaron ghost, destino valido/invalido, rotacion con `R`, no-op estable y cancelacion sin mutaciones.
+- Una entry sin placement muestra `MISSING PLACEMENT`, loguea una vez por instancia y mantiene Legacy List manual.
+- `inventory.icon_id` es opcional; los siete Core lo declaran y usan siete placeholders Sprite `512x512` importados desde los adjuntos aprobados.
+- El resolver usa `Resources/OldScars/InventoryIcons/`, cachea aciertos/ausencias y conserva fallback determinista.
+- Containers/cadaveres siguen como lista; Take/Deposit individual y por stack conservan backend existente; batch global sigue deshabilitado.
+- Validado manualmente en Unity: grilla `6x8`, iconos, drag-and-drop, rotacion, seleccion, equipamiento y transferencias con containers/cadaveres funcionan.
+- Data Load OK con 0 errors y 0 warnings.
+- Estado: validated.
+
+### M33.1.1: Inventory Footprint Rebalance + Universal Rotation
+
+- Rebalanceados los footprints Core: rifle `6x1`, palanca `5x1`, botella `2x1`, scrap `2x2`, municion `1x1`, venda `1x1` y comida `1x1`.
+- Se elimino el flag de rotacion del contrato JSON/C#; todos los footprints no cuadrados admiten orientacion alternativa.
+- Los footprints cuadrados tratan la orden de rotacion como exito no-op, sin estado redundante ni incremento de `GridInventoryLayout.Version`.
+- No se modificaron storage, transfers, `right_hand`, containers, cadaveres, pickup, drop, firearm, escena ni iconos.
+- Estado: implemented; pendiente de validacion manual en Unity, no validated.
+
 ## Decisiones De Scope
 
 - No hay inventario final.

@@ -40,6 +40,16 @@ namespace OldScars.Core.Items
             return new ItemInstance(DefinitionId, Condition, MaxStack);
         }
 
+        internal static int CaptureIdSequence()
+        {
+            return nextInstanceNumber;
+        }
+
+        internal static void RestoreIdSequence(int nextNumber)
+        {
+            nextInstanceNumber = Math.Max(1, nextNumber);
+        }
+
         private static string CreateRuntimeInstanceId()
         {
             string instanceId = $"item_instance_{nextInstanceNumber:0000}";

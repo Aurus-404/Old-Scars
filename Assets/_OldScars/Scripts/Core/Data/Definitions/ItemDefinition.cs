@@ -22,8 +22,23 @@ namespace OldScars.Core.Data.Definitions
         public ItemEquip equip;     // Optional equipment metadata for equippable items.
         public ItemCombat combat;   // null if not usable as a weapon.
         public ItemConsumable consumable; // null if not consumable.
+        public ItemInventoryMetadata? inventory; // Optional spatial-inventory metadata. Missing data falls back to 1x1.
         public string firearm_profile_id; // references FirearmProfileDefinition.id
         public string ammo_profile_id;    // references AmmoProfileDefinition.id
+    }
+
+    [System.Serializable]
+    public struct ItemInventoryMetadata
+    {
+        public ItemFootprintDefinition? footprint;
+        public string icon_id;
+    }
+
+    [System.Serializable]
+    public struct ItemFootprintDefinition
+    {
+        public int width;
+        public int height;
     }
 
     [System.Serializable]

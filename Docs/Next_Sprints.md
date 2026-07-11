@@ -4,7 +4,7 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar Milestone 32 y Milestone 32.2
+### Validar Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1
 
 Estado: `implemented`.
 
@@ -19,7 +19,27 @@ Objetivo inmediato:
 - validar que una puerta `opened_door` muestra `close_door`, vuelve a `closed_door`, rota a cerrada y bloquea el paso;
 - validar que `examine_object` muestra textos coherentes para `locked_door`, `closed_door` y `opened_door`;
 - confirmar que la puerta debug vieja sigue mostrando estado coherente con `opened_door`;
+- ejecutar `Old Scars/Debug/Validate M32 Door Pivots` para auditar las puertas M32;
+- ejecutar `Old Scars/Debug/Repair M32 Door Pivots` si la validacion reporta roots escalados, pivots desplazados o visuales corruptos;
+- volver a ejecutar `Validate M32 Door Pivots` y confirmar que no quedan posiciones locales absurdas en `DoorVisualPivot`/`DoorVisual`;
+- validar que `HouseInteriorVolume` detecta entrada y salida del Debug Player;
+- validar que las paredes entre camara y jugador se ocultan/restauran con `restoreDelay`;
+- validar con camara cercana que `SphereCastAll` player -> camara y `OverlapSphere` de camara detectan paredes que bloquean vision;
+- mirar debug casts: verde sin hit valido, rojo con hit valido y azul/cyan para overlap de camara;
+- validar que las paredes invisibles siguen bloqueando movimiento porque sus colliders estructurales permanecen activos;
+- validar que `CasaPrimerPiso` restaura su estado inicial deshabilitado al salir;
+- validar que puertas, containers, muebles, player, items y NPCs no son ocultados por el sistema de visibilidad;
 - confirmar Console sin errores rojos.
+- confirmar que el Debug Player reporta grilla `6x8` y placements deterministas en `InventoryDebugPanel`;
+- probar pickup/drop, uso de consumibles, Take/Deposit por item y por stack, y loot de cadaver sin mutaciones parciales;
+- probar grilla llena, rotacion, merge sin placement extra, split con placement nuevo y preservacion de `right_hand` si una transferencia falla;
+- confirmar que NPCs, cadaveres, containers y world items conservan storage lineal;
+- revisar en una fase futura los `max_stack = 999` como deuda de balance, sin cambiarlos durante esta validacion.
+- validar footprints Core rebalanceados y rotacion universal de M33.1.1;
+- confirmar que rifle `6x1`, palanca `5x1` y botella `2x1` rotan intercambiando dimensiones;
+- confirmar que scrap `2x2`, municion `1x1`, venda `1x1` y comida `1x1` aceptan `R` como no-op sin incrementar la version del layout;
+- confirmar que fallos de drop conservan placement, storage y `right_hand`, y que Legacy List sigue accesible;
+- confirmar que ItemStorageDebugPanel mantiene container/cadaver lineal a la derecha y grilla del jugador a la izquierda.
 
 Fuera de scope para esta validacion:
 
@@ -28,10 +48,12 @@ Fuera de scope para esta validacion:
 - WorkstationComponent;
 - UI nueva;
 - player, movimiento, armas o animaciones.
+- cambios JSON/data-driven.
+- cambios en `TagManager.asset`.
 
 ### Milestone 28: Container State / Naming Cleanup v0
 
-Estado: `planned`, despues de validar M32/M32.2 o cuando se retome deuda tecnica de containers.
+Estado: `planned`, despues de validar M32/M32.2/M32.4 o cuando se retome deuda tecnica de containers.
 
 Objetivo recomendado:
 

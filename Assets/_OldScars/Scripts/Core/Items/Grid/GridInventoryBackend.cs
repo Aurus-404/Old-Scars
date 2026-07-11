@@ -1,0 +1,782 @@
+using System;
+using System.Collections.Generic;
+using OldScars.Core.Data.Definitions;
+
+namespace OldScars.Core.Items
+{
+    public sealed class GridInventoryBackend
+    {
+        private readonly ItemStorage storage;
+        private readonly Func<string, ItemDefinition> definitionResolver;
+        private GridInventoryLayout layout;
+
+        public bool UsesGridLayout => layout != null;
+        public int GridWidth => layout != null ? layout.Width : 0;
+        public int GridHeight => layout != null ? layout.Height : 0;
+
+        internal ItemStorage Storage => storage;
+
+        public GridInventoryBackend(ItemStorage storage, Func<string, ItemDefinition> definitionResolver)
+        {
+            this.storage = storage ?? throw new ArgumentNullException(nameof(storage));
+            this.definitionResolver = definitionResolver ?? throw new ArgumentNullException(nameof(definitionResolver));
+        }
+
+        public bool TryEnableLayout(int width, int height, out string error)
+        {
+            error = null;
+            if (width <= 0 || height <= 0)
+            {
+                error = $"Grid dimensions must be positive (got {width}x{height}).";
+                return false;
+            }
+
+            var candidate = new GridInventoryLayout(width, height);
+            var reservations = new List<GridInventoryLayout.ReservedRect>();
+            IReadOnlyList<ItemStorageEntry> entries = storage.Entries;
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                ItemInstance item = entry != null ? entry.Item : null;
+                if (item == null)
+                {
+                    error = $"Cannot initialize grid because storage entry {index} has no item instance.";
+                    return false;
+                }
+
+                if (!TryResolveFootprint(item.DefinitionId, out GridFootprint footprint, out _, out error))
+                    return false;
+
+                if (!candidate.TryFindFirstFit(footprint, reservations, out GridInventoryLayout.ReservedRect reservation))
+                {
+                    error = $"Cannot initialize {width}x{height} grid: item '{item.DefinitionId}' [{item.InstanceId}] does not fit.";
+                    return false;
+                }
+
+                reservations.Add(reservation);
+            }
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (!candidate.TryAddPlacement(entry.Item.InstanceId, reservations[index]))
+                {
+                    error = $"Cannot initialize grid placement for item instance '{entry.Item.InstanceId}'.";
+                    return false;
+                }
+            }
+
+            if (!ValidateLayoutMatchesStorage(storage, candidate))
+            {
+                error = "Grid initialization invariant failed; the inventory remains linear.";
+                return false;
+            }
+
+            layout = candidate;
+            return true;
+        }
+
+        public bool TryGetPlacement(string instanceId, out GridPlacement placement)
+        {
+            placement = null;
+            return layout != null && layout.TryGetPlacement(instanceId, out placement);
+        }
+
+        public bool TryResolveFootprint(string definitionId, out GridFootprint footprint, out bool usedFallback, out string error)
+        {
+            ItemDefinition definition = definitionResolver(definitionId);
+            return GridFootprint.TryResolve(definition, out footprint, out usedFallback, out error);
+        }
+
+        public GridPlacementValidationResult PreviewMovePlacement(
+            string instanceId,
+            int x,
+            int y,
+            bool isRotated)
+        {
+            if (layout == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.GridLayoutUnavailable,
+                    "Grid layout is not active.");
+            }
+
+            if (string.IsNullOrWhiteSpace(instanceId))
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "A valid item instance id is required.");
+            }
+
+            ItemStorageEntry entry = storage.GetEntryByInstanceId(instanceId);
+            if (entry == null || entry.Item == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Item instance '{instanceId}' was not found.");
+            }
+
+            if (!layout.TryGetPlacement(instanceId, out _))
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.PlacementConflict,
+                    $"Grid placement for item instance '{instanceId}' was not found.");
+            }
+
+            ItemDefinition definition = definitionResolver(entry.DefinitionId);
+            if (definition == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.ItemDefinitionNotFound,
+                    $"Item definition '{entry.DefinitionId}' was not found.");
+            }
+
+            if (!GridFootprint.TryResolve(definition, out GridFootprint footprint, out bool usedFallback, out string footprintError))
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.InvalidFootprint,
+                    footprintError);
+            }
+
+            if (!layout.TryCreateMoveCandidate(instanceId, footprint, x, y, isRotated, out GridPlacement candidate))
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.PlacementConflict,
+                    $"Placement ({x},{y}) for item instance '{instanceId}' is outside the grid or overlaps another item.");
+            }
+
+            return GridPlacementValidationResult.Valid(candidate, usedFallback);
+        }
+
+        public InventoryMutationResult MovePlacement(
+            string instanceId,
+            int x,
+            int y,
+            bool isRotated)
+        {
+            GridPlacementValidationResult preview = PreviewMovePlacement(instanceId, x, y, isRotated);
+            if (!preview.IsValid)
+                return InventoryMutationResult.Rejected(preview.Failure, preview.Message, 0, instanceId);
+
+            if (!layout.TryMovePlacement(preview.Candidate))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.PlacementConflict,
+                    $"Grid placement for item instance '{instanceId}' changed before commit.",
+                    0,
+                    instanceId);
+            }
+
+            return InventoryMutationResult.SucceededPlacementMove(
+                instanceId,
+                preview.Candidate,
+                preview.UsedFallbackFootprint);
+        }
+
+        public InventoryMutationResult Add(ItemDefinition definition, int quantity)
+        {
+            InventoryTransactionPlan plan = BuildAddPlan(definition, quantity, out InventoryMutationResult rejection);
+            return plan != null ? CommitAdd(plan) : rejection;
+        }
+
+        public InventoryMutationResult Remove(string instanceId, int quantity)
+        {
+            InventoryTransactionPlan plan = BuildRemovePlan(instanceId, quantity, out InventoryMutationResult rejection);
+            return plan != null ? CommitRemove(plan) : rejection;
+        }
+
+        public InventoryMutationResult TransferFrom(ItemStorage sourceStorage, string sourceInstanceId, int quantity)
+        {
+            return ExecuteTransfer(
+                sourceStorage,
+                null,
+                storage,
+                layout,
+                definitionResolver,
+                sourceInstanceId,
+                quantity);
+        }
+
+        public InventoryMutationResult TransferTo(ItemStorage targetStorage, string sourceInstanceId, int quantity)
+        {
+            return ExecuteTransfer(
+                storage,
+                layout,
+                targetStorage,
+                null,
+                definitionResolver,
+                sourceInstanceId,
+                quantity);
+        }
+
+        public InventoryMutationResult TransferTo(GridInventoryBackend target, string sourceInstanceId, int quantity)
+        {
+            if (target == null)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "Target inventory backend is missing.",
+                    quantity,
+                    sourceInstanceId);
+            }
+
+            return ExecuteTransfer(
+                storage,
+                layout,
+                target.storage,
+                target.layout,
+                target.definitionResolver,
+                sourceInstanceId,
+                quantity);
+        }
+
+        private InventoryTransactionPlan BuildAddPlan(ItemDefinition definition, int quantity, out InventoryMutationResult rejection)
+        {
+            rejection = null;
+            if (definition == null)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.ItemDefinitionNotFound,
+                    "Item definition was not found.",
+                    quantity);
+                return null;
+            }
+
+            if (quantity < 1)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "Quantity must be >= 1.",
+                    quantity);
+                return null;
+            }
+
+            var plan = new InventoryTransactionPlan
+            {
+                Operation = InventoryTransactionPlan.OperationKind.Add,
+                TargetStorage = storage,
+                TargetLayout = layout,
+                Definition = definition,
+                RequestedQuantity = quantity,
+                Quantity = quantity,
+                ExpectedTargetStorageVersion = storage.Version,
+                ExpectedTargetLayoutVersion = layout != null ? layout.Version : 0
+            };
+
+            CalculateDestinationChanges(storage, definition.id, Math.Max(1, definition.max_stack), quantity, out int mergeQuantity, out int newEntryCount);
+            plan.MergeQuantity = mergeQuantity;
+            plan.NewEntryCount = newEntryCount;
+
+            if (layout == null || newEntryCount == 0)
+                return plan;
+
+            if (!GridFootprint.TryResolve(definition, out GridFootprint footprint, out bool usedFallback, out string footprintError))
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidFootprint,
+                    footprintError,
+                    quantity);
+                return null;
+            }
+
+            plan.Footprint = footprint;
+            plan.UsedFallbackFootprint = usedFallback;
+            if (!TryReservePlacements(layout, footprint, newEntryCount, plan.ReservedPlacements))
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.NoGridSpace,
+                    $"No grid space for '{definition.id}' x{quantity}.",
+                    quantity);
+                return null;
+            }
+
+            return plan;
+        }
+
+        private InventoryTransactionPlan BuildRemovePlan(string instanceId, int quantity, out InventoryMutationResult rejection)
+        {
+            rejection = null;
+            if (string.IsNullOrWhiteSpace(instanceId) || quantity < 1)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "A valid instance id and quantity are required.",
+                    quantity,
+                    instanceId);
+                return null;
+            }
+
+            ItemStorageEntry entry = storage.GetEntryByInstanceId(instanceId);
+            if (entry == null || entry.Item == null)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Item instance '{instanceId}' was not found.",
+                    quantity,
+                    instanceId);
+                return null;
+            }
+
+            int removedQuantity = Math.Min(quantity, entry.Quantity);
+            bool removesEntry = removedQuantity >= entry.Quantity;
+            if (layout != null && removesEntry && !layout.TryGetPlacement(instanceId, out _))
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.PlacementConflict,
+                    $"Grid placement for item instance '{instanceId}' was not found.",
+                    quantity,
+                    instanceId);
+                return null;
+            }
+
+            return new InventoryTransactionPlan
+            {
+                Operation = InventoryTransactionPlan.OperationKind.Remove,
+                SourceStorage = storage,
+                SourceLayout = layout,
+                SourceInstanceId = instanceId,
+                RequestedQuantity = quantity,
+                Quantity = removedQuantity,
+                SourceEntryWillBeRemoved = removesEntry,
+                ExpectedSourceStorageVersion = storage.Version,
+                ExpectedSourceLayoutVersion = layout != null ? layout.Version : 0
+            };
+        }
+
+        private InventoryMutationResult CommitAdd(InventoryTransactionPlan plan)
+        {
+            ItemStorage.StateSnapshot storageSnapshot = storage.CaptureState();
+            GridInventoryLayout.StateSnapshot layoutSnapshot = layout != null ? layout.CaptureState() : default;
+            int idSequenceSnapshot = ItemInstance.CaptureIdSequence();
+            var previousIds = CollectInstanceIds(storage);
+
+            try
+            {
+                EnsurePlanVersions(plan);
+                ItemStorageEntry changedEntry = storage.AddItem(new ItemInstance(plan.Definition), plan.Quantity);
+                List<ItemStorageEntry> createdEntries = CollectNewEntries(storage, previousIds);
+                GridPlacement[] addedPlacements = ApplyReservations(layout, plan.ReservedPlacements, createdEntries);
+
+                if (layout != null && !ValidateLayoutMatchesStorage(storage, layout))
+                    throw new InvalidOperationException("Grid/storage invariant failed after add.");
+
+                return InventoryMutationResult.Succeeded(
+                    plan.RequestedQuantity,
+                    plan.Quantity,
+                    null,
+                    changedEntry != null && changedEntry.Item != null ? changedEntry.Item.InstanceId : null,
+                    plan.MergeQuantity,
+                    GetInstanceIds(createdEntries),
+                    null,
+                    addedPlacements,
+                    null,
+                    plan.UsedFallbackFootprint);
+            }
+            catch (Exception ex)
+            {
+                storage.RestoreState(storageSnapshot);
+                if (layout != null)
+                    layout.RestoreState(layoutSnapshot);
+                ItemInstance.RestoreIdSequence(idSequenceSnapshot);
+
+                return InventoryMutationResult.RolledBack(ex.Message, plan.RequestedQuantity, null, plan.UsedFallbackFootprint);
+            }
+        }
+
+        private InventoryMutationResult CommitRemove(InventoryTransactionPlan plan)
+        {
+            ItemStorage.StateSnapshot storageSnapshot = storage.CaptureState();
+            GridInventoryLayout.StateSnapshot layoutSnapshot = layout != null ? layout.CaptureState() : default;
+
+            try
+            {
+                EnsurePlanVersions(plan);
+                int sourceIndex = storage.GetEntryIndexByInstanceId(plan.SourceInstanceId);
+                if (sourceIndex < 0 || !storage.RemoveAt(sourceIndex, plan.Quantity))
+                    throw new InvalidOperationException("Source item changed before remove commit.");
+
+                string[] removedPlacementIds = null;
+                string[] removedInstanceIds = null;
+                if (plan.SourceEntryWillBeRemoved)
+                {
+                    removedInstanceIds = new[] { plan.SourceInstanceId };
+                    if (layout != null)
+                    {
+                        if (!layout.RemovePlacement(plan.SourceInstanceId))
+                            throw new InvalidOperationException("Expected source grid placement could not be removed.");
+                        removedPlacementIds = new[] { plan.SourceInstanceId };
+                    }
+                }
+
+                if (layout != null && !ValidateLayoutMatchesStorage(storage, layout))
+                    throw new InvalidOperationException("Grid/storage invariant failed after remove.");
+
+                return InventoryMutationResult.Succeeded(
+                    plan.RequestedQuantity,
+                    plan.Quantity,
+                    plan.SourceInstanceId,
+                    null,
+                    0,
+                    null,
+                    removedInstanceIds,
+                    null,
+                    removedPlacementIds,
+                    false);
+            }
+            catch (Exception ex)
+            {
+                storage.RestoreState(storageSnapshot);
+                if (layout != null)
+                    layout.RestoreState(layoutSnapshot);
+
+                return InventoryMutationResult.RolledBack(ex.Message, plan.RequestedQuantity, plan.SourceInstanceId, false);
+            }
+        }
+
+        private static InventoryMutationResult ExecuteTransfer(
+            ItemStorage sourceStorage,
+            GridInventoryLayout sourceLayout,
+            ItemStorage targetStorage,
+            GridInventoryLayout targetLayout,
+            Func<string, ItemDefinition> definitionResolver,
+            string sourceInstanceId,
+            int requestedQuantity)
+        {
+            InventoryTransactionPlan plan = BuildTransferPlan(
+                sourceStorage,
+                sourceLayout,
+                targetStorage,
+                targetLayout,
+                definitionResolver,
+                sourceInstanceId,
+                requestedQuantity,
+                out InventoryMutationResult rejection);
+            if (plan == null)
+                return rejection;
+
+            ItemStorage.StateSnapshot sourceSnapshot = sourceStorage.CaptureState();
+            ItemStorage.StateSnapshot targetSnapshot = targetStorage.CaptureState();
+            GridInventoryLayout.StateSnapshot sourceLayoutSnapshot = sourceLayout != null ? sourceLayout.CaptureState() : default;
+            GridInventoryLayout.StateSnapshot targetLayoutSnapshot = targetLayout != null ? targetLayout.CaptureState() : default;
+            int idSequenceSnapshot = ItemInstance.CaptureIdSequence();
+            var targetPreviousIds = CollectInstanceIds(targetStorage);
+            int combinedQuantityBefore = sourceStorage.TotalQuantity + targetStorage.TotalQuantity;
+
+            try
+            {
+                EnsurePlanVersions(plan);
+                int sourceIndex = sourceStorage.GetEntryIndexByInstanceId(sourceInstanceId);
+                if (sourceIndex < 0)
+                    throw new InvalidOperationException("Source item changed before transfer commit.");
+
+                int transferredQuantity = sourceStorage.TransferTo(targetStorage, sourceIndex, plan.Quantity);
+                if (transferredQuantity != plan.Quantity)
+                    throw new InvalidOperationException($"Transfer committed x{transferredQuantity}, expected x{plan.Quantity}.");
+
+                List<ItemStorageEntry> createdEntries = CollectNewEntries(targetStorage, targetPreviousIds);
+                GridPlacement[] addedPlacements = ApplyReservations(targetLayout, plan.ReservedPlacements, createdEntries);
+
+                string[] removedInstanceIds = null;
+                string[] removedPlacementIds = null;
+                if (plan.SourceEntryWillBeRemoved)
+                {
+                    removedInstanceIds = new[] { sourceInstanceId };
+                    if (sourceLayout != null)
+                    {
+                        if (!sourceLayout.RemovePlacement(sourceInstanceId))
+                            throw new InvalidOperationException("Expected source grid placement could not be removed.");
+                        removedPlacementIds = new[] { sourceInstanceId };
+                    }
+                }
+
+                if (sourceStorage.TotalQuantity + targetStorage.TotalQuantity != combinedQuantityBefore)
+                    throw new InvalidOperationException("Transfer quantity conservation failed.");
+                if (sourceLayout != null && !ValidateLayoutMatchesStorage(sourceStorage, sourceLayout))
+                    throw new InvalidOperationException("Source grid/storage invariant failed after transfer.");
+                if (targetLayout != null && !ValidateLayoutMatchesStorage(targetStorage, targetLayout))
+                    throw new InvalidOperationException("Target grid/storage invariant failed after transfer.");
+
+                string destinationInstanceId = createdEntries.Count > 0
+                    ? createdEntries[0].Item.InstanceId
+                    : FindFirstInstanceIdByDefinition(targetStorage, plan.Definition.id);
+
+                return InventoryMutationResult.Succeeded(
+                    requestedQuantity,
+                    transferredQuantity,
+                    sourceInstanceId,
+                    destinationInstanceId,
+                    plan.MergeQuantity,
+                    GetInstanceIds(createdEntries),
+                    removedInstanceIds,
+                    addedPlacements,
+                    removedPlacementIds,
+                    plan.UsedFallbackFootprint);
+            }
+            catch (Exception ex)
+            {
+                sourceStorage.RestoreState(sourceSnapshot);
+                targetStorage.RestoreState(targetSnapshot);
+                if (sourceLayout != null)
+                    sourceLayout.RestoreState(sourceLayoutSnapshot);
+                if (targetLayout != null)
+                    targetLayout.RestoreState(targetLayoutSnapshot);
+                ItemInstance.RestoreIdSequence(idSequenceSnapshot);
+
+                return InventoryMutationResult.RolledBack(ex.Message, requestedQuantity, sourceInstanceId, plan.UsedFallbackFootprint);
+            }
+        }
+
+        private static InventoryTransactionPlan BuildTransferPlan(
+            ItemStorage sourceStorage,
+            GridInventoryLayout sourceLayout,
+            ItemStorage targetStorage,
+            GridInventoryLayout targetLayout,
+            Func<string, ItemDefinition> definitionResolver,
+            string sourceInstanceId,
+            int requestedQuantity,
+            out InventoryMutationResult rejection)
+        {
+            rejection = null;
+            if (sourceStorage == null || targetStorage == null || ReferenceEquals(sourceStorage, targetStorage) ||
+                string.IsNullOrWhiteSpace(sourceInstanceId) || requestedQuantity < 1)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "Valid distinct storages, instance id and quantity are required.",
+                    requestedQuantity,
+                    sourceInstanceId);
+                return null;
+            }
+
+            ItemStorageEntry sourceEntry = sourceStorage.GetEntryByInstanceId(sourceInstanceId);
+            if (sourceEntry == null || sourceEntry.Item == null)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.",
+                    requestedQuantity,
+                    sourceInstanceId);
+                return null;
+            }
+
+            int transferQuantity = Math.Min(requestedQuantity, sourceEntry.Quantity);
+            bool removesSourceEntry = transferQuantity >= sourceEntry.Quantity;
+            if (sourceLayout != null && removesSourceEntry && !sourceLayout.TryGetPlacement(sourceInstanceId, out _))
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.PlacementConflict,
+                    $"Source grid placement for '{sourceInstanceId}' was not found.",
+                    requestedQuantity,
+                    sourceInstanceId);
+                return null;
+            }
+
+            ItemDefinition definition = definitionResolver(sourceEntry.DefinitionId);
+            if (definition == null)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.ItemDefinitionNotFound,
+                    $"Item definition '{sourceEntry.DefinitionId}' was not found.",
+                    requestedQuantity,
+                    sourceInstanceId);
+                return null;
+            }
+
+            var plan = new InventoryTransactionPlan
+            {
+                Operation = InventoryTransactionPlan.OperationKind.Transfer,
+                SourceStorage = sourceStorage,
+                TargetStorage = targetStorage,
+                SourceLayout = sourceLayout,
+                TargetLayout = targetLayout,
+                Definition = definition,
+                SourceInstanceId = sourceInstanceId,
+                RequestedQuantity = requestedQuantity,
+                Quantity = transferQuantity,
+                SourceEntryWillBeRemoved = removesSourceEntry,
+                ExpectedSourceStorageVersion = sourceStorage.Version,
+                ExpectedTargetStorageVersion = targetStorage.Version,
+                ExpectedSourceLayoutVersion = sourceLayout != null ? sourceLayout.Version : 0,
+                ExpectedTargetLayoutVersion = targetLayout != null ? targetLayout.Version : 0
+            };
+
+            CalculateDestinationChanges(targetStorage, sourceEntry.DefinitionId, sourceEntry.MaxStack, transferQuantity, out int mergeQuantity, out int newEntryCount);
+            plan.MergeQuantity = mergeQuantity;
+            plan.NewEntryCount = newEntryCount;
+
+            if (targetLayout == null || newEntryCount == 0)
+                return plan;
+
+            if (!GridFootprint.TryResolve(definition, out GridFootprint footprint, out bool usedFallback, out string footprintError))
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidFootprint,
+                    footprintError,
+                    requestedQuantity,
+                    sourceInstanceId);
+                return null;
+            }
+
+            plan.Footprint = footprint;
+            plan.UsedFallbackFootprint = usedFallback;
+            if (!TryReservePlacements(targetLayout, footprint, newEntryCount, plan.ReservedPlacements))
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.NoGridSpace,
+                    $"No grid space for '{sourceEntry.DefinitionId}' x{transferQuantity}.",
+                    requestedQuantity,
+                    sourceInstanceId);
+                return null;
+            }
+
+            return plan;
+        }
+
+        private static void CalculateDestinationChanges(ItemStorage target, string definitionId, int maxStack, int quantity, out int mergeQuantity, out int newEntryCount)
+        {
+            int availableMerge = 0;
+            IReadOnlyList<ItemStorageEntry> entries = target.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (entry != null && entry.DefinitionId == definitionId)
+                    availableMerge += entry.AvailableStackSpace;
+            }
+
+            mergeQuantity = Math.Min(quantity, availableMerge);
+            int remaining = quantity - mergeQuantity;
+            int safeMaxStack = Math.Max(1, maxStack);
+            newEntryCount = remaining > 0 ? (remaining + safeMaxStack - 1) / safeMaxStack : 0;
+        }
+
+        private static bool TryReservePlacements(
+            GridInventoryLayout targetLayout,
+            GridFootprint footprint,
+            int count,
+            List<GridInventoryLayout.ReservedRect> reservations)
+        {
+            for (int index = 0; index < count; index++)
+            {
+                if (!targetLayout.TryFindFirstFit(footprint, reservations, out GridInventoryLayout.ReservedRect reservation))
+                    return false;
+
+                reservations.Add(reservation);
+            }
+
+            return true;
+        }
+
+        private static GridPlacement[] ApplyReservations(
+            GridInventoryLayout targetLayout,
+            IReadOnlyList<GridInventoryLayout.ReservedRect> reservations,
+            IReadOnlyList<ItemStorageEntry> createdEntries)
+        {
+            if (targetLayout == null)
+                return Array.Empty<GridPlacement>();
+
+            int expectedCount = reservations != null ? reservations.Count : 0;
+            if (createdEntries.Count != expectedCount)
+                throw new InvalidOperationException($"Created entry count {createdEntries.Count} does not match reserved placement count {expectedCount}.");
+
+            var added = new GridPlacement[expectedCount];
+            for (int index = 0; index < expectedCount; index++)
+            {
+                string instanceId = createdEntries[index].Item.InstanceId;
+                if (!targetLayout.TryAddPlacement(instanceId, reservations[index]) ||
+                    !targetLayout.TryGetPlacement(instanceId, out GridPlacement placement))
+                {
+                    throw new InvalidOperationException($"Could not commit reserved placement for '{instanceId}'.");
+                }
+
+                added[index] = placement;
+            }
+
+            return added;
+        }
+
+        private static void EnsurePlanVersions(InventoryTransactionPlan plan)
+        {
+            if (plan.SourceStorage != null && plan.SourceStorage.Version != plan.ExpectedSourceStorageVersion)
+                throw new InvalidOperationException("Source storage plan is stale.");
+            if (plan.TargetStorage != null && plan.TargetStorage.Version != plan.ExpectedTargetStorageVersion)
+                throw new InvalidOperationException("Target storage plan is stale.");
+            if (plan.SourceLayout != null && plan.SourceLayout.Version != plan.ExpectedSourceLayoutVersion)
+                throw new InvalidOperationException("Source layout plan is stale.");
+            if (plan.TargetLayout != null && plan.TargetLayout.Version != plan.ExpectedTargetLayoutVersion)
+                throw new InvalidOperationException("Target layout plan is stale.");
+        }
+
+        private static HashSet<string> CollectInstanceIds(ItemStorage itemStorage)
+        {
+            var result = new HashSet<string>();
+            IReadOnlyList<ItemStorageEntry> entries = itemStorage.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemInstance item = entries[index] != null ? entries[index].Item : null;
+                if (item != null)
+                    result.Add(item.InstanceId);
+            }
+
+            return result;
+        }
+
+        private static List<ItemStorageEntry> CollectNewEntries(ItemStorage itemStorage, HashSet<string> previousIds)
+        {
+            var result = new List<ItemStorageEntry>();
+            IReadOnlyList<ItemStorageEntry> entries = itemStorage.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                ItemInstance item = entry != null ? entry.Item : null;
+                if (item != null && !previousIds.Contains(item.InstanceId))
+                    result.Add(entry);
+            }
+
+            return result;
+        }
+
+        private static string[] GetInstanceIds(IReadOnlyList<ItemStorageEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+                return Array.Empty<string>();
+
+            var result = new string[entries.Count];
+            for (int index = 0; index < entries.Count; index++)
+                result[index] = entries[index].Item.InstanceId;
+            return result;
+        }
+
+        private static string FindFirstInstanceIdByDefinition(ItemStorage itemStorage, string definitionId)
+        {
+            IReadOnlyList<ItemStorageEntry> entries = itemStorage.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (entry != null && entry.Item != null && entry.DefinitionId == definitionId)
+                    return entry.Item.InstanceId;
+            }
+
+            return null;
+        }
+
+        private static bool ValidateLayoutMatchesStorage(ItemStorage itemStorage, GridInventoryLayout gridLayout)
+        {
+            if (itemStorage == null || gridLayout == null || !gridLayout.ValidateNoOverlapOrBounds())
+                return false;
+
+            IReadOnlyList<ItemStorageEntry> entries = itemStorage.Entries;
+            if (gridLayout.Placements.Count != entries.Count)
+                return false;
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemInstance item = entries[index] != null ? entries[index].Item : null;
+                if (item == null || !gridLayout.TryGetPlacement(item.InstanceId, out _))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+}
