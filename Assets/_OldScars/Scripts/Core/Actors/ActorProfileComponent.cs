@@ -114,25 +114,42 @@ namespace OldScars.Core.Actors
 
         private void ApplyInitialInventory(ActorProfileDefinition profile)
         {
-            if (profile.initial_inventory == null || profile.initial_inventory.Length == 0)
-                return;
-
             InventoryComponent inventory = GetComponent<InventoryComponent>();
             if (inventory == null)
             {
-                Debug.LogWarning($"[ActorProfileComponent] '{name}' cannot apply initial_inventory from actor profile '{actorProfileId}' because InventoryComponent is missing.");
+                if (profile.initial_inventory != null && profile.initial_inventory.Length > 0)
+                {
+                    Debug.LogWarning(
+                        $"[ActorProfileComponent] '{name}' cannot apply initial_inventory from actor profile " +
+                        $"'{actorProfileId}' because InventoryComponent is missing.");
+                }
                 return;
             }
 
-            for (int index = 0; index < profile.initial_inventory.Length; index++)
+            inventory.BeginInitialContentLoad();
+            try
             {
-                ActorProfileInventoryEntry entry = profile.initial_inventory[index];
-                if (entry == null)
-                    continue;
+                if (profile.initial_inventory == null)
+                    return;
 
-                ItemInstance item = inventory.AddItemByDefinitionId(entry.item_id, entry.quantity);
-                if (item == null)
-                    Debug.LogWarning($"[ActorProfileComponent] '{name}' failed to add '{entry.item_id}' x{entry.quantity} from actor profile '{actorProfileId}'.");
+                for (int index = 0; index < profile.initial_inventory.Length; index++)
+                {
+                    ActorProfileInventoryEntry entry = profile.initial_inventory[index];
+                    if (entry == null)
+                        continue;
+
+                    ItemInstance item = inventory.AddItemByDefinitionId(entry.item_id, entry.quantity);
+                    if (item == null)
+                    {
+                        Debug.LogWarning(
+                            $"[ActorProfileComponent] '{name}' failed to add '{entry.item_id}' x{entry.quantity} " +
+                            $"from actor profile '{actorProfileId}'.");
+                    }
+                }
+            }
+            finally
+            {
+                inventory.CompleteInitialContentLoad();
             }
         }
 

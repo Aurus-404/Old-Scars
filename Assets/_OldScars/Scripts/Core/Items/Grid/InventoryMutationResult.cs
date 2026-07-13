@@ -22,6 +22,10 @@ namespace OldScars.Core.Items
             GridLayoutUnavailable,
             NoGridSpace,
             PlacementConflict,
+            ExactTransferRequiresFullStack,
+            ExactTransferWouldMerge,
+            IncompatibleStack,
+            StackFull,
             StalePlan,
             CommitFailed
         }

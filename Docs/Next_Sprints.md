@@ -4,7 +4,7 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1
+### Validar M33.2/M33.2.1, Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0
 
 Estado: `implemented`.
 
@@ -35,11 +35,18 @@ Objetivo inmediato:
 - probar grilla llena, rotacion, merge sin placement extra, split con placement nuevo y preservacion de `right_hand` si una transferencia falla;
 - confirmar que NPCs, cadaveres, containers y world items conservan storage lineal;
 - revisar en una fase futura los `max_stack = 999` como deuda de balance, sin cambiarlos durante esta validacion.
-- validar footprints Core rebalanceados y rotacion universal de M33.1.1;
-- confirmar que rifle `6x1`, palanca `5x1` y botella `2x1` rotan intercambiando dimensiones;
-- confirmar que scrap `2x2`, municion `1x1`, venda `1x1` y comida `1x1` aceptan `R` como no-op sin incrementar la version del layout;
-- confirmar que fallos de drop conservan placement, storage y `right_hand`, y que Legacy List sigue accesible;
-- confirmar que ItemStorageDebugPanel mantiene container/cadaver lineal a la derecha y grilla del jugador a la izquierda.
+- confirmar dual grid con Player a la izquierda, centro provisional y container/cadaver a la derecha en `1366x768`;
+- probar recolocacion interna en ambos lados, `R`, Escape, cierre durante drag y preservacion exacta ante destino invalido;
+- probar drag de stack completo player <-> container/cadaver y Shift/clic o botones 1/Stack con auto-placement;
+- verificar que drop en celda vacia crea stack separado en la posicion/orientacion exactas aunque exista otro compatible;
+- verificar merge dirigido por celda ocupada, incluyendo `20 -> 990/999`, source remanente x11, receptor lleno e item incompatible;
+- confirmar que merge parcial conserva source selection/`right_hand`, merge completo elimina source placement y selecciona el receptor;
+- confirmar toast superpuesto sin `GUILayout` y rect/columnas estables durante mensajes, rotacion, transferencia y storage vacio;
+- validar fallback lineal completo ante grilla externa insuficiente, sin perdida de items, tags ni placements parciales;
+- validar `I`: abre personal si no hay sesion y cierra cualquier sesion abierta sin cambiar de vista en la misma pulsacion;
+- confirmar bloqueo de movimiento, disparo, interacciones y camara mientras la sesion esta abierta, y restauracion al cerrar;
+- confirmar tags `searched`, `storage_accessible`, `lootable_container`, `looted_container` y `lootable_actor` despues de Take/Deposit;
+- confirmar que pickup, drop, consumibles, firearm y `right_hand` siguen funcionando y que Console no muestra errores rojos.
 
 Fuera de scope para esta validacion:
 

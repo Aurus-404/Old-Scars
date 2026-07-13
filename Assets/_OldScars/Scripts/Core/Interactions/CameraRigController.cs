@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using OldScars.Core.Items;
 
 namespace OldScars.Core.Interactions
 {
@@ -7,6 +8,7 @@ namespace OldScars.Core.Interactions
     {
         [Header("References")]
         [SerializeField] private Transform recenterTarget;
+        [SerializeField] private InventoryUISessionController inventorySessionController;
 
         [Header("Movement")]
         [SerializeField] private float panSpeed = 10f;
@@ -38,12 +40,22 @@ namespace OldScars.Core.Interactions
         {
             mainCamera = Camera.main;
 
+            if (inventorySessionController == null)
+                inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
+
             if (snapToTargetOnStart)
                 RecenterOnTarget();
         }
 
         private void Update()
         {
+            if (inventorySessionController != null && inventorySessionController.BlocksWorldInput)
+            {
+                rightMouseIsDown = false;
+                isRotating = false;
+                return;
+            }
+
             HandlePanInput();
             HandleZoomInput();
             HandleRightMouseRotation();

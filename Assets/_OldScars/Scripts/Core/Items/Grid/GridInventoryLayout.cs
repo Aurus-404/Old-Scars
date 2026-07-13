@@ -90,6 +90,35 @@ namespace OldScars.Core.Items
             return true;
         }
 
+        internal bool TryCreateIncomingCandidate(
+            string instanceId,
+            GridFootprint footprint,
+            int x,
+            int y,
+            bool isRotated,
+            out ReservedRect reservation,
+            out GridPlacement candidate)
+        {
+            reservation = default;
+            candidate = null;
+            if (string.IsNullOrWhiteSpace(instanceId) || footprint == null || placements.ContainsKey(instanceId))
+                return false;
+
+            bool effectiveRotated = footprint.Width != footprint.Height && isRotated;
+            var rect = new ReservedRect(
+                x,
+                y,
+                footprint.GetWidth(effectiveRotated),
+                footprint.GetHeight(effectiveRotated),
+                effectiveRotated);
+            if (!CanPlace(rect, null, null))
+                return false;
+
+            reservation = rect;
+            candidate = new GridPlacement(instanceId, rect.X, rect.Y, rect.IsRotated, rect.Width, rect.Height);
+            return true;
+        }
+
         internal bool TryMovePlacement(GridPlacement candidate)
         {
             if (candidate == null || string.IsNullOrWhiteSpace(candidate.InstanceId) ||
@@ -136,7 +165,7 @@ namespace OldScars.Core.Items
             foreach (GridPlacement placement in placements.Values)
                 items[index++] = placement;
 
-            return new StateSnapshot(items);
+            return new StateSnapshot(items, Version);
         }
 
         internal void RestoreState(StateSnapshot snapshot)
@@ -153,7 +182,7 @@ namespace OldScars.Core.Items
                 }
             }
 
-            Version++;
+            Version = snapshot.Version;
         }
 
         internal bool ValidateNoOverlapOrBounds()
@@ -271,12 +300,14 @@ namespace OldScars.Core.Items
 
         internal readonly struct StateSnapshot
         {
-            public StateSnapshot(GridPlacement[] placements)
+            public StateSnapshot(GridPlacement[] placements, int version)
             {
                 Placements = placements;
+                Version = version;
             }
 
             public readonly GridPlacement[] Placements;
+            public readonly int Version;
         }
     }
 }

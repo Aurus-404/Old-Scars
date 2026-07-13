@@ -4,7 +4,7 @@ using OldScars.Core.Interactions;
 
 namespace OldScars.Core.Items
 {
-    public interface IItemStorageDebugSource
+    public interface IItemStorageDebugSource : IGridStorageOwner
     {
         bool HasStoredItems { get; }
         IReadOnlyList<ItemStorageEntry> StorageEntries { get; }

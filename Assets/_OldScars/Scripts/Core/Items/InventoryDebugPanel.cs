@@ -4,7 +4,6 @@ using OldScars.Core.Combat;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace OldScars.Core.Items
 {
@@ -26,14 +25,18 @@ namespace OldScars.Core.Items
 
         private bool isVisible;
         private Vector2 scrollPosition;
-        private string lastMessage;
         private bool showLegacyList;
         private readonly InventoryGridDebugView gridView = new InventoryGridDebugView();
+        private readonly InventoryGridDragController dragController = new InventoryGridDragController();
+        private readonly InventoryDebugToast toast = new InventoryDebugToast();
+        private InventoryUISessionController sessionController;
 
         public bool IsVisible => isVisible;
+        public InventoryComponent Inventory => inventory;
 
         private void Awake()
         {
+            ResolveSessionController();
             ResolveActorNeeds();
             ResolveActorHealth();
             ResolveFirearmController();
@@ -41,6 +44,7 @@ namespace OldScars.Core.Items
 
         private void OnEnable()
         {
+            ResolveSessionController();
             ResolveActorNeeds();
             ResolveActorHealth();
             ResolveFirearmController();
@@ -48,8 +52,40 @@ namespace OldScars.Core.Items
 
         public void Hide()
         {
+            if (sessionController != null && sessionController.IsOpen)
+                sessionController.CloseSession();
+            else
+                HideFromSession();
+        }
+
+        internal void BindSessionController(InventoryUISessionController controller)
+        {
+            sessionController = controller;
+        }
+
+        internal void ShowFromSession()
+        {
+            scrollPosition = Vector2.zero;
+            toast.Clear();
+            isVisible = true;
+        }
+
+        internal void HideFromSession()
+        {
             isVisible = false;
             gridView.Reset();
+            dragController.Reset();
+            toast.Clear();
+        }
+
+        internal bool CancelActiveDrag()
+        {
+            return dragController.CancelDrag();
+        }
+
+        internal void HandleRotationInput()
+        {
+            dragController.HandleRotationInput();
         }
 
         public bool ContainsScreenPosition(Vector2 screenPosition)
@@ -61,41 +97,23 @@ namespace OldScars.Core.Items
             return GetPanelRect().Contains(guiPoint);
         }
 
-        private void Update()
-        {
-            if (Keyboard.current == null)
-                return;
-
-            if (Keyboard.current.iKey.wasPressedThisFrame)
-            {
-                if (isVisible)
-                    Hide();
-                else
-                    isVisible = true;
-                scrollPosition = Vector2.zero;
-            }
-
-            if (!isVisible)
-                return;
-
-            gridView.HandleKeyboardInput(inventory);
-            if (Keyboard.current.escapeKey.wasPressedThisFrame && !gridView.CancelDrag())
-                Hide();
-        }
-
         private void OnGUI()
         {
             if (!isVisible)
                 return;
 
-            GUILayout.BeginArea(GetPanelRect(), GUI.skin.box);
+            Rect panelRect = GetPanelRect();
+            GUILayout.BeginArea(panelRect, GUI.skin.box);
             GUILayout.Label("Inventory (Debug v0)");
 
             if (inventory == null)
             {
                 GUILayout.Label("No InventoryComponent assigned.");
                 DrawCloseButton();
+                ConsumeDragStatus();
+                toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUILayout.EndArea();
+                sessionController?.ConsumeCurrentOnGUIEvent();
                 return;
             }
 
@@ -103,12 +121,6 @@ namespace OldScars.Core.Items
             DrawFirearmSection();
 
             GUILayout.Space(8f);
-
-            if (!string.IsNullOrWhiteSpace(lastMessage))
-                GUILayout.Label(lastMessage);
-
-            if (!string.IsNullOrWhiteSpace(gridView.StatusMessage))
-                GUILayout.Label(gridView.StatusMessage);
 
             GUILayout.BeginHorizontal();
             GUILayout.Label(inventory.UsesGridLayout
@@ -124,11 +136,15 @@ namespace OldScars.Core.Items
             else
                 DrawVisualGridStorage();
 
+            ConsumeDragStatus();
+            toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
             GUILayout.EndArea();
+            sessionController?.ConsumeCurrentOnGUIEvent();
         }
 
         private void DrawVisualGridStorage()
         {
+            dragController.BeginFrame(default);
             GUILayout.BeginHorizontal();
 
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(292f));
@@ -138,7 +154,8 @@ namespace OldScars.Core.Items
                 gridView.GetRequiredHeight(inventory.GridHeight),
                 GUILayout.Width(gridView.GetRequiredWidth(inventory.GridWidth)),
                 GUILayout.Height(gridView.GetRequiredHeight(inventory.GridHeight)));
-            gridView.Draw(inventory, gridRect);
+            gridView.Draw(inventory, gridRect, dragController);
+            dragController.RegisterEndpoint(inventory, gridView, gridRect);
             GUILayout.EndVertical();
 
             GUILayout.Space(8f);
@@ -147,6 +164,7 @@ namespace OldScars.Core.Items
             GUILayout.EndVertical();
 
             GUILayout.EndHorizontal();
+            dragController.ProcessOnGUI();
         }
 
         private void DrawSelectedItemDetails()
@@ -222,7 +240,7 @@ namespace OldScars.Core.Items
             GUI.enabled = true;
 
             if (GUILayout.Button("Close", GUILayout.Height(24f), GUILayout.Width(90f)))
-                Hide();
+                RequestClose();
 
             GUILayout.EndHorizontal();
         }
@@ -298,7 +316,9 @@ namespace OldScars.Core.Items
                 actionDisplayName,
                 out string message);
 
-            lastMessage = message;
+            toast.Show(
+                message,
+                dropped ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             if (!dropped)
                 Debug.LogWarning($"[InventoryDebugPanel] {message}");
 
@@ -312,7 +332,9 @@ namespace OldScars.Core.Items
             ResolveActorHealth();
 
             InventoryItemUseResult result = InventoryItemUseService.TryUseItem(inventory, index, actorNeeds, actorHealth);
-            lastMessage = result.Message;
+            toast.Show(
+                result.Message,
+                result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Warning);
             if (!result.Success)
                 Debug.Log($"[InventoryDebugPanel] Use failed: {result.Message}");
 
@@ -395,11 +417,25 @@ namespace OldScars.Core.Items
             return new Rect(x, y, PanelWidth, PanelHeight);
         }
 
+        private void ConsumeDragStatus()
+        {
+            if (dragController.TryConsumeStatus(out string message, out InventoryToastSeverity severity))
+                toast.Show(message, severity);
+        }
+
         private void DrawCloseButton()
         {
             GUILayout.Space(8f);
             if (GUILayout.Button("Close", GUILayout.Height(24f)))
-                Hide();
+                RequestClose();
+        }
+
+        private void RequestClose()
+        {
+            if (sessionController != null)
+                sessionController.CloseSession();
+            else
+                HideFromSession();
         }
 
         private static Vector2 ToGuiPosition(Vector2 mousePosition)
@@ -441,6 +477,12 @@ namespace OldScars.Core.Items
 
             if (firearmController == null)
                 firearmController = FindAnyObjectByType<FirearmDebugController>();
+        }
+
+        private void ResolveSessionController()
+        {
+            if (sessionController == null)
+                InventoryUISessionController.GetOrCreate().BindPanel(this);
         }
 
         private static string SafeText(string value)

@@ -1217,6 +1217,38 @@ Con equipped item definition id none o vacio:
 - Se elimino el flag de rotacion del contrato JSON/C#; todos los footprints no cuadrados admiten orientacion alternativa.
 - Los footprints cuadrados tratan la orden de rotacion como exito no-op, sin estado redundante ni incremento de `GridInventoryLayout.Version`.
 - No se modificaron storage, transfers, `right_hand`, containers, cadaveres, pickup, drop, firearm, escena ni iconos.
+- Validado manualmente en Unity: rotacion universal, no-op de cuadrados, pickup/drop, equipamiento, transfers y Data Load 0 errors / 0 warnings.
+- Estado: validated.
+
+### M33.2: Universal Grid Storage + Dual Grid Inventory UI v0
+
+- Se agregaron `IGridStorageOwner`, `GridStorageRuntime` y `GridStorageTransferService` para reutilizar `ItemStorage`, `GridInventoryLayout` y `GridInventoryBackend` sin backends por tipo de owner.
+- `InventoryComponent`, `ContainerLootComponent` y `LootableActorInventoryComponent` exponen el mismo contrato espacial; el cadaver delega al inventario real del actor.
+- Containers y actores inicializan contenido primero y layout despues. Si el first-fit completo falla, el storage queda intacto y pasa a `LinearFallback` sin placements parciales.
+- `InventoryGridDebugView` quedo desacoplado de `InventoryComponent` y dibuja cualquier `IGridStorageOwner` sin crear ni administrar placements.
+- `ItemStorageDebugPanel` usa tres columnas OnGUI: Player Grid, informacion/acciones provisionales y External Storage Grid.
+- Una sola `InventoryGridDragController` mantiene drag entre ambos lados por `InstanceId`, recolocacion interna, rotacion, preview, cancelacion y transferencia exacta de stack completo.
+- El drag exacto rechaza merges ambiguos; Shift/clic y botones Take/Deposit 1/Stack usan auto-placement atomico y nunca ejecutan batch global.
+- `InventoryUISessionController` centraliza `I`, `Escape`, cierre, cancelacion y bloqueo de input del mundo/camara; los paneles ya no escuchan esas teclas por separado.
+- Los hooks de owner preservan acceso/tags de containers y cuerpos fuera de `GridInventoryBackend`; `right_hand` solo se limpia despues de una salida exitosa de esa misma instancia.
+- `SampleScene` configura sealed crate `4x4`, supply/misc crates `6x5`, fridge `5x8`, oven `4x4`, countertop `5x3`, cupboards `4x5` y ambos NPC/cadaveres `6x8`.
+- No se modificaron JSON, loot tables, puertas, visibilidad, arte, tests ni asmdef; no se agregaron Canvas, EventSystem ni UI Toolkit.
+- Estado: implemented; pendiente de validacion manual en Unity, no validated.
+
+### M33.2.1: Partial Directed Merge + Stable Dual Grid UI
+
+- Se separo el drop entre owners en placement exacto sobre celda vacia y merge dirigido sobre un `destinationInstanceId` concreto.
+- La resolucion del receptor convierte cursor a celda y consulta footprints de `GridPlacement`; cualquier celda de un item multicelda resuelve la misma instancia.
+- `ItemStorage.AddItemAsSeparateEntry` permite transferir un stack completo sin auto-merge, conservando su `InstanceId` y evitando presencia simultanea en ambos storages.
+- `GridStorageTransferService` agrega preview/commit de merge dirigido con owners/IDs distintos, capacidad real, `IncompatibleStack` y `StackFull`.
+- El merge parcial incrementa solo el receptor, conserva source ID/placement si queda cantidad y elimina source entry/placement solo al consumirlo completo.
+- Los snapshots de `ItemStorage` y `GridInventoryLayout` restauran tambien sus versiones; fallos restauran ambos lados y la secuencia de IDs.
+- Receipts exponen cantidad efectiva, IDs y `SourceWasRemoved`; hooks corren solo despues de `Success`, resincronizan containers/cuerpos y limpian `right_hand` solo si desaparecio la instancia equipada del jugador.
+- Seleccion y lado activo se reconcilian por `InstanceId`; un merge exitoso selecciona el receptor.
+- Mensajes de ambos paneles usan toast absoluto de 1.75 segundos con `Time.unscaledTime`, severidad y deduplicacion, sin filas `GUILayout`.
+- El panel dual congela su rect al abrir la sesion y centra columnas calculadas desde las dimensiones de ambas grillas, sin depender del contenido ni mensajes.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo warnings preexistentes de `BuildingVisibilityManager`.
+- No se modificaron JSON, escena, sprites, metas, puertas, visibilidad, transforms ni colliders; no se agregaron tests, asmdef, Canvas ni UI Toolkit.
 - Estado: implemented; pendiente de validacion manual en Unity, no validated.
 
 ## Decisiones De Scope

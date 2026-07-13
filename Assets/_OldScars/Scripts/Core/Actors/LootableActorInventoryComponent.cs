@@ -8,13 +8,35 @@ using UnityEngine;
 
 namespace OldScars.Core.Actors
 {
-    public sealed class LootableActorInventoryComponent : MonoBehaviour, IItemStorageDebugSource
+    public sealed class LootableActorInventoryComponent : MonoBehaviour, IItemStorageDebugSource, IGridStorageTransferEndpoint
     {
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private WorldObjectTags worldObjectTags;
 
         public bool HasStoredItems => inventory != null && !inventory.IsEmpty;
         public IReadOnlyList<ItemStorageEntry> StorageEntries => inventory != null ? inventory.GetStorageEntries() : EmptyEntries;
+        public string GridStorageDisplayName => name;
+        public IReadOnlyList<ItemStorageEntry> GridStorageEntries => StorageEntries;
+        public bool UsesGridLayout => inventory != null && inventory.UsesGridLayout;
+        public int GridWidth => inventory != null ? inventory.GridWidth : 0;
+        public int GridHeight => inventory != null ? inventory.GridHeight : 0;
+        public int ConfiguredGridWidth => inventory != null ? inventory.ConfiguredGridWidth : 0;
+        public int ConfiguredGridHeight => inventory != null ? inventory.ConfiguredGridHeight : 0;
+        public GridStorageInitializationState GridInitializationState => inventory != null
+            ? inventory.GridInitializationState
+            : GridStorageInitializationState.Disabled;
+        public string GridInitializationError => inventory != null ? inventory.GridInitializationError : "InventoryComponent is missing.";
+
+        GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend
+        {
+            get
+            {
+                ResolveReferences();
+                return inventory != null
+                    ? ((IGridStorageTransferEndpoint)inventory).TransferBackend
+                    : null;
+            }
+        }
 
         private static readonly ItemStorageEntry[] EmptyEntries = new ItemStorageEntry[0];
 
@@ -80,15 +102,20 @@ namespace OldScars.Core.Actors
 
             string definitionId = entry.DefinitionId;
             int requestedQuantity = Mathf.Min(quantity, entry.Quantity);
-            int transferredQuantity = inventory.TransferItemTo(targetInventory, storageIndex, requestedQuantity);
-            if (transferredQuantity <= 0)
+            InventoryMutationResult transferResult = GridStorageTransferService.TransferQuantityAuto(
+                this,
+                targetInventory,
+                entry.Item.InstanceId,
+                requestedQuantity,
+                true,
+                new GridStorageTransferContext(executionContext, action));
+            if (!transferResult.Success)
             {
-                message = "No se pudo transferir contenido.";
+                message = transferResult.Message ?? "No se pudo transferir contenido.";
                 return 0;
             }
 
-            RecordLootReceived(definitionId, transferredQuantity, executionContext, action);
-            SyncLootableTag();
+            int transferredQuantity = transferResult.AffectedQuantity;
 
             message = $"Tomaste {GetItemDisplayName(definitionId)} x{transferredQuantity}.";
             return transferredQuantity;
@@ -138,16 +165,80 @@ namespace OldScars.Core.Actors
 
             string definitionId = entry.DefinitionId;
             int requestedQuantity = Mathf.Min(quantity, entry.Quantity);
-            int transferredQuantity = sourceInventory.TransferItemTo(inventory, inventoryIndex, requestedQuantity);
-            if (transferredQuantity <= 0)
+            InventoryMutationResult transferResult = GridStorageTransferService.TransferQuantityAuto(
+                sourceInventory,
+                this,
+                entry.Item.InstanceId,
+                requestedQuantity,
+                true,
+                new GridStorageTransferContext(executionContext, action));
+            if (!transferResult.Success)
             {
-                message = "No se pudo depositar contenido.";
+                message = transferResult.Message ?? "No se pudo depositar contenido.";
                 return 0;
             }
 
-            SyncLootableTag();
+            int transferredQuantity = transferResult.AffectedQuantity;
             message = $"Depositaste {GetItemDisplayName(definitionId)} x{transferredQuantity}.";
             return transferredQuantity;
+        }
+
+        public bool TryGetEntryByInstanceId(string instanceId, out int index, out ItemStorageEntry entry)
+        {
+            ResolveReferences();
+            if (inventory != null)
+                return inventory.TryGetEntryByInstanceId(instanceId, out index, out entry);
+
+            index = -1;
+            entry = null;
+            return false;
+        }
+
+        public bool TryGetGridPlacement(string instanceId, out GridPlacement placement)
+        {
+            ResolveReferences();
+            placement = null;
+            return inventory != null && inventory.TryGetGridPlacement(instanceId, out placement);
+        }
+
+        public bool TryGetGridFootprint(string definitionId, out GridFootprint footprint, out bool usedFallback)
+        {
+            ResolveReferences();
+            footprint = null;
+            usedFallback = false;
+            return inventory != null && inventory.TryGetGridFootprint(definitionId, out footprint, out usedFallback);
+        }
+
+        public GridPlacementValidationResult PreviewGridPlacementMove(
+            string instanceId,
+            int x,
+            int y,
+            bool isRotated)
+        {
+            ResolveReferences();
+            return inventory != null
+                ? inventory.PreviewGridPlacementMove(instanceId, x, y, isRotated)
+                : GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.GridLayoutUnavailable,
+                    "Actor InventoryComponent is missing.");
+        }
+
+        public InventoryMutationResult MoveGridPlacement(string instanceId, int x, int y, bool isRotated)
+        {
+            ResolveReferences();
+            return inventory != null
+                ? inventory.MoveGridPlacement(instanceId, x, y, isRotated)
+                : InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.GridLayoutUnavailable,
+                    "Actor InventoryComponent is missing.",
+                    0,
+                    instanceId);
+        }
+
+        public bool IsInstanceEquipped(string instanceId)
+        {
+            ResolveReferences();
+            return inventory != null && inventory.IsInstanceEquipped(instanceId);
         }
 
         private bool CanAccessActorInventory(out string reason)
@@ -175,7 +266,6 @@ namespace OldScars.Core.Actors
 
             if (inventory == null || inventory.IsEmpty)
             {
-                SyncLootableTag();
                 reason = "No queda contenido en este cuerpo.";
                 return false;
             }
@@ -225,6 +315,38 @@ namespace OldScars.Core.Actors
 
             if (worldObjectTags == null)
                 worldObjectTags = GetComponent<WorldObjectTags>();
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferOut(GridStorageTransferContext context, out string reason)
+        {
+            return CanAccessActorInventory(out reason);
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferIn(GridStorageTransferContext context, out string reason)
+        {
+            return CanDepositIntoActorInventory(out reason);
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedOut(
+            GridStorageTransferReceipt receipt,
+            GridStorageTransferContext context)
+        {
+            if (receipt.SourceWasRemoved && inventory != null && inventory.IsInstanceEquipped(receipt.SourceInstanceId))
+                inventory.UnequipRightHand();
+
+            RecordLootReceived(
+                receipt.DefinitionId,
+                receipt.TransferredQuantity,
+                context.ExecutionContext,
+                context.Action);
+            SyncLootableTag();
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedIn(
+            GridStorageTransferReceipt receipt,
+            GridStorageTransferContext context)
+        {
+            SyncLootableTag();
         }
 
         private static void RecordLootReceived(string definitionId, int quantity, DebugActionExecutionContext executionContext, ActionDefinition action)

@@ -65,6 +65,42 @@ namespace OldScars.Core.Items
             return firstChangedEntry;
         }
 
+        internal ItemStorageEntry AddItemAsSeparateEntry(ItemInstance item, int quantity)
+        {
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
+
+            if (quantity < 1 || quantity > Math.Max(1, item.MaxStack))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(quantity),
+                    quantity,
+                    "Quantity must fit in one stack.");
+            }
+
+            if (GetEntryByInstanceId(item.InstanceId) != null)
+                throw new InvalidOperationException($"Item instance '{item.InstanceId}' already exists in the target storage.");
+
+            var entry = new ItemStorageEntry(item, quantity);
+            entries.Add(entry);
+            mutationVersion++;
+            return entry;
+        }
+
+        internal bool TryAddQuantityToEntry(string instanceId, int quantity)
+        {
+            if (quantity < 1)
+                return false;
+
+            ItemStorageEntry entry = GetEntryByInstanceId(instanceId);
+            if (entry == null || entry.AvailableStackSpace < quantity)
+                return false;
+
+            entry.AddQuantity(quantity);
+            mutationVersion++;
+            return true;
+        }
+
         public ItemStorageEntry GetEntry(int index)
         {
             return IsIndexValid(index) ? entries[index] : null;
@@ -135,7 +171,7 @@ namespace OldScars.Core.Items
                 states[index] = new EntryState(entry.Item, entry.Quantity);
             }
 
-            return new StateSnapshot(states);
+            return new StateSnapshot(states, mutationVersion);
         }
 
         internal void RestoreState(StateSnapshot snapshot)
@@ -152,7 +188,7 @@ namespace OldScars.Core.Items
                 }
             }
 
-            mutationVersion++;
+            mutationVersion = snapshot.Version;
         }
 
         public int TransferAllTo(ItemStorage target)
@@ -258,12 +294,14 @@ namespace OldScars.Core.Items
 
         internal readonly struct StateSnapshot
         {
-            public StateSnapshot(EntryState[] entries)
+            public StateSnapshot(EntryState[] entries, int version)
             {
                 Entries = entries;
+                Version = version;
             }
 
             public readonly EntryState[] Entries;
+            public readonly int Version;
         }
     }
 }

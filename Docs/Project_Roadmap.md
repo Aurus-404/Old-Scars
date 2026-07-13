@@ -102,12 +102,14 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 32.4.1: Door Pivot Repair + Interior Visibility Cast Debug/Stability | Agregar herramienta editor-only para reparar pivots visuales de puertas M32 y estabilizar casts de visibilidad interior. | implemented | Pendiente de validacion manual en Unity; no toca JSON, TagManager, camara, movimiento, containers, loot ni inventario. |
 | Grid Inventory Backend v0 | Agregar capacidad espacial y placements por InstanceId alrededor de ItemStorage sin reemplazar stacks ni APIs existentes. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
 | Milestone 33.1: Visual Grid Inventory UI v0 | Mostrar y reorganizar la grilla `6x8` del jugador mediante OnGUI, con iconos data-driven y Legacy List debug. | validated | Validado manualmente: grilla, iconos, drag, rotacion, seleccion, equipamiento, transfers y Data Load 0/0. |
-| Milestone 33.1.1: Inventory Footprint Rebalance + Universal Rotation | Rebalancear footprints Core y eliminar el opt-in de rotacion por item. | implemented | Pendiente de validacion manual en Unity. |
+| Milestone 33.1.1: Inventory Footprint Rebalance + Universal Rotation | Rebalancear footprints Core y eliminar el opt-in de rotacion por item. | validated | Validado manualmente: rotacion universal, no-op de cuadrados y regresiones M33.1 con Data Load 0/0. |
+| Milestone 33.2: Universal Grid Storage + Dual Grid Inventory UI v0 | Generalizar layout espacial opcional a storages externos y mostrar Player Grid junto a Container/Corpse Grid. | implemented | Pendiente de validacion manual en Unity; verificacion estatica solamente. |
+| Milestone 33.2.1: Partial Directed Merge + Stable Dual Grid UI | Separar placement exacto de merge dirigido parcial y estabilizar mensajes/layout de la UI dual. | implemented | Pendiente de validacion manual en Unity; compilacion estatica solamente. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-M33.1 esta validado manualmente en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1 estan implementados en el checkout y pendientes de validacion manual en Unity.
+M33.1 y M33.1.1 estan validados manualmente en Unity. M33.2 y M33.2.1 estan implementados en el checkout y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los ultimos milestones cerrados como `validated` son:
 
@@ -116,10 +118,11 @@ Los ultimos milestones cerrados como `validated` son:
 - Milestone 26.0.1: Storage Panel Layout Swap.
 - Milestone 27: Search vs Open Storage v0.
 - M33.1: Visual Grid Inventory UI v0.
+- M33.1.1: Inventory Footprint Rebalance + Universal Rotation.
 
 ## Proximo Recomendado
 
-Validar Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1 en Unity antes de preparar Milestone 28: Container State / Naming Cleanup v0.
+Validar M33.2/M33.2.1, Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 en Unity antes de preparar Milestone 28: Container State / Naming Cleanup v0.
 
 Objetivo recomendado despues de esa validacion: limpiar nombres y estados debug de contenedores despues de M27, reducir la dependencia futura de `lootable_container` / `looted_container` sin romper compatibilidad y corregir titulos debug inconsistentes como `Contenedor saqueado Contents (Debug)`.
 
@@ -653,8 +656,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `ActorInteractionContext`: datos minimos del actor para interactuar.
 - `ItemInstance`: instancia runtime-only minima de un item.
 - `ItemStorage`: storage runtime-only de items con cantidades simples y merge basico por `definitionId` + `max_stack`.
-- `GridInventoryLayout` / `GridInventoryBackend`: capacidad espacial `6x8` del Debug Player, placements por `ItemInstance.InstanceId` y mutaciones transaccionales alrededor de `ItemStorage`.
-- `InventoryGridDebugView` / `InventoryIconResolver`: grilla OnGUI reusable, seleccion/drag por InstanceId e iconos opcionales por `inventory.icon_id`.
+- `GridInventoryLayout` / `GridInventoryBackend` / `GridStorageRuntime`: capacidad espacial opcional por owner, placements por `ItemInstance.InstanceId` y mutaciones transaccionales alrededor de `ItemStorage`.
+- `IGridStorageOwner` / `GridStorageTransferService`: lectura universal y transferencias cerradas entre jugador, containers y cadaveres sin backends especializados ni dependencias de tags dentro del backend.
+- `InventoryGridDebugView` / `InventoryIconResolver`: grilla OnGUI reusable para cualquier owner espacial, seleccion/drag por InstanceId e iconos opcionales por `inventory.icon_id`.
 - `ItemStorageEntry`: entrada runtime de storage con `ItemInstance` representativo y `Quantity`.
 - `ActorNeedsComponent`: necesidades runtime genericas de actor con hunger/thirst debug.
 - `ActorHealthComponent`: health runtime v0 de actores con max/current health, low health threshold y tags de estado.
@@ -673,7 +677,8 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `DebugInventory`: inventario debug temporal para crear item instances y exponer item equipado.
 - `InventoryDebugPanel`: UI debug OnGUI de inventario v0, muestra Equipped separado de Storage, uso de consumibles y equip validado por `InventoryComponent`.
 - `ActorNeedsDebugPanel`: UI debug fija para Hunger/Thirst/Health y dano debug del Player.
-- `ItemStorageDebugPanel`: UI debug reusable para inspeccionar y transferir contenido en ambas direcciones entre Player Inventory y Open Storage.
+- `ItemStorageDebugPanel`: UI debug reusable de tres columnas con Player Grid y storage externo espacial o Legacy List; no es UI final.
+- `InventoryUISessionController`: autoridad unica para abrir/cerrar UI de inventario, cancelar drag, interpretar `I`/`Escape` y bloquear input del mundo durante la sesion.
 - `WorldItemPickup`: componente debug para recoger un item de mundo configurado.
 - `ContainerLootComponent`: componente debug para inicializar storage desde loot table, reportar storage debug y transferir contenido solo cuando el contenedor es accesible.
 - `WorldObjectTags`: initial tags y runtime tags.

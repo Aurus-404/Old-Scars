@@ -11,6 +11,16 @@ namespace OldScars.Core.Interactions
         [SerializeField] private InventoryDebugPanel inventoryPanel;
         [SerializeField] private ItemStorageDebugPanel storagePanel;
         [SerializeField] private ActorNeedsDebugPanel actorNeedsPanel;
+        [SerializeField] private InventoryUISessionController inventorySessionController;
+
+        public bool BlocksWorldInput
+        {
+            get
+            {
+                EnsureReferences();
+                return inventorySessionController != null && inventorySessionController.BlocksWorldInput;
+            }
+        }
 
         private void Awake()
         {
@@ -28,11 +38,17 @@ namespace OldScars.Core.Interactions
 
             if (actorNeedsPanel == null)
                 actorNeedsPanel = FindAnyObjectByType<ActorNeedsDebugPanel>();
+
+            if (inventorySessionController == null)
+                inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
         }
 
         public bool ConsumeLeftClickIfNeeded(Vector2 screenPosition)
         {
             EnsureReferences();
+
+            if (inventorySessionController != null && inventorySessionController.BlocksWorldInput)
+                return true;
 
             if (actorNeedsPanel != null && actorNeedsPanel.ContainsScreenPosition(screenPosition))
                 return true;
@@ -73,6 +89,9 @@ namespace OldScars.Core.Interactions
         {
             EnsureReferences();
 
+            if (inventorySessionController != null && inventorySessionController.BlocksWorldInput)
+                return true;
+
             return (actorNeedsPanel != null && actorNeedsPanel.ContainsScreenPosition(screenPosition)) ||
                    (actionPanel != null && actionPanel.IsVisible && actionPanel.ContainsScreenPosition(screenPosition)) ||
                    (resultPanel != null && resultPanel.IsVisible && resultPanel.ContainsScreenPosition(screenPosition)) ||
@@ -96,6 +115,9 @@ namespace OldScars.Core.Interactions
 
             if (actorNeedsPanel == null)
                 actorNeedsPanel = FindAnyObjectByType<ActorNeedsDebugPanel>();
+
+            if (inventorySessionController == null)
+                inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
         }
     }
 }

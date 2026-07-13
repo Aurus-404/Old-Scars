@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1 Visual Grid Inventory UI v0 esta validado manualmente en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1 estan implementados en el checkout y pendientes de validacion manual en Unity.
+M33.1 y M33.1.1 estan validados manualmente en Unity. M33.2 Universal Grid Storage + Dual Grid Inventory UI v0 y M33.2.1 Partial Directed Merge + Stable Dual Grid UI estan implementados en el checkout y pendientes de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -13,6 +13,7 @@ Los ultimos milestones cerrados y validados en Unity son:
 - Milestone 26.0.1: Storage Panel Layout Swap.
 - Milestone 27: Search vs Open Storage v0.
 - M33.1: Visual Grid Inventory UI v0.
+- M33.1.1: Inventory Footprint Rebalance + Universal Rotation.
 
 La validacion confirmada de M33.1 incluye Data Load OK con 0 errors y 0 warnings y las regresiones principales funcionando.
 
@@ -107,13 +108,42 @@ Estado: `validated`.
 
 ### M33.1.1: Inventory Footprint Rebalance + Universal Rotation
 
-Estado: `implemented`.
+Estado: `validated`.
 
 - Footprints Core: rifle `6x1`, palanca `5x1`, botella `2x1`, scrap `2x2`, municion `1x1`, venda `1x1` y comida `1x1`.
 - Todos los footprints no cuadrados pueden intercambiar ancho/alto mediante `IsRotated`; no existe un flag de opt-in por item.
 - La rotacion de footprints cuadrados es exito no-op y no cambia placement ni `GridInventoryLayout.Version`.
-- Storage, transfers, `right_hand`, containers, cadaveres, pickup, drop, firearm, escena e iconos permanecen sin cambios.
-- Pendiente de validacion manual en Unity.
+- Storage, transfers, `right_hand`, containers, cadaveres, pickup, drop, firearm, escena e iconos permanecieron sin cambios en ese bloque.
+- Validado manualmente en Unity junto con M33.1: rotacion universal, no-op de cuadrados, pickup/drop, equipamiento, transfers y Data Load 0 errors / 0 warnings.
+
+### M33.2: Universal Grid Storage + Dual Grid Inventory UI v0
+
+Estado: `implemented`.
+
+- `ItemStorage` sigue siendo la fuente de contenido y stacks; `GridStorageRuntime` compone opcionalmente `GridInventoryLayout`/`GridInventoryBackend` para cualquier owner compatible.
+- `IGridStorageOwner` expone lectura por `InstanceId` y operaciones cerradas; containers y cadaveres no tienen backends especializados.
+- Los containers inicializan primero su loot lineal y solo activan la grilla si todas las entries reciben placement; un fallo conserva contenido y habilita fallback lineal con error.
+- Los actores aplican primero su inventario inicial y completan la inicializacion espacial sin cambiar `InstanceId`; el cadaver delega al `InventoryComponent` original.
+- `ItemStorageDebugPanel` muestra Player Grid, centro provisional y External Storage Grid con una sola sesion de drag, selecciones independientes y Legacy List por lado.
+- Drag interno solo recoloca layout. La base M33.2 mueve stack completo entre grillas y mantiene Shift/clic o botones con transferencia atomica y auto-placement; M33.2.1 define por separado placement exacto y merge dirigido.
+- `InventoryUISessionController` es la unica autoridad para `I`/`Escape`, cierre, cancelacion de drag y bloqueo de movimiento, disparo, interaccion y camara mientras la sesion esta abierta.
+- `SampleScene` configura crates, cocina y ambos NPC/cadaveres con dimensiones serializadas; no se cambiaron JSON, loot tables, puertas ni visibilidad.
+- Pendiente de validacion manual en Unity; no marcar `validated` hasta completar Play Mode y Console.
+
+### M33.2.1: Partial Directed Merge + Stable Dual Grid UI
+
+Estado: `implemented`.
+
+- El drag entre owners distingue placement exacto en celda vacia de merge dirigido sobre un `destinationInstanceId` concreto; el merge interno no existe.
+- La deteccion del receptor usa la celda ocupada por `GridPlacement`, independiente del sprite, fondo o margenes visuales.
+- Placement exacto usa insercion sin auto-merge, conserva el source `InstanceId` y respeta X/Y/orientacion aunque exista otro stack compatible.
+- Merge dirigido usa capacidad real del receptor, permite transferencia parcial y conserva ambos placements/IDs mientras el source tenga remanente.
+- Snapshots restauran contenido y versiones de ambos storages/layouts; hooks, tags y `right_hand` solo reaccionan despues de `Success`.
+- El receipt expone cantidad real, IDs origen/destino y eliminacion del source; containers y cuerpos resincronizan contenido despues del commit.
+- Seleccion/reconciliacion siguen usando `InstanceId`; el receptor queda activo despues de merge exitoso.
+- Los mensajes usan toast absoluto con tiempo no escalado y las tres columnas se centran con un rect congelado por sesion.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen warnings preexistentes de `BuildingVisibilityManager`.
+- Estado de validacion: pendiente de Play Mode/Console; no validated.
 
 ## Ultimo Estado Validado
 
@@ -166,7 +196,7 @@ Estado: `implemented`.
 
 ## Proximo Recomendado
 
-Validar Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1, Grid Inventory Backend v0 y M33.1.1 en Unity antes de cerrar esos bloques como `validated`.
+Validar M33.2/M33.2.1, Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 en Unity antes de cerrar esos bloques como `validated`.
 
 Alcance recomendado:
 
@@ -177,7 +207,7 @@ Alcance recomendado:
 - validar los debug casts/overlap de M32.4.1 con camara cercana y lejana;
 - validar first-fit, rotacion, grilla llena, merge sin celda nueva, split con placement nuevo, rollback y preservacion de `right_hand` ante fallo;
 - validar pickup, drop, consumo, containers y cadaveres con el Debug Player en grilla `6x8`;
-- validar los footprints rebalanceados, rotacion universal y no-op de cuadrados de M33.1.1;
+- validar ambas grillas, fallback lineal, drag exacto, Shift/clic, botones 1/Stack, tags de containers/cadaveres y autoridad unica de `I`/`Escape` de M33.2;
 - confirmar Console sin errores rojos;
 - despues de validar, retomar Milestone 28: Container State / Naming Cleanup v0.
 

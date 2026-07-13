@@ -77,6 +77,10 @@ namespace OldScars.Core.Combat
         private void Update()
         {
             UpdateTracer();
+
+            if (uiInputBlocker != null && uiInputBlocker.BlocksWorldInput)
+                return;
+
             HandleAimToggleInput();
 
             if (!isAimActive)

@@ -3,28 +3,38 @@ using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Interactions;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace OldScars.Core.Items
 {
     public sealed class ItemStorageDebugPanel : MonoBehaviour
     {
-        private const float PanelWidth = 1120f;
-        private const float PanelHeight = 650f;
-        private const float ColumnWidth = 535f;
-        private const float ColumnScrollHeight = 430f;
+        private const float MaxPanelWidth = 1120f;
+        private const float MaxPanelHeight = 700f;
+        private const float MinimumGridColumnWidth = 220f;
+        private const float GridColumnPadding = 24f;
+        private const float CenterColumnWidth = 250f;
+        private const float ColumnGap = 8f;
+        private const float PanelHorizontalPadding = 24f;
 
         private IItemStorageDebugSource storageSource;
         private InventoryComponent targetInventory;
         private DebugActionExecutionContext executionContext;
         private ActionDefinition action;
-        private Vector2 storageScrollPosition;
-        private Vector2 inventoryScrollPosition;
         private string title;
-        private string lastMessage;
         private bool isVisible;
-        private bool showLegacyList;
-        private readonly InventoryGridDebugView gridView = new InventoryGridDebugView();
+        private bool showPlayerLegacyList;
+        private bool showExternalLegacyList;
+        private Vector2 playerLegacyScroll;
+        private Vector2 externalLegacyScroll;
+        private InventoryUISessionController sessionController;
+        private Rect sessionPanelRect;
+        private float playerColumnWidth;
+        private float externalColumnWidth;
+
+        private readonly InventoryGridDebugView playerGridView = new InventoryGridDebugView();
+        private readonly InventoryGridDebugView externalGridView = new InventoryGridDebugView();
+        private readonly InventoryGridDragController dragController = new InventoryGridDragController();
+        private readonly InventoryDebugToast toast = new InventoryDebugToast();
 
         public bool IsVisible => isVisible;
 
@@ -32,35 +42,69 @@ namespace OldScars.Core.Items
         {
             ItemStorageDebugPanel panel = FindAnyObjectByType<ItemStorageDebugPanel>();
             if (panel != null)
-            {
                 return panel;
-            }
 
             var panelObject = new GameObject("ItemStorageDebugPanel_Runtime");
             return panelObject.AddComponent<ItemStorageDebugPanel>();
         }
 
-        public void Show(ContainerLootComponent sourceContainer, InventoryComponent inventory, DebugActionExecutionContext context, ActionDefinition sourceAction)
+        public void Show(
+            ContainerLootComponent sourceContainer,
+            InventoryComponent inventory,
+            DebugActionExecutionContext context,
+            ActionDefinition sourceAction)
         {
             Show(sourceContainer as IItemStorageDebugSource, inventory, context, sourceAction);
         }
 
-        public void Show(IItemStorageDebugSource source, InventoryComponent inventory, DebugActionExecutionContext context, ActionDefinition sourceAction)
+        public void Show(
+            IItemStorageDebugSource source,
+            InventoryComponent inventory,
+            DebugActionExecutionContext context,
+            ActionDefinition sourceAction)
+        {
+            InventoryUISessionController.GetOrCreate().OpenExternal(source, inventory, context, sourceAction);
+        }
+
+        public void Hide()
+        {
+            if (sessionController != null && sessionController.IsOpen)
+                sessionController.CloseSession();
+            else
+                HideFromSession();
+        }
+
+        internal void BindSessionController(InventoryUISessionController controller)
+        {
+            sessionController = controller;
+        }
+
+        internal void ShowFromSession(
+            IItemStorageDebugSource source,
+            InventoryComponent inventory,
+            DebugActionExecutionContext context,
+            ActionDefinition sourceAction)
         {
             storageSource = source;
             targetInventory = inventory;
             executionContext = context;
             action = sourceAction;
-            title = source != null ? source.GetStorageDebugTitle(context.Target) : BuildTitle(null, context.Target);
-            lastMessage = null;
-            storageScrollPosition = Vector2.zero;
-            inventoryScrollPosition = Vector2.zero;
-            showLegacyList = false;
-            gridView.Reset();
+            title = source != null ? source.GetStorageDebugTitle(context.Target) : "Storage Debug Panel";
+            showPlayerLegacyList = false;
+            showExternalLegacyList = false;
+            playerLegacyScroll = Vector2.zero;
+            externalLegacyScroll = Vector2.zero;
+            playerGridView.Reset();
+            externalGridView.Reset();
+            dragController.Reset();
+            toast.Clear();
+            playerColumnWidth = CalculateStorageColumnWidth(targetInventory, playerGridView);
+            externalColumnWidth = CalculateStorageColumnWidth(storageSource, externalGridView);
+            sessionPanelRect = CalculatePanelRect(playerColumnWidth, externalColumnWidth);
             isVisible = true;
         }
 
-        public void Hide()
+        internal void HideFromSession()
         {
             isVisible = false;
             storageSource = null;
@@ -68,461 +112,350 @@ namespace OldScars.Core.Items
             executionContext = new DebugActionExecutionContext(null, null, null);
             action = null;
             title = null;
-            lastMessage = null;
-            showLegacyList = false;
-            gridView.Reset();
+            sessionPanelRect = default;
+            playerColumnWidth = 0f;
+            externalColumnWidth = 0f;
+            playerGridView.Reset();
+            externalGridView.Reset();
+            dragController.Reset();
+            toast.Clear();
+        }
+
+        internal bool CancelActiveDrag()
+        {
+            return dragController.CancelDrag();
+        }
+
+        internal void HandleRotationInput()
+        {
+            dragController.HandleRotationInput();
         }
 
         public bool ContainsScreenPosition(Vector2 screenPosition)
         {
             if (!isVisible)
-            {
                 return false;
-            }
 
-            Vector2 guiPoint = ToGuiPosition(screenPosition);
-            return GetPanelRect().Contains(guiPoint);
-        }
-
-        private void Update()
-        {
-            if (!isVisible || Keyboard.current == null)
-            {
-                return;
-            }
-
-            gridView.HandleKeyboardInput(targetInventory);
-            if (Keyboard.current.escapeKey.wasPressedThisFrame && !gridView.CancelDrag())
-                Hide();
+            return GetPanelRect().Contains(new Vector2(screenPosition.x, Screen.height - screenPosition.y));
         }
 
         private void OnGUI()
         {
             if (!isVisible)
-            {
                 return;
-            }
 
-            GUILayout.BeginArea(GetPanelRect(), GUI.skin.box);
-            GUILayout.Label(!string.IsNullOrWhiteSpace(title) ? title : "Storage Debug Panel");
+            Rect panelRect = GetPanelRect();
+            GUILayout.BeginArea(panelRect, GUI.skin.box);
+            DrawHeader();
 
-            if (!string.IsNullOrWhiteSpace(lastMessage))
+            if (targetInventory == null || storageSource == null)
             {
-                GUILayout.Label(lastMessage);
-            }
-
-            if (storageSource == null)
-            {
-                GUILayout.Label("No storage source.");
-                DrawCloseButton();
+                GUILayout.Label("Player inventory or external storage source is missing.");
+                ConsumeDragStatus();
+                toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUILayout.EndArea();
+                sessionController?.ConsumeCurrentOnGUIEvent();
                 return;
             }
 
+            dragController.BeginFrame(new GridStorageTransferContext(executionContext, action));
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close", GUILayout.Height(24f), GUILayout.Width(100f)))
-            {
-                Hide();
-                GUILayout.EndHorizontal();
-                GUILayout.EndArea();
-                return;
-            }
+            DrawStorageColumn(targetInventory, playerGridView, true, playerColumnWidth);
+            GUILayout.Space(ColumnGap);
+            DrawCenterColumn();
+            GUILayout.Space(ColumnGap);
+            DrawStorageColumn(storageSource, externalGridView, false, externalColumnWidth);
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-
-            GUILayout.Space(8f);
-
-            GUILayout.BeginHorizontal();
-            if (DrawInventoryColumn())
-            {
-                GUILayout.EndHorizontal();
-                GUILayout.EndArea();
-                return;
-            }
-
-            GUILayout.Space(8f);
-
-            if (DrawStorageColumn())
-            {
-                GUILayout.EndHorizontal();
-                GUILayout.EndArea();
-                return;
-            }
-
-            GUILayout.EndHorizontal();
+            dragController.ProcessOnGUI();
+            ConsumeDragStatus();
+            toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
             GUILayout.EndArea();
+            sessionController?.ConsumeCurrentOnGUIEvent();
         }
 
-        private bool DrawInventoryColumn()
+        private void DrawHeader()
         {
-            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(ColumnWidth));
-            GUILayout.Label("Player Inventory");
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(!string.IsNullOrWhiteSpace(title) ? title : "Storage Debug Panel");
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Close", GUILayout.Width(90f), GUILayout.Height(24f)))
+                RequestClose();
+            GUILayout.EndHorizontal();
+        }
 
-            bool gridBatchBlocked = IsGridBatchTransferBlocked();
-            GUI.enabled = !gridBatchBlocked;
-            if (GUILayout.Button("Deposit All", GUILayout.Height(24f)))
+        private void DrawStorageColumn(
+            IGridStorageOwner owner,
+            InventoryGridDebugView view,
+            bool isPlayer,
+            float columnWidth)
+        {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(columnWidth));
+            GUILayout.Label(isPlayer ? "Player Grid" : "External Storage Grid");
+
+            bool showLegacy = isPlayer ? showPlayerLegacyList : showExternalLegacyList;
+            if (GUILayout.Button(showLegacy ? "Visual Grid" : "Legacy List", GUILayout.Height(24f)))
             {
-                DepositAll();
-                GUILayout.EndVertical();
-                GUI.enabled = true;
-                return true;
+                showLegacy = !showLegacy;
+                if (isPlayer)
+                    showPlayerLegacyList = showLegacy;
+                else
+                    showExternalLegacyList = showLegacy;
             }
-            GUI.enabled = true;
 
-            if (gridBatchBlocked)
-                GUILayout.Label("Deposit All is unavailable while the player grid participates. Transfer stacks individually.");
-
-            GUILayout.Space(4f);
-            if (targetInventory == null)
+            if (owner.GridInitializationState == GridStorageInitializationState.LinearFallback)
             {
-                GUILayout.Label("No InventoryComponent assigned.");
+                GUILayout.Label($"Grid fallback: {SafeText(owner.GridInitializationError)}");
+                showLegacy = true;
+            }
+
+            if (!showLegacy && owner.UsesGridLayout)
+            {
+                int width = owner.GridWidth;
+                int height = owner.GridHeight;
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                Rect gridRect = GUILayoutUtility.GetRect(
+                    view.GetRequiredWidth(width),
+                    view.GetRequiredHeight(height),
+                    GUILayout.Width(view.GetRequiredWidth(width)),
+                    GUILayout.Height(view.GetRequiredHeight(height)));
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                view.Draw(owner, gridRect, dragController);
+                dragController.RegisterEndpoint(owner, view, gridRect);
             }
             else
             {
-                if (GUILayout.Button(showLegacyList ? "Visual Grid" : "Legacy List", GUILayout.Height(24f)))
-                    showLegacyList = !showLegacyList;
-
-                if (!showLegacyList && targetInventory.UsesGridLayout)
-                {
-                    if (DrawInventoryGrid())
-                    {
-                        GUILayout.EndVertical();
-                        return true;
-                    }
-                }
-                else if (DrawLegacyInventoryList())
-                {
-                    GUILayout.EndVertical();
-                    return true;
-                }
+                DrawLegacyList(owner, view, isPlayer);
             }
 
             GUILayout.EndVertical();
-            return false;
         }
 
-        private bool DrawInventoryGrid()
+        private void DrawLegacyList(IGridStorageOwner owner, InventoryGridDebugView view, bool isPlayer)
         {
-            GUILayout.Label("Player Grid (drag; R rotates)");
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            Rect gridRect = GUILayoutUtility.GetRect(
-                gridView.GetRequiredWidth(targetInventory.GridWidth),
-                gridView.GetRequiredHeight(targetInventory.GridHeight),
-                GUILayout.Width(gridView.GetRequiredWidth(targetInventory.GridWidth)),
-                GUILayout.Height(gridView.GetRequiredHeight(targetInventory.GridHeight)));
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            gridView.Draw(targetInventory, gridRect);
-
-            if (!string.IsNullOrWhiteSpace(gridView.StatusMessage))
-                GUILayout.Label(gridView.StatusMessage);
-
-            if (!gridView.TryGetSelectedEntry(targetInventory, out int index, out ItemStorageEntry entry))
-            {
-                GUILayout.Label("Select an item to deposit it.");
-                return false;
-            }
-
-            GUILayout.Label(GetEntryLabel(index, entry));
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Deposit 1", GUILayout.Height(24f)))
-            {
-                Deposit(index, 1);
-                GUILayout.EndHorizontal();
-                return true;
-            }
-
-            if (GUILayout.Button("Deposit Stack", GUILayout.Height(24f)))
-            {
-                Deposit(index, entry.Quantity);
-                GUILayout.EndHorizontal();
-                return true;
-            }
-            GUILayout.EndHorizontal();
-            return false;
-        }
-
-        private bool DrawLegacyInventoryList()
-        {
-            IReadOnlyList<ItemStorageEntry> inventoryEntries = targetInventory.GetStorageEntries();
-            if (inventoryEntries == null || inventoryEntries.Count == 0)
-            {
-                GUILayout.Label("Inventory is empty.");
-                return false;
-            }
-
-            inventoryScrollPosition = GUILayout.BeginScrollView(inventoryScrollPosition, GUILayout.Height(ColumnScrollHeight));
-            for (int index = 0; index < inventoryEntries.Count; index++)
-            {
-                if (!DrawInventoryEntry(index, inventoryEntries[index]))
-                    continue;
-
-                GUILayout.EndScrollView();
-                return true;
-            }
-            GUILayout.EndScrollView();
-            return false;
-        }
-
-        private bool DrawStorageColumn()
-        {
-            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(ColumnWidth));
-            GUILayout.Label("Open Storage");
-
-            bool gridBatchBlocked = IsGridBatchTransferBlocked();
-            GUI.enabled = !gridBatchBlocked;
-            if (GUILayout.Button("Take All", GUILayout.Height(24f)))
-            {
-                TakeAll();
-                GUILayout.EndVertical();
-                GUI.enabled = true;
-                return true;
-            }
-            GUI.enabled = true;
-
-            if (gridBatchBlocked)
-                GUILayout.Label("Take All is unavailable while the player grid participates. Transfer stacks individually.");
-
-            GUILayout.Space(4f);
-            IReadOnlyList<ItemStorageEntry> entries = storageSource.StorageEntries;
+            IReadOnlyList<ItemStorageEntry> entries = owner.GridStorageEntries;
+            Vector2 scroll = isPlayer ? playerLegacyScroll : externalLegacyScroll;
+            scroll = GUILayout.BeginScrollView(scroll, GUILayout.Height(410f));
             if (entries == null || entries.Count == 0)
             {
                 GUILayout.Label("Storage is empty.");
             }
             else
             {
-                storageScrollPosition = GUILayout.BeginScrollView(storageScrollPosition, GUILayout.Height(ColumnScrollHeight));
                 for (int index = 0; index < entries.Count; index++)
                 {
-                    if (DrawStorageEntry(index, entries[index]))
+                    ItemStorageEntry entry = entries[index];
+                    if (GUILayout.Button(GetEntryLabel(entry), GUILayout.Height(26f)))
                     {
-                        GUILayout.EndScrollView();
-                        GUILayout.EndVertical();
-                        return true;
+                        view.SelectInstance(entry?.Item?.InstanceId);
+                        dragController.SetActiveOwner(owner);
                     }
                 }
-                GUILayout.EndScrollView();
+            }
+            GUILayout.EndScrollView();
+
+            if (isPlayer)
+                playerLegacyScroll = scroll;
+            else
+                externalLegacyScroll = scroll;
+        }
+
+        private void DrawCenterColumn()
+        {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(CenterColumnWidth));
+            GUILayout.Label("Inventory Session");
+            GUILayout.Label($"Right Hand: {GetRightHandLabel()}");
+            GUILayout.Label("Shift + click: transfer stack");
+            GUILayout.Label("Drag: empty cell or compatible stack");
+            GUILayout.Label("R: rotate during drag");
+            GUILayout.Space(8f);
+
+            IGridStorageOwner activeOwner = dragController.ActiveOwner;
+            if (activeOwner == null && !string.IsNullOrWhiteSpace(playerGridView.SelectedInstanceId))
+                activeOwner = targetInventory;
+            else if (activeOwner == null && !string.IsNullOrWhiteSpace(externalGridView.SelectedInstanceId))
+                activeOwner = storageSource;
+            InventoryGridDebugView activeView = ResolveActiveView(activeOwner, out bool playerSide);
+            if (activeOwner == null || activeView == null ||
+                !activeView.TryGetSelectedEntry(activeOwner, out _, out ItemStorageEntry entry) ||
+                entry == null || entry.Item == null)
+            {
+                GUILayout.Label("Select an item on either side.");
+                DrawDisabledBatchButtons();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("Reserved: equipment/paper doll future");
+                GUILayout.EndVertical();
+                return;
             }
 
+            GUILayout.Label(playerSide ? "Selected side: Player" : "Selected side: External");
+            GUILayout.Label(GetEntryLabel(entry));
+            GUILayout.Label($"Instance: {entry.Item.InstanceId}");
+            if (activeOwner.TryGetGridPlacement(entry.Item.InstanceId, out GridPlacement placement))
+            {
+                GUILayout.Label(
+                    $"Placement: ({placement.X},{placement.Y}) " +
+                    $"{placement.EffectiveWidth}x{placement.EffectiveHeight}");
+            }
+
+            GUILayout.Space(8f);
+            if (playerSide)
+            {
+                if (GUILayout.Button("Deposit 1", GUILayout.Height(28f)))
+                    TransferQuantity(targetInventory, storageSource, entry.Item.InstanceId, 1);
+                if (GUILayout.Button("Deposit Stack", GUILayout.Height(28f)))
+                    TransferStack(targetInventory, storageSource, entry.Item.InstanceId);
+            }
+            else
+            {
+                if (GUILayout.Button("Take 1", GUILayout.Height(28f)))
+                    TransferQuantity(storageSource, targetInventory, entry.Item.InstanceId, 1);
+                if (GUILayout.Button("Take Stack", GUILayout.Height(28f)))
+                    TransferStack(storageSource, targetInventory, entry.Item.InstanceId);
+            }
+
+            DrawDisabledBatchButtons();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("Reserved: equipment/paper doll future");
             GUILayout.EndVertical();
-            return false;
         }
 
-        private bool DrawStorageEntry(int index, ItemStorageEntry entry)
+        private InventoryGridDebugView ResolveActiveView(IGridStorageOwner activeOwner, out bool playerSide)
         {
-            GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label(GetEntryLabel(index, entry), GUILayout.Width(310f));
-
-            if (GUILayout.Button("Take 1", GUILayout.Height(24f), GUILayout.Width(75f)))
+            if (ReferenceEquals(activeOwner, targetInventory))
             {
-                Take(index, 1);
-                GUILayout.EndHorizontal();
-                return true;
+                playerSide = true;
+                return playerGridView;
             }
 
-            int stackQuantity = entry != null ? entry.Quantity : 0;
-            if (GUILayout.Button("Take Stack", GUILayout.Height(24f), GUILayout.Width(95f)))
+            if (ReferenceEquals(activeOwner, storageSource))
             {
-                Take(index, stackQuantity);
-                GUILayout.EndHorizontal();
-                return true;
+                playerSide = false;
+                return externalGridView;
             }
 
-            GUILayout.EndHorizontal();
-            return false;
+            playerSide = true;
+            return null;
         }
 
-        private bool DrawInventoryEntry(int index, ItemStorageEntry entry)
+        private void TransferQuantity(IGridStorageOwner source, IGridStorageOwner target, string instanceId, int quantity)
         {
-            GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label(GetEntryLabel(index, entry), GUILayout.Width(310f));
-
-            if (GUILayout.Button("Deposit 1", GUILayout.Height(24f), GUILayout.Width(75f)))
-            {
-                Deposit(index, 1);
-                GUILayout.EndHorizontal();
-                return true;
-            }
-
-            int stackQuantity = entry != null ? entry.Quantity : 0;
-            if (GUILayout.Button("Deposit Stack", GUILayout.Height(24f), GUILayout.Width(95f)))
-            {
-                Deposit(index, stackQuantity);
-                GUILayout.EndHorizontal();
-                return true;
-            }
-
-            GUILayout.EndHorizontal();
-            return false;
+            InventoryMutationResult result = GridStorageTransferService.TransferQuantityAuto(
+                source,
+                target,
+                instanceId,
+                quantity,
+                true,
+                new GridStorageTransferContext(executionContext, action));
+            toast.Show(
+                result.Success
+                    ? $"Transferred x{result.AffectedQuantity}."
+                    : result.Message ?? "Transfer failed.",
+                result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            ReconcileSelections();
         }
 
-        private void Take(int index, int quantity)
+        private void TransferStack(IGridStorageOwner source, IGridStorageOwner target, string instanceId)
         {
-            if (storageSource == null)
-            {
-                lastMessage = "No storage source.";
-                return;
-            }
-
-            int transferredQuantity = storageSource.TakeItem(index, quantity, targetInventory, executionContext, action, out string message);
-            lastMessage = !string.IsNullOrWhiteSpace(message)
-                ? message
-                : transferredQuantity > 0 ? $"Transferred x{transferredQuantity}." : "Nothing transferred.";
-            gridView.ReconcileSelection(targetInventory);
+            InventoryMutationResult result = GridStorageTransferService.TransferStackAuto(
+                source,
+                target,
+                instanceId,
+                new GridStorageTransferContext(executionContext, action));
+            toast.Show(
+                result.Success
+                    ? $"Transferred stack x{result.AffectedQuantity}."
+                    : result.Message ?? "Stack transfer failed.",
+                result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            ReconcileSelections();
         }
 
-        private void TakeAll()
+        private void ReconcileSelections()
         {
-            if (IsGridBatchTransferBlocked())
-            {
-                lastMessage = "Take All is unavailable while the player grid participates. Transfer stacks individually.";
-                return;
-            }
-
-            if (storageSource == null)
-            {
-                lastMessage = "No storage source.";
-                return;
-            }
-
-            int totalTransferred = 0;
-            while (storageSource.HasStoredItems)
-            {
-                IReadOnlyList<ItemStorageEntry> entries = storageSource.StorageEntries;
-                if (entries == null || entries.Count == 0 || entries[0] == null)
-                {
-                    break;
-                }
-
-                int transferredQuantity = storageSource.TakeItem(0, entries[0].Quantity, targetInventory, executionContext, action, out string message);
-                if (transferredQuantity <= 0)
-                {
-                    lastMessage = message;
-                    return;
-                }
-
-                totalTransferred += transferredQuantity;
-            }
-
-            lastMessage = totalTransferred > 0 ? $"Transferred all: x{totalTransferred}." : "Nothing transferred.";
+            playerGridView.ReconcileSelection(targetInventory);
+            externalGridView.ReconcileSelection(storageSource);
         }
 
-        private void Deposit(int index, int quantity)
+        private static void DrawDisabledBatchButtons()
         {
-            if (storageSource == null)
-            {
-                lastMessage = "No storage source.";
-                return;
-            }
-
-            int transferredQuantity = storageSource.DepositItem(index, quantity, targetInventory, executionContext, action, out string message);
-            lastMessage = !string.IsNullOrWhiteSpace(message)
-                ? message
-                : transferredQuantity > 0 ? $"Deposited x{transferredQuantity}." : "Nothing deposited.";
-            gridView.ReconcileSelection(targetInventory);
+            GUILayout.Space(8f);
+            GUI.enabled = false;
+            GUILayout.Button("Take All (disabled)", GUILayout.Height(24f));
+            GUILayout.Button("Deposit All (disabled)", GUILayout.Height(24f));
+            GUI.enabled = true;
         }
 
-        private void DepositAll()
+        private string GetRightHandLabel()
         {
-            if (IsGridBatchTransferBlocked())
-            {
-                lastMessage = "Deposit All is unavailable while the player grid participates. Transfer stacks individually.";
-                return;
-            }
-
-            if (storageSource == null)
-            {
-                lastMessage = "No storage source.";
-                return;
-            }
-
-            if (targetInventory == null)
-            {
-                lastMessage = "No InventoryComponent assigned.";
-                return;
-            }
-
-            int totalTransferred = 0;
-            while (!targetInventory.IsEmpty)
-            {
-                IReadOnlyList<ItemStorageEntry> entries = targetInventory.GetStorageEntries();
-                if (entries == null || entries.Count == 0 || entries[0] == null)
-                    break;
-
-                int transferredQuantity = storageSource.DepositItem(0, entries[0].Quantity, targetInventory, executionContext, action, out string message);
-                if (transferredQuantity <= 0)
-                {
-                    lastMessage = message;
-                    return;
-                }
-
-                totalTransferred += transferredQuantity;
-            }
-
-            lastMessage = totalTransferred > 0 ? $"Deposited all: x{totalTransferred}." : "Nothing deposited.";
+            ItemStorageEntry entry = targetInventory != null ? targetInventory.GetRightHandStorageEntry() : null;
+            return entry != null ? GetEntryLabel(entry) : "Empty";
         }
 
-        private bool IsGridBatchTransferBlocked()
-        {
-            return targetInventory != null && targetInventory.UsesGridLayout;
-        }
-
-        private static string GetEntryLabel(int index, ItemStorageEntry entry)
+        private static string GetEntryLabel(ItemStorageEntry entry)
         {
             if (entry == null || entry.Item == null)
-            {
-                return $"{index}: (none)";
-            }
+                return "(none)";
 
-            string displayName = GetItemDisplayName(entry.DefinitionId);
-            return $"{index}: {displayName} x{entry.Quantity} [{entry.Item.InstanceId}]";
+            return $"{GetItemDisplayName(entry.DefinitionId)} x{entry.Quantity}";
         }
 
         private static string GetItemDisplayName(string definitionId)
         {
             if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
-            {
                 return SafeText(definitionId);
-            }
 
             GameDatabase database = GameDataManager.Instance.Database;
             ItemDefinition definition = database != null ? database.GetItem(definitionId) : null;
-            if (definition == null || definition.display == null || string.IsNullOrWhiteSpace(definition.display.name))
-            {
-                return SafeText(definitionId);
-            }
-
-            return definition.display.name;
+            return definition != null && definition.display != null && !string.IsNullOrWhiteSpace(definition.display.name)
+                ? definition.display.name
+                : SafeText(definitionId);
         }
 
-        private static string BuildTitle(ContainerLootComponent sourceContainer, WorldObjectTags target)
+        private Rect GetPanelRect()
         {
-            string targetName = target != null ? target.name : sourceContainer != null ? sourceContainer.name : "Storage";
-            WorldObjectDebugInfo debugInfo = target != null ? target.GetComponent<WorldObjectDebugInfo>() : null;
-            string displayName = debugInfo != null ? debugInfo.GetDisplayNameOrFallback(targetName, target) : targetName;
-            return $"{displayName} Contents (Debug)";
+            if (sessionPanelRect.width > 0f && sessionPanelRect.height > 0f)
+                return sessionPanelRect;
+
+            float fallbackPlayerWidth = CalculateStorageColumnWidth(targetInventory, playerGridView);
+            float fallbackExternalWidth = CalculateStorageColumnWidth(storageSource, externalGridView);
+            return CalculatePanelRect(fallbackPlayerWidth, fallbackExternalWidth);
         }
 
-        private static Rect GetPanelRect()
+        private static Rect CalculatePanelRect(float leftColumnWidth, float rightColumnWidth)
         {
-            float x = Mathf.Max(0f, (Screen.width - PanelWidth) * 0.5f);
-            float y = 24f;
-            return new Rect(x, y, PanelWidth, PanelHeight);
+            float contentWidth = leftColumnWidth + ColumnGap + CenterColumnWidth + ColumnGap + rightColumnWidth;
+            float width = Mathf.Max(1f, Mathf.Min(MaxPanelWidth, Mathf.Min(contentWidth + PanelHorizontalPadding, Screen.width - 24f)));
+            float height = Mathf.Max(1f, Mathf.Min(MaxPanelHeight, Screen.height - 48f));
+            return new Rect(
+                Mathf.Max(0f, (Screen.width - width) * 0.5f),
+                Mathf.Max(0f, (Screen.height - height) * 0.5f),
+                width,
+                height);
         }
 
-        private void DrawCloseButton()
+        private static float CalculateStorageColumnWidth(IGridStorageOwner owner, InventoryGridDebugView view)
         {
-            GUILayout.Space(8f);
-            if (GUILayout.Button("Close", GUILayout.Height(24f)))
-            {
-                Hide();
-            }
+            int gridWidth = owner != null && owner.GridWidth > 0
+                ? owner.GridWidth
+                : Mathf.Max(1, owner != null ? owner.ConfiguredGridWidth : 6);
+            return Mathf.Max(MinimumGridColumnWidth, view.GetRequiredWidth(gridWidth) + GridColumnPadding);
         }
 
-        private static Vector2 ToGuiPosition(Vector2 mousePosition)
+        private void ConsumeDragStatus()
         {
-            return new Vector2(mousePosition.x, Screen.height - mousePosition.y);
+            if (dragController.TryConsumeStatus(out string message, out InventoryToastSeverity severity))
+                toast.Show(message, severity);
+        }
+
+        private void RequestClose()
+        {
+            if (sessionController != null)
+                sessionController.CloseSession();
+            else
+                HideFromSession();
         }
 
         private static string SafeText(string value)

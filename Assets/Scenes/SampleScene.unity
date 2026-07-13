@@ -467,7 +467,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId: 
-  useGridLayout: 0
+  useGridLayout: 1
   gridWidth: 6
   gridHeight: 8
 --- !u!114 &150633522
@@ -6099,6 +6099,7 @@ GameObject:
   - component: {fileID: 2080113301}
   - component: {fileID: 2080113303}
   - component: {fileID: 2080113302}
+  - component: {fileID: 2080113304}
   m_Layer: 0
   m_Name: Debug Input Controllers
   m_TagString: Untagged
@@ -6138,6 +6139,7 @@ MonoBehaviour:
   inventoryPanel: {fileID: 2200000102}
   storagePanel: {fileID: 2600000202}
   actorNeedsPanel: {fileID: 2600000102}
+  inventorySessionController: {fileID: 2080113304}
 --- !u!114 &2080113303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6158,6 +6160,22 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   maxRayDistance: 1000
+--- !u!114 &2080113304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2080113300}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2580cefd94e4d68958998a67fb59741, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryUISessionController
+  inventoryPanel: {fileID: 2200000102}
+  storagePanel: {fileID: 2600000202}
+  playerInventory: {fileID: 2200000001}
+  movementController: {fileID: 1022389979}
 --- !u!1 &2088085935
 GameObject:
   m_ObjectHideFlags: 0
@@ -6516,6 +6534,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: debug_sealed_container_loot_01
+  useGridLayout: 1
+  gridWidth: 4
+  gridHeight: 4
 --- !u!114 &2300001001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7373,6 +7394,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: debug_food_water_crate_loot_01
+  useGridLayout: 1
+  gridWidth: 6
+  gridHeight: 5
 --- !u!114 &2500000108
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7634,6 +7658,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: debug_misc_supply_crate_loot_01
+  useGridLayout: 1
+  gridWidth: 6
+  gridHeight: 5
 --- !u!114 &2500000208
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8024,7 +8051,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId: 
-  useGridLayout: 0
+  useGridLayout: 1
   gridWidth: 6
   gridHeight: 8
 --- !u!114 &2700000008
@@ -8478,6 +8505,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_fridge_loot_01
+  useGridLayout: 1
+  gridWidth: 5
+  gridHeight: 8
 --- !u!114 &3300000104
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8612,6 +8642,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_oven_loot_01
+  useGridLayout: 1
+  gridWidth: 4
+  gridHeight: 4
 --- !u!114 &3300000204
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8745,6 +8778,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_countertop_loot_01
+  useGridLayout: 1
+  gridWidth: 5
+  gridHeight: 3
 --- !u!114 &3300000304
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8879,6 +8915,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_cupboard_loot_01
+  useGridLayout: 1
+  gridWidth: 4
+  gridHeight: 5
 --- !u!114 &3300000404
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9013,6 +9052,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_upper_cupboard_loot_01
+  useGridLayout: 1
+  gridWidth: 4
+  gridHeight: 5
 --- !u!114 &3300000504
 MonoBehaviour:
   m_ObjectHideFlags: 0

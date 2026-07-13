@@ -14,7 +14,7 @@ namespace OldScars.Core.Items
     /// final equipment model, pickup/drop rules, or final UI. M33.1 exposes
     /// closed placement movement for the temporary OnGUI drag interface.
     /// </summary>
-    public sealed class InventoryComponent : MonoBehaviour
+    public sealed class InventoryComponent : MonoBehaviour, IGridStorageOwner, IGridStorageTransferEndpoint
     {
         private const string NoItemId = "none";
         public const string RightHandSlotId = "right_hand";
@@ -26,7 +26,7 @@ namespace OldScars.Core.Items
 
         private readonly ItemStorage storage = new ItemStorage();
         private readonly List<ItemInstance> itemInstancesView = new List<ItemInstance>();
-        private GridInventoryBackend gridBackend;
+        private GridStorageRuntime gridStorageRuntime;
 
         public string RightHandItemInstanceId => rightHandItemInstanceId;
         public int EquippedItemIndex => GetRightHandItemIndex();
@@ -35,6 +35,14 @@ namespace OldScars.Core.Items
         public bool UsesGridLayout => GetGridBackend().UsesGridLayout;
         public int GridWidth => GetGridBackend().GridWidth;
         public int GridHeight => GetGridBackend().GridHeight;
+        public int ConfiguredGridWidth => gridWidth;
+        public int ConfiguredGridHeight => gridHeight;
+        public GridStorageInitializationState GridInitializationState => GetGridRuntime().InitializationState;
+        public string GridInitializationError => GetGridRuntime().InitializationError;
+        public string GridStorageDisplayName => name;
+        public IReadOnlyList<ItemStorageEntry> GridStorageEntries => storage.Entries;
+
+        GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => GetGridBackend();
 
         private void Awake()
         {
@@ -104,6 +112,27 @@ namespace OldScars.Core.Items
                 $"\n  Quantity: {quantity}");
 
             return storedItem;
+        }
+
+        public void BeginInitialContentLoad()
+        {
+            GetGridRuntime().BeginInitialContentLoad();
+        }
+
+        public bool CompleteInitialContentLoad()
+        {
+            bool initialized = GetGridRuntime().CompleteInitialContentLoad(out string error);
+            if (!initialized)
+            {
+                Debug.LogError(
+                    "[InventoryComponent] Grid layout initialization failed after initial content load; " +
+                    "inventory remains linear and no items were changed." +
+                    $"\n  Actor: {name}" +
+                    $"\n  Requested grid: {gridWidth}x{gridHeight}" +
+                    $"\n  Reason: {SafeText(error)}");
+            }
+
+            return initialized;
         }
 
         public IReadOnlyList<ItemInstance> GetItems()
@@ -384,6 +413,11 @@ namespace OldScars.Core.Items
             return item != null && !IsNoItemId(rightHandItemInstanceId) && item.InstanceId == rightHandItemInstanceId;
         }
 
+        public bool IsInstanceEquipped(string instanceId)
+        {
+            return !IsNoItemId(instanceId) && instanceId == rightHandItemInstanceId;
+        }
+
         public bool CanEquipIndexToRightHand(int index)
         {
             return CanEquipIndexToSlot(index, RightHandSlotId, out _);
@@ -506,30 +540,63 @@ namespace OldScars.Core.Items
 
         private GridInventoryBackend GetGridBackend()
         {
-            if (gridBackend == null)
+            return GetGridRuntime().Backend;
+        }
+
+        private GridStorageRuntime GetGridRuntime()
+        {
+            if (gridStorageRuntime == null)
                 InitializeGridBackend();
 
-            return gridBackend;
+            return gridStorageRuntime;
         }
 
         private void InitializeGridBackend()
         {
-            if (gridBackend != null)
+            if (gridStorageRuntime != null)
                 return;
 
-            gridBackend = new GridInventoryBackend(storage, GetItemDefinition);
-            if (!useGridLayout)
+            gridStorageRuntime = new GridStorageRuntime(
+                storage,
+                GetItemDefinition,
+                useGridLayout,
+                gridWidth,
+                gridHeight,
+                true);
+            if (gridStorageRuntime.InitializationState != GridStorageInitializationState.LinearFallback)
                 return;
 
-            if (gridBackend.TryEnableLayout(gridWidth, gridHeight, out string error))
-                return;
-
-            useGridLayout = false;
             Debug.LogError(
                 "[InventoryComponent] Grid layout initialization failed; inventory remains linear and no items were changed." +
                 $"\n  Actor: {name}" +
                 $"\n  Requested grid: {gridWidth}x{gridHeight}" +
-                $"\n  Reason: {SafeText(error)}");
+                $"\n  Reason: {SafeText(gridStorageRuntime.InitializationError)}");
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferOut(GridStorageTransferContext context, out string reason)
+        {
+            reason = null;
+            return true;
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferIn(GridStorageTransferContext context, out string reason)
+        {
+            reason = null;
+            return true;
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedOut(
+            GridStorageTransferReceipt receipt,
+            GridStorageTransferContext context)
+        {
+            if (receipt.Result != null && receipt.Result.Success && receipt.SourceWasRemoved)
+                ClearRightHandIfInstanceId(receipt.SourceInstanceId);
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedIn(
+            GridStorageTransferReceipt receipt,
+            GridStorageTransferContext context)
+        {
         }
 
         private static bool ContainsInstanceId(string[] instanceIds, string expected)

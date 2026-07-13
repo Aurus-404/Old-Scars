@@ -13,7 +13,7 @@ namespace OldScars.Core.Interactions
     /// This is not a final container inventory, loot UI, random loot system,
     /// save state, stack limits, crafting system, or economy system.
     /// </summary>
-    public sealed class ContainerLootComponent : MonoBehaviour, IItemStorageDebugSource
+    public sealed class ContainerLootComponent : MonoBehaviour, IItemStorageDebugSource, IGridStorageTransferEndpoint
     {
         private const string OpenedContainerTag = "opened_container";
         private const string SealedContainerTag = "sealed_container";
@@ -23,9 +23,13 @@ namespace OldScars.Core.Interactions
         private const string LootedContainerTag = "looted_container";
 
         [SerializeField] private string lootTableId;
+        [SerializeField] private bool useGridLayout;
+        [SerializeField] private int gridWidth = 4;
+        [SerializeField] private int gridHeight = 4;
 
         private readonly ItemStorage storage = new ItemStorage();
         private bool storageInitialized;
+        private GridStorageRuntime gridStorageRuntime;
 
         public string LootTableId => lootTableId;
         public bool HasInitializedStorage => storageInitialized;
@@ -34,6 +38,22 @@ namespace OldScars.Core.Interactions
         public int StoredEntryCount => storage.EntryCount;
         public int StoredItemQuantity => storage.TotalQuantity;
         public IReadOnlyList<ItemStorageEntry> StorageEntries => storage.Entries;
+        public string GridStorageDisplayName => name;
+        public IReadOnlyList<ItemStorageEntry> GridStorageEntries => storage.Entries;
+        public bool UsesGridLayout => GetGridRuntime().UsesGridLayout;
+        public int GridWidth => GetGridRuntime().GridWidth;
+        public int GridHeight => GetGridRuntime().GridHeight;
+        public int ConfiguredGridWidth => gridWidth;
+        public int ConfiguredGridHeight => gridHeight;
+        public GridStorageInitializationState GridInitializationState => GetGridRuntime().InitializationState;
+        public string GridInitializationError => GetGridRuntime().InitializationError;
+
+        GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => GetGridRuntime().Backend;
+
+        private void Awake()
+        {
+            GetGridRuntime();
+        }
 
         private void Start()
         {
@@ -144,20 +164,24 @@ namespace OldScars.Core.Interactions
 
             string definitionId = entry.DefinitionId;
             int requestedQuantity = Mathf.Min(quantity, entry.Quantity);
-            int transferredQuantity = inventory.TransferItemFrom(storage, storageIndex, requestedQuantity);
-            if (transferredQuantity <= 0)
+            InventoryMutationResult transferResult = GridStorageTransferService.TransferQuantityAuto(
+                this,
+                inventory,
+                entry.Item.InstanceId,
+                requestedQuantity,
+                true,
+                new GridStorageTransferContext(executionContext, action));
+            if (!transferResult.Success)
             {
-                message = "No se pudo transferir contenido.";
+                message = transferResult.Message ?? "No se pudo transferir contenido.";
                 return 0;
             }
 
+            int transferredQuantity = transferResult.AffectedQuantity;
             var addedCounts = new Dictionary<string, int>
             {
                 [definitionId] = transferredQuantity
             };
-
-            RecordLootReceived(addedCounts, database, executionContext, action);
-            MarkContainerLootedIfEmpty(targetTags, executionContext, action);
 
             message = $"Tomaste {FormatAddedLoot(addedCounts, database)}.";
             return transferredQuantity;
@@ -208,14 +232,20 @@ namespace OldScars.Core.Interactions
 
             string definitionId = entry.DefinitionId;
             int requestedQuantity = Mathf.Min(quantity, entry.Quantity);
-            int transferredQuantity = sourceInventory.TransferItemTo(storage, inventoryIndex, requestedQuantity);
-            if (transferredQuantity <= 0)
+            InventoryMutationResult transferResult = GridStorageTransferService.TransferQuantityAuto(
+                sourceInventory,
+                this,
+                entry.Item.InstanceId,
+                requestedQuantity,
+                true,
+                new GridStorageTransferContext(executionContext, action));
+            if (!transferResult.Success)
             {
-                message = "No se pudo depositar contenido.";
+                message = transferResult.Message ?? "No se pudo depositar contenido.";
                 return 0;
             }
 
-            RestoreContainerContentState(targetTags);
+            int transferredQuantity = transferResult.AffectedQuantity;
             message = $"Depositaste {GetItemDisplayName(definitionId, database)} x{transferredQuantity}.";
             return transferredQuantity;
         }
@@ -404,6 +434,15 @@ namespace OldScars.Core.Interactions
             PopulateStorage(lootTable, database);
             storageInitialized = true;
 
+            if (!GetGridRuntime().TryInitializeLayout(out string gridError))
+            {
+                Debug.LogError(
+                    "[ContainerLootComponent] Grid initialization failed; container remains linear and content was preserved." +
+                    $"\n  Container: {name}" +
+                    $"\n  Requested grid: {gridWidth}x{gridHeight}" +
+                    $"\n  Reason: {SafeText(gridError)}");
+            }
+
             Debug.Log(
                 "[ContainerLootComponent] Runtime storage initialized." +
                 $"\n  Loot table: {SafeText(lootTableId)}" +
@@ -412,6 +451,115 @@ namespace OldScars.Core.Interactions
                 $"\n  Contents: {FormatStorageContents(database)}");
 
             return true;
+        }
+
+        public bool TryGetEntryByInstanceId(string instanceId, out int index, out ItemStorageEntry entry)
+        {
+            index = storage.GetEntryIndexByInstanceId(instanceId);
+            entry = index >= 0 ? storage.GetEntry(index) : null;
+            return entry != null;
+        }
+
+        public bool TryGetGridPlacement(string instanceId, out GridPlacement placement)
+        {
+            return GetGridRuntime().TryGetPlacement(instanceId, out placement);
+        }
+
+        public bool TryGetGridFootprint(string definitionId, out GridFootprint footprint, out bool usedFallback)
+        {
+            return GetGridRuntime().TryResolveFootprint(definitionId, out footprint, out usedFallback);
+        }
+
+        public GridPlacementValidationResult PreviewGridPlacementMove(
+            string instanceId,
+            int x,
+            int y,
+            bool isRotated)
+        {
+            return GetGridRuntime().PreviewMovePlacement(instanceId, x, y, isRotated);
+        }
+
+        public InventoryMutationResult MoveGridPlacement(string instanceId, int x, int y, bool isRotated)
+        {
+            return GetGridRuntime().MovePlacement(instanceId, x, y, isRotated);
+        }
+
+        public bool IsInstanceEquipped(string instanceId)
+        {
+            return false;
+        }
+
+        private GridStorageRuntime GetGridRuntime()
+        {
+            if (gridStorageRuntime == null)
+            {
+                gridStorageRuntime = new GridStorageRuntime(
+                    storage,
+                    ResolveItemDefinition,
+                    useGridLayout,
+                    gridWidth,
+                    gridHeight,
+                    false);
+            }
+
+            return gridStorageRuntime;
+        }
+
+        private static ItemDefinition ResolveItemDefinition(string definitionId)
+        {
+            if (string.IsNullOrWhiteSpace(definitionId) || GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+                return null;
+
+            GameDatabase database = GameDataManager.Instance.Database;
+            return database != null ? database.GetItem(definitionId) : null;
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferOut(GridStorageTransferContext context, out string reason)
+        {
+            WorldObjectTags targetTags = context.ExecutionContext.Target != null
+                ? context.ExecutionContext.Target
+                : GetComponent<WorldObjectTags>();
+            reason = GetAccessBlockReason(targetTags);
+            return string.IsNullOrWhiteSpace(reason);
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferIn(GridStorageTransferContext context, out string reason)
+        {
+            WorldObjectTags targetTags = context.ExecutionContext.Target != null
+                ? context.ExecutionContext.Target
+                : GetComponent<WorldObjectTags>();
+            reason = GetDepositAccessBlockReason(targetTags);
+            return string.IsNullOrWhiteSpace(reason);
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedOut(
+            GridStorageTransferReceipt receipt,
+            GridStorageTransferContext context)
+        {
+            WorldObjectTags targetTags = context.ExecutionContext.Target != null
+                ? context.ExecutionContext.Target
+                : GetComponent<WorldObjectTags>();
+            if (!string.IsNullOrWhiteSpace(receipt.DefinitionId) &&
+                TryGetReadyDatabase(out GameDatabase database, out _))
+            {
+                var addedCounts = new Dictionary<string, int>
+                {
+                    [receipt.DefinitionId] = receipt.TransferredQuantity
+                };
+                RecordLootReceived(addedCounts, database, context.ExecutionContext, context.Action);
+            }
+
+            MarkContainerLootedIfEmpty(targetTags, context.ExecutionContext, context.Action);
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedIn(
+            GridStorageTransferReceipt receipt,
+            GridStorageTransferContext context)
+        {
+            WorldObjectTags targetTags = context.ExecutionContext.Target != null
+                ? context.ExecutionContext.Target
+                : GetComponent<WorldObjectTags>();
+            RestoreContainerContentState(targetTags);
         }
 
         private static bool TryGetReadyDatabase(out GameDatabase database, out string error)
