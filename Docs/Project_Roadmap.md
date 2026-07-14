@@ -107,14 +107,15 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 33.2.1: Partial Directed Merge + Stable Dual Grid UI | Separar placement exacto de merge dirigido parcial y estabilizar mensajes/layout de la UI dual. | validated | Validado manualmente en Unity junto con M33.2. |
 | Milestone 33.2.2: Data-Driven Initial Item Orientation + Footprint Polish | Agregar orientacion inicial data-driven y pulir footprints Core sin cambiar rotacion manual ni transferencias exactas. | validated | Validado manualmente en Unity por confirmacion del usuario. |
 | Milestone 33.3: Basic Carry Weight System v0 | Agregar peso de carga data-driven y un limite opcional por actor para todo incoming externo. | validated | Validado manualmente en Unity por confirmacion del usuario. |
-| Milestone 34.1: Equipment Ownership & Slots Foundation | Separar ownership, equipment storage lineal y referencias de 17 slots con transacciones atomicas y UI debug central. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
-| Milestone 34.1.1: Inventory & Equipment UI Cleanup | Estabilizar las tres columnas OnGUI, footer de acciones y filas de equipment sin cambiar backend. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
+| Milestone 34.1: Equipment Ownership & Slots Foundation | Separar ownership, equipment storage lineal y referencias de 17 slots con transacciones atomicas y UI debug central. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.1.1: Inventory & Equipment UI Cleanup | Estabilizar las tres columnas OnGUI, footer de acciones y filas de equipment sin cambiar backend. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.1.2: Inventory Context Menu v0 | Reemplazar acciones fijas de items por un menu contextual central con cantidades y delegacion a servicios existentes. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
 | Milestone 34.2: Item-Owned Storage / Backpack Foundation | Agregar el primer storage propiedad de un item y peso de subtree sobre la base de ownership de M34.1. | planned | Diferido hasta validar M34.1 y aprobar el plan tecnico; no implementado. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2 y M33.3 estan validados manualmente en Unity. M34.1 y M34.1.1 estan implementados en el checkout y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M34.1 y M34.1.1 estan validados manualmente en Unity. M34.1.2 esta implementado en el checkout y pendiente de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los ultimos milestones cerrados como `validated` son:
 
@@ -128,10 +129,12 @@ Los ultimos milestones cerrados como `validated` son:
 - M33.2.1: Partial Directed Merge + Stable Dual Grid UI.
 - M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish.
 - M33.3: Basic Carry Weight System v0.
+- M34.1: Equipment Ownership & Slots Foundation.
+- M34.1.1: Inventory & Equipment UI Cleanup.
 
 ## Proximo Recomendado
 
-Validar M34.1 y M34.1.1 en Unity antes de cerrarlos como `validated`. Inventory Context Menu v0 y weight-limited partial transfers siguen pendientes; M34.2 Item-Owned Storage / Backpack Foundation requiere plan aprobado. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
+Validar M34.1.2 Inventory Context Menu v0 en Unity antes de cerrarlo como `validated`. El posible retiro posterior de botones fallback y weight-limited partial transfers siguen pendientes; M34.2 Item-Owned Storage / Backpack Foundation requiere plan aprobado. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
 
 M34.2 debe reutilizar ownership agregado, `ItemStorage` y referencias por `InstanceId`; no debe adelantar nesting general, pockets arbitrarios, save/load ni UI final.
 

@@ -20,11 +20,15 @@ namespace OldScars.Core.Items
         [SerializeField] private PointClickMovementController movementController;
 
         private readonly InventoryUISessionSelection selection = new InventoryUISessionSelection();
+        private readonly InventoryContextMenuState contextMenuState = new InventoryContextMenuState();
 
         public InventoryUISessionState State { get; private set; }
         public bool BlocksWorldInput => State != InventoryUISessionState.Closed;
         public bool IsOpen => BlocksWorldInput;
         public InventoryUISessionSelection Selection => selection;
+        public bool BlocksInventoryContentInput => contextMenuState.BlocksContentInput;
+        public bool ContextMenuOpen => contextMenuState.ContextMenuOpen;
+        public bool QuantityDialogOpen => contextMenuState.QuantityDialogOpen;
 
         public static InventoryUISessionController GetOrCreate()
         {
@@ -60,10 +64,20 @@ namespace OldScars.Core.Items
             if (!IsOpen)
                 return;
 
+            if ((keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame) &&
+                contextMenuState.ConfirmQuantityFromKeyboard())
+            {
+                return;
+            }
+
             HandleActiveRotationInput();
             if (!keyboard.escapeKey.wasPressedThisFrame)
                 return;
 
+            if (contextMenuState.CancelQuantityDialog())
+                return;
+            if (contextMenuState.CloseContextMenu())
+                return;
             if (!CancelActiveDrag())
                 CloseSession();
         }
@@ -107,11 +121,33 @@ namespace OldScars.Core.Items
 
         public void CloseSession()
         {
+            contextMenuState.CloseAll();
             CancelActiveDrag();
             inventoryPanel?.HideFromSession();
             storagePanel?.HideFromSession();
             selection.ResetTransient();
             State = InventoryUISessionState.Closed;
+        }
+
+        public void OpenContextMenu(InventoryContextMenuRequest request, Vector2 guiPosition)
+        {
+            if (!IsOpen || request == null)
+                return;
+
+            contextMenuState.Open(request, guiPosition);
+        }
+
+        public void CloseContextMenu()
+        {
+            contextMenuState.CloseAll();
+        }
+
+        internal void DrawContextOverlay(Rect localWindowRect)
+        {
+            if (!IsOpen)
+                return;
+
+            contextMenuState.Draw(localWindowRect);
         }
 
         public bool CancelActiveDrag()
@@ -149,6 +185,9 @@ namespace OldScars.Core.Items
 
         private void HandleActiveRotationInput()
         {
+            if (contextMenuState.BlocksContentInput)
+                return;
+
             if (State == InventoryUISessionState.Personal)
                 inventoryPanel?.HandleRotationInput();
             else if (State == InventoryUISessionState.External)
@@ -160,6 +199,7 @@ namespace OldScars.Core.Items
             if (!IsOpen)
                 movementController?.ClearTarget();
 
+            contextMenuState.CloseAll();
             inventoryPanel?.BindSessionController(this);
             storagePanel?.BindSessionController(this);
         }

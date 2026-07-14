@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using OldScars.Core.Actors;
 using OldScars.Core.Data.Definitions;
@@ -21,7 +22,8 @@ namespace OldScars.Core.Items
             ActorEquipmentComponent equipment,
             InventoryUISessionSelection selection,
             float width,
-            float height)
+            float height,
+            Action<EquipmentDebugRowClick> onRowClick = null)
         {
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
             GUILayout.Label("Equipment");
@@ -67,7 +69,7 @@ namespace OldScars.Core.Items
                     EquipmentLayoutSlotDefinition slot = orderedSlots[slotIndex];
                     if (slot.group_id != group.id)
                         continue;
-                    DrawSlotRow(equipment, selection, slot, rowWidth);
+                    DrawSlotRow(equipment, selection, slot, rowWidth, onRowClick);
                 }
             }
 
@@ -79,7 +81,8 @@ namespace OldScars.Core.Items
             ActorEquipmentComponent equipment,
             InventoryUISessionSelection selection,
             EquipmentLayoutSlotDefinition slot,
-            float width)
+            float width,
+            Action<EquipmentDebugRowClick> onRowClick)
         {
             EquipmentSlotDefinition definition = equipment.GetSlotDefinition(slot.slot_id);
             string slotName = definition != null && !string.IsNullOrWhiteSpace(definition.display_name)
@@ -96,6 +99,20 @@ namespace OldScars.Core.Items
                 RowHeight,
                 GUILayout.Width(width),
                 GUILayout.Height(RowHeight));
+
+            Event guiEvent = Event.current;
+            bool rightClicked = guiEvent != null && guiEvent.type == EventType.MouseDown &&
+                                guiEvent.button == 1 && rowRect.Contains(guiEvent.mousePosition);
+            if (rightClicked)
+            {
+                selection.SelectEquipment(slot.slot_id, entry?.Item?.InstanceId, false);
+                onRowClick?.Invoke(new EquipmentDebugRowClick(
+                    slot.slot_id,
+                    entry?.Item?.InstanceId,
+                    rowRect,
+                    1));
+                guiEvent.Use();
+            }
 
             Color previous = GUI.backgroundColor;
             if (selected)
@@ -125,6 +142,11 @@ namespace OldScars.Core.Items
                     slot.slot_id,
                     entry?.Item?.InstanceId,
                     false);
+                onRowClick?.Invoke(new EquipmentDebugRowClick(
+                    slot.slot_id,
+                    entry?.Item?.InstanceId,
+                    rowRect,
+                    0));
             }
         }
 

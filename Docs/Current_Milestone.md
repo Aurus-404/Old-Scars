@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2 y M33.3 estan validados manualmente en Unity. M34.1 Equipment Ownership & Slots Foundation y M34.1.1 Inventory & Equipment UI Cleanup estan `implemented` en el checkout y pendientes de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M34.1 y M34.1.1 estan validados manualmente en Unity. M34.1.2 Inventory Context Menu v0 esta `implemented` en el checkout y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -18,6 +18,8 @@ Los ultimos milestones cerrados y validados en Unity son:
 - M33.2.1: Partial Directed Merge + Stable Dual Grid UI.
 - M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish.
 - M33.3: Basic Carry Weight System v0.
+- M34.1: Equipment Ownership & Slots Foundation.
+- M34.1.1: Inventory & Equipment UI Cleanup.
 
 La validacion confirmada de M33.1 incluye Data Load OK con 0 errors y 0 warnings y las regresiones principales funcionando.
 
@@ -176,7 +178,7 @@ Estado: `validated`.
 
 ### M34.1: Equipment Ownership & Slots Foundation
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - `ActorItemOwnershipComponent` agrega las entries directas del inventario personal y del equipment storage y valida que cada `ItemInstance.InstanceId` pertenezca a un solo nodo.
 - `ActorEquipmentComponent` usa un `ItemStorage` lineal separado; los slots solo referencian la misma instancia mediante mapas `slot -> InstanceId` e `InstanceId -> slots`.
@@ -191,7 +193,7 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 
 ### M34.1.1: Inventory & Equipment UI Cleanup
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - Inventario personal y storage externo usan un body comun: Player Grid, Equipment y Details/External Grid comparten Y, altura, padding y separacion.
 - La columna central separa un viewport de equipment con altura calculada y un footer fijo para Carry, instrucciones, seleccion y acciones.
@@ -201,6 +203,21 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - La seleccion del footer consulta `InventoryUISessionSelection` como autoridad para evitar que un owner viejo del drag recupere foco.
 - Toast, backend, JSON, escena, ownership, peso, transferencias, placements y rollback permanecen sin cambios.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.1.2: Inventory Context Menu v0
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `InventoryUISessionController` posee un unico estado runtime de menu contextual y dialogo de cantidad; los paneles no mantienen menus paralelos ni estado estatico global.
+- Acciones cerradas C# resuelven personal, external y equipment por `InstanceId`, owner actual y previews existentes; no usan nombres arbitrarios, reflexion ni decisiones por `DefinitionId`.
+- Clic derecho en ambas grillas selecciona canonicamente la instancia, no inicia drag y abre acciones relevantes; clic derecho vacio cierra el menu y un drag activo se cancela sin abrirlo en el mismo evento.
+- Las filas de Equipment reportan slot, instancia, rect y boton. Ambas filas de un rifle `2H` resuelven la misma entry y la misma accion de desequipar.
+- Equip/Unequip delegan en `EquipmentTransactionService`; Use delega en `InventoryItemUseService`; Drop delega en `DroppedWorldItemSpawner`; Take/Deposit delegan en `GridStorageTransferService`.
+- El modal absoluto de cantidad acepta enteros entre `1` y la cantidad disponible, bloquea el contenido de las grillas y revalida owner, instancia, cantidad y storage externo antes de ejecutar.
+- `Escape` prioriza modal, menu, drag y sesion; `I` cierra menu, modal y sesion. El toast sigue absoluto y Take/Deposit 1/Stack permanecen como fallback temporal.
+- Use desde equipment, auto-swap, equip desde external y drop equipado no se implementaron; el servicio de uso actual solo admite inventario personal.
+- No se modificaron backend protegido, JSON, escena, sprites ni arte.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; pendiente de Play Mode y Console.
 
 ## Ultimo Estado Validado
 
@@ -253,7 +270,7 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 
 ## Proximo Recomendado
 
-Validar M34.1 y M34.1.1 en Unity antes de cerrarlos como `validated`; despues quedan Inventory Context Menu v0, weight-limited partial transfers y M34.2 Item-Owned Storage/Backpack Foundation. Los pendientes anteriores M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su estado.
+Validar M34.1.2 Inventory Context Menu v0 en Unity antes de cerrarlo como `validated`; despues quedan el posible retiro de botones fallback, weight-limited partial transfers y M34.2 Item-Owned Storage/Backpack Foundation. Los pendientes anteriores M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su estado.
 
 Alcance recomendado:
 

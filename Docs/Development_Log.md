@@ -1295,7 +1295,7 @@ Con equipped item definition id none o vacio:
 - No se modifico `SampleScene.unity` como parte de M34.1 y no se agregaron NPC/corpse equipment, item-owned storage, backpack, pockets, nesting, peso de subtrees, equip desde mundo, drop equipado, armor, save/load, modelos ni UI final.
 - M34.2 queda diferido para item-owned storage/backpack foundation.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
-- Estado: implemented; pendiente de validacion manual en Unity, no validated.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario.
 
 ### M34.1.1: Inventory & Equipment UI Cleanup
 
@@ -1309,7 +1309,22 @@ Con equipped item definition id none o vacio:
 - El toast absoluto permanece fuera de GUILayout y conserva su duracion/politica.
 - Inventory Context Menu v0, weight-limited partial transfers y M34.2 item-owned storage siguen pendientes.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
-- Estado: implemented; pendiente de validacion manual en Unity, no validated.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario.
+
+### M34.1.2: Inventory Context Menu v0
+
+- Se agrego un unico estado de menu contextual/dialogo de cantidad poseido por `InventoryUISessionController`, sin estado estatico ni menus independientes por panel.
+- Se agregaron `InventoryContextActionKind`, contratos cerrados y `InventoryContextActionResolver`; el resolver es read-only, resuelve por `InstanceId`/owner y consulta consumibles y previews de Equipment.
+- Clic derecho sobre Player Grid, External Grid y filas ocupadas de Equipment abre el menu absoluto sin participar en `GUILayout`; clic derecho vacio cierra y clic derecho durante drag solo cancela ese drag.
+- Equipment reporta `slotId`, `InstanceId`, rect y boton; ambas filas de una instancia `2H` producen una sola autoridad y las mismas acciones.
+- Equip/Unequip usan `PreviewEquip`/`PreviewUnequip` y `EquipmentTransactionService`; Use usa `InventoryItemUseService`; Drop usa `DroppedWorldItemSpawner`; Take/Deposit usan `GridStorageTransferService`.
+- Las acciones Amount usan un modal absoluto con entero `1..quantity`, botones `-/+`, Enter/Confirmar, Escape/Cancelar, bloqueo del contenido y revalidacion completa antes del commit.
+- La seleccion posterior permanece por `InstanceId`: equip pasa a Equipment, unequip a Personal, transferencias usan el destination/remainder del receipt y consumo/drop completo limpian la seleccion desaparecida.
+- Se retiraron los botones fijos de Use/Equip/Unequip/Drop; Take/Deposit 1/Stack permanecen temporalmente como fallback de validacion.
+- Use desde equipment se omite porque el servicio actual consume por indice del inventario personal; no se agrego una ruta improvisada.
+- No se implementaron auto-swap, equip desde external, drop equipado, transferencias parciales automaticas por peso, item-owned storage ni UI final.
+- No se modificaron `SampleScene.unity`, JSON Core, sprites, arte, `ItemStorage`, backends espaciales, ownership, peso, Equipment/transfer services, containers, cadaveres ni pickup.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; estado `implemented`, pendiente de validacion manual en Unity.
 
 ## Decisiones De Scope
 

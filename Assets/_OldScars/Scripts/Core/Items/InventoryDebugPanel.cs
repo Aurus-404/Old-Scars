@@ -117,6 +117,8 @@ namespace OldScars.Core.Items
 
             Rect panelRect = GetPanelRect();
             GUILayout.BeginArea(panelRect, GUI.skin.box);
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && !(sessionController?.BlocksInventoryContentInput ?? false);
             DrawHeader();
 
             if (inventory == null)
@@ -125,6 +127,8 @@ namespace OldScars.Core.Items
                 DrawCloseButton();
                 ConsumeDragStatus();
                 toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
+                GUI.enabled = previousEnabled;
+                sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUILayout.EndArea();
                 sessionController?.ConsumeCurrentOnGUIEvent();
                 return;
@@ -134,6 +138,8 @@ namespace OldScars.Core.Items
 
             ConsumeDragStatus();
             toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
+            GUI.enabled = previousEnabled;
+            sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
             GUILayout.EndArea();
             sessionController?.ConsumeCurrentOnGUIEvent();
         }
@@ -152,7 +158,8 @@ namespace OldScars.Core.Items
             DrawDetailsColumn(bodyHeight);
 
             GUILayout.EndHorizontal();
-            dragController.ProcessOnGUI();
+            if (!(sessionController?.BlocksInventoryContentInput ?? false))
+                dragController.ProcessOnGUI();
             SyncGridSelectionToSession();
         }
 
@@ -191,6 +198,7 @@ namespace OldScars.Core.Items
                 GUILayout.EndHorizontal();
                 gridView.Draw(inventory, gridRect, dragController);
                 dragController.RegisterEndpoint(inventory, gridView, gridRect);
+                HandleGridRightClick(inventory, gridView, gridRect);
             }
 
             GUILayout.FlexibleSpace();
@@ -213,7 +221,8 @@ namespace OldScars.Core.Items
                 actorEquipment,
                 sessionController != null ? sessionController.Selection : new InventoryUISessionSelection(),
                 EquipmentColumnWidth - 12f,
-                equipmentHeight);
+                equipmentHeight,
+                HandleEquipmentRowClick);
 
             GUILayout.Space(ColumnGap);
             DrawPersonalSessionFooter(Mathf.Max(1f, bodyHeight - equipmentHeight - ColumnGap - 12f));
@@ -261,6 +270,226 @@ namespace OldScars.Core.Items
                 sessionController?.Selection.SelectPersonal(gridView.SelectedInstanceId);
         }
 
+        private void HandleGridRightClick(
+            IGridStorageOwner owner,
+            InventoryGridDebugView view,
+            Rect gridRect)
+        {
+            if (sessionController == null || sessionController.QuantityDialogOpen ||
+                !view.TryGetRightClick(owner, gridRect, out string instanceId))
+            {
+                return;
+            }
+
+            Event guiEvent = Event.current;
+            if (dragController.CancelDrag())
+            {
+                sessionController.CloseContextMenu();
+                guiEvent?.Use();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(instanceId) ||
+                !owner.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry) ||
+                entry?.Item == null)
+            {
+                sessionController.CloseContextMenu();
+                guiEvent?.Use();
+                return;
+            }
+
+            view.SelectInstance(instanceId);
+            dragController.SetActiveOwner(owner);
+            sessionController.Selection.SelectPersonalFromContext(instanceId);
+            ResolveActorEquipment();
+            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolvePersonal(
+                inventory,
+                actorEquipment,
+                instanceId,
+                false);
+            sessionController.OpenContextMenu(
+                new InventoryContextMenuRequest(
+                    InventoryContextSourceKind.Personal,
+                    inventory,
+                    actorEquipment,
+                    instanceId,
+                    null,
+                    entry.Quantity,
+                    actions,
+                    ExecuteContextAction),
+                guiEvent != null ? ToPanelLocalPosition(guiEvent.mousePosition) : Vector2.zero);
+            guiEvent?.Use();
+        }
+
+        private void HandleEquipmentRowClick(EquipmentDebugRowClick click)
+        {
+            if (click.MouseButton != 1 || sessionController == null || sessionController.QuantityDialogOpen)
+                return;
+
+            Event guiEvent = Event.current;
+            if (dragController.CancelDrag())
+            {
+                sessionController.CloseContextMenu();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(click.InstanceId))
+            {
+                sessionController.CloseContextMenu();
+                return;
+            }
+
+            ResolveActorEquipment();
+            if (actorEquipment == null ||
+                !actorEquipment.TryGetEntryByInstanceId(click.InstanceId, out ItemStorageEntry entry) ||
+                entry?.Item == null)
+            {
+                sessionController.CloseContextMenu();
+                return;
+            }
+
+            sessionController.Selection.SelectEquipmentFromContext(click.SlotId, click.InstanceId);
+
+            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolveEquipment(
+                actorEquipment,
+                click.SlotId,
+                click.InstanceId);
+            sessionController.OpenContextMenu(
+                new InventoryContextMenuRequest(
+                    InventoryContextSourceKind.Equipment,
+                    null,
+                    actorEquipment,
+                    click.InstanceId,
+                    click.SlotId,
+                    entry.Quantity,
+                    actions,
+                    ExecuteContextAction),
+                guiEvent != null ? ToPanelLocalPosition(guiEvent.mousePosition) : click.RowRect.position);
+        }
+
+        private void ExecuteContextAction(InventoryContextActionInvocation invocation)
+        {
+            if (!TryResolveCurrentContextAction(invocation, out InventoryContextAction currentAction, out int index, out ItemStorageEntry entry))
+            {
+                toast.Show("Context action rejected: item or owner changed.", InventoryToastSeverity.Error);
+                return;
+            }
+
+            int quantity = invocation.Quantity;
+            if (currentAction.RequiresQuantityDialog && (quantity < 1 || quantity > entry.Quantity))
+            {
+                toast.Show("Context action rejected: quantity changed.", InventoryToastSeverity.Error);
+                return;
+            }
+
+            switch (currentAction.Kind)
+            {
+                case InventoryContextActionKind.ShowDetails:
+                    return;
+                case InventoryContextActionKind.Use:
+                    UseItem(index);
+                    return;
+                case InventoryContextActionKind.Equip:
+                    EquipSelected(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    return;
+                case InventoryContextActionKind.Unequip:
+                    UnequipSelected(entry.Item.InstanceId);
+                    return;
+                case InventoryContextActionKind.DropOne:
+                    DropItem(index, 1, "drop_1", "Drop 1");
+                    return;
+                case InventoryContextActionKind.DropAmount:
+                    DropItem(index, quantity, "drop_amount", "Drop Amount");
+                    return;
+                case InventoryContextActionKind.DropStack:
+                    DropItem(index, entry.Quantity, "drop_stack", "Drop Stack");
+                    return;
+                default:
+                    toast.Show("Context action is not valid in the personal session.", InventoryToastSeverity.Error);
+                    return;
+            }
+        }
+
+        private bool TryResolveCurrentContextAction(
+            InventoryContextActionInvocation invocation,
+            out InventoryContextAction currentAction,
+            out int index,
+            out ItemStorageEntry entry)
+        {
+            currentAction = null;
+            index = -1;
+            entry = null;
+            InventoryContextMenuRequest request = invocation.Request;
+            if (request == null || invocation.Action == null)
+                return false;
+
+            IReadOnlyList<InventoryContextAction> actions;
+            if (request.SourceKind == InventoryContextSourceKind.Personal)
+            {
+                if (!ReferenceEquals(request.Owner, inventory) ||
+                    !inventory.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) ||
+                    entry?.Item == null)
+                {
+                    return false;
+                }
+                actions = InventoryContextActionResolver.ResolvePersonal(
+                    inventory,
+                    actorEquipment,
+                    request.InstanceId,
+                    false);
+            }
+            else if (request.SourceKind == InventoryContextSourceKind.Equipment)
+            {
+                if (!ReferenceEquals(request.Equipment, actorEquipment) || actorEquipment == null ||
+                    actorEquipment.GetEquippedStorageEntry(request.EquipmentSlotId)?.Item?.InstanceId != request.InstanceId ||
+                    !actorEquipment.TryGetEntryByInstanceId(request.InstanceId, out entry) || entry?.Item == null)
+                {
+                    return false;
+                }
+                actions = InventoryContextActionResolver.ResolveEquipment(
+                    actorEquipment,
+                    request.EquipmentSlotId,
+                    request.InstanceId);
+            }
+            else
+            {
+                return false;
+            }
+
+            currentAction = FindMatchingAction(actions, invocation.Action);
+            return currentAction != null && currentAction.Enabled;
+        }
+
+        private static InventoryContextAction FindMatchingAction(
+            IReadOnlyList<InventoryContextAction> actions,
+            InventoryContextAction requested)
+        {
+            if (actions == null || requested == null)
+                return null;
+
+            for (int index = 0; index < actions.Count; index++)
+            {
+                InventoryContextAction candidate = actions[index];
+                if (candidate.Kind == requested.Kind && SameSlots(candidate.EquipmentSlotIds, requested.EquipmentSlotIds))
+                    return candidate;
+            }
+            return null;
+        }
+
+        private static bool SameSlots(IReadOnlyList<string> left, IReadOnlyList<string> right)
+        {
+            int leftCount = left?.Count ?? 0;
+            int rightCount = right?.Count ?? 0;
+            if (leftCount != rightCount)
+                return false;
+            for (int index = 0; index < leftCount; index++)
+            {
+                if (left[index] != right[index])
+                    return false;
+            }
+            return true;
+        }
+
         private void DrawSelectedItemDetails()
         {
             InventoryUISessionSelection selection = sessionController?.Selection;
@@ -275,7 +504,7 @@ namespace OldScars.Core.Items
                 ? selection.SelectedPersonalItemInstanceId
                 : gridView.SelectedInstanceId;
             if (string.IsNullOrWhiteSpace(selectedInstanceId) ||
-                !inventory.TryGetEntryByInstanceId(selectedInstanceId, out int index, out ItemStorageEntry entry))
+                !inventory.TryGetEntryByInstanceId(selectedInstanceId, out _, out ItemStorageEntry entry))
             {
                 GUILayout.Label("Click an item in the grid.");
                 return;
@@ -294,35 +523,7 @@ namespace OldScars.Core.Items
             }
 
             GUILayout.Space(8f);
-            if (InventoryItemUseService.IsConsumable(entry) && GUILayout.Button("Use", GUILayout.Height(28f)))
-                UseItem(index);
-
-            ResolveActorEquipment();
-            if (actorEquipment != null)
-            {
-                IReadOnlyList<EquipmentSlotSet> alternatives = actorEquipment.GetAvailableSlotSets(item.InstanceId);
-                for (int alternativeIndex = 0; alternativeIndex < alternatives.Count; alternativeIndex++)
-                {
-                    EquipmentSlotSet alternative = alternatives[alternativeIndex];
-                    if (GUILayout.Button(
-                            $"Equipar — {GetSlotSetLabel(alternative.SlotIds)}",
-                            GUILayout.Height(28f)))
-                    {
-                        EquipSelected(item.InstanceId, alternative.SlotIds);
-                    }
-                }
-            }
-            else if (inventory.CanEquipIndexToRightHand(index))
-            {
-                if (GUILayout.Button("Equip", GUILayout.Height(28f)))
-                    inventory.TryEquipIndexToRightHand(index);
-            }
-
-            if (GUILayout.Button("Drop 1", GUILayout.Height(28f)))
-                DropItem(index, 1, "drop_1", "Drop 1");
-
-            if (entry.Quantity > 1 && GUILayout.Button("Drop Stack", GUILayout.Height(28f)))
-                DropItem(index, entry.Quantity, "drop_stack", "Drop Stack");
+            GUILayout.Label("Right-click the grid item for actions.");
         }
 
         private void DrawSelectedEquipmentDetails(InventoryUISessionSelection selection)
@@ -341,8 +542,7 @@ namespace OldScars.Core.Items
             GUILayout.Label($"Slots: {GetSlotSetLabel(actorEquipment.GetSlotsOccupiedBy(entry.Item.InstanceId))}");
             DrawSelectedItemWeight(entry);
             GUILayout.Space(8f);
-            if (GUILayout.Button("Desequipar al inventario", GUILayout.Height(30f)))
-                UnequipSelected(entry.Item.InstanceId);
+            GUILayout.Label("Right-click the occupied slot for actions.");
         }
 
         private void EquipSelected(string instanceId, IReadOnlyList<string> slotIds)
@@ -354,7 +554,7 @@ namespace OldScars.Core.Items
                 return;
 
             string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
-            sessionController?.Selection.SelectEquipment(primarySlot, result.InstanceId, true);
+            sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
             gridView.ReconcileSelection(inventory);
             GUIUtility.ExitGUI();
         }
@@ -368,7 +568,7 @@ namespace OldScars.Core.Items
                 return;
 
             sessionController?.Selection.ClearEquipment();
-            sessionController?.Selection.SelectPersonal(result.InstanceId);
+            sessionController?.Selection.SelectPersonalFromContext(result.InstanceId);
             gridView.SelectInstance(result.InstanceId);
             GUIUtility.ExitGUI();
         }
@@ -457,52 +657,16 @@ namespace OldScars.Core.Items
         private void DrawItemRow(int index, ItemStorageEntry entry)
         {
             ItemInstance item = entry != null ? entry.Item : null;
-
-            GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label(GetItemLabel(index, entry), GUILayout.Width(590f));
-
-            bool isEquipped = inventory.IsRightHandEquippedIndex(index);
-            if (isEquipped || inventory.CanEquipIndexToRightHand(index))
+            if (GUILayout.Button(GetItemLabel(index, entry), GUILayout.Height(26f)))
             {
-                GUI.enabled = item != null && !isEquipped;
-                if (GUILayout.Button(isEquipped ? "Equipped" : "Equip", GUILayout.Height(24f), GUILayout.Width(80f)))
-                    inventory.TryEquipIndexToRightHand(index);
-                GUI.enabled = true;
+                gridView.SelectInstance(item?.InstanceId);
+                sessionController?.Selection.SelectPersonal(item?.InstanceId);
             }
-
-            if (InventoryItemUseService.IsConsumable(entry))
-            {
-                if (GUILayout.Button("Use", GUILayout.Height(24f), GUILayout.Width(80f)))
-                    UseItem(index);
-            }
-
-            DrawDropButtons(index, entry);
-
-            GUILayout.EndHorizontal();
-        }
-
-        private void DrawDropButtons(int index, ItemStorageEntry entry)
-        {
-            if (entry == null || entry.Item == null)
-                return;
-
-            if (entry.Quantity <= 1)
-            {
-                if (GUILayout.Button("Drop", GUILayout.Height(24f), GUILayout.Width(90f)))
-                    DropItem(index, 1, "drop", "Drop");
-
-                return;
-            }
-
-            if (GUILayout.Button("Drop 1", GUILayout.Height(24f), GUILayout.Width(90f)))
-                DropItem(index, 1, "drop_1", "Drop 1");
-
-            if (GUILayout.Button("Drop Stack", GUILayout.Height(24f), GUILayout.Width(100f)))
-                DropItem(index, entry.Quantity, "drop_stack", "Drop Stack");
         }
 
         private void DropItem(int index, int quantity, string actionId, string actionDisplayName)
         {
+            string sourceInstanceId = inventory.GetEntry(index)?.Item?.InstanceId;
             bool dropped = DroppedWorldItemSpawner.TryDrop(
                 inventory,
                 index,
@@ -518,11 +682,18 @@ namespace OldScars.Core.Items
                 Debug.LogWarning($"[InventoryDebugPanel] {message}");
 
             gridView.ReconcileSelection(inventory);
+            if (!string.IsNullOrWhiteSpace(sourceInstanceId) &&
+                !inventory.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
+            {
+                sessionController?.Selection.ClearPersonalIfMissing(sourceInstanceId);
+                sessionController?.CloseContextMenu();
+            }
             GUIUtility.ExitGUI();
         }
 
         private void UseItem(int index)
         {
+            string sourceInstanceId = inventory.GetEntry(index)?.Item?.InstanceId;
             ResolveActorNeeds();
             ResolveActorHealth();
 
@@ -534,6 +705,12 @@ namespace OldScars.Core.Items
                 Debug.Log($"[InventoryDebugPanel] Use failed: {result.Message}");
 
             gridView.ReconcileSelection(inventory);
+            if (!string.IsNullOrWhiteSpace(sourceInstanceId) &&
+                !inventory.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
+            {
+                sessionController?.Selection.ClearPersonalIfMissing(sourceInstanceId);
+                sessionController?.CloseContextMenu();
+            }
         }
 
         private string GetItemLabel(int index, ItemStorageEntry entry)
@@ -653,6 +830,11 @@ namespace OldScars.Core.Items
         private static Vector2 ToGuiPosition(Vector2 mousePosition)
         {
             return new Vector2(mousePosition.x, Screen.height - mousePosition.y);
+        }
+
+        private static Vector2 ToPanelLocalPosition(Vector2 currentGuiPosition)
+        {
+            return GUIUtility.GUIToScreenPoint(currentGuiPosition) - GetPanelRect().position;
         }
 
         private void ResolveActorNeeds()

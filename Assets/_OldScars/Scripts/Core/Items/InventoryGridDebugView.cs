@@ -87,6 +87,23 @@ namespace OldScars.Core.Items
             selectedInstanceId = null;
         }
 
+        internal bool TryGetRightClick(
+            IGridStorageOwner owner,
+            Rect gridRect,
+            out string instanceId)
+        {
+            instanceId = null;
+            Event guiEvent = Event.current;
+            if (guiEvent == null || guiEvent.type != EventType.MouseDown || guiEvent.button != 1 ||
+                !gridRect.Contains(guiEvent.mousePosition))
+            {
+                return false;
+            }
+
+            instanceId = FindInstanceAtPosition(owner, gridRect, guiEvent.mousePosition, out _);
+            return true;
+        }
+
         internal string FindInstanceAtPosition(
             IGridStorageOwner owner,
             Rect gridRect,

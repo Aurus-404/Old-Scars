@@ -158,6 +158,8 @@ namespace OldScars.Core.Items
 
             Rect panelRect = GetPanelRect();
             GUILayout.BeginArea(panelRect, GUI.skin.box);
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && !(sessionController?.BlocksInventoryContentInput ?? false);
             DrawHeader();
 
             if (targetInventory == null || storageSource == null)
@@ -165,6 +167,8 @@ namespace OldScars.Core.Items
                 GUILayout.Label("Player inventory or external storage source is missing.");
                 ConsumeDragStatus();
                 toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
+                GUI.enabled = previousEnabled;
+                sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUILayout.EndArea();
                 sessionController?.ConsumeCurrentOnGUIEvent();
                 return;
@@ -181,10 +185,13 @@ namespace OldScars.Core.Items
             DrawStorageColumn(storageSource, externalGridView, false, externalColumnWidth, bodyHeight);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-            dragController.ProcessOnGUI();
+            if (!(sessionController?.BlocksInventoryContentInput ?? false))
+                dragController.ProcessOnGUI();
             SyncGridSelectionToSession();
             ConsumeDragStatus();
             toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
+            GUI.enabled = previousEnabled;
+            sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
             GUILayout.EndArea();
             sessionController?.ConsumeCurrentOnGUIEvent();
         }
@@ -243,6 +250,7 @@ namespace OldScars.Core.Items
                 GUILayout.EndHorizontal();
                 view.Draw(owner, gridRect, dragController);
                 dragController.RegisterEndpoint(owner, view, gridRect);
+                HandleGridRightClick(owner, view, gridRect, isPlayer);
             }
             else
             {
@@ -273,6 +281,270 @@ namespace OldScars.Core.Items
             {
                 selection.SelectExternal(externalGridView.SelectedInstanceId);
             }
+        }
+
+        private void HandleGridRightClick(
+            IGridStorageOwner owner,
+            InventoryGridDebugView view,
+            Rect gridRect,
+            bool isPlayer)
+        {
+            if (sessionController == null || sessionController.QuantityDialogOpen ||
+                !view.TryGetRightClick(owner, gridRect, out string instanceId))
+            {
+                return;
+            }
+
+            Event guiEvent = Event.current;
+            if (dragController.CancelDrag())
+            {
+                sessionController.CloseContextMenu();
+                guiEvent?.Use();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(instanceId) ||
+                !owner.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry) ||
+                entry?.Item == null)
+            {
+                sessionController.CloseContextMenu();
+                guiEvent?.Use();
+                return;
+            }
+
+            view.SelectInstance(instanceId);
+            dragController.SetActiveOwner(owner);
+            IReadOnlyList<InventoryContextAction> actions;
+            InventoryContextSourceKind sourceKind;
+            if (isPlayer)
+            {
+                sessionController.Selection.SelectPersonalFromContext(instanceId);
+                sourceKind = InventoryContextSourceKind.Personal;
+                actions = InventoryContextActionResolver.ResolvePersonal(
+                    targetInventory,
+                    actorEquipment,
+                    instanceId,
+                    true);
+            }
+            else
+            {
+                sessionController.Selection.SelectExternalFromContext(instanceId);
+                sourceKind = InventoryContextSourceKind.External;
+                actions = InventoryContextActionResolver.ResolveExternal(storageSource, instanceId);
+            }
+
+            sessionController.OpenContextMenu(
+                new InventoryContextMenuRequest(
+                    sourceKind,
+                    owner,
+                    actorEquipment,
+                    instanceId,
+                    null,
+                    entry.Quantity,
+                    actions,
+                    ExecuteContextAction),
+                guiEvent != null ? ToPanelLocalPosition(guiEvent.mousePosition) : Vector2.zero);
+            guiEvent?.Use();
+        }
+
+        private void HandleEquipmentRowClick(EquipmentDebugRowClick click)
+        {
+            if (click.MouseButton != 1 || sessionController == null || sessionController.QuantityDialogOpen)
+                return;
+
+            Event guiEvent = Event.current;
+            if (dragController.CancelDrag())
+            {
+                sessionController.CloseContextMenu();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(click.InstanceId) || actorEquipment == null ||
+                !actorEquipment.TryGetEntryByInstanceId(click.InstanceId, out ItemStorageEntry entry) ||
+                entry?.Item == null)
+            {
+                sessionController.CloseContextMenu();
+                return;
+            }
+
+            sessionController.Selection.SelectEquipmentFromContext(click.SlotId, click.InstanceId);
+
+            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolveEquipment(
+                actorEquipment,
+                click.SlotId,
+                click.InstanceId);
+            sessionController.OpenContextMenu(
+                new InventoryContextMenuRequest(
+                    InventoryContextSourceKind.Equipment,
+                    null,
+                    actorEquipment,
+                    click.InstanceId,
+                    click.SlotId,
+                    entry.Quantity,
+                    actions,
+                    ExecuteContextAction),
+                guiEvent != null ? ToPanelLocalPosition(guiEvent.mousePosition) : click.RowRect.position);
+        }
+
+        private void ExecuteContextAction(InventoryContextActionInvocation invocation)
+        {
+            if (!TryResolveCurrentContextAction(
+                    invocation,
+                    out InventoryContextAction currentAction,
+                    out IGridStorageOwner owner,
+                    out int index,
+                    out ItemStorageEntry entry))
+            {
+                toast.Show("Context action rejected: item, owner or storage changed.", InventoryToastSeverity.Error);
+                return;
+            }
+
+            int requestedQuantity = invocation.Quantity;
+            if (currentAction.RequiresQuantityDialog &&
+                (requestedQuantity < 1 || requestedQuantity > entry.Quantity))
+            {
+                toast.Show("Context action rejected: quantity changed.", InventoryToastSeverity.Error);
+                return;
+            }
+
+            switch (currentAction.Kind)
+            {
+                case InventoryContextActionKind.ShowDetails:
+                    return;
+                case InventoryContextActionKind.Use:
+                    UsePersonalItem(index, entry.Item.InstanceId);
+                    return;
+                case InventoryContextActionKind.Equip:
+                    EquipPersonalItem(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    return;
+                case InventoryContextActionKind.Unequip:
+                    UnequipEquipmentItem(entry.Item.InstanceId);
+                    return;
+                case InventoryContextActionKind.DropOne:
+                    DropPersonalItem(index, entry.Item.InstanceId, 1, "drop_1", "Drop 1");
+                    return;
+                case InventoryContextActionKind.DropAmount:
+                    DropPersonalItem(index, entry.Item.InstanceId, requestedQuantity, "drop_amount", "Drop Amount");
+                    return;
+                case InventoryContextActionKind.DropStack:
+                    DropPersonalItem(index, entry.Item.InstanceId, entry.Quantity, "drop_stack", "Drop Stack");
+                    return;
+                case InventoryContextActionKind.TakeOne:
+                    ApplyContextTransfer(TransferQuantity(owner, targetInventory, entry.Item.InstanceId, 1), true);
+                    return;
+                case InventoryContextActionKind.TakeAmount:
+                    ApplyContextTransfer(TransferQuantity(owner, targetInventory, entry.Item.InstanceId, requestedQuantity), true);
+                    return;
+                case InventoryContextActionKind.TakeStack:
+                    ApplyContextTransfer(TransferStack(owner, targetInventory, entry.Item.InstanceId), true);
+                    return;
+                case InventoryContextActionKind.DepositOne:
+                    ApplyContextTransfer(TransferQuantity(owner, storageSource, entry.Item.InstanceId, 1), false);
+                    return;
+                case InventoryContextActionKind.DepositAmount:
+                    ApplyContextTransfer(TransferQuantity(owner, storageSource, entry.Item.InstanceId, requestedQuantity), false);
+                    return;
+                case InventoryContextActionKind.DepositStack:
+                    ApplyContextTransfer(TransferStack(owner, storageSource, entry.Item.InstanceId), false);
+                    return;
+                default:
+                    toast.Show("Context action is not supported by this session.", InventoryToastSeverity.Error);
+                    return;
+            }
+        }
+
+        private bool TryResolveCurrentContextAction(
+            InventoryContextActionInvocation invocation,
+            out InventoryContextAction currentAction,
+            out IGridStorageOwner owner,
+            out int index,
+            out ItemStorageEntry entry)
+        {
+            currentAction = null;
+            owner = null;
+            index = -1;
+            entry = null;
+            InventoryContextMenuRequest request = invocation.Request;
+            if (request == null || invocation.Action == null ||
+                sessionController == null || sessionController.State != InventoryUISessionState.External)
+            {
+                return false;
+            }
+
+            IReadOnlyList<InventoryContextAction> actions;
+            if (request.SourceKind == InventoryContextSourceKind.Personal)
+            {
+                owner = targetInventory;
+                if (!ReferenceEquals(request.Owner, targetInventory) || storageSource == null ||
+                    !targetInventory.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) || entry?.Item == null)
+                {
+                    return false;
+                }
+                actions = InventoryContextActionResolver.ResolvePersonal(
+                    targetInventory,
+                    actorEquipment,
+                    request.InstanceId,
+                    true);
+            }
+            else if (request.SourceKind == InventoryContextSourceKind.External)
+            {
+                owner = storageSource;
+                if (!ReferenceEquals(request.Owner, storageSource) ||
+                    !storageSource.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) || entry?.Item == null)
+                {
+                    return false;
+                }
+                actions = InventoryContextActionResolver.ResolveExternal(storageSource, request.InstanceId);
+            }
+            else if (request.SourceKind == InventoryContextSourceKind.Equipment)
+            {
+                if (!ReferenceEquals(request.Equipment, actorEquipment) || actorEquipment == null ||
+                    actorEquipment.GetEquippedStorageEntry(request.EquipmentSlotId)?.Item?.InstanceId != request.InstanceId ||
+                    !actorEquipment.TryGetEntryByInstanceId(request.InstanceId, out entry) || entry?.Item == null)
+                {
+                    return false;
+                }
+                actions = InventoryContextActionResolver.ResolveEquipment(
+                    actorEquipment,
+                    request.EquipmentSlotId,
+                    request.InstanceId);
+            }
+            else
+            {
+                return false;
+            }
+
+            currentAction = FindMatchingAction(actions, invocation.Action);
+            return currentAction != null && currentAction.Enabled;
+        }
+
+        private static InventoryContextAction FindMatchingAction(
+            IReadOnlyList<InventoryContextAction> actions,
+            InventoryContextAction requested)
+        {
+            if (actions == null || requested == null)
+                return null;
+            for (int index = 0; index < actions.Count; index++)
+            {
+                InventoryContextAction candidate = actions[index];
+                if (candidate.Kind == requested.Kind && SameSlots(candidate.EquipmentSlotIds, requested.EquipmentSlotIds))
+                    return candidate;
+            }
+            return null;
+        }
+
+        private static bool SameSlots(IReadOnlyList<string> left, IReadOnlyList<string> right)
+        {
+            int leftCount = left?.Count ?? 0;
+            int rightCount = right?.Count ?? 0;
+            if (leftCount != rightCount)
+                return false;
+            for (int index = 0; index < leftCount; index++)
+            {
+                if (left[index] != right[index])
+                    return false;
+            }
+            return true;
         }
 
         private void DrawLegacyList(
@@ -333,7 +605,8 @@ namespace OldScars.Core.Items
                 actorEquipment,
                 sessionController != null ? sessionController.Selection : new InventoryUISessionSelection(),
                 CenterColumnWidth - 12f,
-                equipmentHeight);
+                equipmentHeight,
+                HandleEquipmentRowClick);
             GUILayout.Space(ColumnGap);
             DrawCenterFooter(Mathf.Max(1f, bodyHeight - equipmentHeight - ColumnGap - 12f));
             GUILayout.EndVertical();
@@ -376,7 +649,6 @@ namespace OldScars.Core.Items
                     TransferQuantity(targetInventory, storageSource, entry.Item.InstanceId, 1);
                 if (GUILayout.Button("Deposit Stack", GUILayout.Height(28f)))
                     TransferStack(targetInventory, storageSource, entry.Item.InstanceId);
-                DrawEquipButtons(entry);
             }
             else
             {
@@ -408,9 +680,6 @@ namespace OldScars.Core.Items
             {
                 GUILayout.Label("Vacío");
                 GUILayout.EndScrollView();
-                GUI.enabled = false;
-                GUILayout.Button("Desequipar al inventario", GUILayout.Height(28f));
-                GUI.enabled = true;
                 return;
             }
 
@@ -418,18 +687,7 @@ namespace OldScars.Core.Items
             GUILayout.Label($"Instance: {entry.Item.InstanceId}");
             DrawSelectedItemWeight(entry);
             GUILayout.EndScrollView();
-            if (GUILayout.Button("Desequipar al inventario", GUILayout.Height(28f)))
-            {
-                EquipmentMutationResult result = actorEquipment.Unequip(actorEquipment.PreviewUnequip(entry.Item.InstanceId));
-                toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
-                if (result.Success)
-                {
-                    selection.ClearEquipment();
-                    selection.SelectPersonal(result.InstanceId);
-                    playerGridView.SelectInstance(result.InstanceId);
-                    GUIUtility.ExitGUI();
-                }
-            }
+            GUILayout.Label("Right-click the occupied slot for actions.");
         }
 
         private bool TryGetSessionSelectedEntry(
@@ -501,50 +759,11 @@ namespace OldScars.Core.Items
 
         private static void DrawUnavailableTransferButtons()
         {
+            bool previousEnabled = GUI.enabled;
             GUI.enabled = false;
             GUILayout.Button("Take 1 / Deposit 1", GUILayout.Height(28f));
             GUILayout.Button("Take Stack / Deposit Stack", GUILayout.Height(28f));
-            GUI.enabled = true;
-        }
-
-        private void DrawEquipButtons(ItemStorageEntry entry)
-        {
-            if (actorEquipment == null || entry?.Item == null)
-                return;
-
-            IReadOnlyList<EquipmentSlotSet> alternatives = actorEquipment.GetAvailableSlotSets(entry.Item.InstanceId);
-            for (int index = 0; index < alternatives.Count; index++)
-            {
-                EquipmentSlotSet alternative = alternatives[index];
-                if (!GUILayout.Button($"Equipar — {GetSlotSetLabel(alternative.SlotIds)}", GUILayout.Height(28f)))
-                    continue;
-
-                EquipmentMutationResult result = actorEquipment.Equip(
-                    actorEquipment.PreviewEquip(entry.Item.InstanceId, alternative.SlotIds));
-                toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
-                if (result.Success)
-                {
-                    string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
-                    sessionController?.Selection.SelectEquipment(primarySlot, result.InstanceId, true);
-                    ReconcileSelections();
-                    GUIUtility.ExitGUI();
-                }
-            }
-        }
-
-        private string GetSlotSetLabel(IReadOnlyList<string> slotIds)
-        {
-            if (slotIds == null || slotIds.Count == 0)
-                return "(none)";
-            var labels = new string[slotIds.Count];
-            for (int index = 0; index < slotIds.Count; index++)
-            {
-                EquipmentSlotDefinition definition = actorEquipment?.GetSlotDefinition(slotIds[index]);
-                labels[index] = definition != null && !string.IsNullOrWhiteSpace(definition.display_name)
-                    ? definition.display_name
-                    : slotIds[index];
-            }
-            return string.Join(" + ", labels);
+            GUI.enabled = previousEnabled;
         }
 
         private void DrawCarryWeightSummary()
@@ -582,7 +801,113 @@ namespace OldScars.Core.Items
             GUILayout.Label("Stack weight: unavailable");
         }
 
-        private void TransferQuantity(IGridStorageOwner source, IGridStorageOwner target, string instanceId, int quantity)
+        private void UsePersonalItem(int index, string instanceId)
+        {
+            ActorNeedsComponent needs = targetInventory.GetComponentInParent<ActorNeedsComponent>();
+            ActorHealthComponent health = targetInventory.GetComponentInParent<ActorHealthComponent>();
+            InventoryItemUseResult result = InventoryItemUseService.TryUseItem(targetInventory, index, needs, health);
+            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Warning);
+            ReconcileSelections();
+            if (!targetInventory.TryGetEntryByInstanceId(instanceId, out _, out _))
+                sessionController?.Selection.ClearPersonalIfMissing(instanceId);
+        }
+
+        private void EquipPersonalItem(string instanceId, IReadOnlyList<string> slotIds)
+        {
+            EquipmentMutationResult result = actorEquipment != null
+                ? actorEquipment.Equip(actorEquipment.PreviewEquip(instanceId, slotIds))
+                : EquipmentMutationResult.Rejected("Actor equipment is unavailable.", instanceId);
+            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
+            sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
+            ReconcileSelections();
+            GUIUtility.ExitGUI();
+        }
+
+        private void UnequipEquipmentItem(string instanceId)
+        {
+            EquipmentMutationResult result = actorEquipment != null
+                ? actorEquipment.Unequip(actorEquipment.PreviewUnequip(instanceId))
+                : EquipmentMutationResult.Rejected("Actor equipment is unavailable.", instanceId);
+            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            sessionController?.Selection.ClearEquipment();
+            sessionController?.Selection.SelectPersonalFromContext(result.InstanceId);
+            playerGridView.SelectInstance(result.InstanceId);
+            ReconcileSelections();
+            GUIUtility.ExitGUI();
+        }
+
+        private void DropPersonalItem(
+            int index,
+            string instanceId,
+            int quantity,
+            string actionId,
+            string actionDisplayName)
+        {
+            bool success = DroppedWorldItemSpawner.TryDrop(
+                targetInventory,
+                index,
+                quantity,
+                actionId,
+                actionDisplayName,
+                out string message);
+            toast.Show(message, success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            ReconcileSelections();
+            if (!targetInventory.TryGetEntryByInstanceId(instanceId, out _, out _))
+                sessionController?.Selection.ClearPersonalIfMissing(instanceId);
+            GUIUtility.ExitGUI();
+        }
+
+        private void ApplyContextTransfer(InventoryMutationResult result, bool tookToPersonal)
+        {
+            if (result == null || !result.Success)
+                return;
+
+            string destinationInstanceId = result.DestinationInstanceId;
+            if (tookToPersonal && !string.IsNullOrWhiteSpace(destinationInstanceId) &&
+                targetInventory.TryGetEntryByInstanceId(destinationInstanceId, out _, out _))
+            {
+                playerGridView.SelectInstance(destinationInstanceId);
+                sessionController?.Selection.SelectPersonalFromContext(destinationInstanceId);
+                return;
+            }
+
+            if (!tookToPersonal && !string.IsNullOrWhiteSpace(destinationInstanceId) &&
+                storageSource.TryGetEntryByInstanceId(destinationInstanceId, out _, out _))
+            {
+                externalGridView.SelectInstance(destinationInstanceId);
+                sessionController?.Selection.SelectExternalFromContext(destinationInstanceId);
+                return;
+            }
+
+            string sourceInstanceId = result.SourceInstanceId;
+            if (tookToPersonal && storageSource.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
+            {
+                externalGridView.SelectInstance(sourceInstanceId);
+                sessionController?.Selection.SelectExternalFromContext(sourceInstanceId);
+            }
+            else if (!tookToPersonal && targetInventory.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
+            {
+                playerGridView.SelectInstance(sourceInstanceId);
+                sessionController?.Selection.SelectPersonalFromContext(sourceInstanceId);
+            }
+            else if (tookToPersonal)
+            {
+                sessionController?.Selection.ClearExternalIfMissing(sourceInstanceId);
+            }
+            else
+            {
+                sessionController?.Selection.ClearPersonalIfMissing(sourceInstanceId);
+            }
+        }
+
+        private InventoryMutationResult TransferQuantity(IGridStorageOwner source, IGridStorageOwner target, string instanceId, int quantity)
         {
             InventoryMutationResult result = GridStorageTransferService.TransferQuantityAuto(
                 source,
@@ -597,9 +922,10 @@ namespace OldScars.Core.Items
                     : result.Message ?? "Transfer failed.",
                 result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             ReconcileSelections();
+            return result;
         }
 
-        private void TransferStack(IGridStorageOwner source, IGridStorageOwner target, string instanceId)
+        private InventoryMutationResult TransferStack(IGridStorageOwner source, IGridStorageOwner target, string instanceId)
         {
             InventoryMutationResult result = GridStorageTransferService.TransferStackAuto(
                 source,
@@ -612,6 +938,7 @@ namespace OldScars.Core.Items
                     : result.Message ?? "Stack transfer failed.",
                 result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             ReconcileSelections();
+            return result;
         }
 
         private void ReconcileSelections()
@@ -653,6 +980,11 @@ namespace OldScars.Core.Items
             float fallbackPlayerWidth = CalculateStorageColumnWidth(targetInventory, playerGridView);
             float fallbackExternalWidth = CalculateStorageColumnWidth(storageSource, externalGridView);
             return CalculatePanelRect(fallbackPlayerWidth, fallbackExternalWidth);
+        }
+
+        private Vector2 ToPanelLocalPosition(Vector2 currentGuiPosition)
+        {
+            return GUIUtility.GUIToScreenPoint(currentGuiPosition) - GetPanelRect().position;
         }
 
         private static Rect CalculatePanelRect(float leftColumnWidth, float rightColumnWidth)

@@ -32,6 +32,31 @@ namespace OldScars.Core.Items
             ActiveSide = InventoryUIActiveSide.External;
         }
 
+        public void SelectPersonalFromContext(string instanceId)
+        {
+            SelectedExternalItemInstanceId = null;
+            SelectedEquipmentSlotId = null;
+            SelectedEquippedInstanceId = null;
+            PendingEquipmentAutoScrollSlotId = null;
+            SelectPersonal(instanceId);
+        }
+
+        public void SelectExternalFromContext(string instanceId)
+        {
+            SelectedPersonalItemInstanceId = null;
+            SelectedEquipmentSlotId = null;
+            SelectedEquippedInstanceId = null;
+            PendingEquipmentAutoScrollSlotId = null;
+            SelectExternal(instanceId);
+        }
+
+        public void SelectEquipmentFromContext(string slotId, string instanceId, bool autoScroll = false)
+        {
+            SelectedPersonalItemInstanceId = null;
+            SelectedExternalItemInstanceId = null;
+            SelectEquipment(slotId, instanceId, autoScroll);
+        }
+
         public void SelectEquipment(string slotId, string instanceId, bool autoScroll)
         {
             SelectedEquipmentSlotId = slotId;
@@ -54,6 +79,19 @@ namespace OldScars.Core.Items
                 SelectedPersonalItemInstanceId == instanceId)
             {
                 SelectedPersonalItemInstanceId = null;
+                if (ActiveSide == InventoryUIActiveSide.Personal)
+                    ActiveSide = InventoryUIActiveSide.None;
+            }
+        }
+
+        public void ClearExternalIfMissing(string instanceId)
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedExternalItemInstanceId) &&
+                SelectedExternalItemInstanceId == instanceId)
+            {
+                SelectedExternalItemInstanceId = null;
+                if (ActiveSide == InventoryUIActiveSide.External)
+                    ActiveSide = InventoryUIActiveSide.None;
             }
         }
 

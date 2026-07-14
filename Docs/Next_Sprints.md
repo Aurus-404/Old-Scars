@@ -4,31 +4,28 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar M34.1 + M34.1.1: Equipment Foundation & UI Cleanup
+### Validar M34.1.2: Inventory Context Menu v0
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `implemented`; pendiente de validacion manual en Unity. M34.1 y M34.1.1 estan `validated` por confirmacion del usuario.
 
 Objetivo inmediato:
 
-- agregar `ActorItemOwnershipComponent` y `ActorEquipmentComponent` solo al Debug Player, dejando que sus referencias al `InventoryComponent` se autocompleten;
-- confirmar Data Load OK con `EquipmentSlots: 17`, `EquipmentLayouts: 1`, `human_standard_01` y sin errores/warnings nuevos;
-- abrir inventario personal y storage externo y confirmar las tres columnas estables: grilla personal, 17 slots centrales y grilla externa;
-- equipar la palanca a `hand_right`, desequiparla y repetir en `hand_left`, conservando el mismo `InstanceId` y el peso total;
-- equipar dos items de una mano simultaneamente y confirmar que ocupan manos distintas;
-- equipar el rifle y confirmar dos filas `2H`, una sola entry de equipment, un solo `InstanceId` y peso contado una vez;
-- intentar equipar el rifle con una mano ocupada y confirmar rechazo sin mutaciones, swaps ni drops;
-- llenar la grilla personal y confirmar que desequipar rechaza sin liberar slots ni cambiar ownership/peso;
-- confirmar que `force_door`/`pry_open_container` aceptan la palanca tambien desde `hand_left` cuando `hand_right` esta vacia;
-- probar scroll persistente, auto-scroll al slot equipado, seleccion de ambas filas del rifle y retorno de seleccion a la grilla al desequipar;
-- confirmar en inventario personal y storage externo que las tres columnas empiezan y terminan a la misma altura a `1366x768`;
-- comprobar que Equipment no tiene scrollbar horizontal y que slot/item quedan alineados izquierda/derecha con clipping;
-- confirmar que el header legacy `Right Hand`/`Unequip` ya no aparece y que Close sigue visible en la cabecera general;
-- seleccionar items personales y externos y verificar que Deposit/Take 1/Stack permanecen visibles dentro del footer;
-- confirmar que detalles largos usan scroll vertical interno y que ninguna seleccion vieja reemplaza personal/equipment/external en el siguiente `OnGUI`;
-- verificar `I`, `Escape`, cancelacion de drag, toast absoluto, pickup/drop, consumibles, firearm y transferencias M33 sin regresiones;
-- confirmar Console sin errores rojos antes de marcar M34.1/M34.1.1 como `validated`.
+- abrir inventario personal y confirmar que clic derecho sobre item abre el menu cerca del cursor sin mover columnas ni iniciar drag;
+- probar Use/Consume, Equip por cada alternativa, Drop 1, Drop cantidad y Drop todo con seleccion/placement/peso coherentes;
+- verificar alternativa compatible ocupada como accion deshabilitada y rechazo sin auto-swap;
+- equipar rifle y abrir desde ambas filas `2H`: misma instancia, misma lista y una sola accion de desequipar;
+- llenar la grilla personal y confirmar que Unequip falla por preview sin mutar storage, slots, ownership ni peso;
+- abrir container y cadaver y probar Take/Deposit 1, cantidad y todo; confirmar que el limite de peso rechaza la cantidad elegida completa;
+- confirmar que Take/Deposit 1/Stack del footer siguen visibles y funcionando como fallback;
+- abrir el modal Amount, probar entrada no numerica, `-`, `+`, clamp `1..quantity`, Enter, Escape, Confirmar y Cancelar;
+- cambiar cantidad/owner/storage antes de confirmar cuando sea posible y comprobar rechazo sin mutaciones;
+- probar clic izquierdo fuera, clic derecho vacio, clic derecho sobre otro item, cierre de storage, perdida de instancia e `I`;
+- confirmar prioridad de Escape: modal, menu, drag y finalmente sesion;
+- verificar que clicks del menu/modal no atraviesan a grillas, Equipment, mundo, movimiento, disparo ni camara;
+- confirmar que Use desde Equipment no aparece, y que no existen equip desde external, drop equipado ni auto-swap;
+- revisar toast absoluto, seleccion por `InstanceId`, 17 slots, scroll vertical y Console sin errores rojos.
 
-Fuera de scope para esta validacion: Inventory Context Menu v0, weight-limited partial transfers, componentes de equipment en NPCs/cadaveres, item-owned storage, mochila funcional, pockets, nesting, peso de subtrees, equip desde mundo, drop equipado, auto-swap, armor, save/load, modelos y UI final.
+Fuera de scope: retiro definitivo de botones Take/Deposit fallback, weight-limited partial transfers automaticas, componentes de equipment en NPCs/cadaveres, item-owned storage, mochila funcional, pockets, nesting, peso de subtrees, equip desde mundo, drop equipado, auto-swap, armor, save/load, modelos y UI final.
 
 ### M34.2: Item-Owned Storage / Backpack Foundation
 
