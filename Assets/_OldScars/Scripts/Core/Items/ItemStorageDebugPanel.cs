@@ -899,6 +899,15 @@ namespace OldScars.Core.Items
             if (result == null || !result.Success)
                 return;
 
+            string sourceInstanceId = result.SourceInstanceId;
+            if (result.WasLimitedByWeight && result.SourceRemainingQuantity > 0 && tookToPersonal &&
+                storageSource.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
+            {
+                externalGridView.SelectInstance(sourceInstanceId);
+                sessionController?.Selection.SelectExternalFromContext(sourceInstanceId);
+                return;
+            }
+
             string destinationInstanceId = result.DestinationInstanceId;
             if (tookToPersonal && !string.IsNullOrWhiteSpace(destinationInstanceId) &&
                 targetInventory.TryGetEntryByInstanceId(destinationInstanceId, out _, out _))
@@ -916,7 +925,6 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            string sourceInstanceId = result.SourceInstanceId;
             if (tookToPersonal && storageSource.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
             {
                 externalGridView.SelectInstance(sourceInstanceId);
@@ -957,15 +965,22 @@ namespace OldScars.Core.Items
 
         private InventoryMutationResult TransferStack(IGridStorageOwner source, IGridStorageOwner target, string instanceId)
         {
+            GridStorageTransferQuantityPolicy quantityPolicy =
+                target is ICarryWeightLimitedOwner limitedOwner && limitedOwner.HasCarryWeightLimit
+                    ? GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit
+                    : GridStorageTransferQuantityPolicy.Exact;
             InventoryMutationResult result = GridStorageTransferService.TransferStackAuto(
                 source,
                 target,
                 instanceId,
+                quantityPolicy,
                 new GridStorageTransferContext(executionContext, action));
             toast.Show(
                 result.Success
-                    ? $"Transferred stack x{result.AffectedQuantity}."
-                    : result.Message ?? "Stack transfer failed.",
+                    ? result.WasLimitedByWeight
+                        ? $"Tomaste {result.ActualTransferredQuantity} de {result.RequestedQuantity}. Límite de peso alcanzado."
+                        : $"Transferred stack x{result.AffectedQuantity}."
+                    : result.Message ?? "No se pudo transferir el stack.",
                 result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             ReconcileSelections();
             return result;

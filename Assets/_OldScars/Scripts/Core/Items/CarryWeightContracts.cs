@@ -75,10 +75,46 @@ namespace OldScars.Core.Items
         }
     }
 
+    public readonly struct CarryWeightQuantityLimit
+    {
+        public CarryWeightQuantityLimit(
+            bool isValid,
+            int requestedQuantity,
+            int maximumQuantity,
+            double unitWeightKg,
+            double currentWeightKg,
+            double hardLimitKg,
+            string error)
+        {
+            IsValid = isValid;
+            RequestedQuantity = requestedQuantity;
+            MaximumQuantity = maximumQuantity;
+            UnitWeightKg = unitWeightKg;
+            CurrentWeightKg = currentWeightKg;
+            HardLimitKg = hardLimitKg;
+            Error = error;
+        }
+
+        public bool IsValid { get; }
+        public int RequestedQuantity { get; }
+        public int MaximumQuantity { get; }
+        public double UnitWeightKg { get; }
+        public double CurrentWeightKg { get; }
+        public double HardLimitKg { get; }
+        public string Error { get; }
+        public bool WasLimitedByWeight => IsValid && MaximumQuantity < RequestedQuantity;
+
+        public static CarryWeightQuantityLimit Invalid(int requestedQuantity, string error)
+        {
+            return new CarryWeightQuantityLimit(false, requestedQuantity, 0, 0d, 0d, 0d, error);
+        }
+    }
+
     public interface ICarryWeightLimitedOwner
     {
         bool HasCarryWeightLimit { get; }
         CarryWeightSnapshot GetCarryWeightSnapshot();
         CarryWeightAcceptance EvaluateIncomingWeight(string definitionId, int quantity);
+        CarryWeightQuantityLimit EvaluateIncomingQuantityLimit(string definitionId, int requestedQuantity);
     }
 }

@@ -352,6 +352,21 @@ namespace OldScars.Core.Items
                     $"Source item instance '{sourceInstanceId}' was not found.");
             }
 
+            return PreviewTransferTo(target, sourceInstanceId, sourceEntry.Quantity);
+        }
+
+        internal GridPlacementValidationResult PreviewTransferTo(
+            GridInventoryBackend target,
+            string sourceInstanceId,
+            int quantity)
+        {
+            if (target == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "Target inventory backend is missing.");
+            }
+
             InventoryTransactionPlan plan = BuildTransferPlan(
                 storage,
                 layout,
@@ -359,7 +374,7 @@ namespace OldScars.Core.Items
                 target.layout,
                 target.definitionResolver,
                 sourceInstanceId,
-                sourceEntry.Quantity,
+                quantity,
                 null,
                 out InventoryMutationResult rejection);
             if (plan == null)

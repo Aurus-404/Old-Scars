@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M34.1, M34.1.1 y M34.1.2 estan validados manualmente en Unity. M34.1.3 Inventory Context QoL & Atomic Equipment Replacement esta `implemented` en el checkout y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M34.1, M34.1.1, M34.1.2 y M34.1.3 estan validados manualmente en Unity. M33.3.1 Weight-Limited Partial Transfers esta `implemented` en el checkout y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -21,6 +21,7 @@ Los ultimos milestones cerrados y validados en Unity son:
 - M34.1: Equipment Ownership & Slots Foundation.
 - M34.1.1: Inventory & Equipment UI Cleanup.
 - M34.1.2: Inventory Context Menu v0.
+- M34.1.3: Inventory Context QoL & Atomic Equipment Replacement.
 
 La validacion confirmada de M33.1 incluye Data Load OK con 0 errors y 0 warnings y las regresiones principales funcionando.
 
@@ -222,7 +223,7 @@ Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 ### M34.1.3: Inventory Context QoL & Atomic Equipment Replacement
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - `EquipmentReplacementPlan` registra source, slot set solicitado, desplazados unicos con todos sus slots, placements reservados, versiones esperadas y un `EquipmentFailureCode` cerrado.
 - `PreviewEquipReplacing` simula sin mutar: copia el layout personal sin la instancia source y reserva por first-fit todos los desplazados, por `InstanceId` unico, usando el espacio liberado por source.
@@ -233,6 +234,20 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - Para `quantity == 1`, Take/Deposit/Drop muestran una sola accion. `Ver detalles` queda oculto hasta M34.1.4 porque no agregaba informacion a la seleccion existente.
 - `Needs (Debug)` no se dibuja mientras `InventoryUISessionController` tiene una sesion abierta; los botones fijos Take/Deposit del footer fueron retirados sin tocar clic derecho, Shift+click ni drag.
 - No se modificaron escena, JSON, arte, prefabs, containers, cadaveres, pickup, drop, uso, peso, salud, movimiento, combate ni loot tables.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M33.3.1: Weight-Limited Partial Transfers
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `GridStorageTransferQuantityPolicy` separa `Exact` de `ClampIncomingToActorHardLimit`; las APIs existentes conservan `Exact` como default compatible.
+- Take Stack/Tomar todo y Shift+clic entrante hacia un actor con autoridad de peso solicitan clamp explicito. Take 1, Take Amount, drag exacto, merge dirigido, equipamiento, outgoing y storages no actor permanecen exactos.
+- `ActorCarryWeightComponent` calcula una cantidad entera maxima con el hard limit, ownership agregado y `floor` con epsilon seguro; el peso unitario cero no limita.
+- El preview es puro y combina el maximo por peso con el plan espacial existente. El commit recalcula y delega en la transaccion actual con reservations, snapshots, invariantes y rollback.
+- El resultado/receipt expone cantidad solicitada, efectiva, remanente, limite por peso e IDs reales. Un parcial por peso es `Success`; maximo cero rechaza sin mutaciones.
+- Si queda remanente, conserva source `InstanceId`, placement y seleccion External. Si desaparece, se selecciona el destination `InstanceId`, incluido un merge existente.
+- Los hooks siguen corriendo solo tras `Success`; containers y cadaveres conservan sus decisiones de loot/vacio basadas en el contenido real posterior.
+- No se modificaron escena, JSON, arte, prefabs, tags, loot tables, equipo, pickup/drop, necesidades, puertas, visibilidad, movimiento ni combate.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
 
 ## Ultimo Estado Validado
@@ -286,7 +301,7 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 
 ## Proximo Recomendado
 
-Validar M34.1.3 Inventory Context QoL & Atomic Equipment Replacement en Unity antes de cerrarlo como `validated`. Quedan pendientes M33.3.1 weight-limited partial transfers, M34.1.4 Item Inspection Panel y M34.2 Item-Owned Storage/Backpack Foundation. Los pendientes anteriores M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su estado.
+Validar M33.3.1 Weight-Limited Partial Transfers en Unity antes de cerrarlo como `validated`. Luego quedan pendientes M34.2 Item-Owned Storage/Backpack Foundation, la granularidad de grillas inspirada en Kenshi y M34.1.4 Item Inspection Panel. Los pendientes anteriores M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su estado.
 
 Alcance recomendado:
 

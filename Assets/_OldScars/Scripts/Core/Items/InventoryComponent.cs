@@ -524,6 +524,21 @@ namespace OldScars.Core.Items
                 : CarryWeightAcceptance.Unlimited();
         }
 
+        public CarryWeightQuantityLimit EvaluateIncomingQuantityLimit(string definitionId, int requestedQuantity)
+        {
+            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
+            return carryWeight != null
+                ? carryWeight.EvaluateIncomingQuantityLimit(definitionId, requestedQuantity)
+                : new CarryWeightQuantityLimit(
+                    true,
+                    requestedQuantity,
+                    requestedQuantity,
+                    0d,
+                    0d,
+                    double.PositiveInfinity,
+                    null);
+        }
+
         public bool TryGetItemWeight(
             string definitionId,
             int quantity,

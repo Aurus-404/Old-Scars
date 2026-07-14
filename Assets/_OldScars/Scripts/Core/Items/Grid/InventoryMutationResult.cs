@@ -36,6 +36,10 @@ namespace OldScars.Core.Items
         public string Message { get; }
         public int RequestedQuantity { get; }
         public int AffectedQuantity { get; }
+        public int ActualTransferredQuantity => AffectedQuantity;
+        public int SourceRemainingQuantity { get; }
+        public bool WasLimitedByWeight { get; }
+        public int WeightLimitQuantity { get; }
         public string SourceInstanceId { get; }
         public string DestinationInstanceId { get; }
         public int MergedQuantity { get; }
@@ -61,7 +65,10 @@ namespace OldScars.Core.Items
             GridPlacement[] addedPlacements,
             GridPlacement[] updatedPlacements,
             string[] removedPlacementInstanceIds,
-            bool usedFallbackFootprint)
+            bool usedFallbackFootprint,
+            int sourceRemainingQuantity = -1,
+            bool wasLimitedByWeight = false,
+            int weightLimitQuantity = -1)
         {
             Status = status;
             Failure = failure;
@@ -77,6 +84,9 @@ namespace OldScars.Core.Items
             UpdatedPlacements = updatedPlacements ?? Array.Empty<GridPlacement>();
             RemovedPlacementInstanceIds = removedPlacementInstanceIds ?? Array.Empty<string>();
             UsedFallbackFootprint = usedFallbackFootprint;
+            SourceRemainingQuantity = sourceRemainingQuantity;
+            WasLimitedByWeight = wasLimitedByWeight;
+            WeightLimitQuantity = weightLimitQuantity;
         }
 
         internal static InventoryMutationResult Succeeded(
@@ -166,6 +176,32 @@ namespace OldScars.Core.Items
                 null,
                 null,
                 usedFallbackFootprint);
+        }
+
+        internal InventoryMutationResult WithTransferMetadata(
+            int requestedQuantity,
+            int sourceRemainingQuantity,
+            bool wasLimitedByWeight,
+            int weightLimitQuantity)
+        {
+            return new InventoryMutationResult(
+                Status,
+                Failure,
+                Message,
+                requestedQuantity,
+                AffectedQuantity,
+                SourceInstanceId,
+                DestinationInstanceId,
+                MergedQuantity,
+                CreatedInstanceIds,
+                RemovedInstanceIds,
+                AddedPlacements,
+                UpdatedPlacements,
+                RemovedPlacementInstanceIds,
+                UsedFallbackFootprint,
+                sourceRemainingQuantity,
+                wasLimitedByWeight,
+                weightLimitQuantity);
         }
     }
 }

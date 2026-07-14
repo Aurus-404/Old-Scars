@@ -1340,6 +1340,21 @@ Con equipped item definition id none o vacio:
 - `ActorNeedsDebugPanel` cachea `InventoryUISessionController` y deja de dibujarse durante cualquier sesion. El footer externo elimina los botones Take/Deposit fijos; clic derecho, Shift+click, drag, merge y rotacion no se cambiaron.
 - No se modificaron `ItemStorage`, `GridInventoryLayout`, transfer service, ownership/peso, containers, cadaveres, pickup/drop/use, escena, JSON, arte, prefabs ni loot tables. `GridInventoryBackend` solo agrega la simulacion interna reusable y sin mutaciones.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario, con Data Load 0 errors / 0 warnings y regresiones de equipment, dual-grid, containers/cadaveres, drag, merge, Shift+clic, pickup/drop y tags de loot confirmadas.
+
+### M33.3.1: Weight-Limited Partial Transfers
+
+- Se agrego `GridStorageTransferQuantityPolicy` con `Exact` y `ClampIncomingToActorHardLimit`; los overloads legacy de `TransferQuantityAuto`/`TransferStackAuto` siguen usando `Exact`.
+- `CarryWeightQuantityLimit` y `ActorCarryWeightComponent.EvaluateIncomingQuantityLimit` calculan el maximo entero entrante contra el hard limit y el ownership agregado personal + equipment, sin sumar referencias de slots.
+- El calculo usa `floor((remaining + epsilon) / unitWeight)`, valida el resultado contra el limite y trata peso unitario cero como no limitante.
+- `PreviewTransferQuantityAuto` no muta y valida endpoints, source, peso y el plan espacial existente. El commit vuelve a ejecutar el preview y luego usa `GridInventoryBackend.TransferTo`, con su revalidacion, snapshots, reservations e invariantes.
+- `InventoryMutationResult` y `GridStorageTransferReceipt` exponen requested, actual, source remaining, limit quantity y `WasLimitedByWeight`, conservando IDs y campos anteriores.
+- Take Stack/Tomar todo y Shift+clic external -> player eligen clamp explicitamente. Take 1, Take Amount, drag exacto, merge dirigido, equipamiento, replacement, outgoing y storages no actor permanecen exactos.
+- El parcial por peso sigue siendo `Success`; source conserva `InstanceId`, placement y seleccion External si queda remainder. El destino conserva su ID real al fusionar.
+- Los hooks se notifican solo tras commit exitoso; containers y cadaveres siguen determinando loot/vacio desde su storage real, por lo que un remainder no los marca vacios.
+- Se agregaron toasts humanos en espanol para parcial y bloqueo total, sin cambiar el toast absoluto ni crear UI nueva.
+- No se modificaron escena, JSON, arte, sprites, prefabs, loot tables, tags, equipment, pickup/drop, necesidades, puertas, visibilidad, movimiento ni combate.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
 - Estado: implemented; pendiente de validacion manual en Unity.
 
 ## Decisiones De Scope

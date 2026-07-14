@@ -141,6 +141,74 @@ namespace OldScars.Core.Actors
                 failureReason);
         }
 
+        public CarryWeightQuantityLimit EvaluateIncomingQuantityLimit(string definitionId, int requestedQuantity)
+        {
+            if (requestedQuantity < 0)
+                return CarryWeightQuantityLimit.Invalid(requestedQuantity, "Requested quantity cannot be negative.");
+
+            CarryWeightSnapshot snapshot = GetSnapshot();
+            if (!snapshot.IsValid)
+            {
+                return CarryWeightQuantityLimit.Invalid(
+                    requestedQuantity,
+                    snapshot.Error ?? "Carry weight is unavailable.");
+            }
+
+            if (!TryGetItemWeight(definitionId, 1, out double unitWeightKg, out _, out string error))
+            {
+                LogErrorOnce(error);
+                return CarryWeightQuantityLimit.Invalid(requestedQuantity, error);
+            }
+
+            if (requestedQuantity == 0 || unitWeightKg == 0d)
+            {
+                return new CarryWeightQuantityLimit(
+                    true,
+                    requestedQuantity,
+                    requestedQuantity,
+                    unitWeightKg,
+                    snapshot.CurrentWeightKg,
+                    snapshot.HardLimitKg,
+                    null);
+            }
+
+            int maximumQuantity = 0;
+            if (snapshot.CurrentWeightKg < snapshot.HardLimitKg)
+            {
+                double remainingWeightKg = Math.Max(0d, snapshot.HardLimitKg - snapshot.CurrentWeightKg);
+                double rawMaximum = Math.Floor((remainingWeightKg + LimitEpsilon) / unitWeightKg);
+                if (rawMaximum >= requestedQuantity)
+                {
+                    maximumQuantity = requestedQuantity;
+                }
+                else if (rawMaximum > 0d)
+                {
+                    maximumQuantity = (int)Math.Min(rawMaximum, int.MaxValue);
+                }
+
+                maximumQuantity = Math.Min(maximumQuantity, requestedQuantity);
+                while (maximumQuantity > 0 &&
+                       snapshot.CurrentWeightKg + (unitWeightKg * maximumQuantity) > snapshot.HardLimitKg + LimitEpsilon)
+                {
+                    maximumQuantity--;
+                }
+                while (maximumQuantity < requestedQuantity &&
+                       snapshot.CurrentWeightKg + (unitWeightKg * (maximumQuantity + 1)) <= snapshot.HardLimitKg + LimitEpsilon)
+                {
+                    maximumQuantity++;
+                }
+            }
+
+            return new CarryWeightQuantityLimit(
+                true,
+                requestedQuantity,
+                maximumQuantity,
+                unitWeightKg,
+                snapshot.CurrentWeightKg,
+                snapshot.HardLimitKg,
+                null);
+        }
+
         public bool TryGetItemWeight(
             string definitionId,
             int quantity,

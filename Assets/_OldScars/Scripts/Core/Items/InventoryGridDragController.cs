@@ -205,17 +205,34 @@ namespace OldScars.Core.Items
             if (target == null)
                 return;
 
+            GridStorageTransferQuantityPolicy quantityPolicy =
+                target.Owner is ICarryWeightLimitedOwner limitedOwner && limitedOwner.HasCarryWeightLimit
+                    ? GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit
+                    : GridStorageTransferQuantityPolicy.Exact;
             InventoryMutationResult result = GridStorageTransferService.TransferStackAuto(
                 source.Owner,
                 target.Owner,
                 instanceId,
+                quantityPolicy,
                 transferContext);
             SetStatus(
                 result.Success
-                    ? $"Transferred stack x{result.AffectedQuantity}."
-                    : result.Message ?? "Stack transfer failed.",
+                    ? result.WasLimitedByWeight
+                        ? $"Transferidas {result.ActualTransferredQuantity} de {result.RequestedQuantity} unidades por límite de peso."
+                        : $"Transferred stack x{result.AffectedQuantity}."
+                    : result.Message ?? "No se pudo transferir el stack.",
                 result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
-            ReconcileAfterTransfer(source, target, result);
+            if (result.Success && result.WasLimitedByWeight && result.SourceRemainingQuantity > 0)
+            {
+                source.View.ReconcileSelection(source.Owner);
+                target.View.ReconcileSelection(target.Owner);
+                source.View.SelectInstance(result.SourceInstanceId);
+                ActiveOwner = source.Owner;
+            }
+            else
+            {
+                ReconcileAfterTransfer(source, target, result);
+            }
         }
 
         private void UpdateCandidate(Vector2 mousePosition)

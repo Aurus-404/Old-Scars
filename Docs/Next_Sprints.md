@@ -4,44 +4,43 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar M34.1.3: Inventory Context QoL & Atomic Equipment Replacement
+### Validar M33.3.1: Weight-Limited Partial Transfers
 
-Estado: `implemented`; pendiente de validacion manual en Unity. M34.1, M34.1.1 y M34.1.2 estan `validated` por confirmacion del usuario.
+Estado: `implemented`; pendiente de validacion manual en Unity. M34.1.3 esta `validated` por confirmacion del usuario.
 
 Objetivo inmediato:
 
-- equipar palanca en mano derecha y reemplazarla por rifle `2H`; confirmar palanca en grilla, rifle en ambas manos e IDs intactos;
-- ocupar ambas manos con items distintos y reemplazarlos por rifle; confirmar dos placements no solapados y una sola transaccion;
-- reemplazar rifle `2H` por palanca en mano derecha; confirmar rifle desplazado una vez, mano izquierda libre y auto-scroll al nuevo equipo;
-- llenar la grilla para que los desplazados no entren y confirmar source/equipment/slots/placements/seleccion sin mutaciones;
-- repetir reemplazos en estado `HardBlocked` y confirmar peso agregado sin cambio;
-- revisar labels `Equipar`/`Equipar y reemplazar`, resumen `Reemplaza:` y mensajes legibles sin strings internos;
-- abrir Amount con stacks chicos y uno cercano a 500; probar slider, campo, `-`, `+`, Shift+`-`/`+`, clamp, Enter y Escape;
-- confirmar que cantidad 1 muestra una sola accion `Tomar`, `Depositar` o `Soltar`, y que cantidad mayor conserva 1/cantidad/todo;
-- abrir inventario personal, container y corpse y confirmar que `Needs (Debug)` se oculta y reaparece al cerrar;
-- confirmar que no quedan botones Take/Deposit fijos y que clic derecho, Shift+click, drag, merge y rotacion siguen funcionando;
-- cambiar cantidad/owner/storage antes de confirmar cuando sea posible y comprobar rechazo sin mutaciones;
-- verificar que clicks del menu/modal no atraviesan a grillas, Equipment, mundo, movimiento, disparo ni camara;
-- revisar toast absoluto, seleccion por `InstanceId`, 17 slots, `right_hand`, containers/cadaveres y Console sin errores rojos.
+- con peso actual `34.20/39.00 kg`, tomar Water Bottle x500 y confirmar transferencia x4, source x496 y peso final `39.00 kg`;
+- repetir con ammo `0.025 kg` cerca del hard limit y confirmar floor entero sin perder una unidad valida ni exceder el limite;
+- probar un item de peso unitario cero y confirmar que no divide por cero ni limita la cantidad;
+- estando exactamente en `HardBlocked`, intentar Take Stack y confirmar rechazo sin mutaciones ni hooks;
+- probar Take Stack y Shift+clic external -> player con resultado parcial; confirmar source ID/placement/seleccion External y destination ID real;
+- probar parcial que mergea y parcial que crea entry/placement; confirmar cantidades, IDs, grid y ausencia de entries huerfanas;
+- llenar la grilla aunque el peso permita entrada y confirmar rechazo espacial/rollback completo;
+- probar Take 1 y Take Amount por encima del peso disponible; confirmar comportamiento exacto y rechazo total;
+- probar drag exacto y merge dirigido exacto; confirmar que nunca clampan silenciosamente;
+- probar Shift+clic player -> external y transferencias entre storages no actor; confirmar comportamiento anterior sin clamp;
+- confirmar que container/cadaver con remainder sigue saqueable y que el deposito posterior restaura estado de contenido;
+- revisar toast absoluto, seleccion por `InstanceId`, 17 slots, equipment replacement M34.1.3, pickup/drop y Console sin errores rojos.
 
-Fuera de scope: weight-limited partial transfers automaticas, item-owned storage, mochila funcional, pockets, nesting, peso de subtrees, equip desde external, drop equipado, consumo desde equipment, armor, save/load, modelos y UI final.
-
-### M33.3.1: Weight-Limited Partial Transfers
-
-Estado: `planned`; pendiente posterior, no implementado en M34.1.3.
-
-### M34.1.4: Item Inspection Panel
-
-Estado: `planned`; `Ver detalles` permanece oculto hasta definir un panel que aporte informacion real sin inventar stats.
+Fuera de scope: item-owned storage, mochila funcional, pockets, nesting, peso de subtrees, grillas mas granulares, item inspection, equip desde external, drop equipado, consumo desde equipment, armor, save/load, modelos y UI final.
 
 ### M34.2: Item-Owned Storage / Backpack Foundation
 
-Estado: `planned`; comenzar solo despues de validar M34.1 y aprobar su plan tecnico.
+Estado: `planned`; siguiente bloque funcional despues de validar M33.3.1 y aprobar su plan tecnico.
 
 - incorporar el primer nodo item-owned sin duplicar `ItemInstance` ni reemplazar `ItemStorage`;
 - definir ownership/traversal y peso de subtree de forma acotada para una mochila funcional;
 - preservar equipment slots como referencias y `ActorItemOwnershipComponent` como agregado del actor;
 - no adelantar nesting general, pockets arbitrarios, save/load ni UI final sin aprobacion explicita.
+
+### Grid Granularity Polish
+
+Estado: `planned`; celdas mas pequenas inspiradas en Kenshi quedan posteriores a M34.2 y no forman parte de M33.3.1.
+
+### M34.1.4: Item Inspection Panel
+
+Estado: `planned`; `Ver detalles` permanece oculto hasta definir un panel que aporte informacion real sin inventar stats.
 
 ## Pendientes De Validacion Previos
 
