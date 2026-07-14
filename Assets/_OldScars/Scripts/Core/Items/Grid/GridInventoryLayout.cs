@@ -35,11 +35,12 @@ namespace OldScars.Core.Items
             if (footprint == null)
                 return false;
 
-            if (TryFindFirstFit(footprint, false, reservations, out result))
+            bool preferredRotated = footprint.InitialIsRotated;
+            if (TryFindFirstFit(footprint, preferredRotated, reservations, out result))
                 return true;
 
             return footprint.Width != footprint.Height &&
-                   TryFindFirstFit(footprint, true, reservations, out result);
+                   TryFindFirstFit(footprint, !preferredRotated, reservations, out result);
         }
 
         internal bool TryAddPlacement(string instanceId, ReservedRect rect)

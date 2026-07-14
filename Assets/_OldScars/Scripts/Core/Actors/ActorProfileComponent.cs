@@ -63,6 +63,7 @@ namespace OldScars.Core.Actors
             ApplyInitialTags(profile);
             ApplyHealth(profile);
             ApplyInitialInventory(profile);
+            ApplyEquipmentLayout(profile);
 
             Debug.Log($"[ActorProfileComponent] '{name}' applied actor profile '{actorProfileId}'.");
         }
@@ -150,6 +151,23 @@ namespace OldScars.Core.Actors
             finally
             {
                 inventory.CompleteInitialContentLoad();
+            }
+        }
+
+        private void ApplyEquipmentLayout(ActorProfileDefinition profile)
+        {
+            if (string.IsNullOrWhiteSpace(profile.equipment_layout_id))
+                return;
+
+            ActorEquipmentComponent equipment = GetComponent<ActorEquipmentComponent>();
+            if (equipment == null)
+                return;
+
+            if (!equipment.TrySetLayout(profile.equipment_layout_id, out string reason))
+            {
+                Debug.LogWarning(
+                    $"[ActorProfileComponent] '{name}' could not apply equipment layout " +
+                    $"'{profile.equipment_layout_id}': {reason}");
             }
         }
 

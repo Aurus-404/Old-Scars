@@ -48,8 +48,9 @@ When a new specific rule is defined or changed:
 - `equippable` is a functional boolean in `ItemDefinition`, not a tag.
 - `equip.equippable` is the current source for slot-aware equipment when an `equip` block exists.
 - Flat `equippable` remains temporary compatibility and must not contradict `equip.equippable`.
-- Equipment slot IDs must be technical IDs; currently validated runtime slot: `right_hand`.
-- `equip.allowed_slots` and `equip.occupied_slots` must use valid slot IDs.
+- Equipment slot IDs must be technical IDs cargados desde definiciones data-driven.
+- `equip.slot_sets` is the authoritative schema: each inner array is one complete atomic alternative and every referenced slot must exist.
+- `equip.allowed_slots` and `equip.occupied_slots` remain legacy compatibility only; `right_hand` maps to authoritative `hand_right`.
 - Consumables use the closed `consumable.restore_needs` block.
 - Medical consumables may use the closed `consumable.restore_health.amount` block.
 - Consumable effects are data-driven parameters for closed C# logic, not free JSON scripting.
@@ -67,9 +68,10 @@ Rules:
 - Avoid duplicating complex combat, crafting, AI, or interaction logic inside each item.
 - Prefer reusable profile references for complex systems, such as weapon_profile_id, instead of per-item one-off logic.
 - Prefer snake_case keys in JSON unless an existing loader/schema already requires otherwise.
-- Use technical slot IDs like right_hand, left_hand, both_hands, back, belt, torso, head; avoid human text such as "right hand".
-- For equipment, prefer allowed_slots and occupied_slots instead of one loose slot string.
-- both_hands should normally be an occupied-slot rule, not a literal equip socket.
+- Use technical slot IDs from the active layout, such as `hand_right`, `hand_left`, `back` or `torso_outer`; avoid human text such as "right hand".
+- For equipment, use `slot_sets`; alternatives belong in separate inner arrays and multi-slot occupancy belongs in the same inner array.
+- Never create `both_hands`: a two-handed item occupies `hand_left` and `hand_right` with one shared `InstanceId`.
+- `back` is a generic equipment slot; item-owned backpack storage is a separate future concern.
 - Visual equipment data belongs in a separate equip_visual block and should be optional until visual equipment is implemented.
 - UI data such as category_sort and icon_id belongs in a display/ui-oriented block, not in tags.
 - max_stack should live in a stacking block long-term. Existing flat max_stack may remain until migration is explicitly approved.
@@ -108,15 +110,14 @@ Recommended target item shape:
 
   "equip": {
     "equippable": true,
-    "allowed_slots": ["right_hand"],
-    "occupied_slots": ["right_hand"],
+    "slot_sets": [["hand_right"], ["hand_left"]],
     "equip_group": "handheld_tool"
   },
 
   "equip_visual": {
     "model_id": "rusted_crowbar_01_model",
     "rig": "humanoid",
-    "socket": "right_hand",
+    "socket": "hand_right",
     "local_position": { "x": 0.0, "y": 0.0, "z": 0.0 },
     "local_rotation": { "x": 0.0, "y": 0.0, "z": 0.0 },
     "local_scale": { "x": 1.0, "y": 1.0, "z": 1.0 }
@@ -124,7 +125,7 @@ Recommended target item shape:
 
   "physical": {
     "condition_max": 100,
-    "weight": 2.5,
+    "weight_kg": 2.5,
     "material": "metal"
   },
 
@@ -225,9 +226,10 @@ Migration rule:
 
 - Actor inventory should separate Storage from Equipped conceptually.
 - `ItemStorage` remains the common runtime base for actor storage, containers, corpse loot, and future backpacks/pockets.
-- Equipped actor items may remain in Storage and be referenced by `ItemInstance.InstanceId`.
+- Actor ownership aggregates personal inventory and linear equipment storage; an `ItemInstance` must belong to exactly one storage node.
+- Equipment slots are references to the single entry in equipment storage; multi-slot items must not duplicate storage, details or weight.
 - Do not use storage indices as the durable source of equipped state when an instance id is available.
-- In the current validated runtime, `right_hand` uses `rightHandItemInstanceId`.
+- With `ActorEquipmentComponent`, `hand_right` is authoritative and legacy `right_hand` delegates to it; without the component, the legacy field remains a temporary scene fallback.
 - Inventory/equipment UI must not be the only guard: actor inventory code must internally reject invalid equipment.
 - NPC/actor starting inventory should be defined through data profiles/templates, not hardcoded per scene object when avoidable.
 - JSON may define actor inventory candidates by storage/slot, such as right_hand candidates and base_storage contents.
@@ -237,6 +239,7 @@ Migration rule:
 - Equipped item candidates must respect equip data and validated slot rules.
 - Lootable dead actors should expose their actor inventory/storages; they should not be converted into generic static containers unless explicitly approved for a limited debug shortcut.
 - Reuse ItemStorage for actor storage, corpse loot, containers, and future backpacks/pockets.
+- Item-owned storage, backpack contents, nesting and subtree weight are deferred to M34.2 and must not be inferred from the generic `back` slot.
 - Keep the first NPC loot profile minimal and validated before adding many NPC archetypes.
 - ActorHealthComponent is the current small runtime health base for actors; it should stay generic for Player and NPC debug actors.
 - Player at 0 health is not real death yet: no game over, no movement/action blocking, and no `lootable_actor` unless a future milestone explicitly changes that.

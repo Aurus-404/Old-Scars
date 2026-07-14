@@ -4,7 +4,44 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar M33.2/M33.2.1, Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0
+### Validar M34.1 + M34.1.1: Equipment Foundation & UI Cleanup
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+Objetivo inmediato:
+
+- agregar `ActorItemOwnershipComponent` y `ActorEquipmentComponent` solo al Debug Player, dejando que sus referencias al `InventoryComponent` se autocompleten;
+- confirmar Data Load OK con `EquipmentSlots: 17`, `EquipmentLayouts: 1`, `human_standard_01` y sin errores/warnings nuevos;
+- abrir inventario personal y storage externo y confirmar las tres columnas estables: grilla personal, 17 slots centrales y grilla externa;
+- equipar la palanca a `hand_right`, desequiparla y repetir en `hand_left`, conservando el mismo `InstanceId` y el peso total;
+- equipar dos items de una mano simultaneamente y confirmar que ocupan manos distintas;
+- equipar el rifle y confirmar dos filas `2H`, una sola entry de equipment, un solo `InstanceId` y peso contado una vez;
+- intentar equipar el rifle con una mano ocupada y confirmar rechazo sin mutaciones, swaps ni drops;
+- llenar la grilla personal y confirmar que desequipar rechaza sin liberar slots ni cambiar ownership/peso;
+- confirmar que `force_door`/`pry_open_container` aceptan la palanca tambien desde `hand_left` cuando `hand_right` esta vacia;
+- probar scroll persistente, auto-scroll al slot equipado, seleccion de ambas filas del rifle y retorno de seleccion a la grilla al desequipar;
+- confirmar en inventario personal y storage externo que las tres columnas empiezan y terminan a la misma altura a `1366x768`;
+- comprobar que Equipment no tiene scrollbar horizontal y que slot/item quedan alineados izquierda/derecha con clipping;
+- confirmar que el header legacy `Right Hand`/`Unequip` ya no aparece y que Close sigue visible en la cabecera general;
+- seleccionar items personales y externos y verificar que Deposit/Take 1/Stack permanecen visibles dentro del footer;
+- confirmar que detalles largos usan scroll vertical interno y que ninguna seleccion vieja reemplaza personal/equipment/external en el siguiente `OnGUI`;
+- verificar `I`, `Escape`, cancelacion de drag, toast absoluto, pickup/drop, consumibles, firearm y transferencias M33 sin regresiones;
+- confirmar Console sin errores rojos antes de marcar M34.1/M34.1.1 como `validated`.
+
+Fuera de scope para esta validacion: Inventory Context Menu v0, weight-limited partial transfers, componentes de equipment en NPCs/cadaveres, item-owned storage, mochila funcional, pockets, nesting, peso de subtrees, equip desde mundo, drop equipado, auto-swap, armor, save/load, modelos y UI final.
+
+### M34.2: Item-Owned Storage / Backpack Foundation
+
+Estado: `planned`; comenzar solo despues de validar M34.1 y aprobar su plan tecnico.
+
+- incorporar el primer nodo item-owned sin duplicar `ItemInstance` ni reemplazar `ItemStorage`;
+- definir ownership/traversal y peso de subtree de forma acotada para una mochila funcional;
+- preservar equipment slots como referencias y `ActorItemOwnershipComponent` como agregado del actor;
+- no adelantar nesting general, pockets arbitrarios, save/load ni UI final sin aprobacion explicita.
+
+## Pendientes De Validacion Previos
+
+### Validar Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0
 
 Estado: `implemented`.
 

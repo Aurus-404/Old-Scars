@@ -32,6 +32,7 @@ namespace OldScars.Core.Items
 
         public bool IsDragging => isDragging;
         public IGridStorageOwner ActiveOwner { get; private set; }
+        public int SelectionVersion { get; private set; }
 
         public void BeginFrame(GridStorageTransferContext context)
         {
@@ -144,6 +145,7 @@ namespace OldScars.Core.Items
 
                 endpoint.View.SelectInstance(instanceId);
                 ActiveOwner = endpoint.Owner;
+                SelectionVersion++;
                 if (IsShiftPressed() && endpoints.Count == 2)
                 {
                     TransferQuick(endpoint, instanceId);

@@ -15,21 +15,31 @@ namespace OldScars.Core.Items
     /// </summary>
     public sealed class InventoryDebugPanel : MonoBehaviour
     {
-        private const float PanelWidth = 1020f;
-        private const float PanelHeight = 600f;
+        private const float PanelWidth = 1180f;
+        private const float PanelHeight = 660f;
+        private const float PlayerColumnWidth = 292f;
+        private const float EquipmentColumnWidth = 330f;
+        private const float ColumnGap = 8f;
+        private const float BodyVerticalReserve = 46f;
+        private const float MinimumEquipmentViewportHeight = 300f;
+        private const float MaximumEquipmentViewportHeight = 350f;
 
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorNeedsComponent actorNeeds;
         [SerializeField] private ActorHealthComponent actorHealth;
         [SerializeField] private FirearmDebugController firearmController;
+        [SerializeField] private ActorEquipmentComponent actorEquipment;
 
         private bool isVisible;
         private Vector2 scrollPosition;
+        private Vector2 detailsScrollPosition;
         private bool showLegacyList;
         private readonly InventoryGridDebugView gridView = new InventoryGridDebugView();
         private readonly InventoryGridDragController dragController = new InventoryGridDragController();
         private readonly InventoryDebugToast toast = new InventoryDebugToast();
+        private readonly EquipmentDebugListView equipmentListView = new EquipmentDebugListView();
         private InventoryUISessionController sessionController;
+        private int observedGridSelectionVersion;
 
         public bool IsVisible => isVisible;
         public InventoryComponent Inventory => inventory;
@@ -40,6 +50,7 @@ namespace OldScars.Core.Items
             ResolveActorNeeds();
             ResolveActorHealth();
             ResolveFirearmController();
+            ResolveActorEquipment();
         }
 
         private void OnEnable()
@@ -48,6 +59,7 @@ namespace OldScars.Core.Items
             ResolveActorNeeds();
             ResolveActorHealth();
             ResolveFirearmController();
+            ResolveActorEquipment();
         }
 
         public void Hide()
@@ -66,6 +78,7 @@ namespace OldScars.Core.Items
         internal void ShowFromSession()
         {
             scrollPosition = Vector2.zero;
+            detailsScrollPosition = Vector2.zero;
             toast.Clear();
             isVisible = true;
         }
@@ -104,7 +117,7 @@ namespace OldScars.Core.Items
 
             Rect panelRect = GetPanelRect();
             GUILayout.BeginArea(panelRect, GUI.skin.box);
-            GUILayout.Label("Inventory (Debug v0)");
+            DrawHeader();
 
             if (inventory == null)
             {
@@ -117,24 +130,7 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            DrawEquippedSection();
-            DrawFirearmSection();
-
-            GUILayout.Space(8f);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(inventory.UsesGridLayout
-                ? $"Grid backend: {inventory.GridWidth}x{inventory.GridHeight}"
-                : "Grid backend inactive: use Legacy List.");
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(showLegacyList ? "Visual Grid" : "Legacy List", GUILayout.Width(110f), GUILayout.Height(24f)))
-                showLegacyList = !showLegacyList;
-            GUILayout.EndHorizontal();
-
-            if (showLegacyList || !inventory.UsesGridLayout)
-                DrawLegacyStorage();
-            else
-                DrawVisualGridStorage();
+            DrawThreeColumnBody(Mathf.Max(1f, panelRect.height - BodyVerticalReserve));
 
             ConsumeDragStatus();
             toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
@@ -142,35 +138,144 @@ namespace OldScars.Core.Items
             sessionController?.ConsumeCurrentOnGUIEvent();
         }
 
-        private void DrawVisualGridStorage()
+        private void DrawThreeColumnBody(float bodyHeight)
         {
             dragController.BeginFrame(default);
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(GUILayout.Height(bodyHeight));
 
-            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(292f));
-            GUILayout.Label("Player Grid (drag; R rotates)");
-            Rect gridRect = GUILayoutUtility.GetRect(
-                gridView.GetRequiredWidth(inventory.GridWidth),
-                gridView.GetRequiredHeight(inventory.GridHeight),
-                GUILayout.Width(gridView.GetRequiredWidth(inventory.GridWidth)),
-                GUILayout.Height(gridView.GetRequiredHeight(inventory.GridHeight)));
-            gridView.Draw(inventory, gridRect, dragController);
-            dragController.RegisterEndpoint(inventory, gridView, gridRect);
-            GUILayout.EndVertical();
+            DrawPlayerColumn(bodyHeight);
 
-            GUILayout.Space(8f);
-            GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandWidth(true), GUILayout.Height(390f));
-            DrawSelectedItemDetails();
-            GUILayout.EndVertical();
+            GUILayout.Space(ColumnGap);
+            DrawEquipmentColumn(bodyHeight);
+
+            GUILayout.Space(ColumnGap);
+            DrawDetailsColumn(bodyHeight);
 
             GUILayout.EndHorizontal();
             dragController.ProcessOnGUI();
+            SyncGridSelectionToSession();
+        }
+
+        private void DrawPlayerColumn(float bodyHeight)
+        {
+            GUILayout.BeginVertical(
+                GUI.skin.box,
+                GUILayout.Width(PlayerColumnWidth),
+                GUILayout.Height(bodyHeight));
+            GUILayout.Label("Player Grid (drag; R rotates)");
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(
+                inventory.UsesGridLayout
+                    ? $"Grid: {inventory.GridWidth}x{inventory.GridHeight}"
+                    : "Grid inactive",
+                GUILayout.ExpandWidth(true));
+            if (GUILayout.Button(showLegacyList ? "Grid" : "Legacy", GUILayout.Width(76f), GUILayout.Height(24f)))
+                showLegacyList = !showLegacyList;
+            GUILayout.EndHorizontal();
+
+            if (showLegacyList || !inventory.UsesGridLayout)
+            {
+                DrawLegacyStorage(bodyHeight - 62f);
+            }
+            else
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                Rect gridRect = GUILayoutUtility.GetRect(
+                    gridView.GetRequiredWidth(inventory.GridWidth),
+                    gridView.GetRequiredHeight(inventory.GridHeight),
+                    GUILayout.Width(gridView.GetRequiredWidth(inventory.GridWidth)),
+                    GUILayout.Height(gridView.GetRequiredHeight(inventory.GridHeight)));
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                gridView.Draw(inventory, gridRect, dragController);
+                dragController.RegisterEndpoint(inventory, gridView, gridRect);
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndVertical();
+        }
+
+        private void DrawEquipmentColumn(float bodyHeight)
+        {
+            ResolveActorEquipment();
+            GUILayout.BeginVertical(
+                GUI.skin.box,
+                GUILayout.Width(EquipmentColumnWidth),
+                GUILayout.Height(bodyHeight));
+
+            float equipmentHeight = Mathf.Clamp(
+                bodyHeight * 0.56f,
+                MinimumEquipmentViewportHeight,
+                MaximumEquipmentViewportHeight);
+            equipmentListView.Draw(
+                actorEquipment,
+                sessionController != null ? sessionController.Selection : new InventoryUISessionSelection(),
+                EquipmentColumnWidth - 12f,
+                equipmentHeight);
+
+            GUILayout.Space(ColumnGap);
+            DrawPersonalSessionFooter(Mathf.Max(1f, bodyHeight - equipmentHeight - ColumnGap - 12f));
+            GUILayout.EndVertical();
+        }
+
+        private void DrawDetailsColumn(float bodyHeight)
+        {
+            GUILayout.BeginVertical(
+                GUI.skin.box,
+                GUILayout.ExpandWidth(true),
+                GUILayout.Height(bodyHeight));
+            detailsScrollPosition.x = 0f;
+            detailsScrollPosition = GUILayout.BeginScrollView(
+                detailsScrollPosition,
+                GUIStyle.none,
+                GUI.skin.verticalScrollbar,
+                GUILayout.ExpandWidth(true),
+                GUILayout.ExpandHeight(true));
+            detailsScrollPosition.x = 0f;
+            DrawSelectedItemDetails();
+            GUILayout.EndScrollView();
+            GUILayout.EndVertical();
+        }
+
+        private void DrawPersonalSessionFooter(float footerHeight)
+        {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Height(footerHeight));
+            GUILayout.Label("Inventory Session");
+            DrawCarryWeightSection();
+            GUILayout.Label("Shift+click: transfer stack");
+            GUILayout.Label("Drag: move/merge | R: rotate");
+            DrawFirearmSection();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndVertical();
+        }
+
+        private void SyncGridSelectionToSession()
+        {
+            if (dragController.SelectionVersion == observedGridSelectionVersion)
+                return;
+
+            observedGridSelectionVersion = dragController.SelectionVersion;
+            if (!string.IsNullOrWhiteSpace(gridView.SelectedInstanceId))
+                sessionController?.Selection.SelectPersonal(gridView.SelectedInstanceId);
         }
 
         private void DrawSelectedItemDetails()
         {
-            GUILayout.Label("Selected Item");
-            if (!gridView.TryGetSelectedEntry(inventory, out int index, out ItemStorageEntry entry))
+            InventoryUISessionSelection selection = sessionController?.Selection;
+            if (selection != null && selection.ActiveSide == InventoryUIActiveSide.Equipment)
+            {
+                DrawSelectedEquipmentDetails(selection);
+                return;
+            }
+
+            GUILayout.Label("Selected Personal Item");
+            string selectedInstanceId = selection != null && selection.ActiveSide == InventoryUIActiveSide.Personal
+                ? selection.SelectedPersonalItemInstanceId
+                : gridView.SelectedInstanceId;
+            if (string.IsNullOrWhiteSpace(selectedInstanceId) ||
+                !inventory.TryGetEntryByInstanceId(selectedInstanceId, out int index, out ItemStorageEntry entry))
             {
                 GUILayout.Label("Click an item in the grid.");
                 return;
@@ -179,7 +284,7 @@ namespace OldScars.Core.Items
             ItemInstance item = entry.Item;
             GUILayout.Label(FormatItemDisplayName(entry));
             GUILayout.Label($"Instance: {item.InstanceId}");
-            GUILayout.Label($"Condition: {item.Condition}");
+            DrawSelectedItemWeight(entry);
             if (inventory.TryGetGridPlacement(item.InstanceId, out GridPlacement placement))
             {
                 GUILayout.Label(
@@ -189,14 +294,23 @@ namespace OldScars.Core.Items
             }
 
             GUILayout.Space(8f);
-            bool isEquipped = inventory.IsRightHandStorageEntry(entry);
             if (InventoryItemUseService.IsConsumable(entry) && GUILayout.Button("Use", GUILayout.Height(28f)))
                 UseItem(index);
 
-            if (isEquipped)
+            ResolveActorEquipment();
+            if (actorEquipment != null)
             {
-                if (GUILayout.Button("Unequip", GUILayout.Height(28f)))
-                    inventory.UnequipRightHand();
+                IReadOnlyList<EquipmentSlotSet> alternatives = actorEquipment.GetAvailableSlotSets(item.InstanceId);
+                for (int alternativeIndex = 0; alternativeIndex < alternatives.Count; alternativeIndex++)
+                {
+                    EquipmentSlotSet alternative = alternatives[alternativeIndex];
+                    if (GUILayout.Button(
+                            $"Equipar — {GetSlotSetLabel(alternative.SlotIds)}",
+                            GUILayout.Height(28f)))
+                    {
+                        EquipSelected(item.InstanceId, alternative.SlotIds);
+                    }
+                }
             }
             else if (inventory.CanEquipIndexToRightHand(index))
             {
@@ -211,7 +325,55 @@ namespace OldScars.Core.Items
                 DropItem(index, entry.Quantity, "drop_stack", "Drop Stack");
         }
 
-        private void DrawLegacyStorage()
+        private void DrawSelectedEquipmentDetails(InventoryUISessionSelection selection)
+        {
+            GUILayout.Label("Selected Equipment Slot");
+            GUILayout.Label($"Slot: {SafeText(selection.SelectedEquipmentSlotId)}");
+            if (actorEquipment == null || string.IsNullOrWhiteSpace(selection.SelectedEquippedInstanceId) ||
+                !actorEquipment.TryGetEntryByInstanceId(selection.SelectedEquippedInstanceId, out ItemStorageEntry entry))
+            {
+                GUILayout.Label("Vacío");
+                return;
+            }
+
+            GUILayout.Label(FormatItemDisplayName(entry));
+            GUILayout.Label($"Instance: {entry.Item.InstanceId}");
+            GUILayout.Label($"Slots: {GetSlotSetLabel(actorEquipment.GetSlotsOccupiedBy(entry.Item.InstanceId))}");
+            DrawSelectedItemWeight(entry);
+            GUILayout.Space(8f);
+            if (GUILayout.Button("Desequipar al inventario", GUILayout.Height(30f)))
+                UnequipSelected(entry.Item.InstanceId);
+        }
+
+        private void EquipSelected(string instanceId, IReadOnlyList<string> slotIds)
+        {
+            EquipmentPreview preview = actorEquipment.PreviewEquip(instanceId, slotIds);
+            EquipmentMutationResult result = actorEquipment.Equip(preview);
+            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
+            sessionController?.Selection.SelectEquipment(primarySlot, result.InstanceId, true);
+            gridView.ReconcileSelection(inventory);
+            GUIUtility.ExitGUI();
+        }
+
+        private void UnequipSelected(string instanceId)
+        {
+            EquipmentPreview preview = actorEquipment.PreviewUnequip(instanceId);
+            EquipmentMutationResult result = actorEquipment.Unequip(preview);
+            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            sessionController?.Selection.ClearEquipment();
+            sessionController?.Selection.SelectPersonal(result.InstanceId);
+            gridView.SelectInstance(result.InstanceId);
+            GUIUtility.ExitGUI();
+        }
+
+        private void DrawLegacyStorage(float height)
         {
             GUILayout.Label("Storage (Legacy List):");
             IReadOnlyList<ItemStorageEntry> entries = inventory.GetStorageEntries();
@@ -221,27 +383,25 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(330f));
+            scrollPosition.x = 0f;
+            scrollPosition = GUILayout.BeginScrollView(
+                scrollPosition,
+                GUIStyle.none,
+                GUI.skin.verticalScrollbar,
+                GUILayout.Height(Mathf.Max(80f, height - 24f)));
+            scrollPosition.x = 0f;
             for (int index = 0; index < entries.Count; index++)
                 DrawItemRow(index, entries[index]);
             GUILayout.EndScrollView();
         }
 
-        private void DrawEquippedSection()
+        private void DrawHeader()
         {
-            GUILayout.Label("Equipped:");
-            GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label($"Right Hand: {GetEquippedItemLabel()}", GUILayout.Width(340f));
-
-            bool hasRightHandItem = inventory.GetRightHandStorageEntry() != null;
-            GUI.enabled = hasRightHandItem;
-            if (GUILayout.Button("Unequip", GUILayout.Height(24f), GUILayout.Width(90f)))
-                inventory.UnequipRightHand();
-            GUI.enabled = true;
-
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Inventory (Debug v0)");
+            GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close", GUILayout.Height(24f), GUILayout.Width(90f)))
                 RequestClose();
-
             GUILayout.EndHorizontal();
         }
 
@@ -251,12 +411,47 @@ namespace OldScars.Core.Items
             if (firearmController == null || !firearmController.HasEquippedFirearm)
                 return;
 
-            GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label($"Equipped Firearm: {firearmController.EquippedFirearmDisplayName}", GUILayout.Width(330f));
-            GUILayout.Label(firearmController.StatusText, GUILayout.Width(240f));
-            GUILayout.Label("F: Toggle Aim", GUILayout.Width(100f));
+            GUILayout.Label($"Firearm: {firearmController.EquippedFirearmDisplayName}");
+            GUILayout.Label(firearmController.StatusText);
+            GUILayout.Label("F: Toggle Aim");
+        }
 
-            GUILayout.EndHorizontal();
+        private void DrawCarryWeightSection()
+        {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Height(68f));
+            CarryWeightSnapshot snapshot = inventory.GetCarryWeightSnapshot();
+            if (snapshot.IsValid)
+            {
+                GUILayout.Label($"Carry: {snapshot.CurrentWeightKg:0.00} / {snapshot.SoftCapacityKg:0.00} kg");
+                GUILayout.Label($"Hard limit: {snapshot.HardLimitKg:0.00} kg");
+                GUILayout.Label($"Encumbrance: {snapshot.EncumbranceRatio * 100d:0}% — {snapshot.State}");
+            }
+            else
+            {
+                GUILayout.Label("Carry: unavailable");
+                GUILayout.Label("Hard limit: --");
+                GUILayout.Label("Encumbrance: -- — Invalid");
+            }
+            GUILayout.EndVertical();
+        }
+
+        private void DrawSelectedItemWeight(ItemStorageEntry entry)
+        {
+            if (entry != null && entry.Item != null &&
+                inventory.TryGetItemWeight(
+                    entry.DefinitionId,
+                    entry.Quantity,
+                    out double unitWeightKg,
+                    out double stackWeightKg,
+                    out _))
+            {
+                GUILayout.Label($"Unit weight: {FormatUnitWeight(unitWeightKg)} kg");
+                GUILayout.Label($"Stack weight: {stackWeightKg:0.00} kg");
+                return;
+            }
+
+            GUILayout.Label("Unit weight: unavailable");
+            GUILayout.Label("Stack weight: unavailable");
         }
 
         private void DrawItemRow(int index, ItemStorageEntry entry)
@@ -341,15 +536,6 @@ namespace OldScars.Core.Items
             gridView.ReconcileSelection(inventory);
         }
 
-        private string GetEquippedItemLabel()
-        {
-            ItemStorageEntry entry = inventory.GetEquippedStorageEntry();
-            if (entry == null || entry.Item == null)
-                return "Empty";
-
-            return FormatItemDisplayName(entry);
-        }
-
         private string GetItemLabel(int index, ItemStorageEntry entry)
         {
             ItemInstance item = entry != null ? entry.Item : null;
@@ -410,11 +596,37 @@ namespace OldScars.Core.Items
             return database != null ? database.GetItem(definitionId) : null;
         }
 
+        private static string FormatUnitWeight(double unitWeightKg)
+        {
+            return unitWeightKg < 0.1d ? unitWeightKg.ToString("0.000") : unitWeightKg.ToString("0.00");
+        }
+
+        private string GetSlotSetLabel(IReadOnlyList<string> slotIds)
+        {
+            if (slotIds == null || slotIds.Count == 0)
+                return "(none)";
+            var labels = new string[slotIds.Count];
+            for (int index = 0; index < slotIds.Count; index++)
+            {
+                EquipmentSlotDefinition definition = actorEquipment != null
+                    ? actorEquipment.GetSlotDefinition(slotIds[index])
+                    : null;
+                labels[index] = definition != null && !string.IsNullOrWhiteSpace(definition.display_name)
+                    ? definition.display_name
+                    : slotIds[index];
+            }
+            return string.Join(" + ", labels);
+        }
+
         private static Rect GetPanelRect()
         {
-            float x = Mathf.Max(0f, Screen.width - PanelWidth - 24f);
-            float y = 24f;
-            return new Rect(x, y, PanelWidth, PanelHeight);
+            float width = Mathf.Max(1f, Mathf.Min(PanelWidth, Screen.width - 24f));
+            float height = Mathf.Max(1f, Mathf.Min(PanelHeight, Screen.height - 48f));
+            return new Rect(
+                Mathf.Max(0f, (Screen.width - width) * 0.5f),
+                Mathf.Max(0f, (Screen.height - height) * 0.5f),
+                width,
+                height);
         }
 
         private void ConsumeDragStatus()
@@ -477,6 +689,12 @@ namespace OldScars.Core.Items
 
             if (firearmController == null)
                 firearmController = FindAnyObjectByType<FirearmDebugController>();
+        }
+
+        private void ResolveActorEquipment()
+        {
+            if (actorEquipment == null && inventory != null)
+                actorEquipment = inventory.GetComponent<ActorEquipmentComponent>();
         }
 
         private void ResolveSessionController()

@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1 y M33.1.1 estan validados manualmente en Unity. M33.2 Universal Grid Storage + Dual Grid Inventory UI v0 y M33.2.1 Partial Directed Merge + Stable Dual Grid UI estan implementados en el checkout y pendientes de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2 y M33.3 estan validados manualmente en Unity. M34.1 Equipment Ownership & Slots Foundation y M34.1.1 Inventory & Equipment UI Cleanup estan `implemented` en el checkout y pendientes de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -14,6 +14,10 @@ Los ultimos milestones cerrados y validados en Unity son:
 - Milestone 27: Search vs Open Storage v0.
 - M33.1: Visual Grid Inventory UI v0.
 - M33.1.1: Inventory Footprint Rebalance + Universal Rotation.
+- M33.2: Universal Grid Storage + Dual Grid Inventory UI v0.
+- M33.2.1: Partial Directed Merge + Stable Dual Grid UI.
+- M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish.
+- M33.3: Basic Carry Weight System v0.
 
 La validacion confirmada de M33.1 incluye Data Load OK con 0 errors y 0 warnings y las regresiones principales funcionando.
 
@@ -85,11 +89,11 @@ Estado: `implemented`.
 - `ItemStorage` conserva contenido, cantidades y merge/split de stacks; `GridInventoryLayout` agrega capacidad espacial y placements por `ItemInstance.InstanceId`.
 - El `InventoryComponent` del Debug Player usa grilla debug `6x8`; los inventarios de NPC/cadaver y los storages de containers/world items siguen lineales.
 - Add, Remove y Transfer hacen preflight, reservan placements, aplican un commit y restauran snapshots completos si falla una invariante.
-- El auto-placement es determinista: top-left, row-major, orientacion original primero y rotacion despues.
+- El auto-placement es determinista: top-left, row-major, orientacion inicial data-driven primero y alternativa despues.
 - Los siete items Core tienen metadata explicita; items externos sin metadata conservan fallback `1x1` con warning.
-- `right_hand` sigue dentro de `InventoryComponent` por compatibilidad transitoria; no es todavia un EquipmentSlot separado.
+- En el bloque historico del backend, `right_hand` seguia dentro de `InventoryComponent`; M34.1 conserva ese campo solo como fallback/migracion y delega en `hand_right` cuando existe `ActorEquipmentComponent`.
 - `Take All` y `Deposit All` globales quedan deshabilitados cuando participa el inventario espacial; las transferencias individuales y por stack siguen habilitadas.
-- No se agregaron UI visual de grilla, drag-and-drop, peso, nesting, mochilas, equipamiento corporal ni save/load.
+- Ese bloque no agrego UI visual, peso ni equipamiento; M33/M34 los incorporan por capas sin cambiar el estado de validacion pendiente del backend original.
 - Estado de validacion: solo checks estaticos; pendiente de Play Mode y Console.
 
 ### M33.1: Visual Grid Inventory UI v0
@@ -118,7 +122,7 @@ Estado: `validated`.
 
 ### M33.2: Universal Grid Storage + Dual Grid Inventory UI v0
 
-Estado: `implemented`.
+Estado: `validated`.
 
 - `ItemStorage` sigue siendo la fuente de contenido y stacks; `GridStorageRuntime` compone opcionalmente `GridInventoryLayout`/`GridInventoryBackend` para cualquier owner compatible.
 - `IGridStorageOwner` expone lectura por `InstanceId` y operaciones cerradas; containers y cadaveres no tienen backends especializados.
@@ -128,11 +132,11 @@ Estado: `implemented`.
 - Drag interno solo recoloca layout. La base M33.2 mueve stack completo entre grillas y mantiene Shift/clic o botones con transferencia atomica y auto-placement; M33.2.1 define por separado placement exacto y merge dirigido.
 - `InventoryUISessionController` es la unica autoridad para `I`/`Escape`, cierre, cancelacion de drag y bloqueo de movimiento, disparo, interaccion y camara mientras la sesion esta abierta.
 - `SampleScene` configura crates, cocina y ambos NPC/cadaveres con dimensiones serializadas; no se cambiaron JSON, loot tables, puertas ni visibilidad.
-- Pendiente de validacion manual en Unity; no marcar `validated` hasta completar Play Mode y Console.
+- Validado manualmente en Unity junto con M33.2.1.
 
 ### M33.2.1: Partial Directed Merge + Stable Dual Grid UI
 
-Estado: `implemented`.
+Estado: `validated`.
 
 - El drag entre owners distingue placement exacto en celda vacia de merge dirigido sobre un `destinationInstanceId` concreto; el merge interno no existe.
 - La deteccion del receptor usa la celda ocupada por `GridPlacement`, independiente del sprite, fondo o margenes visuales.
@@ -143,7 +147,60 @@ Estado: `implemented`.
 - Seleccion/reconciliacion siguen usando `InstanceId`; el receptor queda activo despues de merge exitoso.
 - Los mensajes usan toast absoluto con tiempo no escalado y las tres columnas se centran con un rect congelado por sesion.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen warnings preexistentes de `BuildingVisibilityManager`.
-- Estado de validacion: pendiente de Play Mode/Console; no validated.
+- Validado manualmente en Unity junto con M33.2.
+
+### M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish
+
+Estado: `validated`.
+
+- `inventory.initial_orientation` es opcional, admite solo `original`/`rotated` y usa `original` si falta.
+- El first-fit prueba la orientacion inicial antes de la alternativa sin crear estados redundantes para footprints cuadrados.
+- Footprints Core: rifle `7x2` con inicio rotado efectivo `2x7`; botella `2x1` con inicio rotado efectivo `1x2`; palanca `5x1`, scrap `2x2`, municion, venda y comida `1x1` con inicio original.
+- La metadata solo afecta nuevas colocaciones y reconstrucciones; drag exacto conserva la orientacion solicitada y merge dirigido no altera placement.
+- No se modificaron storage, transfer service, merge, `right_hand`, sesion, UI general, sprites, metas ni escena.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+- Validado manualmente en Unity por confirmacion del usuario.
+
+### M33.3: Basic Carry Weight System v0
+
+Estado: `validated`.
+
+- `physical.weight_kg` es obligatorio, finito y no negativo para todo item Core; los siete items actuales declaran peso explicito.
+- `ActorCarryWeightComponent` calcula el peso on demand desde `InventoryComponent`, usa capacidad base `30 kg` y hard limit `39 kg`, y expone estados `Normal`, `Encumbered` y `HardBlocked`.
+- La politica opcional del owner bloquea incoming externo que exceda el hard limit; containers, cuerpos y NPCs sin el componente siguen sin limite de peso.
+- La carga inicial de perfiles es el unico bypass controlado; pickup, Take/Deposit, Shift+click, drag exacto y merge parcial revalidan antes de mutar.
+- La UI debug muestra snapshot del jugador y peso unitario/stack sin decidir permisos ni redimensionar paneles por mensajes.
+- `SampleScene` solo agrega `ActorCarryWeightComponent` al Debug Player con capacidad `30` y multiplicador `1.3`.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+- Validado manualmente en Unity por confirmacion del usuario.
+
+### M34.1: Equipment Ownership & Slots Foundation
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `ActorItemOwnershipComponent` agrega las entries directas del inventario personal y del equipment storage y valida que cada `ItemInstance.InstanceId` pertenezca a un solo nodo.
+- `ActorEquipmentComponent` usa un `ItemStorage` lineal separado; los slots solo referencian la misma instancia mediante mapas `slot -> InstanceId` e `InstanceId -> slots`.
+- Los datos agregan 17 slots exactos y el layout `human_standard_01`, agrupado y ordenado para UI debug. `back` es un slot generico.
+- `equip.slot_sets` declara alternativas completas: la palanca admite `hand_right` o `hand_left`; el rifle ocupa atomicamente ambas manos. No existe `both_hands`.
+- `EquipmentTransactionService` separa preview y commit, revalida versiones, conserva `InstanceId` y revierte storages, layout, mapas, versiones y secuencia de IDs ante fallo.
+- `right_hand` queda como compatibilidad temporal: cuando existe `ActorEquipmentComponent`, delega en `hand_right`; la interaccion prueba `hand_right` y luego `hand_left`.
+- `ActorCarryWeightComponent` suma ownership agregado una sola vez por entry; mover un item entre inventario y equipment mantiene delta de peso cero.
+- `InventoryDebugPanel` e `ItemStorageDebugPanel` muestran la lista central de 17 slots, scroll persistente, seleccion canonica por `InstanceId` y acciones debug de equipar/desequipar. La grilla externa permanece intacta.
+- M34.2 queda reservado para item-owned storage/mochilas; no se implementaron nesting, pockets ni peso de subtrees.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.1.1: Inventory & Equipment UI Cleanup
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- Inventario personal y storage externo usan un body comun: Player Grid, Equipment y Details/External Grid comparten Y, altura, padding y separacion.
+- La columna central separa un viewport de equipment con altura calculada y un footer fijo para Carry, instrucciones, seleccion y acciones.
+- `EquipmentDebugListView` elimina el scrollbar horizontal, conserva scroll vertical y dibuja slot a la izquierda e item a la derecha con clipping e indicador `2H`.
+- El encabezado legacy `Right Hand` y su boton fijo `Unequip` dejaron de dibujarse; las APIs legacy no cambiaron.
+- Take/Deposit 1/Stack quedan dentro del footer externo; los detalles resumidos usan un viewport vertical interno y la grilla externa permanece en la derecha.
+- La seleccion del footer consulta `InventoryUISessionSelection` como autoridad para evitar que un owner viejo del drag recupere foco.
+- Toast, backend, JSON, escena, ownership, peso, transferencias, placements y rollback permanecen sin cambios.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
 
 ## Ultimo Estado Validado
 
@@ -196,10 +253,14 @@ Estado: `implemented`.
 
 ## Proximo Recomendado
 
-Validar M33.2/M33.2.1, Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 en Unity antes de cerrar esos bloques como `validated`.
+Validar M34.1 y M34.1.1 en Unity antes de cerrarlos como `validated`; despues quedan Inventory Context Menu v0, weight-limited partial transfers y M34.2 Item-Owned Storage/Backpack Foundation. Los pendientes anteriores M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su estado.
 
 Alcance recomendado:
 
+- agregar ownership/equipment solamente al Debug Player y comprobar `human_standard_01` con 17 slots;
+- validar palanca en ambas manos, dos items de una mano, rifle `2H`, rechazo por slot ocupado y desequipamiento sin espacio;
+- confirmar preservacion de `InstanceId`, ownership unico, peso sin duplicados/delta cero y compatibilidad de interaccion desde mano izquierda;
+- validar lista central, scroll persistente, seleccion multi-slot y grilla externa preservada;
 - validar containers de cocina M32;
 - validar puertas M32.2 con `force_door`, `open_door`, `close_door` y `examine_object`;
 - ejecutar `Validate M32 Door Pivots` y `Repair M32 Door Pivots` antes de probar puertas si las jerarquias visuales siguen corruptas;
@@ -219,4 +280,6 @@ No implementar todavia:
 - contenedores creados por jugador;
 - rediseno de cuerpos;
 - loot avanzado;
+- item-owned storage, mochila funcional, pockets y nesting;
+- equipamiento en NPCs/cadaveres, armor, modelos y attachment al esqueleto;
 - combate o IA.

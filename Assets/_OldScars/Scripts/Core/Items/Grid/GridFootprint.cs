@@ -4,15 +4,17 @@ namespace OldScars.Core.Items
 {
     public sealed class GridFootprint
     {
-        public static GridFootprint OneByOne { get; } = new GridFootprint(1, 1);
+        public static GridFootprint OneByOne { get; } = new GridFootprint(1, 1, false);
 
         public int Width { get; }
         public int Height { get; }
+        public bool InitialIsRotated { get; }
 
-        public GridFootprint(int width, int height)
+        public GridFootprint(int width, int height, bool initialIsRotated)
         {
             Width = width;
             Height = height;
+            InitialIsRotated = width != height && initialIsRotated;
         }
 
         public int GetWidth(bool rotated)
@@ -52,7 +54,19 @@ namespace OldScars.Core.Items
                 return false;
             }
 
-            footprint = new GridFootprint(data.width, data.height);
+            string initialOrientation = inventory.initial_orientation;
+            if (initialOrientation != null &&
+                initialOrientation != ItemInitialOrientation.Original &&
+                initialOrientation != ItemInitialOrientation.Rotated)
+            {
+                error = $"Invalid initial orientation '{initialOrientation}' for item '{definition.id}'.";
+                return false;
+            }
+
+            footprint = new GridFootprint(
+                data.width,
+                data.height,
+                initialOrientation == ItemInitialOrientation.Rotated);
             return true;
         }
     }

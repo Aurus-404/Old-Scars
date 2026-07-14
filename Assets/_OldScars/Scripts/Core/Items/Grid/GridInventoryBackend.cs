@@ -15,6 +15,8 @@ namespace OldScars.Core.Items
         public int GridHeight => layout != null ? layout.Height : 0;
 
         internal ItemStorage Storage => storage;
+        internal int StorageVersion => storage.Version;
+        internal int LayoutVersion => layout != null ? layout.Version : 0;
 
         public GridInventoryBackend(ItemStorage storage, Func<string, ItemDefinition> definitionResolver)
         {
@@ -237,6 +239,68 @@ namespace OldScars.Core.Items
                 sourceInstanceId,
                 quantity,
                 null);
+        }
+
+        internal GridPlacementValidationResult PreviewTransferTo(
+            GridInventoryBackend target,
+            string sourceInstanceId)
+        {
+            if (target == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "Target inventory backend is missing.");
+            }
+
+            ItemStorageEntry sourceEntry = storage.GetEntryByInstanceId(sourceInstanceId);
+            if (sourceEntry == null || sourceEntry.Item == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.");
+            }
+
+            InventoryTransactionPlan plan = BuildTransferPlan(
+                storage,
+                layout,
+                target.storage,
+                target.layout,
+                target.definitionResolver,
+                sourceInstanceId,
+                sourceEntry.Quantity,
+                null,
+                out InventoryMutationResult rejection);
+            if (plan == null)
+                return GridPlacementValidationResult.Invalid(rejection.Failure, rejection.Message);
+
+            if (target.layout == null || plan.ReservedPlacements == null || plan.ReservedPlacements.Count == 0)
+                return GridPlacementValidationResult.Valid(null, plan.UsedFallbackFootprint);
+
+            GridInventoryLayout.ReservedRect reserved = plan.ReservedPlacements[0];
+            return GridPlacementValidationResult.Valid(
+                new GridPlacement(
+                    sourceInstanceId,
+                    reserved.X,
+                    reserved.Y,
+                    reserved.IsRotated,
+                    reserved.Width,
+                    reserved.Height),
+                plan.UsedFallbackFootprint);
+        }
+
+        internal BackendStateSnapshot CaptureBackendState()
+        {
+            return new BackendStateSnapshot(
+                storage.CaptureState(),
+                layout != null ? layout.CaptureState() : default,
+                layout != null);
+        }
+
+        internal void RestoreBackendState(BackendStateSnapshot snapshot)
+        {
+            storage.RestoreState(snapshot.Storage);
+            if (snapshot.HasLayout && layout != null)
+                layout.RestoreState(snapshot.Layout);
         }
 
         public GridPlacementValidationResult PreviewTransferToExact(
@@ -1242,6 +1306,23 @@ namespace OldScars.Core.Items
             }
 
             return true;
+        }
+
+        internal readonly struct BackendStateSnapshot
+        {
+            internal BackendStateSnapshot(
+                ItemStorage.StateSnapshot storage,
+                GridInventoryLayout.StateSnapshot layout,
+                bool hasLayout)
+            {
+                Storage = storage;
+                Layout = layout;
+                HasLayout = hasLayout;
+            }
+
+            internal ItemStorage.StateSnapshot Storage { get; }
+            internal GridInventoryLayout.StateSnapshot Layout { get; }
+            internal bool HasLayout { get; }
         }
     }
 }

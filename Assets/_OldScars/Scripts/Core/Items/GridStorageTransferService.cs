@@ -154,10 +154,28 @@ namespace OldScars.Core.Items
                     destinationInstanceId);
             }
 
-            return sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
+            GridStorageMergePreview preview = sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
                 destinationEndpoint.TransferBackend,
                 sourceInstanceId,
                 destinationInstanceId);
+            if (!preview.IsValid)
+                return preview;
+
+            string definitionId = ResolveDefinitionId(source, sourceInstanceId);
+            if (TryRejectIncomingWeight(
+                    destination,
+                    definitionId,
+                    preview.TransferQuantity,
+                    out CarryWeightAcceptance acceptance))
+            {
+                return GridStorageMergePreview.Invalid(
+                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
+                    acceptance.FailureReason,
+                    sourceInstanceId,
+                    destinationInstanceId);
+            }
+
+            return preview;
         }
 
         public static InventoryMutationResult MergeIntoTarget(
@@ -188,7 +206,33 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
+            GridStorageMergePreview currentPreview = sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
+                destinationEndpoint.TransferBackend,
+                sourceInstanceId,
+                destinationInstanceId);
+            if (!currentPreview.IsValid)
+            {
+                return InventoryMutationResult.Rejected(
+                    currentPreview.Failure,
+                    currentPreview.Message,
+                    0,
+                    sourceInstanceId);
+            }
+
             string definitionId = ResolveDefinitionId(source, sourceInstanceId);
+            if (TryRejectIncomingWeight(
+                    destination,
+                    definitionId,
+                    currentPreview.TransferQuantity,
+                    out CarryWeightAcceptance acceptance))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
+                    acceptance.FailureReason,
+                    currentPreview.TransferQuantity,
+                    sourceInstanceId);
+            }
+
             InventoryMutationResult result = sourceEndpoint.TransferBackend.MergeIntoTarget(
                 destinationEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -223,12 +267,35 @@ namespace OldScars.Core.Items
                     error);
             }
 
-            return sourceEndpoint.TransferBackend.PreviewTransferToExact(
+            GridPlacementValidationResult preview = sourceEndpoint.TransferBackend.PreviewTransferToExact(
                 targetEndpoint.TransferBackend,
                 sourceInstanceId,
                 targetX,
                 targetY,
                 isRotated);
+            if (!preview.IsValid)
+                return preview;
+
+            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
+                sourceEntry == null || sourceEntry.Item == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.");
+            }
+
+            if (TryRejectIncomingWeight(
+                    target,
+                    sourceEntry.DefinitionId,
+                    sourceEntry.Quantity,
+                    out CarryWeightAcceptance acceptance))
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
+                    acceptance.FailureReason);
+            }
+
+            return preview;
         }
 
         public static InventoryMutationResult TransferExact(
@@ -250,7 +317,45 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
-            string definitionId = ResolveDefinitionId(source, sourceInstanceId);
+            GridPlacementValidationResult currentPreview = sourceEndpoint.TransferBackend.PreviewTransferToExact(
+                targetEndpoint.TransferBackend,
+                sourceInstanceId,
+                targetX,
+                targetY,
+                isRotated);
+            if (!currentPreview.IsValid)
+            {
+                return InventoryMutationResult.Rejected(
+                    currentPreview.Failure,
+                    currentPreview.Message,
+                    0,
+                    sourceInstanceId);
+            }
+
+            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
+                sourceEntry == null || sourceEntry.Item == null)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.",
+                    0,
+                    sourceInstanceId);
+            }
+
+            string definitionId = sourceEntry.DefinitionId;
+            if (TryRejectIncomingWeight(
+                    target,
+                    definitionId,
+                    sourceEntry.Quantity,
+                    out CarryWeightAcceptance acceptance))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
+                    acceptance.FailureReason,
+                    sourceEntry.Quantity,
+                    sourceInstanceId);
+            }
+
             InventoryMutationResult result = sourceEndpoint.TransferBackend.TransferToExact(
                 targetEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -323,6 +428,19 @@ namespace OldScars.Core.Items
             }
 
             string definitionId = sourceEntry.DefinitionId;
+            if (TryRejectIncomingWeight(
+                    target,
+                    definitionId,
+                    quantity,
+                    out CarryWeightAcceptance acceptance))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
+                    acceptance.FailureReason,
+                    quantity,
+                    sourceInstanceId);
+            }
+
             InventoryMutationResult result = sourceEndpoint.TransferBackend.TransferTo(
                 targetEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -378,6 +496,20 @@ namespace OldScars.Core.Items
             return source != null && source.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry)
                 ? entry?.DefinitionId
                 : null;
+        }
+
+        private static bool TryRejectIncomingWeight(
+            IGridStorageOwner destination,
+            string definitionId,
+            int quantity,
+            out CarryWeightAcceptance acceptance)
+        {
+            acceptance = default;
+            if (!(destination is ICarryWeightLimitedOwner limitedOwner) || !limitedOwner.HasCarryWeightLimit)
+                return false;
+
+            acceptance = limitedOwner.EvaluateIncomingWeight(definitionId, quantity);
+            return !acceptance.Accepted;
         }
 
         private static void NotifyCommitted(

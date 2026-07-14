@@ -26,6 +26,7 @@ namespace OldScars.Core.Items
             ExactTransferWouldMerge,
             IncompatibleStack,
             StackFull,
+            CarryWeightLimitExceeded,
             StalePlan,
             CommitFailed
         }

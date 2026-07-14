@@ -1233,7 +1233,8 @@ Con equipped item definition id none o vacio:
 - Los hooks de owner preservan acceso/tags de containers y cuerpos fuera de `GridInventoryBackend`; `right_hand` solo se limpia despues de una salida exitosa de esa misma instancia.
 - `SampleScene` configura sealed crate `4x4`, supply/misc crates `6x5`, fridge `5x8`, oven `4x4`, countertop `5x3`, cupboards `4x5` y ambos NPC/cadaveres `6x8`.
 - No se modificaron JSON, loot tables, puertas, visibilidad, arte, tests ni asmdef; no se agregaron Canvas, EventSystem ni UI Toolkit.
-- Estado: implemented; pendiente de validacion manual en Unity, no validated.
+- Validado manualmente en Unity junto con M33.2.1.
+- Estado: validated.
 
 ### M33.2.1: Partial Directed Merge + Stable Dual Grid UI
 
@@ -1249,6 +1250,65 @@ Con equipped item definition id none o vacio:
 - El panel dual congela su rect al abrir la sesion y centra columnas calculadas desde las dimensiones de ambas grillas, sin depender del contenido ni mensajes.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; solo warnings preexistentes de `BuildingVisibilityManager`.
 - No se modificaron JSON, escena, sprites, metas, puertas, visibilidad, transforms ni colliders; no se agregaron tests, asmdef, Canvas ni UI Toolkit.
+- Validado manualmente en Unity junto con M33.2.
+- Estado: validated.
+
+### M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish
+
+- Se agrego `inventory.initial_orientation` opcional con valores cerrados `original`/`rotated` y fallback `original`.
+- `DataValidator` rechaza valores desconocidos; la orientacion no se deriva de IDs, categoria, tipo, icono ni footprint.
+- El first-fit prueba la orientacion inicial antes de la alternativa y normaliza footprints cuadrados sin estados/versiones redundantes.
+- El rifle queda `7x2` original con inicio rotado efectivo `2x7`; la botella queda `2x1` original con inicio rotado efectivo `1x2`.
+- Palanca `5x1`, scrap `2x2`, municion, venda y comida `1x1` declaran inicio original.
+- Placements existentes, recolocacion manual, transferencia exacta y merge dirigido conservan sus contratos previos.
+- No se modificaron `ItemStorage`, `GridStorageTransferService`, `right_hand`, tags, containers, cadaveres, sesion, toast, input, sprites, metas, icon resolver, escena, puertas ni visibilidad.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario.
+
+### M33.3: Basic Carry Weight System v0
+
+- `ItemPhysical.weight_kg` pasa a nullable para distinguir ausencia de cero; `DataValidator` exige presencia, valor finito y valor no negativo con diagnostico por item.
+- Los siete items Core declaran pesos explicitos: rifle `4.2`, crowbar `2.3`, water `1.2`, scrap `0.10`, ammo `0.025`, bandage `0.08` y food `0.50` kg.
+- `ActorCarryWeightComponent` suma on demand las entries de `InventoryComponent` usando `double`; capacidad blanda `30 kg`, hard limit `39 kg` y epsilon solamente para comparaciones.
+- `ICarryWeightLimitedOwner` mantiene la politica opcional por owner; storages sin componente no adquieren limite ni conocen actores concretos.
+- La carga inicial de actor profile usa el unico bypass controlado; altas runtime, pickup y transferencias incoming al jugador aplican la politica antes de mutar.
+- Preview y commit de drag exacto/merge dirigido aplican la misma politica; merge pesa solo `TransferQuantity` y commit vuelve a obtener el preview actual.
+- Rechazos no ejecutan hooks de transferencia ni efectos de pickup; outgoing, consumo, municion y drop no reciben un bloqueo nuevo.
+- `InventoryDebugPanel` e `ItemStorageDebugPanel` muestran peso actual/capacidades/estado y pesos unitario/stack; los rechazos reutilizan el toast absoluto existente.
+- `SampleScene` solo agrega `ActorCarryWeightComponent` al Debug Player con `baseCarryCapacityKg = 30` y `hardLimitMultiplier = 1.3`.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario.
+
+### M34.1: Equipment Ownership & Slots Foundation
+
+- Se agregaron definiciones data-driven `EquipmentSlotDefinition` y `EquipmentLayoutDefinition`, carga/registro/validacion y los archivos Core `equipment_slots.json` y `equipment_layouts.json`.
+- `human_standard_01` contiene exactamente 17 slots agrupados y ordenados; `back` es generico y no existe `both_hands`.
+- `ActorProfileDefinition` acepta `equipment_layout_id`; `debug_npc_capsule_01` referencia `human_standard_01` sin agregar componentes de equipment al NPC.
+- `ItemEquip.slot_sets` es el schema definitivo de alternativas completas. La palanca declara mano derecha o izquierda; el rifle declara ambas manos en un solo set atomico. El schema legacy solo queda como compatibilidad, mapeando `right_hand` a `hand_right`.
+- Se agrego `ActorItemOwnershipComponent` como vista agregada de inventario personal + equipment storage, con localizacion por `InstanceId` y validacion de ownership unico.
+- Se agrego `ActorEquipmentComponent` con `ItemStorage` lineal separado y mapas de referencias de slots; el item multi-slot existe una sola vez en storage y peso.
+- `EquipmentTransactionService` implementa preview/commit de equipar y desequipar, revalidacion por versiones, first-fit data-driven al volver al inventario y rollback completo de storages, layout, mapas, versiones y secuencia de IDs.
+- `InventoryComponent` conserva sus APIs legacy, pero delega `right_hand` a `hand_right` cuando existe equipment; `ActorInteractionContext` usa mano derecha y luego izquierda.
+- `ActorCarryWeightComponent` consulta ownership agregado cuando esta disponible; equipar/desequipar dentro del mismo actor no ejecuta preflight incoming y mantiene delta de peso cero, incluso en `HardBlocked`.
+- `InventoryDebugPanel` e `ItemStorageDebugPanel` agregan una lista central fija de 17 slots, scroll persistente, filas vacias, indicador `2H`, seleccion canonica por `InstanceId`, auto-scroll y acciones debug. La grilla externa se conserva a la derecha.
+- `InventoryUISessionController` sigue siendo la autoridad unica de la sesion; el estado de seleccion distingue personal/equipment/external sin agregar listeners independientes de `I` o `Escape`.
+- No se modifico `SampleScene.unity` como parte de M34.1 y no se agregaron NPC/corpse equipment, item-owned storage, backpack, pockets, nesting, peso de subtrees, equip desde mundo, drop equipado, armor, save/load, modelos ni UI final.
+- M34.2 queda diferido para item-owned storage/backpack foundation.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
+- Estado: implemented; pendiente de validacion manual en Unity, no validated.
+
+### M34.1.1: Inventory & Equipment UI Cleanup
+
+- Cleanup exclusivo de la UI debug OnGUI; no se modificaron backend, JSON, escena, ownership, peso, transferencias, placements, tags ni rollback.
+- `InventoryDebugPanel` elimina visualmente el header legacy de `Right Hand`/`Unequip`, mantiene Close en la cabecera general y organiza Player Grid, Equipment y Selected Item con una altura comun.
+- `ItemStorageDebugPanel` organiza Player Grid, Equipment + footer y External Storage Grid con el mismo body height; las grillas conservan dimensiones reales y el sobrante queda vacio dentro del fondo.
+- La columna central divide Equipment viewport y Session/Actions footer mediante alturas calculadas y estables.
+- Take 1/Stack y Deposit 1/Stack se dibujan dentro del footer visible; los detalles resumidos usan scroll vertical interno y no desplazan los botones fuera de la ventana.
+- `EquipmentDebugListView` usa solo scrollbar vertical, fija el ancho de filas y separa slot alineado a izquierda de item/Vacio alineado a derecha, con clipping de nombres e indicador `2H`.
+- El footer externo resuelve personal/equipment/external desde `InventoryUISessionSelection`, y los clicks de Legacy List actualizan la misma autoridad para evitar reaparicion de selecciones viejas.
+- El toast absoluto permanece fuera de GUILayout y conserva su duracion/politica.
+- Inventory Context Menu v0, weight-limited partial transfers y M34.2 item-owned storage siguen pendientes.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
 - Estado: implemented; pendiente de validacion manual en Unity, no validated.
 
 ## Decisiones De Scope

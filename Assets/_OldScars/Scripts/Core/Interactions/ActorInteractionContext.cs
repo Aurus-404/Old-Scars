@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OldScars.Core.Actors;
 using OldScars.Core.Items;
 using UnityEngine;
 
@@ -26,6 +27,14 @@ namespace OldScars.Core.Interactions
 
         public string GetEquippedItemDefinitionId()
         {
+            ActorEquipmentComponent equipment = GetComponent<ActorEquipmentComponent>();
+            if (equipment != null)
+            {
+                ItemInstance activeItem = equipment.GetEquippedInstance(ActorEquipmentComponent.HandRightSlotId) ??
+                                          equipment.GetEquippedInstance(ActorEquipmentComponent.HandLeftSlotId);
+                return activeItem != null ? activeItem.DefinitionId : null;
+            }
+
             InventoryComponent inventory = GetInventoryComponent();
             if (inventory != null)
                 return inventory.GetEquippedItemDefinitionId();

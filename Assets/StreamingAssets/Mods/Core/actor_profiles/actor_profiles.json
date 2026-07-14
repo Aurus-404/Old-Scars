@@ -4,6 +4,7 @@
       "type": "actor_profile",
       "id": "debug_npc_capsule_01",
       "display_name": "Debug NPC Capsule",
+      "equipment_layout_id": "human_standard_01",
       "initial_tags": ["human", "inspectable"],
       "health": {
         "max_health": 100,

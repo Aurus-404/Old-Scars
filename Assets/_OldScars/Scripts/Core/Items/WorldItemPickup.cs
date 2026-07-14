@@ -104,9 +104,19 @@ namespace OldScars.Core.Items
             ItemStorageEntry pickupEntry = storage.GetEntry(0);
             ItemInstance item = pickupEntry != null ? pickupEntry.Item : null;
             int pickupQuantity = pickupEntry != null ? pickupEntry.Quantity : 0;
-            int transferredQuantity = inventory.TransferItemFrom(storage, 0, pickupQuantity);
-            if (item == null || transferredQuantity <= 0)
+            if (item == null || pickupQuantity < 1)
                 return DebugActionExecutionResult.Info("Recoger", $"No se pudo recoger '{SafeText(itemDefinitionId)}'.");
+
+            InventoryMutationResult transferResult = inventory.TransferItemFromWithResult(storage, 0, pickupQuantity);
+            if (!transferResult.Success)
+            {
+                string failureMessage = transferResult.Failure == InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded
+                    ? transferResult.Message ?? "Too heavy."
+                    : $"No se pudo recoger '{SafeText(itemDefinitionId)}'.";
+                return DebugActionExecutionResult.Info("Recoger", failureMessage);
+            }
+
+            int transferredQuantity = transferResult.AffectedQuantity;
 
             bool addedPickedUp = targetTags.AddTag(PickedUpTag);
             bool removedPickupable = targetTags.RemoveTag(PickupableTag);

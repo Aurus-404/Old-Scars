@@ -1,0 +1,21 @@
+{
+  "equipment_slots": [
+    { "type": "equipment_slot", "id": "head", "display_name": "Cabeza" },
+    { "type": "equipment_slot", "id": "eyes", "display_name": "Ojos" },
+    { "type": "equipment_slot", "id": "neck", "display_name": "Cuello" },
+    { "type": "equipment_slot", "id": "torso_inner", "display_name": "Torso interior" },
+    { "type": "equipment_slot", "id": "torso_middle", "display_name": "Torso medio" },
+    { "type": "equipment_slot", "id": "torso_outer", "display_name": "Torso exterior" },
+    { "type": "equipment_slot", "id": "hands_wear", "display_name": "Guantes" },
+    { "type": "equipment_slot", "id": "hand_left", "display_name": "Mano izquierda" },
+    { "type": "equipment_slot", "id": "hand_right", "display_name": "Mano derecha" },
+    { "type": "equipment_slot", "id": "back", "display_name": "Espalda" },
+    { "type": "equipment_slot", "id": "waist", "display_name": "Cinturón" },
+    { "type": "equipment_slot", "id": "sling", "display_name": "Bandolera" },
+    { "type": "equipment_slot", "id": "legs_inner", "display_name": "Piernas interior" },
+    { "type": "equipment_slot", "id": "legs_outer", "display_name": "Piernas exterior" },
+    { "type": "equipment_slot", "id": "feet_inner", "display_name": "Medias" },
+    { "type": "equipment_slot", "id": "foot_left", "display_name": "Pie izquierdo" },
+    { "type": "equipment_slot", "id": "foot_right", "display_name": "Pie derecho" }
+  ]
+}

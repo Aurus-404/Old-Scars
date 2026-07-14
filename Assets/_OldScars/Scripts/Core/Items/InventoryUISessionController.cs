@@ -19,9 +19,12 @@ namespace OldScars.Core.Items
         [SerializeField] private InventoryComponent playerInventory;
         [SerializeField] private PointClickMovementController movementController;
 
+        private readonly InventoryUISessionSelection selection = new InventoryUISessionSelection();
+
         public InventoryUISessionState State { get; private set; }
         public bool BlocksWorldInput => State != InventoryUISessionState.Closed;
         public bool IsOpen => BlocksWorldInput;
+        public InventoryUISessionSelection Selection => selection;
 
         public static InventoryUISessionController GetOrCreate()
         {
@@ -107,6 +110,7 @@ namespace OldScars.Core.Items
             CancelActiveDrag();
             inventoryPanel?.HideFromSession();
             storagePanel?.HideFromSession();
+            selection.ResetTransient();
             State = InventoryUISessionState.Closed;
         }
 

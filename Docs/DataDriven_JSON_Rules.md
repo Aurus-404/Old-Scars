@@ -81,6 +81,18 @@ Los items pueden tener:
 - inventory
 - combat
 
+El peso fisico de cada item es explicito y obligatorio:
+
+```json
+"physical": {
+  "weight_kg": 2.3
+}
+```
+
+- `physical.weight_kg` debe estar presente, ser finito y ser mayor o igual a cero.
+- El peso de un stack es `weight_kg * quantity`; inventario personal y equipment storage se suman por entry. Las referencias de slots no agregan peso, por lo que un item multi-slot pesa una sola vez.
+- La capacidad de carga es politica runtime opcional del owner y no pertenece a `ItemStorage`, al layout espacial ni al JSON del item.
+
 El bloque espacial de inventario es cerrado y opcional durante la migracion:
 
 ```json
@@ -89,11 +101,16 @@ El bloque espacial de inventario es cerrado y opcional durante la migracion:
     "width": 1,
     "height": 2
   },
+  "initial_orientation": "rotated",
   "icon_id": "water_bottle_01"
 }
 ```
 
 - `footprint.width` y `footprint.height` deben ser enteros positivos.
+- `inventory.initial_orientation` es opcional y solo admite `original` o `rotated`; si falta, usa `original`.
+- La orientacion inicial es data-driven: no se deriva de `id`, categorias, tags, tipo, `icon_id` ni dimensiones.
+- El first-fit prueba primero `initial_orientation` y despues la alternativa para footprints no cuadrados.
+- La orientacion inicial se aplica solo a nuevas colocaciones y reconstrucciones; no fuerza placements existentes ni impide rotar manualmente con `R`.
 - Todos los footprints rectangulares pueden rotarse intercambiando `width` y `height` mediante `GridPlacement.IsRotated`.
 - Rotar un footprint cuadrado es un exito no-op: conserva geometria, orientacion existente y version del layout.
 - Un item sin `inventory.footprint` usa fallback `1x1` y genera warning de validacion.
@@ -190,13 +207,35 @@ Reglas:
 
 ## Equipamiento
 
-Por ahora usar solo:
+Los slots y layouts son definiciones data-driven cargadas una vez desde `equipment_slots/*.json` y `equipment_layouts/*.json`.
 
+- `EquipmentSlotDefinition` usa `type`, `id` y `display_name`.
+- `EquipmentLayoutDefinition` usa `type`, `id`, `display_name`, `groups` y `slots`.
+- Cada grupo usa `id`, `display_name` y `display_order`; cada entrada usa `slot_id`, `group_id` y `display_order`.
+- `human_standard_01` contiene exactamente 17 slots. `back` es generico; no existe `both_hands`.
+- `ActorProfileDefinition.equipment_layout_id` puede referenciar un layout cargado.
+
+Los items equipables usan alternativas completas mediante `slot_sets`:
+
+```json
 {
   "equip": {
-    "allowed_slots": ["right_hand", "left_hand"]
+    "equippable": true,
+    "slot_sets": [
+      ["hand_right"],
+      ["hand_left"]
+    ]
   }
 }
+```
+
+- Cada array interno es un set atomico completo; todos sus slots deben existir y no repetirse.
+- Un item de dos manos declara `["hand_left", "hand_right"]`; no crea un socket `both_hands`.
+- Todo item equipable usa `max_stack = 1` y no puede declarar `slot_sets` vacio.
+- `slot_sets` no puede coexistir con `allowed_slots`/`occupied_slots` legacy.
+- El schema legacy se acepta temporalmente para mods antiguos y mapea `right_hand` a `hand_right`; no crea una segunda autoridad runtime.
+- Equipment runtime guarda una sola entry en un storage lineal y los slots solo referencian su `InstanceId`.
+- Item-owned storage, backpack y peso de subtrees quedan diferidos a M34.2.
 
 No usar required_sockets todavía.
 

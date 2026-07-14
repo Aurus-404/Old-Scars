@@ -103,13 +103,18 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Grid Inventory Backend v0 | Agregar capacidad espacial y placements por InstanceId alrededor de ItemStorage sin reemplazar stacks ni APIs existentes. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
 | Milestone 33.1: Visual Grid Inventory UI v0 | Mostrar y reorganizar la grilla `6x8` del jugador mediante OnGUI, con iconos data-driven y Legacy List debug. | validated | Validado manualmente: grilla, iconos, drag, rotacion, seleccion, equipamiento, transfers y Data Load 0/0. |
 | Milestone 33.1.1: Inventory Footprint Rebalance + Universal Rotation | Rebalancear footprints Core y eliminar el opt-in de rotacion por item. | validated | Validado manualmente: rotacion universal, no-op de cuadrados y regresiones M33.1 con Data Load 0/0. |
-| Milestone 33.2: Universal Grid Storage + Dual Grid Inventory UI v0 | Generalizar layout espacial opcional a storages externos y mostrar Player Grid junto a Container/Corpse Grid. | implemented | Pendiente de validacion manual en Unity; verificacion estatica solamente. |
-| Milestone 33.2.1: Partial Directed Merge + Stable Dual Grid UI | Separar placement exacto de merge dirigido parcial y estabilizar mensajes/layout de la UI dual. | implemented | Pendiente de validacion manual en Unity; compilacion estatica solamente. |
+| Milestone 33.2: Universal Grid Storage + Dual Grid Inventory UI v0 | Generalizar layout espacial opcional a storages externos y mostrar Player Grid junto a Container/Corpse Grid. | validated | Validado manualmente en Unity junto con M33.2.1. |
+| Milestone 33.2.1: Partial Directed Merge + Stable Dual Grid UI | Separar placement exacto de merge dirigido parcial y estabilizar mensajes/layout de la UI dual. | validated | Validado manualmente en Unity junto con M33.2. |
+| Milestone 33.2.2: Data-Driven Initial Item Orientation + Footprint Polish | Agregar orientacion inicial data-driven y pulir footprints Core sin cambiar rotacion manual ni transferencias exactas. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 33.3: Basic Carry Weight System v0 | Agregar peso de carga data-driven y un limite opcional por actor para todo incoming externo. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.1: Equipment Ownership & Slots Foundation | Separar ownership, equipment storage lineal y referencias de 17 slots con transacciones atomicas y UI debug central. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
+| Milestone 34.1.1: Inventory & Equipment UI Cleanup | Estabilizar las tres columnas OnGUI, footer de acciones y filas de equipment sin cambiar backend. | implemented | Verificacion estatica completa; pendiente de validacion manual en Unity. |
+| Milestone 34.2: Item-Owned Storage / Backpack Foundation | Agregar el primer storage propiedad de un item y peso de subtree sobre la base de ownership de M34.1. | planned | Diferido hasta validar M34.1 y aprobar el plan tecnico; no implementado. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-M33.1 y M33.1.1 estan validados manualmente en Unity. M33.2 y M33.2.1 estan implementados en el checkout y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2 y M33.3 estan validados manualmente en Unity. M34.1 y M34.1.1 estan implementados en el checkout y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los ultimos milestones cerrados como `validated` son:
 
@@ -119,12 +124,16 @@ Los ultimos milestones cerrados como `validated` son:
 - Milestone 27: Search vs Open Storage v0.
 - M33.1: Visual Grid Inventory UI v0.
 - M33.1.1: Inventory Footprint Rebalance + Universal Rotation.
+- M33.2: Universal Grid Storage + Dual Grid Inventory UI v0.
+- M33.2.1: Partial Directed Merge + Stable Dual Grid UI.
+- M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish.
+- M33.3: Basic Carry Weight System v0.
 
 ## Proximo Recomendado
 
-Validar M33.2/M33.2.1, Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 en Unity antes de preparar Milestone 28: Container State / Naming Cleanup v0.
+Validar M34.1 y M34.1.1 en Unity antes de cerrarlos como `validated`. Inventory Context Menu v0 y weight-limited partial transfers siguen pendientes; M34.2 Item-Owned Storage / Backpack Foundation requiere plan aprobado. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
 
-Objetivo recomendado despues de esa validacion: limpiar nombres y estados debug de contenedores despues de M27, reducir la dependencia futura de `lootable_container` / `looted_container` sin romper compatibilidad y corregir titulos debug inconsistentes como `Contenedor saqueado Contents (Debug)`.
+M34.2 debe reutilizar ownership agregado, `ItemStorage` y referencias por `InstanceId`; no debe adelantar nesting general, pockets arbitrarios, save/load ni UI final.
 
 M28 no debe redisenar storage, `search_body`, loot, inventario, UI final ni save system.
 
@@ -576,9 +585,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `max_stack > 1` permite merge simple en `ItemStorage` por mismo `definitionId` hasta el limite del stack.
 - `equip.equippable` es la fuente actual de equipabilidad por slot cuando existe el bloque `equip`.
 - `equippable` plano en `ItemDefinition` queda como compatibilidad temporal y no debe contradecir `equip.equippable`.
-- `equip.allowed_slots` y `equip.occupied_slots` declaran slots tecnicos; en M23 solo `right_hand` esta validado.
-- El item equipado en `right_hand` se referencia por `rightHandItemInstanceId`, no por indice de storage.
-- `InventoryDebugPanel` solo muestra `Equip` cuando `InventoryComponent` confirma que el item puede equiparse en `right_hand`.
+- `equip.slot_sets` declara alternativas atomicas completas; `allowed_slots`/`occupied_slots` quedan solo como compatibilidad legacy y `right_hand` mapea a `hand_right`.
+- El equipment storage contiene una sola entry por item; los slots referencian su `InstanceId` y un item multi-slot no duplica peso.
+- `InventoryDebugPanel` e `ItemStorageDebugPanel` ofrecen equipar solo cuando `ActorEquipmentComponent` confirma una alternativa valida.
 - `consumable.restore_needs` define efectos cerrados de consumibles por `need_id` y `amount`.
 - `consumable.restore_health.amount` define restauracion cerrada de health para consumibles medicos simples.
 - `ActorNeedsComponent` es generico para actores y no exclusivo del jugador.
@@ -592,8 +601,9 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `WorldObjectProfileComponent` aplica una sola vez `display_name` e `initial_tags` sobre componentes existentes y no lee JSON directamente.
 - La muerte real del Player no existe todavia: 0 health del Player es solo estado debug visual/numerico, sin game over, bloqueo de movimiento/acciones ni `lootable_actor`.
 - `DebugInventory` es debug temporal y no es inventario final.
-- `InventoryComponent` es inventario de actor v0, usa `ItemStorage` para Storage y expone Equipped con `right_hand`; no es inventario final.
-- `ActorInteractionContext` resuelve item equipado con prioridad `InventoryComponent` -> `DebugInventory` -> `equippedItemDefinitionId` legacy.
+- `InventoryComponent` es inventario personal v0; con `ActorEquipmentComponent`, `hand_right` es autoridad y el campo `right_hand` queda como fallback/migracion para escenas antiguas.
+- `ActorItemOwnershipComponent` agrega inventario personal + equipment storage y exige ownership unico por `InstanceId`; item-owned storage queda diferido a M34.2.
+- `ActorInteractionContext` resuelve primero `hand_right`, despues `hand_left`, y usa los fallbacks anteriores solo cuando no existe `ActorEquipmentComponent`.
 - Si `InventoryComponent` esta asignado al actor, define exclusivamente el item equipado; si devuelve sin item, no se usa fallback.
 - Si no hay `InventoryComponent` y `DebugInventory` esta asignado, `DebugInventory` define el item equipado; si devuelve sin item, no se usa fallback legacy.
 - `requirements.weapon_tags` es el campo activo para requisitos de tags del item equipado.
@@ -673,7 +683,10 @@ Si el codigo fue implementado pero falta confirmacion del usuario en Unity, el e
 - `InventoryItemUseService`: aplica consumibles cerrados a `ActorNeedsComponent` / `ActorHealthComponent` y consume cantidad si hubo efecto valido.
 - `InventoryItemUseResult`: resultado simple de uso de item para UI/debug.
 - `LootTableDefinition`: definicion v0 de loot deterministico.
-- `InventoryComponent`: inventario de actor v0 runtime-only apoyado en `ItemStorage`, con Storage y Equipped separados conceptualmente y slot `right_hand` por `rightHandItemInstanceId`.
+- `InventoryComponent`: inventario personal v0 runtime-only apoyado en `ItemStorage`; conserva APIs `right_hand` como compatibilidad.
+- `ActorItemOwnershipComponent`: vista agregada de inventario personal y equipment storage con ownership unico por `InstanceId`.
+- `ActorEquipmentComponent`: equipment storage lineal y referencias multi-slot data-driven sobre `human_standard_01`.
+- `EquipmentTransactionService`: preview/commit y rollback atomico para equipar/desequipar sin cambiar `InstanceId`.
 - `DebugInventory`: inventario debug temporal para crear item instances y exponer item equipado.
 - `InventoryDebugPanel`: UI debug OnGUI de inventario v0, muestra Equipped separado de Storage, uso de consumibles y equip validado por `InventoryComponent`.
 - `ActorNeedsDebugPanel`: UI debug fija para Hunger/Thirst/Health y dano debug del Player.

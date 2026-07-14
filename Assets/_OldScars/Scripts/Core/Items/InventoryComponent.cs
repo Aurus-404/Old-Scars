@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Feedback;
@@ -14,7 +15,7 @@ namespace OldScars.Core.Items
     /// final equipment model, pickup/drop rules, or final UI. M33.1 exposes
     /// closed placement movement for the temporary OnGUI drag interface.
     /// </summary>
-    public sealed class InventoryComponent : MonoBehaviour, IGridStorageOwner, IGridStorageTransferEndpoint
+    public sealed class InventoryComponent : MonoBehaviour, IGridStorageOwner, IGridStorageTransferEndpoint, ICarryWeightLimitedOwner
     {
         private const string NoItemId = "none";
         public const string RightHandSlotId = "right_hand";
@@ -27,8 +28,21 @@ namespace OldScars.Core.Items
         private readonly ItemStorage storage = new ItemStorage();
         private readonly List<ItemInstance> itemInstancesView = new List<ItemInstance>();
         private GridStorageRuntime gridStorageRuntime;
+        private ActorCarryWeightComponent carryWeightComponent;
+        private bool carryWeightComponentResolved;
+        private int initialContentLoadDepth;
 
-        public string RightHandItemInstanceId => rightHandItemInstanceId;
+        public string RightHandItemInstanceId
+        {
+            get
+            {
+                ActorEquipmentComponent equipment = GetEquipmentComponent();
+                ItemInstance equipped = equipment != null
+                    ? equipment.GetEquippedInstance(ActorEquipmentComponent.HandRightSlotId)
+                    : null;
+                return equipment != null ? equipped?.InstanceId : rightHandItemInstanceId;
+            }
+        }
         public int EquippedItemIndex => GetRightHandItemIndex();
         public IReadOnlyList<ItemStorageEntry> Entries => storage.Entries;
         public bool IsEmpty => storage.IsEmpty;
@@ -41,11 +55,14 @@ namespace OldScars.Core.Items
         public string GridInitializationError => GetGridRuntime().InitializationError;
         public string GridStorageDisplayName => name;
         public IReadOnlyList<ItemStorageEntry> GridStorageEntries => storage.Entries;
+        public bool HasCarryWeightLimit => GetCarryWeightComponent() != null;
 
         GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => GetGridBackend();
+        internal GridInventoryBackend InternalGridBackend => GetGridBackend();
 
         private void Awake()
         {
+            ResolveCarryWeightComponent();
             InitializeGridBackend();
         }
 
@@ -89,6 +106,15 @@ namespace OldScars.Core.Items
                 return null;
             }
 
+            if (initialContentLoadDepth <= 0 &&
+                TryRejectIncomingWeight(definition.id, quantity, out CarryWeightAcceptance acceptance))
+            {
+                Debug.LogWarning(
+                    $"[InventoryComponent] Cannot add '{normalizedDefinitionId}' x{quantity}: " +
+                    SafeText(acceptance.FailureReason));
+                return null;
+            }
+
             InventoryMutationResult result = GetGridBackend().Add(definition, quantity);
             if (!result.Success)
             {
@@ -116,23 +142,32 @@ namespace OldScars.Core.Items
 
         public void BeginInitialContentLoad()
         {
+            initialContentLoadDepth++;
             GetGridRuntime().BeginInitialContentLoad();
         }
 
         public bool CompleteInitialContentLoad()
         {
-            bool initialized = GetGridRuntime().CompleteInitialContentLoad(out string error);
-            if (!initialized)
+            try
             {
-                Debug.LogError(
-                    "[InventoryComponent] Grid layout initialization failed after initial content load; " +
-                    "inventory remains linear and no items were changed." +
-                    $"\n  Actor: {name}" +
-                    $"\n  Requested grid: {gridWidth}x{gridHeight}" +
-                    $"\n  Reason: {SafeText(error)}");
-            }
+                bool initialized = GetGridRuntime().CompleteInitialContentLoad(out string error);
+                if (!initialized)
+                {
+                    Debug.LogError(
+                        "[InventoryComponent] Grid layout initialization failed after initial content load; " +
+                        "inventory remains linear and no items were changed." +
+                        $"\n  Actor: {name}" +
+                        $"\n  Requested grid: {gridWidth}x{gridHeight}" +
+                        $"\n  Reason: {SafeText(error)}");
+                }
 
-            return initialized;
+                return initialized;
+            }
+            finally
+            {
+                if (initialContentLoadDepth > 0)
+                    initialContentLoadDepth--;
+            }
         }
 
         public IReadOnlyList<ItemInstance> GetItems()
@@ -153,6 +188,11 @@ namespace OldScars.Core.Items
         public ItemStorageEntry GetEntry(int index)
         {
             return storage.GetEntry(index);
+        }
+
+        internal ItemStorageEntry GetStorageEntryByInstanceId(string instanceId)
+        {
+            return storage.GetEntryByInstanceId(instanceId);
         }
 
         public bool TryGetEntryByInstanceId(string instanceId, out int index, out ItemStorageEntry entry)
@@ -199,32 +239,20 @@ namespace OldScars.Core.Items
                 return 0;
             }
 
+            if (HasCarryWeightLimit)
+            {
+                Debug.LogWarning(
+                    "[InventoryComponent] Batch transfer is unavailable for carry-limited inventories. " +
+                    "Use individual or stack transfers so each incoming quantity is validated.");
+                return 0;
+            }
+
             return source.TransferAllTo(storage);
         }
 
         public int TransferItemFrom(ItemStorage source, int sourceIndex, int quantity)
         {
-            if (source == null)
-            {
-                Debug.LogWarning("[InventoryComponent] Cannot transfer an item from a null storage.");
-                return 0;
-            }
-
-            if (quantity < 1)
-            {
-                Debug.LogWarning($"[InventoryComponent] Cannot transfer quantity {quantity}. Quantity must be >= 1.");
-                return 0;
-            }
-
-            ItemStorageEntry sourceEntry = source.GetEntry(sourceIndex);
-            ItemInstance sourceItem = sourceEntry != null ? sourceEntry.Item : null;
-            if (sourceItem == null)
-            {
-                Debug.LogWarning($"[InventoryComponent] Cannot transfer an invalid source item index {sourceIndex}.");
-                return 0;
-            }
-
-            InventoryMutationResult result = GetGridBackend().TransferFrom(source, sourceItem.InstanceId, quantity);
+            InventoryMutationResult result = TransferItemFromWithResult(source, sourceIndex, quantity);
             if (!result.Success)
             {
                 Debug.LogWarning($"[InventoryComponent] Transfer from storage failed: {SafeText(result.Message)}");
@@ -232,6 +260,47 @@ namespace OldScars.Core.Items
             }
 
             return result.AffectedQuantity;
+        }
+
+        public InventoryMutationResult TransferItemFromWithResult(ItemStorage source, int sourceIndex, int quantity)
+        {
+            if (source == null)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "Cannot transfer an item from a null storage.",
+                    quantity);
+            }
+
+            if (quantity < 1)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    $"Cannot transfer quantity {quantity}. Quantity must be >= 1.",
+                    quantity);
+            }
+
+            ItemStorageEntry sourceEntry = source.GetEntry(sourceIndex);
+            ItemInstance sourceItem = sourceEntry != null ? sourceEntry.Item : null;
+            if (sourceItem == null || sourceEntry.Quantity < quantity)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InsufficientQuantity,
+                    $"Cannot transfer x{quantity} from source item index {sourceIndex}.",
+                    quantity,
+                    sourceItem != null ? sourceItem.InstanceId : null);
+            }
+
+            if (TryRejectIncomingWeight(sourceEntry.DefinitionId, quantity, out CarryWeightAcceptance acceptance))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
+                    acceptance.FailureReason,
+                    quantity,
+                    sourceItem.InstanceId);
+            }
+
+            return GetGridBackend().TransferFrom(source, sourceItem.InstanceId, quantity);
         }
 
         public int TransferItemTo(ItemStorage targetStorage, int sourceIndex, int quantity)
@@ -303,6 +372,16 @@ namespace OldScars.Core.Items
             }
 
             string sourceInstanceId = sourceEntry.Item.InstanceId;
+            if (targetInventory.TryRejectIncomingWeight(
+                    sourceEntry.DefinitionId,
+                    quantity,
+                    out CarryWeightAcceptance acceptance))
+            {
+                Debug.LogWarning(
+                    $"[InventoryComponent] Inventory-to-inventory transfer failed: {SafeText(acceptance.FailureReason)}");
+                return 0;
+            }
+
             InventoryMutationResult result = GetGridBackend().TransferTo(targetInventory.GetGridBackend(), sourceInstanceId, quantity);
             if (!result.Success)
             {
@@ -374,6 +453,10 @@ namespace OldScars.Core.Items
 
         public ItemStorageEntry GetRightHandStorageEntry()
         {
+            ActorEquipmentComponent equipment = GetEquipmentComponent();
+            if (equipment != null)
+                return equipment.GetEquippedStorageEntry(ActorEquipmentComponent.HandRightSlotId);
+
             if (IsNoItemId(rightHandItemInstanceId))
                 return null;
 
@@ -392,6 +475,9 @@ namespace OldScars.Core.Items
 
         public int GetRightHandItemIndex()
         {
+            if (GetEquipmentComponent() != null)
+                return -1;
+
             if (IsNoItemId(rightHandItemInstanceId))
                 return -1;
 
@@ -410,16 +496,70 @@ namespace OldScars.Core.Items
         public bool IsRightHandStorageEntry(ItemStorageEntry entry)
         {
             ItemInstance item = entry != null ? entry.Item : null;
-            return item != null && !IsNoItemId(rightHandItemInstanceId) && item.InstanceId == rightHandItemInstanceId;
+            ItemInstance rightHand = GetRightHandItemInstance();
+            return item != null && rightHand != null && item.InstanceId == rightHand.InstanceId;
         }
 
         public bool IsInstanceEquipped(string instanceId)
         {
-            return !IsNoItemId(instanceId) && instanceId == rightHandItemInstanceId;
+            ActorEquipmentComponent equipment = GetEquipmentComponent();
+            return equipment != null
+                ? equipment.IsEquipped(instanceId)
+                : !IsNoItemId(instanceId) && instanceId == rightHandItemInstanceId;
+        }
+
+        public CarryWeightSnapshot GetCarryWeightSnapshot()
+        {
+            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
+            return carryWeight != null
+                ? carryWeight.GetSnapshot()
+                : CarryWeightSnapshot.Invalid("Carry weight limit is not configured for this inventory owner.");
+        }
+
+        public CarryWeightAcceptance EvaluateIncomingWeight(string definitionId, int quantity)
+        {
+            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
+            return carryWeight != null
+                ? carryWeight.EvaluateIncomingWeight(definitionId, quantity)
+                : CarryWeightAcceptance.Unlimited();
+        }
+
+        public bool TryGetItemWeight(
+            string definitionId,
+            int quantity,
+            out double unitWeightKg,
+            out double stackWeightKg,
+            out string error)
+        {
+            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
+            if (carryWeight != null)
+            {
+                return carryWeight.TryGetItemWeight(
+                    definitionId,
+                    quantity,
+                    out unitWeightKg,
+                    out stackWeightKg,
+                    out error);
+            }
+
+            unitWeightKg = 0d;
+            stackWeightKg = 0d;
+            error = "Carry weight limit is not configured for this inventory owner.";
+            return false;
         }
 
         public bool CanEquipIndexToRightHand(int index)
         {
+            ActorEquipmentComponent equipment = GetEquipmentComponent();
+            ItemStorageEntry entry = storage.GetEntry(index);
+            if (equipment != null)
+            {
+                EquipmentPreview preview = entry?.Item != null
+                    ? equipment.PreviewEquip(entry.Item.InstanceId, new[] { ActorEquipmentComponent.HandRightSlotId })
+                    : null;
+                return preview != null && preview.Success && !preview.RequiresChoice;
+            }
+
             return CanEquipIndexToSlot(index, RightHandSlotId, out _);
         }
 
@@ -430,6 +570,21 @@ namespace OldScars.Core.Items
 
         public bool TryEquipIndexToRightHand(int index)
         {
+            ActorEquipmentComponent equipment = GetEquipmentComponent();
+            ItemStorageEntry entry = storage.GetEntry(index);
+            if (equipment != null)
+            {
+                if (entry?.Item == null)
+                    return false;
+                EquipmentPreview preview = equipment.PreviewEquip(
+                    entry.Item.InstanceId,
+                    new[] { ActorEquipmentComponent.HandRightSlotId });
+                EquipmentMutationResult result = equipment.Equip(preview);
+                if (!result.Success)
+                    Debug.LogWarning($"[InventoryComponent] Cannot equip item index {index} to hand_right: {SafeText(result.Message)}");
+                return result.Success;
+            }
+
             return TryEquipIndexToSlot(index, RightHandSlotId);
         }
 
@@ -440,6 +595,20 @@ namespace OldScars.Core.Items
 
         public void UnequipRightHand()
         {
+            ActorEquipmentComponent equipment = GetEquipmentComponent();
+            ItemInstance equippedRightHand = equipment != null
+                ? equipment.GetEquippedInstance(ActorEquipmentComponent.HandRightSlotId)
+                : null;
+            if (equipment != null)
+            {
+                if (equippedRightHand == null)
+                    return;
+                EquipmentMutationResult result = equipment.Unequip(equipment.PreviewUnequip(equippedRightHand.InstanceId));
+                if (!result.Success)
+                    Debug.LogWarning($"[InventoryComponent] Cannot unequip hand_right: {SafeText(result.Message)}");
+                return;
+            }
+
             ItemInstance unequippedItem = GetRightHandItemInstance();
             rightHandItemInstanceId = null;
             Debug.Log("[InventoryComponent] Right hand slot cleared.");
@@ -538,6 +707,32 @@ namespace OldScars.Core.Items
             rightHandItemInstanceId = null;
         }
 
+        internal void ClearLegacyRightHandForEquipmentAuthority()
+        {
+            rightHandItemInstanceId = null;
+        }
+
+        internal bool TryMigrateLegacyRightHandToEquipment(ActorEquipmentComponent equipment)
+        {
+            if (equipment == null || IsNoItemId(rightHandItemInstanceId))
+                return true;
+
+            ItemStorageEntry entry = storage.GetEntryByInstanceId(rightHandItemInstanceId);
+            if (entry == null || entry.Item == null)
+            {
+                rightHandItemInstanceId = null;
+                return true;
+            }
+
+            EquipmentPreview preview = equipment.PreviewEquip(
+                entry.Item.InstanceId,
+                new[] { ActorEquipmentComponent.HandRightSlotId });
+            EquipmentMutationResult result = equipment.Equip(preview);
+            if (result.Success)
+                rightHandItemInstanceId = null;
+            return result.Success;
+        }
+
         private GridInventoryBackend GetGridBackend()
         {
             return GetGridRuntime().Backend;
@@ -571,6 +766,35 @@ namespace OldScars.Core.Items
                 $"\n  Actor: {name}" +
                 $"\n  Requested grid: {gridWidth}x{gridHeight}" +
                 $"\n  Reason: {SafeText(gridStorageRuntime.InitializationError)}");
+        }
+
+        private bool TryRejectIncomingWeight(
+            string definitionId,
+            int quantity,
+            out CarryWeightAcceptance acceptance)
+        {
+            acceptance = EvaluateIncomingWeight(definitionId, quantity);
+            return HasCarryWeightLimit && !acceptance.Accepted;
+        }
+
+        private ActorCarryWeightComponent GetCarryWeightComponent()
+        {
+            ResolveCarryWeightComponent();
+            return carryWeightComponent;
+        }
+
+        private ActorEquipmentComponent GetEquipmentComponent()
+        {
+            return GetComponent<ActorEquipmentComponent>();
+        }
+
+        private void ResolveCarryWeightComponent()
+        {
+            if (carryWeightComponentResolved)
+                return;
+
+            carryWeightComponent = GetComponent<ActorCarryWeightComponent>();
+            carryWeightComponentResolved = true;
         }
 
         bool IGridStorageTransferEndpoint.CanTransferOut(GridStorageTransferContext context, out string reason)

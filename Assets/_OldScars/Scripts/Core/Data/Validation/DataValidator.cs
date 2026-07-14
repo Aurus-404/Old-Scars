@@ -16,7 +16,8 @@ namespace OldScars.Core.Data.Validation
     {
         private static readonly Regex SnakeCasePattern = new Regex("^[a-z0-9_]+$", RegexOptions.Compiled);
         private const string EffectTargetTarget = "target";
-        private const string RightHandSlotId = "right_hand";
+        private const string LegacyRightHandSlotId = "right_hand";
+        private const string HandRightSlotId = "hand_right";
         private static readonly HashSet<string> RuntimeHealthTags = new HashSet<string>
         {
             "alive_actor",
@@ -49,6 +50,8 @@ namespace OldScars.Core.Data.Validation
 
         public void Validate()
         {
+            ValidateEquipmentSlots();
+            ValidateEquipmentLayouts();
             ValidateActions();
             ValidateWeaponProfiles();
             ValidateFirearmProfiles();
@@ -57,6 +60,110 @@ namespace OldScars.Core.Data.Validation
             ValidateLootTables();
             ValidateActorProfiles();
             ValidateWorldObjectProfiles();
+        }
+
+        private void ValidateEquipmentSlots()
+        {
+            foreach (EquipmentSlotDefinition slot in database.GetAllEquipmentSlots())
+            {
+                string ctx = $"EquipmentSlot '{SafeId(slot != null ? slot.id : null)}'";
+                if (slot == null)
+                {
+                    report.Error("EquipmentSlot: null equipment slot definition loaded.");
+                    continue;
+                }
+
+                RequireType(slot.type, "equipment_slot", ctx);
+                RequireSnakeCase(slot.id, "id", ctx);
+                if (string.IsNullOrWhiteSpace(slot.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+            }
+        }
+
+        private void ValidateEquipmentLayouts()
+        {
+            foreach (EquipmentLayoutDefinition layout in database.GetAllEquipmentLayouts())
+            {
+                string ctx = $"EquipmentLayout '{SafeId(layout != null ? layout.id : null)}'";
+                if (layout == null)
+                {
+                    report.Error("EquipmentLayout: null equipment layout definition loaded.");
+                    continue;
+                }
+
+                RequireType(layout.type, "equipment_layout", ctx);
+                RequireSnakeCase(layout.id, "id", ctx);
+                if (string.IsNullOrWhiteSpace(layout.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+
+                var groupIds = new HashSet<string>();
+                var groupOrders = new HashSet<int>();
+                if (layout.groups == null || layout.groups.Length == 0)
+                {
+                    report.Error($"{ctx}: 'groups' is required and must not be empty.");
+                }
+                else
+                {
+                    for (int index = 0; index < layout.groups.Length; index++)
+                    {
+                        EquipmentLayoutGroupDefinition group = layout.groups[index];
+                        string groupCtx = $"{ctx}: groups[{index}]";
+                        if (group == null)
+                        {
+                            report.Error($"{groupCtx} must not be null.");
+                            continue;
+                        }
+
+                        RequireSnakeCase(group.id, "id", groupCtx);
+                        if (!groupIds.Add(group.id))
+                            report.Error($"{ctx}: duplicate group id '{SafeId(group.id)}'.");
+                        if (string.IsNullOrWhiteSpace(group.display_name))
+                            report.Error($"{groupCtx}: 'display_name' is required.");
+                        if (group.display_order < 0)
+                            report.Error($"{groupCtx}: 'display_order' must be >= 0.");
+                        if (!groupOrders.Add(group.display_order))
+                            report.Error($"{ctx}: duplicate group display_order '{group.display_order}'.");
+                    }
+                }
+
+                var slotIds = new HashSet<string>();
+                var slotOrdersByGroup = new Dictionary<string, HashSet<int>>();
+                if (layout.slots == null || layout.slots.Length == 0)
+                {
+                    report.Error($"{ctx}: 'slots' is required and must not be empty.");
+                    continue;
+                }
+
+                for (int index = 0; index < layout.slots.Length; index++)
+                {
+                    EquipmentLayoutSlotDefinition slot = layout.slots[index];
+                    string slotCtx = $"{ctx}: slots[{index}]";
+                    if (slot == null)
+                    {
+                        report.Error($"{slotCtx} must not be null.");
+                        continue;
+                    }
+
+                    RequireSnakeCase(slot.slot_id, "slot_id", slotCtx);
+                    RequireSnakeCase(slot.group_id, "group_id", slotCtx);
+                    if (database.GetEquipmentSlot(slot.slot_id) == null)
+                        report.Error($"{slotCtx}: slot_id references '{SafeId(slot.slot_id)}' which was not loaded.");
+                    if (!groupIds.Contains(slot.group_id))
+                        report.Error($"{slotCtx}: group_id references '{SafeId(slot.group_id)}' which is not declared by this layout.");
+                    if (!slotIds.Add(slot.slot_id))
+                        report.Error($"{ctx}: duplicate slot_id '{SafeId(slot.slot_id)}'.");
+                    if (slot.display_order < 0)
+                        report.Error($"{slotCtx}: 'display_order' must be >= 0.");
+
+                    if (!slotOrdersByGroup.TryGetValue(slot.group_id ?? string.Empty, out HashSet<int> orders))
+                    {
+                        orders = new HashSet<int>();
+                        slotOrdersByGroup[slot.group_id ?? string.Empty] = orders;
+                    }
+                    if (!orders.Add(slot.display_order))
+                        report.Error($"{slotCtx}: duplicate display_order '{slot.display_order}' inside group '{SafeId(slot.group_id)}'.");
+                }
+            }
         }
 
         private void ValidateWorldObjectProfiles()
@@ -139,6 +246,13 @@ namespace OldScars.Core.Data.Validation
                 ValidateActorProfileInitialTags(actorProfile.initial_tags, $"{ctx}: initial_tags");
                 ValidateActorProfileHealth(actorProfile.health, $"{ctx}: health");
                 ValidateActorProfileInventory(actorProfile.initial_inventory, $"{ctx}: initial_inventory");
+
+                if (!string.IsNullOrWhiteSpace(actorProfile.equipment_layout_id))
+                {
+                    RequireSnakeCase(actorProfile.equipment_layout_id, "equipment_layout_id", ctx);
+                    if (database.GetEquipmentLayout(actorProfile.equipment_layout_id) == null)
+                        report.Error($"{ctx}: equipment_layout_id references '{actorProfile.equipment_layout_id}' which was not loaded.");
+                }
 
                 if (actorProfile.equipped != null)
                     report.Error($"{ctx}: 'equipped' is not supported yet in Milestone 24.2.");
@@ -318,8 +432,16 @@ namespace OldScars.Core.Data.Validation
                 }
                 else
                 {
-                    if (item.physical.weight_kg < 0)
-                        report.Error($"{ctx}: 'physical.weight_kg' must be >= 0 (got {item.physical.weight_kg}).");
+                    if (!item.physical.weight_kg.HasValue)
+                    {
+                        report.Error($"{ctx}: required 'physical.weight_kg' is missing for item '{item.id}'.");
+                    }
+                    else
+                    {
+                        float weightKg = item.physical.weight_kg.Value;
+                        if (float.IsNaN(weightKg) || float.IsInfinity(weightKg) || weightKg < 0f)
+                            report.Error($"{ctx}: 'physical.weight_kg' must be finite and >= 0 for item '{item.id}' (got {weightKg}).");
+                    }
                     if (item.physical.volume_l < 0)
                         report.Error($"{ctx}: 'physical.volume_l' must be >= 0 (got {item.physical.volume_l}).");
                     if (item.physical.condition_max <= 0)
@@ -356,6 +478,13 @@ namespace OldScars.Core.Data.Validation
             }
 
             ItemInventoryMetadata inventory = item.inventory.Value;
+            if (inventory.initial_orientation != null &&
+                inventory.initial_orientation != ItemInitialOrientation.Original &&
+                inventory.initial_orientation != ItemInitialOrientation.Rotated)
+            {
+                report.Error($"{ctx}: optional 'inventory.initial_orientation' must be 'original' or 'rotated' (got '{inventory.initial_orientation}').");
+            }
+
             if (!inventory.footprint.HasValue)
             {
                 report.Warning($"{ctx}: optional 'inventory.footprint' is missing; grid inventory will use fallback footprint 1x1.");
@@ -433,17 +562,58 @@ namespace OldScars.Core.Data.Validation
             if (item.equip == null)
                 return;
 
-            ValidateEquipSlotArray(item.equip.allowed_slots, $"{ctx}: equip.allowed_slots", isEquippable);
-            ValidateEquipSlotArray(item.equip.occupied_slots, $"{ctx}: equip.occupied_slots", isEquippable);
+            bool hasSlotSets = item.equip.slot_sets != null && item.equip.slot_sets.Length > 0;
+            bool hasLegacySlots = (item.equip.allowed_slots != null && item.equip.allowed_slots.Length > 0) ||
+                                  (item.equip.occupied_slots != null && item.equip.occupied_slots.Length > 0);
+
+            if (hasSlotSets && hasLegacySlots)
+                report.Error($"{ctx}: equip.slot_sets cannot be combined with legacy allowed_slots/occupied_slots.");
 
             if (!isEquippable)
                 return;
 
-            if (!ContainsValue(item.equip.allowed_slots, RightHandSlotId))
-                report.Error($"{ctx}: equip.allowed_slots must contain '{RightHandSlotId}' for Milestone 23.");
+            if (item.max_stack != 1)
+                report.Error($"{ctx}: equipable items must use max_stack = 1 (got {item.max_stack}).");
 
-            if (!ContainsValue(item.equip.occupied_slots, RightHandSlotId))
-                report.Error($"{ctx}: equip.occupied_slots must contain '{RightHandSlotId}' for Milestone 23.");
+            if (hasSlotSets)
+            {
+                ValidateEquipSlotSets(item.equip.slot_sets, $"{ctx}: equip.slot_sets");
+                return;
+            }
+
+            ValidateEquipSlotArray(item.equip.allowed_slots, $"{ctx}: equip.allowed_slots", true);
+            ValidateEquipSlotArray(item.equip.occupied_slots, $"{ctx}: equip.occupied_slots", true);
+        }
+
+        private void ValidateEquipSlotSets(string[][] slotSets, string context)
+        {
+            if (slotSets == null || slotSets.Length == 0)
+            {
+                report.Error($"{context} must not be empty for equipable items.");
+                return;
+            }
+
+            for (int setIndex = 0; setIndex < slotSets.Length; setIndex++)
+            {
+                string[] slotSet = slotSets[setIndex];
+                string setContext = $"{context}[{setIndex}]";
+                if (slotSet == null || slotSet.Length == 0)
+                {
+                    report.Error($"{setContext} must be a non-empty complete slot alternative.");
+                    continue;
+                }
+
+                var seenSlots = new HashSet<string>();
+                for (int slotIndex = 0; slotIndex < slotSet.Length; slotIndex++)
+                {
+                    string slotId = slotSet[slotIndex];
+                    RequireSnakeCase(slotId, $"slot[{slotIndex}]", setContext);
+                    if (!seenSlots.Add(slotId))
+                        report.Error($"{setContext}: duplicate slot '{SafeId(slotId)}'.");
+                    if (database.GetEquipmentSlot(slotId) == null)
+                        report.Error($"{setContext}: slot '{SafeId(slotId)}' was not loaded.");
+                }
+            }
         }
 
         private void ValidateEquipSlotArray(string[] slots, string context, bool isRequired)
@@ -463,8 +633,9 @@ namespace OldScars.Core.Data.Validation
                 if (string.IsNullOrWhiteSpace(slot))
                     continue;
 
-                if (slot != RightHandSlotId)
-                    report.Error($"{context}: slot '{slot}' is not supported in Milestone 23. Allowed value: '{RightHandSlotId}'.");
+                string mappedSlot = slot == LegacyRightHandSlotId ? HandRightSlotId : slot;
+                if (database.GetEquipmentSlot(mappedSlot) == null)
+                    report.Error($"{context}: slot '{slot}' maps to '{mappedSlot}', which was not loaded.");
             }
         }
 

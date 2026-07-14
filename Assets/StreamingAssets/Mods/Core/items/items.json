@@ -23,7 +23,7 @@
       "max_stack": 1,
       "equippable": true,
       "physical": {
-        "weight_kg": 2.4,
+        "weight_kg": 2.3,
         "volume_l": 1.8,
         "condition_max": 100
       },
@@ -33,11 +33,14 @@
       },
       "equip": {
         "equippable": true,
-        "allowed_slots": ["right_hand"],
-        "occupied_slots": ["right_hand"]
+        "slot_sets": [
+          ["hand_right"],
+          ["hand_left"]
+        ]
       },
       "inventory": {
         "footprint": { "width": 5, "height": 1 },
+        "initial_orientation": "original",
         "icon_id": "rusted_crowbar_01"
       },
       "combat": {
@@ -66,7 +69,7 @@
       "max_stack": 999,
       "equippable": false,
       "physical": {
-        "weight_kg": 0.6,
+        "weight_kg": 0.10,
         "volume_l": 0.4,
         "condition_max": 100
       },
@@ -76,6 +79,7 @@
       },
       "inventory": {
         "footprint": { "width": 2, "height": 2 },
+        "initial_orientation": "original",
         "icon_id": "scrap_metal_01"
       }
     },
@@ -94,7 +98,7 @@
       "max_stack": 999,
       "equippable": false,
       "physical": {
-        "weight_kg": 0.5,
+        "weight_kg": 1.2,
         "volume_l": 0.5,
         "condition_max": 100
       },
@@ -104,6 +108,7 @@
       },
       "inventory": {
         "footprint": { "width": 2, "height": 1 },
+        "initial_orientation": "rotated",
         "icon_id": "water_bottle_01"
       },
       "consumable": {
@@ -130,7 +135,7 @@
       "max_stack": 999,
       "equippable": false,
       "physical": {
-        "weight_kg": 0.4,
+        "weight_kg": 0.50,
         "volume_l": 0.35,
         "condition_max": 100
       },
@@ -140,6 +145,7 @@
       },
       "inventory": {
         "footprint": { "width": 1, "height": 1 },
+        "initial_orientation": "original",
         "icon_id": "food_ration_01"
       },
       "consumable": {
@@ -167,7 +173,7 @@
       "max_stack": 999,
       "equippable": false,
       "physical": {
-        "weight_kg": 0.05,
+        "weight_kg": 0.08,
         "volume_l": 0.1,
         "condition_max": 100
       },
@@ -177,6 +183,7 @@
       },
       "inventory": {
         "footprint": { "width": 1, "height": 1 },
+        "initial_orientation": "original",
         "icon_id": "bandage_01"
       },
       "consumable": {
@@ -202,7 +209,7 @@
       "max_stack": 1,
       "equippable": true,
       "physical": {
-        "weight_kg": 4.1,
+        "weight_kg": 4.2,
         "volume_l": 6.5,
         "condition_max": 100
       },
@@ -212,11 +219,13 @@
       },
       "equip": {
         "equippable": true,
-        "allowed_slots": ["right_hand"],
-        "occupied_slots": ["right_hand"]
+        "slot_sets": [
+          ["hand_left", "hand_right"]
+        ]
       },
       "inventory": {
-        "footprint": { "width": 6, "height": 1 },
+        "footprint": { "width": 7, "height": 2 },
+        "initial_orientation": "rotated",
         "icon_id": "lee_enfield_rifle_01"
       },
       "firearm_profile_id": "lee_enfield_rifle_01_profile"
@@ -248,6 +257,7 @@
       },
       "inventory": {
         "footprint": { "width": 1, "height": 1 },
+        "initial_orientation": "original",
         "icon_id": "ammo_303_british_01"
       },
       "ammo_profile_id": "ammo_303_british_01_profile"

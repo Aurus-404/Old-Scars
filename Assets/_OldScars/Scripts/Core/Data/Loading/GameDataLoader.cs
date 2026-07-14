@@ -118,6 +118,8 @@ namespace OldScars.Core.Data.Loading
             LoadAmmoProfilesFrom(Path.Combine(modDirectory, "ammo_profiles"));
             LoadActionsFrom(Path.Combine(modDirectory, "actions"));
             LoadItemsFrom(Path.Combine(modDirectory, "items"));
+            LoadEquipmentSlotsFrom(Path.Combine(modDirectory, "equipment_slots"));
+            LoadEquipmentLayoutsFrom(Path.Combine(modDirectory, "equipment_layouts"));
             LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"));
             LoadActorProfilesFrom(Path.Combine(modDirectory, "actor_profiles"));
             LoadWorldObjectProfilesFrom(Path.Combine(modDirectory, "world_object_profiles"));
@@ -231,6 +233,42 @@ namespace OldScars.Core.Data.Loading
             }
         }
 
+        private void LoadEquipmentSlotsFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                EquipmentSlotsWrapper wrapper = Parse<EquipmentSlotsWrapper>(file);
+                if (wrapper == null || wrapper.equipment_slots == null)
+                {
+                    report.Warning($"No 'equipment_slots' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (EquipmentSlotDefinition slot in wrapper.equipment_slots)
+                    Database.RegisterEquipmentSlot(slot, report);
+
+                Debug.Log($"[GameDataLoader] EquipmentSlots: {wrapper.equipment_slots.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadEquipmentLayoutsFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                EquipmentLayoutsWrapper wrapper = Parse<EquipmentLayoutsWrapper>(file);
+                if (wrapper == null || wrapper.equipment_layouts == null)
+                {
+                    report.Warning($"No 'equipment_layouts' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (EquipmentLayoutDefinition layout in wrapper.equipment_layouts)
+                    Database.RegisterEquipmentLayout(layout, report);
+
+                Debug.Log($"[GameDataLoader] EquipmentLayouts: {wrapper.equipment_layouts.Length} entries from {FileName(file)}");
+            }
+        }
+
         private void LoadLootTablesFrom(string directory)
         {
             foreach (string file in JsonFilesIn(directory))
@@ -322,6 +360,8 @@ namespace OldScars.Core.Data.Loading
         [Serializable] private sealed class AmmoProfilesWrapper { public AmmoProfileDefinition[] ammo_profiles; }
         [Serializable] private sealed class ActionsWrapper { public ActionDefinition[] actions; }
         [Serializable] private sealed class ItemsWrapper { public ItemDefinition[] items; }
+        [Serializable] private sealed class EquipmentSlotsWrapper { public EquipmentSlotDefinition[] equipment_slots; }
+        [Serializable] private sealed class EquipmentLayoutsWrapper { public EquipmentLayoutDefinition[] equipment_layouts; }
         [Serializable] private sealed class LootTablesWrapper { public LootTableDefinition[] loot_tables; }
         [Serializable] private sealed class ActorProfilesWrapper { public ActorProfileDefinition[] actor_profiles; }
         [Serializable] private sealed class WorldObjectProfilesWrapper { public WorldObjectProfileDefinition[] world_object_profiles; }

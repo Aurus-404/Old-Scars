@@ -31,7 +31,14 @@ namespace OldScars.Core.Data.Definitions
     public struct ItemInventoryMetadata
     {
         public ItemFootprintDefinition? footprint;
+        public string initial_orientation;
         public string icon_id;
+    }
+
+    public static class ItemInitialOrientation
+    {
+        public const string Original = "original";
+        public const string Rotated = "rotated";
     }
 
     [System.Serializable]
@@ -51,7 +58,7 @@ namespace OldScars.Core.Data.Definitions
     [System.Serializable]
     public sealed class ItemPhysical
     {
-        public float weight_kg;
+        public float? weight_kg;
         public float volume_l;
         public int condition_max;
     }
@@ -69,17 +76,21 @@ namespace OldScars.Core.Data.Definitions
         public bool? equippable;
 
         /// <summary>
-        /// Equipment slots this item can occupy.
-        ///
-        /// Milestone 23 supports only right_hand. A future EquipmentSystem
-        /// should expand this without changing item storage ownership.
+        /// Complete alternative slot sets. Every slot in the selected inner
+        /// array is occupied atomically by the same ItemInstance.
         /// </summary>
-        public string[] allowed_slots;
+        public string[][] slot_sets;
 
         /// <summary>
-        /// Equipment slots occupied once the item is equipped.
+        /// Legacy alternative slots. M34.1 maps each allowed slot to a
+        /// single-slot alternative and maps right_hand to hand_right.
         /// </summary>
-        public string[] occupied_slots;
+        public string[] allowed_slots; // Legacy compatibility only.
+
+        /// <summary>
+        /// Legacy complete occupied slot set. Prefer slot_sets for new data.
+        /// </summary>
+        public string[] occupied_slots; // Legacy compatibility only.
     }
 
     [System.Serializable]

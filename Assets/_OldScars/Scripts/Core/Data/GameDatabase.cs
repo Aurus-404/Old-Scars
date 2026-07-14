@@ -17,6 +17,8 @@ namespace OldScars.Core.Data
     public sealed class GameDatabase
     {
         private readonly Dictionary<string, ItemDefinition> _items = new Dictionary<string, ItemDefinition>();
+        private readonly Dictionary<string, EquipmentSlotDefinition> _equipmentSlots = new Dictionary<string, EquipmentSlotDefinition>();
+        private readonly Dictionary<string, EquipmentLayoutDefinition> _equipmentLayouts = new Dictionary<string, EquipmentLayoutDefinition>();
         private readonly Dictionary<string, WeaponProfileDefinition> _weaponProfiles = new Dictionary<string, WeaponProfileDefinition>();
         private readonly Dictionary<string, FirearmProfileDefinition> _firearmProfiles = new Dictionary<string, FirearmProfileDefinition>();
         private readonly Dictionary<string, AmmoProfileDefinition> _ammoProfiles = new Dictionary<string, AmmoProfileDefinition>();
@@ -26,6 +28,8 @@ namespace OldScars.Core.Data
         private readonly Dictionary<string, WorldObjectProfileDefinition> _worldObjectProfiles = new Dictionary<string, WorldObjectProfileDefinition>();
 
         public int ItemCount => _items.Count;
+        public int EquipmentSlotCount => _equipmentSlots.Count;
+        public int EquipmentLayoutCount => _equipmentLayouts.Count;
         public int WeaponProfileCount => _weaponProfiles.Count;
         public int FirearmProfileCount => _firearmProfiles.Count;
         public int AmmoProfileCount => _ammoProfiles.Count;
@@ -39,6 +43,16 @@ namespace OldScars.Core.Data
         public void RegisterItem(ItemDefinition definition, DataLoadReport report)
         {
             Register(_items, definition != null ? definition.id : null, definition, "Item", report);
+        }
+
+        public void RegisterEquipmentSlot(EquipmentSlotDefinition definition, DataLoadReport report)
+        {
+            Register(_equipmentSlots, definition != null ? definition.id : null, definition, "EquipmentSlot", report);
+        }
+
+        public void RegisterEquipmentLayout(EquipmentLayoutDefinition definition, DataLoadReport report)
+        {
+            Register(_equipmentLayouts, definition != null ? definition.id : null, definition, "EquipmentLayout", report);
         }
 
         public void RegisterWeaponProfile(WeaponProfileDefinition definition, DataLoadReport report)
@@ -106,6 +120,16 @@ namespace OldScars.Core.Data
             return Lookup(_items, id);
         }
 
+        public EquipmentSlotDefinition GetEquipmentSlot(string id)
+        {
+            return Lookup(_equipmentSlots, id);
+        }
+
+        public EquipmentLayoutDefinition GetEquipmentLayout(string id)
+        {
+            return Lookup(_equipmentLayouts, id);
+        }
+
         public WeaponProfileDefinition GetWeaponProfile(string id)
         {
             return Lookup(_weaponProfiles, id);
@@ -157,6 +181,16 @@ namespace OldScars.Core.Data
             return _items.Values;
         }
 
+        public IEnumerable<EquipmentSlotDefinition> GetAllEquipmentSlots()
+        {
+            return _equipmentSlots.Values;
+        }
+
+        public IEnumerable<EquipmentLayoutDefinition> GetAllEquipmentLayouts()
+        {
+            return _equipmentLayouts.Values;
+        }
+
         public IEnumerable<WeaponProfileDefinition> GetAllWeaponProfiles()
         {
             return _weaponProfiles.Values;
@@ -196,6 +230,8 @@ namespace OldScars.Core.Data
         {
             Debug.Log("[GameDatabase] Loaded definitions:" +
                       $"\n  Items:           {_items.Count}" +
+                      $"\n  EquipmentSlots:  {_equipmentSlots.Count}" +
+                      $"\n  EquipmentLayouts:{_equipmentLayouts.Count}" +
                       $"\n  WeaponProfiles:  {_weaponProfiles.Count}" +
                       $"\n  FirearmProfiles: {_firearmProfiles.Count}" +
                       $"\n  AmmoProfiles:    {_ammoProfiles.Count}" +
