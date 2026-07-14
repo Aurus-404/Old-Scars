@@ -14,6 +14,7 @@ namespace OldScars.Core.Actors
     [RequireComponent(typeof(ActorItemOwnershipComponent))]
     public sealed class ActorEquipmentComponent : MonoBehaviour
     {
+        public const string BackSlotId = "back";
         public const string DefaultHumanLayoutId = "human_standard_01";
         public const string HandLeftSlotId = "hand_left";
         public const string HandRightSlotId = "hand_right";
@@ -182,6 +183,13 @@ namespace OldScars.Core.Actors
             return EquipmentTransactionService.GetCompatibleSlotSets(this, instanceId, false);
         }
 
+        public IReadOnlyList<EquipmentSlotSet> GetCompatibleSlotSets(IGridStorageOwner sourceOwner, string instanceId)
+        {
+            return ReferenceEquals(sourceOwner, PersonalInventory)
+                ? GetCompatibleSlotSets(instanceId)
+                : EquipmentOwnedStorageTransactionService.GetCompatibleSlotSets(this, sourceOwner, instanceId);
+        }
+
         public IReadOnlyList<EquipmentSlotSet> GetAvailableSlotSets(string instanceId)
         {
             return EquipmentTransactionService.GetCompatibleSlotSets(this, instanceId, true);
@@ -192,9 +200,26 @@ namespace OldScars.Core.Actors
             return EquipmentTransactionService.PreviewEquip(this, instanceId, requestedSlotSet);
         }
 
+        public EquipmentPreview PreviewEquip(
+            IGridStorageOwner sourceOwner,
+            string instanceId,
+            IReadOnlyList<string> requestedSlotSet = null)
+        {
+            return ReferenceEquals(sourceOwner, PersonalInventory)
+                ? PreviewEquip(instanceId, requestedSlotSet)
+                : EquipmentOwnedStorageTransactionService.PreviewEquip(this, sourceOwner, instanceId, requestedSlotSet);
+        }
+
         public EquipmentMutationResult Equip(EquipmentPreview preview)
         {
             return EquipmentTransactionService.Equip(this, preview);
+        }
+
+        public EquipmentMutationResult Equip(IGridStorageOwner sourceOwner, EquipmentPreview preview)
+        {
+            return ReferenceEquals(sourceOwner, PersonalInventory)
+                ? Equip(preview)
+                : EquipmentOwnedStorageTransactionService.Equip(this, sourceOwner, preview);
         }
 
         public EquipmentReplacementPlan PreviewEquipReplacing(
@@ -204,9 +229,26 @@ namespace OldScars.Core.Actors
             return EquipmentTransactionService.PreviewEquipReplacing(this, instanceId, requestedSlotSet);
         }
 
+        public EquipmentReplacementPlan PreviewEquipReplacing(
+            IGridStorageOwner sourceOwner,
+            string instanceId,
+            IReadOnlyList<string> requestedSlotSet)
+        {
+            return ReferenceEquals(sourceOwner, PersonalInventory)
+                ? PreviewEquipReplacing(instanceId, requestedSlotSet)
+                : EquipmentOwnedStorageTransactionService.PreviewEquipReplacing(this, sourceOwner, instanceId, requestedSlotSet);
+        }
+
         public EquipmentMutationResult EquipReplacing(EquipmentReplacementPlan plan)
         {
             return EquipmentTransactionService.EquipReplacing(this, plan);
+        }
+
+        public EquipmentMutationResult EquipReplacing(IGridStorageOwner sourceOwner, EquipmentReplacementPlan plan)
+        {
+            return ReferenceEquals(sourceOwner, PersonalInventory)
+                ? EquipReplacing(plan)
+                : EquipmentOwnedStorageTransactionService.EquipReplacing(this, sourceOwner, plan);
         }
 
         public EquipmentPreview PreviewUnequip(string instanceId)
@@ -290,6 +332,16 @@ namespace OldScars.Core.Actors
         internal void RecordEquipped(ItemInstance item)
         {
             RecordFeedback(GameplayFeedbackEntryType.ItemEquipped, "Equipaste", item);
+        }
+
+        internal void RebindActorOwnedItems()
+        {
+            ResolveReferences();
+            if (inventoryComponent == null)
+                return;
+
+            ItemOwnedStorageRegistry.Instance.BindEntries(inventoryComponent.Entries, inventoryComponent);
+            ItemOwnedStorageRegistry.Instance.BindEntries(equipmentStorage.Entries, inventoryComponent);
         }
 
         internal void RecordUnequipped(ItemInstance item)

@@ -67,8 +67,28 @@ namespace OldScars.Core.Items
 
             ItemStorageEntry entry = storage.GetEntry(0);
             itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
+            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             destroyAfterPickup = true;
             return transferredQuantity;
+        }
+
+        public int ReceiveDroppedItem(IGridStorageOwner sourceOwner, string sourceInstanceId, int quantity)
+        {
+            if (sourceOwner == null || !(sourceOwner is IGridStorageTransferEndpoint endpoint) ||
+                !storage.IsEmpty || quantity < 1)
+            {
+                return 0;
+            }
+
+            InventoryMutationResult result = endpoint.TransferBackend.TransferTo(storage, sourceInstanceId, quantity);
+            if (!result.Success || result.AffectedQuantity < 1)
+                return 0;
+
+            ItemStorageEntry entry = storage.GetEntry(0);
+            itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
+            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
+            destroyAfterPickup = true;
+            return result.AffectedQuantity;
         }
 
         public DebugActionExecutionResult PickUp(ActorInteractionContext actorContext, WorldObjectTags targetTags)
@@ -145,6 +165,7 @@ namespace OldScars.Core.Items
                 return false;
 
             storage.AddItem(new ItemInstance(definition));
+            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             return true;
         }
 

@@ -116,5 +116,7 @@ namespace OldScars.Core.Items
         CarryWeightSnapshot GetCarryWeightSnapshot();
         CarryWeightAcceptance EvaluateIncomingWeight(string definitionId, int quantity);
         CarryWeightQuantityLimit EvaluateIncomingQuantityLimit(string definitionId, int requestedQuantity);
+        CarryWeightAcceptance EvaluateIncomingEntry(ItemStorageEntry entry, int quantity);
+        CarryWeightQuantityLimit EvaluateIncomingEntryQuantityLimit(ItemStorageEntry entry, int requestedQuantity);
     }
 }

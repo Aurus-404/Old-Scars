@@ -32,6 +32,61 @@ namespace OldScars.Core.Items
                 return InventoryItemUseResult.Failed("No item at that inventory slot.");
             }
 
+            return TryUseEntry(
+                entry,
+                () => inventory.TryRemoveItemAt(itemIndex, 1),
+                inventory,
+                actorNeeds,
+                actorHealth);
+        }
+
+        public static InventoryItemUseResult TryUseItem(
+            IGridStorageOwner sourceOwner,
+            string instanceId,
+            InventoryComponent actorInventory,
+            ActorNeedsComponent actorNeeds,
+            ActorHealthComponent actorHealth)
+        {
+            if (sourceOwner == null || !(sourceOwner is IGridStorageTransferEndpoint endpoint) ||
+                !sourceOwner.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry) ||
+                entry?.Item == null)
+            {
+                return InventoryItemUseResult.Failed("No item available in that personal compartment.");
+            }
+
+            if (!ItemOwnedStorageRegistry.Instance.ShareRootOwner(sourceOwner, actorInventory))
+                return InventoryItemUseResult.Failed("El objeto ya no pertenece al actor.");
+
+            return TryUseEntry(
+                entry,
+                () => RemoveOne(endpoint, sourceOwner, instanceId),
+                actorInventory,
+                actorNeeds,
+                actorHealth);
+        }
+
+        private static bool RemoveOne(
+            IGridStorageTransferEndpoint endpoint,
+            IGridStorageOwner owner,
+            string instanceId)
+        {
+            InventoryMutationResult result = endpoint.TransferBackend.Remove(instanceId, 1);
+            if (!result.Success)
+                return false;
+
+            if (!owner.TryGetEntryByInstanceId(instanceId, out _, out _))
+                ItemOwnedStorageRegistry.Instance.UnbindItem(instanceId);
+            return true;
+        }
+
+        private static InventoryItemUseResult TryUseEntry(
+            ItemStorageEntry entry,
+            System.Func<bool> removeOne,
+            InventoryComponent actorInventory,
+            ActorNeedsComponent actorNeeds,
+            ActorHealthComponent actorHealth)
+        {
+
             ItemDefinition item = GetItemDefinition(entry);
             if (!HasConsumableEffects(item))
             {
@@ -82,7 +137,7 @@ namespace OldScars.Core.Items
                 return InventoryItemUseResult.Failed("Matching needs or health are already full.");
             }
 
-            if (!inventory.TryRemoveItemAt(itemIndex, 1))
+            if (removeOne == null || !removeOne())
             {
                 return InventoryItemUseResult.Failed("Could not consume item quantity.");
             }
@@ -94,7 +149,7 @@ namespace OldScars.Core.Items
                 if (actorNeeds.TryRestoreNeed(restore.NeedId, restore.Amount))
                 {
                     float afterValue = actorNeeds.GetNeedValue(restore.NeedId);
-                    RecordItemUsed(inventory, item, restore, afterValue);
+                    RecordItemUsed(actorInventory, item, restore, afterValue);
                     appliedCount++;
                 }
             }
@@ -104,7 +159,7 @@ namespace OldScars.Core.Items
                 float beforeValue = actorHealth.CurrentHealth;
                 if (actorHealth.Heal(restoreHealth.amount))
                 {
-                    RecordHealthItemUsed(inventory, item, beforeValue, actorHealth.CurrentHealth, actorHealth.MaxHealth);
+                    RecordHealthItemUsed(actorInventory, item, beforeValue, actorHealth.CurrentHealth, actorHealth.MaxHealth);
                     appliedCount++;
                 }
             }

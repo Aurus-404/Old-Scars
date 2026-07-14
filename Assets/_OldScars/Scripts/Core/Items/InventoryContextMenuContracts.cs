@@ -8,6 +8,7 @@ namespace OldScars.Core.Items
     public enum InventoryContextActionKind
     {
         ShowDetails,
+        ReviewOwnedStorage,
         Use,
         Equip,
         EquipReplacing,
@@ -20,14 +21,21 @@ namespace OldScars.Core.Items
         TakeStack,
         DepositOne,
         DepositAmount,
-        DepositStack
+        DepositStack,
+        MoveToPersonalOne,
+        MoveToPersonalAmount,
+        MoveToPersonalStack,
+        MoveToOwnedStorageOne,
+        MoveToOwnedStorageAmount,
+        MoveToOwnedStorageStack
     }
 
     public enum InventoryContextSourceKind
     {
         Personal,
         External,
-        Equipment
+        Equipment,
+        InspectedOwnedStorage
     }
 
     public sealed class InventoryContextAction
@@ -38,7 +46,8 @@ namespace OldScars.Core.Items
             bool enabled = true,
             string disabledReason = null,
             IReadOnlyList<string> equipmentSlotIds = null,
-            string detail = null)
+            string detail = null,
+            string targetContainerInstanceId = null)
         {
             Kind = kind;
             Label = string.IsNullOrWhiteSpace(label) ? kind.ToString() : label;
@@ -46,6 +55,7 @@ namespace OldScars.Core.Items
             DisabledReason = disabledReason;
             EquipmentSlotIds = Copy(equipmentSlotIds);
             Detail = detail;
+            TargetContainerInstanceId = targetContainerInstanceId;
         }
 
         public InventoryContextActionKind Kind { get; }
@@ -54,11 +64,14 @@ namespace OldScars.Core.Items
         public string DisabledReason { get; }
         public string[] EquipmentSlotIds { get; }
         public string Detail { get; }
+        public string TargetContainerInstanceId { get; }
 
         public bool RequiresQuantityDialog =>
             Kind == InventoryContextActionKind.DropAmount ||
             Kind == InventoryContextActionKind.TakeAmount ||
-            Kind == InventoryContextActionKind.DepositAmount;
+            Kind == InventoryContextActionKind.DepositAmount ||
+            Kind == InventoryContextActionKind.MoveToPersonalAmount ||
+            Kind == InventoryContextActionKind.MoveToOwnedStorageAmount;
 
         private static string[] Copy(IReadOnlyList<string> source)
         {

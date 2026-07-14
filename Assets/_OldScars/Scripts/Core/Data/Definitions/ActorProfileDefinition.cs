@@ -12,6 +12,7 @@ namespace OldScars.Core.Data.Definitions
         public string type; // must be "actor_profile"
         public string id;
         public string display_name;
+        public string inventory_seed_actor_tag; // Optional debug bootstrap selector for actors without ActorProfileComponent.
         public string[] initial_tags;
         public ActorProfileHealth health;
         public ActorProfileInventoryEntry[] initial_inventory;

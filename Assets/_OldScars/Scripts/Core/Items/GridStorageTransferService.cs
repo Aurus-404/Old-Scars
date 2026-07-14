@@ -220,6 +220,18 @@ namespace OldScars.Core.Items
 
     public static class GridStorageTransferService
     {
+        public static GridStorageTransferQuantityPolicy GetAutomaticQuantityPolicy(
+            IGridStorageOwner source,
+            IGridStorageOwner target)
+        {
+            if (source == null || target == null || ItemOwnedStorageRegistry.Instance.ShareRootOwner(source, target))
+                return GridStorageTransferQuantityPolicy.Exact;
+
+            return TryResolveCarryWeightOwner(target, out ICarryWeightLimitedOwner limitedOwner) && limitedOwner.HasCarryWeightLimit
+                ? GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit
+                : GridStorageTransferQuantityPolicy.Exact;
+        }
+
         public static GridStorageMergePreview PreviewMergeIntoTarget(
             IGridStorageOwner source,
             string sourceInstanceId,
@@ -248,6 +260,25 @@ namespace OldScars.Core.Items
                     destinationInstanceId);
             }
 
+            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
+                sourceEntry == null || sourceEntry.Item == null)
+            {
+                return GridStorageMergePreview.Invalid(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.",
+                    sourceInstanceId,
+                    destinationInstanceId);
+            }
+
+            if (!CanAcceptIncoming(destination, sourceEntry, sourceEntry.Quantity, out string guardReason))
+            {
+                return GridStorageMergePreview.Invalid(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    guardReason,
+                    sourceInstanceId,
+                    destinationInstanceId);
+            }
+
             GridStorageMergePreview preview = sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
                 destinationEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -255,10 +286,11 @@ namespace OldScars.Core.Items
             if (!preview.IsValid)
                 return preview;
 
-            string definitionId = ResolveDefinitionId(source, sourceInstanceId);
+            string definitionId = sourceEntry.DefinitionId;
             if (TryRejectIncomingWeight(
+                    source,
                     destination,
-                    definitionId,
+                    sourceEntry,
                     preview.TransferQuantity,
                     out CarryWeightAcceptance acceptance))
             {
@@ -300,6 +332,25 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
+            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
+                sourceEntry == null || sourceEntry.Item == null)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.",
+                    0,
+                    sourceInstanceId);
+            }
+
+            if (!CanAcceptIncoming(destination, sourceEntry, sourceEntry.Quantity, out string guardReason))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    guardReason,
+                    sourceEntry.Quantity,
+                    sourceInstanceId);
+            }
+
             GridStorageMergePreview currentPreview = sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
                 destinationEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -313,10 +364,11 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
-            string definitionId = ResolveDefinitionId(source, sourceInstanceId);
+            string definitionId = sourceEntry.DefinitionId;
             if (TryRejectIncomingWeight(
+                    source,
                     destination,
-                    definitionId,
+                    sourceEntry,
                     currentPreview.TransferQuantity,
                     out CarryWeightAcceptance acceptance))
             {
@@ -335,6 +387,8 @@ namespace OldScars.Core.Items
             if (result.Success)
             {
                 NotifyCommitted(
+                    source,
+                    destination,
                     sourceEndpoint,
                     destinationEndpoint,
                     new GridStorageTransferReceipt(definitionId, result),
@@ -361,6 +415,21 @@ namespace OldScars.Core.Items
                     error);
             }
 
+            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
+                sourceEntry == null || sourceEntry.Item == null)
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.");
+            }
+
+            if (!CanAcceptIncoming(target, sourceEntry, sourceEntry.Quantity, out string guardReason))
+            {
+                return GridPlacementValidationResult.Invalid(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    guardReason);
+            }
+
             GridPlacementValidationResult preview = sourceEndpoint.TransferBackend.PreviewTransferToExact(
                 targetEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -370,17 +439,10 @@ namespace OldScars.Core.Items
             if (!preview.IsValid)
                 return preview;
 
-            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
-                sourceEntry == null || sourceEntry.Item == null)
-            {
-                return GridPlacementValidationResult.Invalid(
-                    InventoryMutationResult.MutationFailure.SourceNotFound,
-                    $"Source item instance '{sourceInstanceId}' was not found.");
-            }
-
             if (TryRejectIncomingWeight(
+                    source,
                     target,
-                    sourceEntry.DefinitionId,
+                    sourceEntry,
                     sourceEntry.Quantity,
                     out CarryWeightAcceptance acceptance))
             {
@@ -411,6 +473,25 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
+            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
+                sourceEntry == null || sourceEntry.Item == null)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.SourceNotFound,
+                    $"Source item instance '{sourceInstanceId}' was not found.",
+                    0,
+                    sourceInstanceId);
+            }
+
+            if (!CanAcceptIncoming(target, sourceEntry, sourceEntry.Quantity, out string guardReason))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    guardReason,
+                    sourceEntry.Quantity,
+                    sourceInstanceId);
+            }
+
             GridPlacementValidationResult currentPreview = sourceEndpoint.TransferBackend.PreviewTransferToExact(
                 targetEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -426,20 +507,11 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
-            if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
-                sourceEntry == null || sourceEntry.Item == null)
-            {
-                return InventoryMutationResult.Rejected(
-                    InventoryMutationResult.MutationFailure.SourceNotFound,
-                    $"Source item instance '{sourceInstanceId}' was not found.",
-                    0,
-                    sourceInstanceId);
-            }
-
             string definitionId = sourceEntry.DefinitionId;
             if (TryRejectIncomingWeight(
+                    source,
                     target,
-                    definitionId,
+                    sourceEntry,
                     sourceEntry.Quantity,
                     out CarryWeightAcceptance acceptance))
             {
@@ -458,7 +530,7 @@ namespace OldScars.Core.Items
                 isRotated);
 
             if (result.Success)
-                NotifyCommitted(sourceEndpoint, targetEndpoint, new GridStorageTransferReceipt(definitionId, result), context);
+                NotifyCommitted(source, target, sourceEndpoint, targetEndpoint, new GridStorageTransferReceipt(definitionId, result), context);
 
             return result;
         }
@@ -598,12 +670,26 @@ namespace OldScars.Core.Items
             int effectiveQuantity = Math.Min(requestedQuantity, sourceQuantity);
             int weightLimitQuantity = -1;
             bool wasLimitedByWeight = false;
-            if (target is ICarryWeightLimitedOwner limitedOwner && limitedOwner.HasCarryWeightLimit)
+            if (!CanAcceptIncoming(target, sourceEntry, effectiveQuantity, out string guardReason))
+            {
+                return GridStorageAutoTransferPreview.Invalid(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    guardReason,
+                    definitionId,
+                    sourceInstanceId,
+                    requestedQuantity,
+                    sourceQuantity,
+                    -1,
+                    false);
+            }
+
+            bool sharesRootOwner = ItemOwnedStorageRegistry.Instance.ShareRootOwner(source, target);
+            if (!sharesRootOwner && TryResolveCarryWeightOwner(target, out ICarryWeightLimitedOwner limitedOwner) && limitedOwner.HasCarryWeightLimit)
             {
                 if (quantityPolicy == GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit)
                 {
-                    CarryWeightQuantityLimit limit = limitedOwner.EvaluateIncomingQuantityLimit(
-                        definitionId,
+                    CarryWeightQuantityLimit limit = limitedOwner.EvaluateIncomingEntryQuantityLimit(
+                        sourceEntry,
                         effectiveQuantity);
                     if (!limit.IsValid)
                     {
@@ -635,8 +721,9 @@ namespace OldScars.Core.Items
                     }
                 }
                 else if (TryRejectIncomingWeight(
+                             source,
                              target,
-                             definitionId,
+                             sourceEntry,
                              effectiveQuantity,
                              out _))
                 {
@@ -743,7 +830,7 @@ namespace OldScars.Core.Items
             }
 
             if (result.Success)
-                NotifyCommitted(sourceEndpoint, targetEndpoint, new GridStorageTransferReceipt(preview.DefinitionId, result), context);
+                NotifyCommitted(source, target, sourceEndpoint, targetEndpoint, new GridStorageTransferReceipt(preview.DefinitionId, result), context);
 
             return result;
         }
@@ -781,25 +868,42 @@ namespace OldScars.Core.Items
             return true;
         }
 
-        private static string ResolveDefinitionId(IGridStorageOwner source, string instanceId)
-        {
-            return source != null && source.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry)
-                ? entry?.DefinitionId
-                : null;
-        }
-
         private static bool TryRejectIncomingWeight(
+            IGridStorageOwner source,
             IGridStorageOwner destination,
-            string definitionId,
+            ItemStorageEntry entry,
             int quantity,
             out CarryWeightAcceptance acceptance)
         {
             acceptance = default;
-            if (!(destination is ICarryWeightLimitedOwner limitedOwner) || !limitedOwner.HasCarryWeightLimit)
+            if (ItemOwnedStorageRegistry.Instance.ShareRootOwner(source, destination))
                 return false;
 
-            acceptance = limitedOwner.EvaluateIncomingWeight(definitionId, quantity);
+            if (!TryResolveCarryWeightOwner(destination, out ICarryWeightLimitedOwner limitedOwner) || !limitedOwner.HasCarryWeightLimit)
+                return false;
+
+            acceptance = limitedOwner.EvaluateIncomingEntry(entry, quantity);
             return !acceptance.Accepted;
+        }
+
+        private static bool TryResolveCarryWeightOwner(
+            IGridStorageOwner destination,
+            out ICarryWeightLimitedOwner limitedOwner)
+        {
+            object rootOwner = ItemOwnedStorageRegistry.Instance.ResolveRootOwner(destination);
+            limitedOwner = rootOwner as ICarryWeightLimitedOwner;
+            return limitedOwner != null;
+        }
+
+        private static bool CanAcceptIncoming(
+            IGridStorageOwner destination,
+            ItemStorageEntry entry,
+            int quantity,
+            out string reason)
+        {
+            reason = null;
+            return !(destination is IGridStorageIncomingGuard guard) ||
+                   guard.CanAcceptIncoming(entry, quantity, out reason);
         }
 
         private static string GetCarryWeightRejectionMessage(CarryWeightAcceptance acceptance)
@@ -811,11 +915,14 @@ namespace OldScars.Core.Items
         }
 
         private static void NotifyCommitted(
+            IGridStorageOwner sourceOwner,
+            IGridStorageOwner targetOwner,
             IGridStorageTransferEndpoint source,
             IGridStorageTransferEndpoint target,
             GridStorageTransferReceipt receipt,
             GridStorageTransferContext context)
         {
+            ItemOwnedStorageRegistry.Instance.ReconcileCommittedTransfer(sourceOwner, targetOwner, receipt);
             TryNotify(() => source.OnTransferCommittedOut(receipt, context), "source out");
             TryNotify(() => target.OnTransferCommittedIn(receipt, context), "target in");
         }

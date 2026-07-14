@@ -23,6 +23,9 @@ namespace OldScars.Core.Items
         private const float BodyVerticalReserve = 46f;
         private const float MinimumEquipmentViewportHeight = 300f;
         private const float MaximumEquipmentViewportHeight = 350f;
+        private const float ScrollbarSize = 16f;
+
+        [SerializeField, Range(20f, 64f)] private float gridVisualCellSize = 32f;
 
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorNeedsComponent actorNeeds;
@@ -38,8 +41,11 @@ namespace OldScars.Core.Items
         private readonly InventoryGridDragController dragController = new InventoryGridDragController();
         private readonly InventoryDebugToast toast = new InventoryDebugToast();
         private readonly EquipmentDebugListView equipmentListView = new EquipmentDebugListView();
+        private readonly OwnedStorageInspectionDebugView inspectionView = new OwnedStorageInspectionDebugView();
         private InventoryUISessionController sessionController;
         private int observedGridSelectionVersion;
+        private Vector2 gridScrollPosition;
+        private PersonalStorageNavigator personalStorageNavigator;
 
         public bool IsVisible => isVisible;
         public InventoryComponent Inventory => inventory;
@@ -80,6 +86,12 @@ namespace OldScars.Core.Items
             scrollPosition = Vector2.zero;
             detailsScrollPosition = Vector2.zero;
             toast.Clear();
+            gridScrollPosition = Vector2.zero;
+            gridView.SetVisualCellSize(gridVisualCellSize);
+            inspectionView.Reset(gridVisualCellSize);
+            personalStorageNavigator = sessionController != null
+                ? sessionController.PersonalStorageNavigator
+                : new PersonalStorageNavigator(inventory);
             isVisible = true;
         }
 
@@ -88,6 +100,7 @@ namespace OldScars.Core.Items
             isVisible = false;
             gridView.Reset();
             dragController.Reset();
+            inspectionView.Reset(gridVisualCellSize);
             toast.Clear();
         }
 
@@ -147,6 +160,7 @@ namespace OldScars.Core.Items
         private void DrawThreeColumnBody(float bodyHeight)
         {
             dragController.BeginFrame(default);
+            personalStorageNavigator?.Refresh();
             GUILayout.BeginHorizontal(GUILayout.Height(bodyHeight));
 
             DrawPlayerColumn(bodyHeight);
@@ -158,9 +172,68 @@ namespace OldScars.Core.Items
             DrawDetailsColumn(bodyHeight);
 
             GUILayout.EndHorizontal();
+            DrawOwnedStorageInspection();
             if (!(sessionController?.BlocksInventoryContentInput ?? false))
                 dragController.ProcessOnGUI();
             SyncGridSelectionToSession();
+        }
+
+        private void DrawOwnedStorageInspection()
+        {
+            sessionController?.ValidateOwnedStorageInspection();
+            ItemOwnedStorageRuntime inspected = sessionController?.InspectedOwnedStorage;
+            if (inspected == null)
+                return;
+
+            Rect panelRect = GetPanelRect();
+            var rect = new Rect(panelRect.width - 360f, 42f, 344f, Mathf.Min(570f, panelRect.height - 58f));
+            inspectionView.Draw(
+                rect,
+                inspected,
+                dragController,
+                out bool closeRequested,
+                out string rightClickedInstanceId,
+                out Vector2 rightClickPosition);
+            if (closeRequested)
+            {
+                sessionController.CloseOwnedStorageInspection();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(rightClickedInstanceId) || sessionController.QuantityDialogOpen ||
+                !inspected.TryGetEntryByInstanceId(rightClickedInstanceId, out _, out ItemStorageEntry entry) ||
+                entry?.Item == null)
+            {
+                return;
+            }
+
+            if (dragController.CancelDrag())
+            {
+                sessionController.CloseContextMenu();
+                Event.current?.Use();
+                return;
+            }
+
+            inspectionView.GridView.SelectInstance(rightClickedInstanceId);
+            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolvePersonalCompartment(
+                inspected,
+                inventory,
+                actorEquipment,
+                personalStorageNavigator,
+                rightClickedInstanceId,
+                false);
+            sessionController.OpenContextMenu(
+                new InventoryContextMenuRequest(
+                    InventoryContextSourceKind.InspectedOwnedStorage,
+                    inspected,
+                    actorEquipment,
+                    rightClickedInstanceId,
+                    null,
+                    entry.Quantity,
+                    actions,
+                    ExecuteContextAction),
+                rightClickPosition);
+            Event.current?.Use();
         }
 
         private void DrawPlayerColumn(float bodyHeight)
@@ -170,35 +243,27 @@ namespace OldScars.Core.Items
                 GUILayout.Width(PlayerColumnWidth),
                 GUILayout.Height(bodyHeight));
             GUILayout.Label("Player Grid (drag; R rotates)");
+            DrawPersonalStorageSelector();
+
+            IGridStorageOwner owner = GetActivePersonalOwner();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label(
-                inventory.UsesGridLayout
-                    ? $"Grid: {inventory.GridWidth}x{inventory.GridHeight}"
+                owner != null && owner.UsesGridLayout
+                    ? $"Grid: {owner.GridWidth}x{owner.GridHeight} | cell {gridVisualCellSize:0}px"
                     : "Grid inactive",
                 GUILayout.ExpandWidth(true));
             if (GUILayout.Button(showLegacyList ? "Grid" : "Legacy", GUILayout.Width(76f), GUILayout.Height(24f)))
                 showLegacyList = !showLegacyList;
             GUILayout.EndHorizontal();
 
-            if (showLegacyList || !inventory.UsesGridLayout)
+            if (owner == null || showLegacyList || !owner.UsesGridLayout)
             {
-                DrawLegacyStorage(bodyHeight - 62f);
+                DrawLegacyStorage(owner, bodyHeight - 98f);
             }
             else
             {
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                Rect gridRect = GUILayoutUtility.GetRect(
-                    gridView.GetRequiredWidth(inventory.GridWidth),
-                    gridView.GetRequiredHeight(inventory.GridHeight),
-                    GUILayout.Width(gridView.GetRequiredWidth(inventory.GridWidth)),
-                    GUILayout.Height(gridView.GetRequiredHeight(inventory.GridHeight)));
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
-                gridView.Draw(inventory, gridRect, dragController);
-                dragController.RegisterEndpoint(inventory, gridView, gridRect);
-                HandleGridRightClick(inventory, gridView, gridRect);
+                DrawScrollableGrid(owner, bodyHeight - 98f);
             }
 
             GUILayout.FlexibleSpace();
@@ -222,7 +287,8 @@ namespace OldScars.Core.Items
                 sessionController != null ? sessionController.Selection : new InventoryUISessionSelection(),
                 EquipmentColumnWidth - 12f,
                 equipmentHeight,
-                HandleEquipmentRowClick);
+                HandleEquipmentRowClick,
+                RegisterEquipmentDropTarget);
 
             GUILayout.Space(ColumnGap);
             DrawPersonalSessionFooter(Mathf.Max(1f, bodyHeight - equipmentHeight - ColumnGap - 12f));
@@ -302,15 +368,17 @@ namespace OldScars.Core.Items
             dragController.SetActiveOwner(owner);
             sessionController.Selection.SelectPersonalFromContext(instanceId);
             ResolveActorEquipment();
-            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolvePersonal(
+            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolvePersonalCompartment(
+                owner,
                 inventory,
                 actorEquipment,
+                personalStorageNavigator,
                 instanceId,
                 false);
             sessionController.OpenContextMenu(
                 new InventoryContextMenuRequest(
                     InventoryContextSourceKind.Personal,
-                    inventory,
+                    owner,
                     actorEquipment,
                     instanceId,
                     null,
@@ -323,6 +391,22 @@ namespace OldScars.Core.Items
 
         private void HandleEquipmentRowClick(EquipmentDebugRowClick click)
         {
+            if (click.MouseButton == 0 && click.SlotId == ActorEquipmentComponent.BackSlotId)
+            {
+                ResolveActorEquipment();
+                if (actorEquipment != null &&
+                    actorEquipment.TryGetEntryByInstanceId(click.InstanceId, out ItemStorageEntry selectedEntry) &&
+                    selectedEntry?.Item?.HasOwnedStorage == true &&
+                    personalStorageNavigator.TrySelectContainer(click.InstanceId))
+                {
+                    dragController.CancelDrag();
+                    gridView.Reset();
+                    gridScrollPosition = Vector2.zero;
+                    sessionController?.CloseContextMenu();
+                }
+                return;
+            }
+
             if (click.MouseButton != 1 || sessionController == null || sessionController.QuantityDialogOpen)
                 return;
 
@@ -367,9 +451,244 @@ namespace OldScars.Core.Items
                 guiEvent != null ? ToPanelLocalPosition(guiEvent.mousePosition) : click.RowRect.position);
         }
 
+        private void RegisterEquipmentDropTarget(string slotId, Rect rowRect)
+        {
+            rowRect.position -= GetPanelRect().position;
+            dragController.RegisterEquipmentDropTarget(
+                slotId,
+                rowRect,
+                HandleEquipmentDrop);
+        }
+
+        private InventoryEquipmentDropResult HandleEquipmentDrop(InventoryEquipmentDropRequest request)
+        {
+            ResolveActorEquipment();
+            if (actorEquipment == null || request.SourceOwner == null)
+            {
+                return new InventoryEquipmentDropResult(false, "El origen o equipment ya no está disponible.");
+            }
+
+            bool actorOwned = ItemOwnedStorageRegistry.Instance.ShareRootOwner(request.SourceOwner, inventory);
+            if (actorOwned && TryGetCompatibleSlotSet(request.SourceOwner, request.SourceInstanceId, request.SlotId, out string[] slotSet))
+            {
+                EquipmentPreview preview = actorEquipment.PreviewEquip(request.SourceOwner, request.SourceInstanceId, slotSet);
+                EquipmentMutationResult result;
+                if (preview.FailureCode == EquipmentFailureCode.SlotOccupied)
+                {
+                    EquipmentReplacementPlan plan = actorEquipment.PreviewEquipReplacing(
+                        request.SourceOwner,
+                        request.SourceInstanceId,
+                        slotSet);
+                    result = actorEquipment.EquipReplacing(request.SourceOwner, plan);
+                }
+                else
+                {
+                    result = actorEquipment.Equip(request.SourceOwner, preview);
+                }
+
+                if (!result.Success)
+                {
+                    return new InventoryEquipmentDropResult(
+                        false,
+                        EquipmentFailureMessageFormatter.FormatFailure(result.FailureCode, actorEquipment, slotSet));
+                }
+
+                personalStorageNavigator?.Refresh();
+                string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : request.SlotId;
+                sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
+                gridView.ReconcileSelection(GetActivePersonalOwner());
+                return new InventoryEquipmentDropResult(
+                    true,
+                    EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, preview.FailureCode == EquipmentFailureCode.SlotOccupied));
+            }
+
+            ItemStorageEntry occupant = actorEquipment.GetEquippedStorageEntry(request.SlotId);
+            if (occupant?.Item?.HasOwnedStorage != true)
+                return new InventoryEquipmentDropResult(false, actorOwned
+                    ? "El objeto no es compatible con ese slot."
+                    : "No podés equipar directamente un objeto que no pertenece al actor.");
+
+            InventoryMutationResult transfer = GridStorageTransferService.TransferStackAuto(
+                request.SourceOwner,
+                occupant.Item.OwnedStorage,
+                request.SourceInstanceId,
+                GridStorageTransferQuantityPolicy.Exact,
+                default);
+            if (!transfer.Success)
+                return new InventoryEquipmentDropResult(false, transfer.Message ?? "No se pudo guardar el objeto.");
+
+            IGridStorageOwner visibleOwner = GetActivePersonalOwner();
+            gridView.ReconcileSelection(visibleOwner);
+            if (ReferenceEquals(request.SourceOwner, visibleOwner) &&
+                !request.SourceOwner.TryGetEntryByInstanceId(request.SourceInstanceId, out _, out _))
+            {
+                sessionController?.Selection.ClearPersonalIfMissing(request.SourceInstanceId);
+            }
+            return new InventoryEquipmentDropResult(true, "Objeto guardado en el compartimento equipado.");
+        }
+
+        private void HandleEquipmentHover(string slotId)
+        {
+            IGridStorageOwner source = dragController.ActiveDragSourceOwner;
+            string instanceId = dragController.ActiveDragSourceInstanceId;
+            if (source == null || string.IsNullOrWhiteSpace(instanceId) ||
+                TryGetCompatibleSlotSet(source, instanceId, slotId, out _))
+            {
+                return;
+            }
+
+            ItemStorageEntry occupant = actorEquipment?.GetEquippedStorageEntry(slotId);
+            if (occupant?.Item?.HasOwnedStorage == true && personalStorageNavigator.TrySelectContainer(occupant.Item.InstanceId))
+            {
+                gridView.Reset();
+                gridScrollPosition = Vector2.zero;
+                sessionController?.Selection.SelectPersonal(null);
+            }
+        }
+
+        private bool TryGetCompatibleSlotSet(
+            IGridStorageOwner sourceOwner,
+            string instanceId,
+            string targetSlotId,
+            out string[] slotSet)
+        {
+            slotSet = null;
+            IReadOnlyList<EquipmentSlotSet> alternatives = actorEquipment != null
+                ? actorEquipment.GetCompatibleSlotSets(sourceOwner, instanceId)
+                : null;
+            if (alternatives == null)
+                return false;
+
+            for (int index = 0; index < alternatives.Count; index++)
+            {
+                string[] candidate = alternatives[index].SlotIds;
+                for (int slotIndex = 0; slotIndex < candidate.Length; slotIndex++)
+                {
+                    if (candidate[slotIndex] == targetSlotId)
+                    {
+                        slotSet = candidate;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private IGridStorageOwner GetActivePersonalOwner()
+        {
+            return personalStorageNavigator?.SelectedOwner ?? inventory;
+        }
+
+        private void DrawPersonalStorageSelector()
+        {
+            IReadOnlyList<PersonalStorageOption> options = personalStorageNavigator?.GetOptions();
+            if (options == null || options.Count == 0)
+                return;
+
+            string selectedId = personalStorageNavigator.SelectedContainerInstanceId;
+            int selectedIndex = 0;
+            for (int index = 1; index < options.Count; index++)
+            {
+                if (options[index].ContainerInstanceId == selectedId)
+                    selectedIndex = index;
+            }
+
+            GUILayout.BeginHorizontal();
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && options.Count > 1;
+            if (GUILayout.Button("<", GUILayout.Width(24f), GUILayout.Height(22f)))
+                SelectPersonalStorageOption(options[(selectedIndex - 1 + options.Count) % options.Count]);
+            GUI.enabled = previousEnabled;
+            GUILayout.Label(options[selectedIndex].Label, GUILayout.ExpandWidth(true));
+            GUI.enabled = previousEnabled && options.Count > 1;
+            if (GUILayout.Button(">", GUILayout.Width(24f), GUILayout.Height(22f)))
+                SelectPersonalStorageOption(options[(selectedIndex + 1) % options.Count]);
+            GUI.enabled = previousEnabled;
+            GUILayout.EndHorizontal();
+
+            if (!string.IsNullOrWhiteSpace(selectedId) &&
+                personalStorageNavigator.TryGetContainerEntry(selectedId, out ItemStorageEntry containerEntry) &&
+                containerEntry?.Item?.OwnedStorage != null)
+            {
+                double contentWeight = containerEntry.Item.OwnedStorage.GetContentWeightKg(out _);
+                GUILayout.Label($"Contenido: {contentWeight:0.00} kg");
+            }
+        }
+
+        private void SelectPersonalStorageOption(PersonalStorageOption option)
+        {
+            dragController.CancelDrag();
+            sessionController?.CloseContextMenu();
+            if (option.IsPersonalInventory)
+                personalStorageNavigator.SelectPersonalInventory();
+            else
+                personalStorageNavigator.TrySelectContainer(option.ContainerInstanceId);
+
+            gridView.Reset();
+            gridScrollPosition = Vector2.zero;
+            sessionController?.Selection.SelectPersonal(null);
+        }
+
+        private void DrawScrollableGrid(IGridStorageOwner owner, float availableHeight)
+        {
+            float viewportWidth = PlayerColumnWidth - 16f;
+            float viewportHeight = Mathf.Max(100f, availableHeight);
+            Rect areaRect = GUILayoutUtility.GetRect(
+                viewportWidth,
+                viewportHeight,
+                GUILayout.Width(viewportWidth),
+                GUILayout.Height(viewportHeight));
+            Rect clipRect = new Rect(
+                areaRect.x,
+                areaRect.y,
+                Mathf.Max(1f, areaRect.width - ScrollbarSize),
+                Mathf.Max(1f, areaRect.height - ScrollbarSize));
+            float contentWidth = gridView.GetRequiredWidth(owner.GridWidth);
+            float contentHeight = gridView.GetRequiredHeight(owner.GridHeight);
+            float maxX = Mathf.Max(0f, contentWidth - clipRect.width);
+            float maxY = Mathf.Max(0f, contentHeight - clipRect.height);
+            gridScrollPosition.x = Mathf.Clamp(gridScrollPosition.x, 0f, maxX);
+            gridScrollPosition.y = Mathf.Clamp(gridScrollPosition.y, 0f, maxY);
+            gridScrollPosition.x = GUI.HorizontalScrollbar(
+                new Rect(areaRect.x, clipRect.yMax, clipRect.width, ScrollbarSize),
+                gridScrollPosition.x,
+                clipRect.width,
+                0f,
+                Mathf.Max(clipRect.width, contentWidth));
+            gridScrollPosition.y = GUI.VerticalScrollbar(
+                new Rect(clipRect.xMax, areaRect.y, ScrollbarSize, clipRect.height),
+                gridScrollPosition.y,
+                clipRect.height,
+                0f,
+                Mathf.Max(clipRect.height, contentHeight));
+
+            GUI.Box(clipRect, GUIContent.none);
+            GUI.BeginGroup(clipRect);
+            Rect localGridRect = new Rect(
+                -gridScrollPosition.x,
+                -gridScrollPosition.y,
+                contentWidth,
+                contentHeight);
+            gridView.Draw(owner, localGridRect, dragController);
+            HandleGridRightClick(owner, gridView, localGridRect);
+            GUI.EndGroup();
+
+            Rect globalGridRect = new Rect(
+                clipRect.x - gridScrollPosition.x,
+                clipRect.y - gridScrollPosition.y,
+                contentWidth,
+                contentHeight);
+            dragController.RegisterEndpoint(owner, gridView, globalGridRect, clipRect);
+        }
+
         private void ExecuteContextAction(InventoryContextActionInvocation invocation)
         {
-            if (!TryResolveCurrentContextAction(invocation, out InventoryContextAction currentAction, out int index, out ItemStorageEntry entry))
+            if (!TryResolveCurrentContextAction(
+                    invocation,
+                    out InventoryContextAction currentAction,
+                    out IGridStorageOwner owner,
+                    out int index,
+                    out ItemStorageEntry entry))
             {
                 toast.Show("Context action rejected: item or owner changed.", InventoryToastSeverity.Error);
                 return;
@@ -386,26 +705,61 @@ namespace OldScars.Core.Items
             {
                 case InventoryContextActionKind.ShowDetails:
                     return;
+                case InventoryContextActionKind.ReviewOwnedStorage:
+                    if (sessionController == null || !sessionController.OpenOwnedStorageInspection(entry.Item.InstanceId))
+                        toast.Show("La mochila ya no pertenece al actor.", InventoryToastSeverity.Error);
+                    return;
                 case InventoryContextActionKind.Use:
-                    UseItem(index);
+                    UseItem(owner, entry.Item.InstanceId);
                     return;
                 case InventoryContextActionKind.Equip:
-                    EquipSelected(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    EquipSelected(owner, entry.Item.InstanceId, currentAction.EquipmentSlotIds);
                     return;
                 case InventoryContextActionKind.EquipReplacing:
-                    EquipReplacingSelected(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    EquipReplacingSelected(owner, entry.Item.InstanceId, currentAction.EquipmentSlotIds);
                     return;
                 case InventoryContextActionKind.Unequip:
                     UnequipSelected(entry.Item.InstanceId);
                     return;
                 case InventoryContextActionKind.DropOne:
-                    DropItem(index, 1, "drop_1", "Drop 1");
+                    DropItem(owner, entry.Item.InstanceId, 1, "drop_1", "Drop 1");
                     return;
                 case InventoryContextActionKind.DropAmount:
-                    DropItem(index, quantity, "drop_amount", "Drop Amount");
+                    DropItem(owner, entry.Item.InstanceId, quantity, "drop_amount", "Drop Amount");
                     return;
                 case InventoryContextActionKind.DropStack:
-                    DropItem(index, entry.Quantity, "drop_stack", "Drop Stack");
+                    DropItem(owner, entry.Item.InstanceId, entry.Quantity, "drop_stack", "Drop Stack");
+                    return;
+                case InventoryContextActionKind.MoveToPersonalOne:
+                    TransferPersonalCompartment(owner, inventory, entry.Item.InstanceId, 1, false);
+                    return;
+                case InventoryContextActionKind.MoveToPersonalAmount:
+                    TransferPersonalCompartment(owner, inventory, entry.Item.InstanceId, quantity, false);
+                    return;
+                case InventoryContextActionKind.MoveToPersonalStack:
+                    TransferPersonalCompartment(owner, inventory, entry.Item.InstanceId, entry.Quantity, true);
+                    return;
+                case InventoryContextActionKind.MoveToOwnedStorageOne:
+                case InventoryContextActionKind.MoveToOwnedStorageAmount:
+                case InventoryContextActionKind.MoveToOwnedStorageStack:
+                    if (!personalStorageNavigator.TryGetOwnedStorage(
+                            currentAction.TargetContainerInstanceId,
+                            out ItemOwnedStorageRuntime ownedTarget))
+                    {
+                        toast.Show("El compartimento personal ya no está accesible.", InventoryToastSeverity.Error);
+                        return;
+                    }
+                    int moveQuantity = currentAction.Kind == InventoryContextActionKind.MoveToOwnedStorageOne
+                        ? 1
+                        : currentAction.Kind == InventoryContextActionKind.MoveToOwnedStorageAmount
+                            ? quantity
+                            : entry.Quantity;
+                    TransferPersonalCompartment(
+                        owner,
+                        ownedTarget,
+                        entry.Item.InstanceId,
+                        moveQuantity,
+                        currentAction.Kind == InventoryContextActionKind.MoveToOwnedStorageStack);
                     return;
                 default:
                     toast.Show("Context action is not valid in the personal session.", InventoryToastSeverity.Error);
@@ -416,10 +770,12 @@ namespace OldScars.Core.Items
         private bool TryResolveCurrentContextAction(
             InventoryContextActionInvocation invocation,
             out InventoryContextAction currentAction,
+            out IGridStorageOwner owner,
             out int index,
             out ItemStorageEntry entry)
         {
             currentAction = null;
+            owner = null;
             index = -1;
             entry = null;
             InventoryContextMenuRequest request = invocation.Request;
@@ -429,15 +785,34 @@ namespace OldScars.Core.Items
             IReadOnlyList<InventoryContextAction> actions;
             if (request.SourceKind == InventoryContextSourceKind.Personal)
             {
-                if (!ReferenceEquals(request.Owner, inventory) ||
-                    !inventory.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) ||
+                owner = GetActivePersonalOwner();
+                if (!ReferenceEquals(request.Owner, owner) || owner == null ||
+                    !owner.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) ||
                     entry?.Item == null)
                 {
                     return false;
                 }
-                actions = InventoryContextActionResolver.ResolvePersonal(
+                actions = InventoryContextActionResolver.ResolvePersonalCompartment(
+                    owner,
                     inventory,
                     actorEquipment,
+                    personalStorageNavigator,
+                    request.InstanceId,
+                    false);
+            }
+            else if (request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage)
+            {
+                owner = sessionController?.InspectedOwnedStorage;
+                if (!ReferenceEquals(request.Owner, owner) || owner == null ||
+                    !owner.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) || entry?.Item == null)
+                {
+                    return false;
+                }
+                actions = InventoryContextActionResolver.ResolvePersonalCompartment(
+                    owner,
+                    inventory,
+                    actorEquipment,
+                    personalStorageNavigator,
                     request.InstanceId,
                     false);
             }
@@ -473,7 +848,9 @@ namespace OldScars.Core.Items
             for (int index = 0; index < actions.Count; index++)
             {
                 InventoryContextAction candidate = actions[index];
-                if (candidate.Kind == requested.Kind && SameSlots(candidate.EquipmentSlotIds, requested.EquipmentSlotIds))
+                if (candidate.Kind == requested.Kind &&
+                    candidate.TargetContainerInstanceId == requested.TargetContainerInstanceId &&
+                    SameSlots(candidate.EquipmentSlotIds, requested.EquipmentSlotIds))
                     return candidate;
             }
             return null;
@@ -506,8 +883,9 @@ namespace OldScars.Core.Items
             string selectedInstanceId = selection != null && selection.ActiveSide == InventoryUIActiveSide.Personal
                 ? selection.SelectedPersonalItemInstanceId
                 : gridView.SelectedInstanceId;
-            if (string.IsNullOrWhiteSpace(selectedInstanceId) ||
-                !inventory.TryGetEntryByInstanceId(selectedInstanceId, out _, out ItemStorageEntry entry))
+            IGridStorageOwner activeOwner = GetActivePersonalOwner();
+            if (string.IsNullOrWhiteSpace(selectedInstanceId) || activeOwner == null ||
+                !activeOwner.TryGetEntryByInstanceId(selectedInstanceId, out _, out ItemStorageEntry entry))
             {
                 GUILayout.Label("Click an item in the grid.");
                 return;
@@ -517,7 +895,7 @@ namespace OldScars.Core.Items
             GUILayout.Label(FormatItemDisplayName(entry));
             GUILayout.Label($"Instance: {item.InstanceId}");
             DrawSelectedItemWeight(entry);
-            if (inventory.TryGetGridPlacement(item.InstanceId, out GridPlacement placement))
+            if (activeOwner.TryGetGridPlacement(item.InstanceId, out GridPlacement placement))
             {
                 GUILayout.Label(
                     $"Placement: ({placement.X},{placement.Y}) " +
@@ -548,10 +926,10 @@ namespace OldScars.Core.Items
             GUILayout.Label("Right-click the occupied slot for actions.");
         }
 
-        private void EquipSelected(string instanceId, IReadOnlyList<string> slotIds)
+        private void EquipSelected(IGridStorageOwner sourceOwner, string instanceId, IReadOnlyList<string> slotIds)
         {
-            EquipmentPreview preview = actorEquipment.PreviewEquip(instanceId, slotIds);
-            EquipmentMutationResult result = actorEquipment.Equip(preview);
+            EquipmentPreview preview = actorEquipment.PreviewEquip(sourceOwner, instanceId, slotIds);
+            EquipmentMutationResult result = actorEquipment.Equip(sourceOwner, preview);
             string message = result.Success
                 ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, false)
                 : EquipmentFailureMessageFormatter.FormatFailure(result.FailureCode, actorEquipment, slotIds);
@@ -561,14 +939,14 @@ namespace OldScars.Core.Items
 
             string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
             sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
-            gridView.ReconcileSelection(inventory);
+            gridView.ReconcileSelection(GetActivePersonalOwner());
             GUIUtility.ExitGUI();
         }
 
-        private void EquipReplacingSelected(string instanceId, IReadOnlyList<string> slotIds)
+        private void EquipReplacingSelected(IGridStorageOwner sourceOwner, string instanceId, IReadOnlyList<string> slotIds)
         {
-            EquipmentReplacementPlan plan = actorEquipment.PreviewEquipReplacing(instanceId, slotIds);
-            EquipmentMutationResult result = actorEquipment.EquipReplacing(plan);
+            EquipmentReplacementPlan plan = actorEquipment.PreviewEquipReplacing(sourceOwner, instanceId, slotIds);
+            EquipmentMutationResult result = actorEquipment.EquipReplacing(sourceOwner, plan);
             string[] displacedIds = GetDisplacedIds(plan);
             string message = result.Success
                 ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, true)
@@ -579,7 +957,7 @@ namespace OldScars.Core.Items
 
             string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
             sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
-            gridView.ReconcileSelection(inventory);
+            gridView.ReconcileSelection(GetActivePersonalOwner());
             GUIUtility.ExitGUI();
         }
 
@@ -613,10 +991,10 @@ namespace OldScars.Core.Items
             return result;
         }
 
-        private void DrawLegacyStorage(float height)
+        private void DrawLegacyStorage(IGridStorageOwner owner, float height)
         {
             GUILayout.Label("Storage (Legacy List):");
-            IReadOnlyList<ItemStorageEntry> entries = inventory.GetStorageEntries();
+            IReadOnlyList<ItemStorageEntry> entries = owner != null ? owner.GridStorageEntries : null;
             if (entries == null || entries.Count == 0)
             {
                 GUILayout.Label("Storage is empty.");
@@ -631,7 +1009,14 @@ namespace OldScars.Core.Items
                 GUILayout.Height(Mathf.Max(80f, height - 24f)));
             scrollPosition.x = 0f;
             for (int index = 0; index < entries.Count; index++)
-                DrawItemRow(index, entries[index]);
+            {
+                ItemStorageEntry entry = entries[index];
+                if (GUILayout.Button(FormatItemDisplayName(entry), GUILayout.Height(26f)))
+                {
+                    gridView.SelectInstance(entry?.Item?.InstanceId);
+                    sessionController?.Selection.SelectPersonal(entry?.Item?.InstanceId);
+                }
+            }
             GUILayout.EndScrollView();
         }
 
@@ -678,15 +1063,20 @@ namespace OldScars.Core.Items
         private void DrawSelectedItemWeight(ItemStorageEntry entry)
         {
             if (entry != null && entry.Item != null &&
-                inventory.TryGetItemWeight(
-                    entry.DefinitionId,
-                    entry.Quantity,
-                    out double unitWeightKg,
-                    out double stackWeightKg,
-                    out _))
+                ItemWeightResolver.TryGetDefinitionWeight(
+                    entry.DefinitionId, entry.Quantity, out double unitWeightKg, out double stackWeightKg, out _))
             {
                 GUILayout.Label($"Unit weight: {FormatUnitWeight(unitWeightKg)} kg");
-                GUILayout.Label($"Stack weight: {stackWeightKg:0.00} kg");
+                if (ItemWeightResolver.TryGetEntryWeight(entry, entry.Quantity, out double totalWeightKg, out _) &&
+                    totalWeightKg > stackWeightKg + 0.000001d)
+                {
+                    GUILayout.Label($"Contained weight: {totalWeightKg - stackWeightKg:0.00} kg");
+                    GUILayout.Label($"Total weight: {totalWeightKg:0.00} kg");
+                }
+                else
+                {
+                    GUILayout.Label($"Stack weight: {stackWeightKg:0.00} kg");
+                }
                 return;
             }
 
@@ -704,12 +1094,54 @@ namespace OldScars.Core.Items
             }
         }
 
-        private void DropItem(int index, int quantity, string actionId, string actionDisplayName)
+        private void TransferPersonalCompartment(
+            IGridStorageOwner source,
+            IGridStorageOwner target,
+            string instanceId,
+            int quantity,
+            bool fullStack)
         {
-            string sourceInstanceId = inventory.GetEntry(index)?.Item?.InstanceId;
+            InventoryMutationResult result = fullStack
+                ? GridStorageTransferService.TransferStackAuto(
+                    source,
+                    target,
+                    instanceId,
+                    GridStorageTransferQuantityPolicy.Exact,
+                    default)
+                : GridStorageTransferService.TransferQuantityAuto(
+                    source,
+                    target,
+                    instanceId,
+                    quantity,
+                    true,
+                    GridStorageTransferQuantityPolicy.Exact,
+                    default);
+
+            toast.Show(
+                result.Success
+                    ? $"Transferred x{result.AffectedQuantity}."
+                    : result.Message ?? "Transfer failed.",
+                result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            personalStorageNavigator?.Refresh();
+            gridView.ReconcileSelection(GetActivePersonalOwner());
+            if (result.Success && !string.IsNullOrWhiteSpace(result.DestinationInstanceId) &&
+                GetActivePersonalOwner().TryGetEntryByInstanceId(result.DestinationInstanceId, out _, out _))
+            {
+                gridView.SelectInstance(result.DestinationInstanceId);
+                sessionController?.Selection.SelectPersonalFromContext(result.DestinationInstanceId);
+            }
+            else if (result.Success)
+            {
+                sessionController?.Selection.ClearPersonalIfMissing(result.SourceInstanceId);
+            }
+        }
+
+        private void DropItem(IGridStorageOwner sourceOwner, string sourceInstanceId, int quantity, string actionId, string actionDisplayName)
+        {
             bool dropped = DroppedWorldItemSpawner.TryDrop(
+                sourceOwner,
+                sourceInstanceId,
                 inventory,
-                index,
                 quantity,
                 actionId,
                 actionDisplayName,
@@ -721,9 +1153,9 @@ namespace OldScars.Core.Items
             if (!dropped)
                 Debug.LogWarning($"[InventoryDebugPanel] {message}");
 
-            gridView.ReconcileSelection(inventory);
+            gridView.ReconcileSelection(GetActivePersonalOwner());
             if (!string.IsNullOrWhiteSpace(sourceInstanceId) &&
-                !inventory.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
+                !sourceOwner.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
             {
                 sessionController?.Selection.ClearPersonalIfMissing(sourceInstanceId);
                 sessionController?.CloseContextMenu();
@@ -731,22 +1163,26 @@ namespace OldScars.Core.Items
             GUIUtility.ExitGUI();
         }
 
-        private void UseItem(int index)
+        private void UseItem(IGridStorageOwner sourceOwner, string sourceInstanceId)
         {
-            string sourceInstanceId = inventory.GetEntry(index)?.Item?.InstanceId;
             ResolveActorNeeds();
             ResolveActorHealth();
 
-            InventoryItemUseResult result = InventoryItemUseService.TryUseItem(inventory, index, actorNeeds, actorHealth);
+            InventoryItemUseResult result = InventoryItemUseService.TryUseItem(
+                sourceOwner,
+                sourceInstanceId,
+                inventory,
+                actorNeeds,
+                actorHealth);
             toast.Show(
                 result.Message,
                 result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Warning);
             if (!result.Success)
                 Debug.Log($"[InventoryDebugPanel] Use failed: {result.Message}");
 
-            gridView.ReconcileSelection(inventory);
+            gridView.ReconcileSelection(GetActivePersonalOwner());
             if (!string.IsNullOrWhiteSpace(sourceInstanceId) &&
-                !inventory.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
+                !sourceOwner.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
             {
                 sessionController?.Selection.ClearPersonalIfMissing(sourceInstanceId);
                 sessionController?.CloseContextMenu();

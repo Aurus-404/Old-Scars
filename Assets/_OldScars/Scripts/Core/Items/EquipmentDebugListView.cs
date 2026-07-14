@@ -23,7 +23,8 @@ namespace OldScars.Core.Items
             InventoryUISessionSelection selection,
             float width,
             float height,
-            Action<EquipmentDebugRowClick> onRowClick = null)
+            Action<EquipmentDebugRowClick> onRowClick = null,
+            Action<string, Rect> onRowDrawn = null)
         {
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
             GUILayout.Label("Equipment");
@@ -69,7 +70,7 @@ namespace OldScars.Core.Items
                     EquipmentLayoutSlotDefinition slot = orderedSlots[slotIndex];
                     if (slot.group_id != group.id)
                         continue;
-                    DrawSlotRow(equipment, selection, slot, rowWidth, onRowClick);
+                    DrawSlotRow(equipment, selection, slot, rowWidth, onRowClick, onRowDrawn);
                 }
             }
 
@@ -82,7 +83,8 @@ namespace OldScars.Core.Items
             InventoryUISessionSelection selection,
             EquipmentLayoutSlotDefinition slot,
             float width,
-            Action<EquipmentDebugRowClick> onRowClick)
+            Action<EquipmentDebugRowClick> onRowClick,
+            Action<string, Rect> onRowDrawn)
         {
             EquipmentSlotDefinition definition = equipment.GetSlotDefinition(slot.slot_id);
             string slotName = definition != null && !string.IsNullOrWhiteSpace(definition.display_name)
@@ -99,6 +101,11 @@ namespace OldScars.Core.Items
                 RowHeight,
                 GUILayout.Width(width),
                 GUILayout.Height(RowHeight));
+            if (onRowDrawn != null)
+            {
+                Vector2 screenPosition = GUIUtility.GUIToScreenPoint(rowRect.position);
+                onRowDrawn(slot.slot_id, new Rect(screenPosition, rowRect.size));
+            }
 
             Event guiEvent = Event.current;
             bool rightClicked = guiEvent != null && guiEvent.type == EventType.MouseDown &&

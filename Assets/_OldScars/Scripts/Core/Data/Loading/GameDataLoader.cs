@@ -16,6 +16,7 @@ namespace OldScars.Core.Data.Loading
     /// - weapon_profiles
     /// - actions
     /// - items
+    /// - item_storage_profiles
     /// - loot_tables
     /// - actor_profiles
     /// - world_object_profiles
@@ -118,6 +119,7 @@ namespace OldScars.Core.Data.Loading
             LoadAmmoProfilesFrom(Path.Combine(modDirectory, "ammo_profiles"));
             LoadActionsFrom(Path.Combine(modDirectory, "actions"));
             LoadItemsFrom(Path.Combine(modDirectory, "items"));
+            LoadItemStorageProfilesFrom(Path.Combine(modDirectory, "item_storage_profiles"));
             LoadEquipmentSlotsFrom(Path.Combine(modDirectory, "equipment_slots"));
             LoadEquipmentLayoutsFrom(Path.Combine(modDirectory, "equipment_layouts"));
             LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"));
@@ -230,6 +232,24 @@ namespace OldScars.Core.Data.Loading
                     Database.RegisterItem(item, report);
 
                 Debug.Log($"[GameDataLoader] Items: {wrapper.items.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadItemStorageProfilesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                ItemStorageProfilesWrapper wrapper = Parse<ItemStorageProfilesWrapper>(file);
+                if (wrapper == null || wrapper.item_storage_profiles == null)
+                {
+                    report.Warning($"No 'item_storage_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (ItemStorageProfileDefinition profile in wrapper.item_storage_profiles)
+                    Database.RegisterItemStorageProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] ItemStorageProfiles: {wrapper.item_storage_profiles.Length} entries from {FileName(file)}");
             }
         }
 
@@ -360,6 +380,7 @@ namespace OldScars.Core.Data.Loading
         [Serializable] private sealed class AmmoProfilesWrapper { public AmmoProfileDefinition[] ammo_profiles; }
         [Serializable] private sealed class ActionsWrapper { public ActionDefinition[] actions; }
         [Serializable] private sealed class ItemsWrapper { public ItemDefinition[] items; }
+        [Serializable] private sealed class ItemStorageProfilesWrapper { public ItemStorageProfileDefinition[] item_storage_profiles; }
         [Serializable] private sealed class EquipmentSlotsWrapper { public EquipmentSlotDefinition[] equipment_slots; }
         [Serializable] private sealed class EquipmentLayoutsWrapper { public EquipmentLayoutDefinition[] equipment_layouts; }
         [Serializable] private sealed class LootTablesWrapper { public LootTableDefinition[] loot_tables; }

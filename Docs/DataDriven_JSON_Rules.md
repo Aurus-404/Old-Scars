@@ -235,7 +235,28 @@ Los items equipables usan alternativas completas mediante `slot_sets`:
 - `slot_sets` no puede coexistir con `allowed_slots`/`occupied_slots` legacy.
 - El schema legacy se acepta temporalmente para mods antiguos y mapea `right_hand` a `hand_right`; no crea una segunda autoridad runtime.
 - Equipment runtime guarda una sola entry en un storage lineal y los slots solo referencian su `InstanceId`.
-- Item-owned storage, backpack y peso de subtrees quedan diferidos a M34.2.
+- Un item puede declarar opcionalmente `owned_storage_profile_id`, que referencia un `ItemStorageProfileDefinition` cargado desde `item_storage_profiles/*.json`.
+- Todo item con `owned_storage_profile_id` debe usar `max_stack = 1`; cada runtime `ItemInstance` crea un storage independiente y nunca comparte estado por `DefinitionId`.
+- Los perfiles usan `type: "item_storage_profile"`, `id`, `display_name`, `width` y `height`; dimensiones validas actuales: `1..64`.
+- El JSON define dimensiones y referencia. Contenido, placements, versiones, owner raiz, peso y prohibicion de nesting son estado/logica C# runtime.
+- M34.2 v0 permite un solo storage por item y prohibe item-owned storage dentro de otro item-owned storage. No define pockets, multiples compartimentos ni save data.
+- `ActorProfileDefinition.inventory_seed_actor_tag` es un bootstrap debug opcional para aplicar solo `initial_inventory` a un actor sin `ActorProfileComponent`; el tag debe existir, aparecer en `initial_tags`, ser unico entre profiles y tener contenido inicial.
+
+Ejemplo:
+
+```json
+{
+  "item_storage_profiles": [
+    {
+      "type": "item_storage_profile",
+      "id": "backpack_small_01",
+      "display_name": "Mochila pequena",
+      "width": 8,
+      "height": 10
+    }
+  ]
+}
+```
 
 No usar required_sockets todavía.
 

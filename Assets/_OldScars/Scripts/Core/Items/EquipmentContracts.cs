@@ -49,7 +49,11 @@ namespace OldScars.Core.Items
             int personalStorageVersion,
             int personalLayoutVersion,
             int equipmentStorageVersion,
-            int equipmentVersion)
+            int equipmentVersion,
+            string sourceContainerInstanceId = null,
+            int sourceStorageVersion = 0,
+            int sourceLayoutVersion = 0,
+            GridPlacement sourcePlacement = null)
         {
             Success = success;
             RequiresChoice = requiresChoice;
@@ -62,6 +66,10 @@ namespace OldScars.Core.Items
             PersonalLayoutVersion = personalLayoutVersion;
             EquipmentStorageVersion = equipmentStorageVersion;
             EquipmentVersion = equipmentVersion;
+            SourceContainerInstanceId = sourceContainerInstanceId;
+            SourceStorageVersion = sourceStorageVersion;
+            SourceLayoutVersion = sourceLayoutVersion;
+            SourcePlacement = sourcePlacement;
         }
 
         public bool Success { get; }
@@ -75,6 +83,10 @@ namespace OldScars.Core.Items
         internal int PersonalLayoutVersion { get; }
         internal int EquipmentStorageVersion { get; }
         internal int EquipmentVersion { get; }
+        internal string SourceContainerInstanceId { get; }
+        internal int SourceStorageVersion { get; }
+        internal int SourceLayoutVersion { get; }
+        internal GridPlacement SourcePlacement { get; }
     }
 
     public readonly struct EquipmentMutationResult
@@ -139,7 +151,11 @@ namespace OldScars.Core.Items
             int personalStorageVersion,
             int personalLayoutVersion,
             int equipmentStorageVersion,
-            int equipmentVersion)
+            int equipmentVersion,
+            string sourceContainerInstanceId = null,
+            int sourceStorageVersion = 0,
+            int sourceLayoutVersion = 0,
+            GridPlacement sourcePlacement = null)
         {
             Success = success;
             FailureCode = failureCode;
@@ -155,6 +171,10 @@ namespace OldScars.Core.Items
             PersonalLayoutVersion = personalLayoutVersion;
             EquipmentStorageVersion = equipmentStorageVersion;
             EquipmentVersion = equipmentVersion;
+            SourceContainerInstanceId = sourceContainerInstanceId;
+            SourceStorageVersion = sourceStorageVersion;
+            SourceLayoutVersion = sourceLayoutVersion;
+            SourcePlacement = sourcePlacement;
         }
 
         public bool Success { get; }
@@ -167,6 +187,10 @@ namespace OldScars.Core.Items
         internal int PersonalLayoutVersion { get; }
         internal int EquipmentStorageVersion { get; }
         internal int EquipmentVersion { get; }
+        internal string SourceContainerInstanceId { get; }
+        internal int SourceStorageVersion { get; }
+        internal int SourceLayoutVersion { get; }
+        internal GridPlacement SourcePlacement { get; }
     }
 
     public readonly struct ActorItemOwnershipSnapshot

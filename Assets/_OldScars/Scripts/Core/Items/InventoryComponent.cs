@@ -1,8 +1,10 @@
+using System.Collections;
 using System.Collections.Generic;
 using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Feedback;
+using OldScars.Core.Interactions;
 using UnityEngine;
 
 namespace OldScars.Core.Items
@@ -64,6 +66,17 @@ namespace OldScars.Core.Items
         {
             ResolveCarryWeightComponent();
             InitializeGridBackend();
+        }
+
+        private IEnumerator Start()
+        {
+            if (GetComponent<ActorProfileComponent>() != null)
+                yield break;
+
+            while (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+                yield return null;
+
+            TryApplyTaggedInitialInventoryProfile();
         }
 
         public ItemInstance AddItemByDefinitionId(string definitionId)
@@ -130,6 +143,8 @@ namespace OldScars.Core.Items
                 return null;
             }
 
+            ItemOwnedStorageRegistry.Instance.BindItem(storedItem, this);
+
             Debug.Log(
                 "[InventoryComponent] Added runtime item instance." +
                 $"\n  Definition: {storedItem.DefinitionId}" +
@@ -151,6 +166,7 @@ namespace OldScars.Core.Items
             try
             {
                 bool initialized = GetGridRuntime().CompleteInitialContentLoad(out string error);
+                ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
                 if (!initialized)
                 {
                     Debug.LogError(
@@ -220,7 +236,10 @@ namespace OldScars.Core.Items
             }
 
             if (ContainsInstanceId(result.RemovedInstanceIds, sourceInstanceId))
+            {
                 ClearRightHandIfInstanceId(sourceInstanceId);
+                ItemOwnedStorageRegistry.Instance.UnbindItem(sourceInstanceId);
+            }
 
             return true;
         }
@@ -291,7 +310,7 @@ namespace OldScars.Core.Items
                     sourceItem != null ? sourceItem.InstanceId : null);
             }
 
-            if (TryRejectIncomingWeight(sourceEntry.DefinitionId, quantity, out CarryWeightAcceptance acceptance))
+            if (TryRejectIncomingWeight(sourceEntry, quantity, out CarryWeightAcceptance acceptance))
             {
                 return InventoryMutationResult.Rejected(
                     InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
@@ -300,7 +319,10 @@ namespace OldScars.Core.Items
                     sourceItem.InstanceId);
             }
 
-            return GetGridBackend().TransferFrom(source, sourceItem.InstanceId, quantity);
+            InventoryMutationResult result = GetGridBackend().TransferFrom(source, sourceItem.InstanceId, quantity);
+            if (result.Success)
+                ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
+            return result;
         }
 
         public int TransferItemTo(ItemStorage targetStorage, int sourceIndex, int quantity)
@@ -339,7 +361,10 @@ namespace OldScars.Core.Items
             }
 
             if (ContainsInstanceId(result.RemovedInstanceIds, sourceInstanceId))
+            {
                 ClearRightHandIfInstanceId(sourceInstanceId);
+                ItemOwnedStorageRegistry.Instance.UnbindItem(sourceInstanceId);
+            }
 
             return result.AffectedQuantity;
         }
@@ -372,10 +397,7 @@ namespace OldScars.Core.Items
             }
 
             string sourceInstanceId = sourceEntry.Item.InstanceId;
-            if (targetInventory.TryRejectIncomingWeight(
-                    sourceEntry.DefinitionId,
-                    quantity,
-                    out CarryWeightAcceptance acceptance))
+            if (targetInventory.TryRejectIncomingWeight(sourceEntry, quantity, out CarryWeightAcceptance acceptance))
             {
                 Debug.LogWarning(
                     $"[InventoryComponent] Inventory-to-inventory transfer failed: {SafeText(acceptance.FailureReason)}");
@@ -390,7 +412,12 @@ namespace OldScars.Core.Items
             }
 
             if (ContainsInstanceId(result.RemovedInstanceIds, sourceInstanceId))
+            {
                 ClearRightHandIfInstanceId(sourceInstanceId);
+                ItemOwnedStorageRegistry.Instance.UnbindItem(sourceInstanceId);
+            }
+
+            targetInventory.BindRuntimeOwnership();
 
             return result.AffectedQuantity;
         }
@@ -529,6 +556,29 @@ namespace OldScars.Core.Items
             ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
             return carryWeight != null
                 ? carryWeight.EvaluateIncomingQuantityLimit(definitionId, requestedQuantity)
+                : new CarryWeightQuantityLimit(
+                    true,
+                    requestedQuantity,
+                    requestedQuantity,
+                    0d,
+                    0d,
+                    double.PositiveInfinity,
+                    null);
+        }
+
+        public CarryWeightAcceptance EvaluateIncomingEntry(ItemStorageEntry entry, int quantity)
+        {
+            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
+            return carryWeight != null
+                ? carryWeight.EvaluateIncomingEntry(entry, quantity)
+                : CarryWeightAcceptance.Unlimited();
+        }
+
+        public CarryWeightQuantityLimit EvaluateIncomingEntryQuantityLimit(ItemStorageEntry entry, int requestedQuantity)
+        {
+            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
+            return carryWeight != null
+                ? carryWeight.EvaluateIncomingEntryQuantityLimit(entry, requestedQuantity)
                 : new CarryWeightQuantityLimit(
                     true,
                     requestedQuantity,
@@ -790,6 +840,77 @@ namespace OldScars.Core.Items
         {
             acceptance = EvaluateIncomingWeight(definitionId, quantity);
             return HasCarryWeightLimit && !acceptance.Accepted;
+        }
+
+        private bool TryRejectIncomingWeight(
+            ItemStorageEntry entry,
+            int quantity,
+            out CarryWeightAcceptance acceptance)
+        {
+            acceptance = EvaluateIncomingEntry(entry, quantity);
+            return HasCarryWeightLimit && !acceptance.Accepted;
+        }
+
+        internal void BindRuntimeOwnership()
+        {
+            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
+        }
+
+        private void TryApplyTaggedInitialInventoryProfile()
+        {
+            ActorInteractionContext actorContext = GetComponent<ActorInteractionContext>();
+            string[] actorTags = actorContext != null ? actorContext.ActorTags : null;
+            if (actorTags == null || actorTags.Length == 0)
+                return;
+
+            ActorProfileDefinition matchedProfile = null;
+            foreach (ActorProfileDefinition profile in GameDataManager.Instance.Database.GetAllActorProfiles())
+            {
+                if (profile == null || string.IsNullOrWhiteSpace(profile.inventory_seed_actor_tag) ||
+                    !ContainsText(actorTags, profile.inventory_seed_actor_tag))
+                {
+                    continue;
+                }
+
+                if (matchedProfile != null)
+                {
+                    Debug.LogError(
+                        $"[InventoryComponent] Multiple actor profiles seed inventory for '{profile.inventory_seed_actor_tag}'. " +
+                        "No tagged initial inventory was applied.", this);
+                    return;
+                }
+
+                matchedProfile = profile;
+            }
+
+            if (matchedProfile == null || matchedProfile.initial_inventory == null)
+                return;
+
+            BeginInitialContentLoad();
+            try
+            {
+                for (int index = 0; index < matchedProfile.initial_inventory.Length; index++)
+                {
+                    ActorProfileInventoryEntry entry = matchedProfile.initial_inventory[index];
+                    if (entry != null)
+                        AddItemByDefinitionId(entry.item_id, entry.quantity);
+                }
+            }
+            finally
+            {
+                CompleteInitialContentLoad();
+            }
+        }
+
+        private static bool ContainsText(string[] values, string expected)
+        {
+            for (int index = 0; index < values.Length; index++)
+            {
+                if (values[index] == expected)
+                    return true;
+            }
+
+            return false;
         }
 
         private ActorCarryWeightComponent GetCarryWeightComponent()

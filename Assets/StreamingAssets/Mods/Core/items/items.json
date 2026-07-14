@@ -2,6 +2,40 @@
   "items": [
     {
       "type": "item",
+      "id": "small_backpack_01",
+      "display": {
+        "name": "Mochila pequeña",
+        "description": "Una mochila compacta para transportar pertenencias durante las pruebas de inventario."
+      },
+      "categories": ["container", "equipment"],
+      "tags": [
+        "item"
+      ],
+      "max_stack": 1,
+      "equippable": true,
+      "physical": {
+        "weight_kg": 1.50,
+        "volume_l": 12.0,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 30,
+        "base_sell_value": 12
+      },
+      "equip": {
+        "equippable": true,
+        "slot_sets": [
+          ["back"]
+        ]
+      },
+      "inventory": {
+        "footprint": { "width": 4, "height": 4 },
+        "initial_orientation": "original"
+      },
+      "owned_storage_profile_id": "backpack_small_01"
+    },
+    {
+      "type": "item",
       "id": "rusted_crowbar_01",
       "display": {
         "name": "Palanca oxidada",

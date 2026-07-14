@@ -1,0 +1,11 @@
+{
+  "item_storage_profiles": [
+    {
+      "type": "item_storage_profile",
+      "id": "backpack_small_01",
+      "display_name": "Mochila pequeña",
+      "width": 8,
+      "height": 10
+    }
+  ]
+}

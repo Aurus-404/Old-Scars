@@ -21,6 +21,8 @@ namespace OldScars.Core.Items
 
         private readonly InventoryUISessionSelection selection = new InventoryUISessionSelection();
         private readonly InventoryContextMenuState contextMenuState = new InventoryContextMenuState();
+        private PersonalStorageNavigator personalStorageNavigator;
+        private ItemOwnedStorageRuntime inspectedOwnedStorage;
 
         public InventoryUISessionState State { get; private set; }
         public bool BlocksWorldInput => State != InventoryUISessionState.Closed;
@@ -29,6 +31,22 @@ namespace OldScars.Core.Items
         public bool BlocksInventoryContentInput => contextMenuState.BlocksContentInput;
         public bool ContextMenuOpen => contextMenuState.ContextMenuOpen;
         public bool QuantityDialogOpen => contextMenuState.QuantityDialogOpen;
+        public PersonalStorageNavigator PersonalStorageNavigator
+        {
+            get
+            {
+                ResolveReferences();
+                if (personalStorageNavigator == null ||
+                    !ReferenceEquals(personalStorageNavigator.PersonalInventory, playerInventory))
+                {
+                    personalStorageNavigator = new PersonalStorageNavigator(playerInventory);
+                }
+                personalStorageNavigator.Refresh();
+                return personalStorageNavigator;
+            }
+        }
+        public ItemOwnedStorageRuntime InspectedOwnedStorage => inspectedOwnedStorage;
+        public bool HasOwnedStorageInspection => inspectedOwnedStorage != null;
 
         public static InventoryUISessionController GetOrCreate()
         {
@@ -64,6 +82,8 @@ namespace OldScars.Core.Items
             if (!IsOpen)
                 return;
 
+            ValidateOwnedStorageInspection();
+
             if ((keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame) &&
                 contextMenuState.ConfirmQuantityFromKeyboard())
             {
@@ -79,7 +99,10 @@ namespace OldScars.Core.Items
             if (contextMenuState.CloseContextMenu())
                 return;
             if (!CancelActiveDrag())
-                CloseSession();
+            {
+                if (!CloseOwnedStorageInspection())
+                    CloseSession();
+            }
         }
 
         public void OpenPersonal()
@@ -123,9 +146,11 @@ namespace OldScars.Core.Items
         {
             contextMenuState.CloseAll();
             CancelActiveDrag();
+            inspectedOwnedStorage = null;
             inventoryPanel?.HideFromSession();
             storagePanel?.HideFromSession();
             selection.ResetTransient();
+            personalStorageNavigator?.SelectPersonalInventory();
             State = InventoryUISessionState.Closed;
         }
 
@@ -140,6 +165,53 @@ namespace OldScars.Core.Items
         public void CloseContextMenu()
         {
             contextMenuState.CloseAll();
+        }
+
+        public bool OpenOwnedStorageInspection(string containerInstanceId)
+        {
+            if (!IsOpen)
+                return false;
+
+            PersonalStorageNavigator navigator = PersonalStorageNavigator;
+            if (navigator == null || !navigator.TryGetPersonalInventoryOwnedStorage(
+                    containerInstanceId,
+                    out ItemOwnedStorageRuntime storage,
+                    out _))
+            {
+                return false;
+            }
+
+            CancelActiveDrag();
+            contextMenuState.CloseAll();
+            navigator.SelectPersonalInventory();
+            inspectedOwnedStorage = storage;
+            selection.SelectPersonal(null);
+            return true;
+        }
+
+        public bool CloseOwnedStorageInspection()
+        {
+            if (inspectedOwnedStorage == null)
+                return false;
+
+            CancelActiveDrag();
+            contextMenuState.CloseAll();
+            inspectedOwnedStorage = null;
+            selection.SelectPersonal(null);
+            return true;
+        }
+
+        public void ValidateOwnedStorageInspection()
+        {
+            if (inspectedOwnedStorage == null)
+                return;
+
+            string containerId = inspectedOwnedStorage.ContainerInstanceId;
+            if (!PersonalStorageNavigator.TryGetPersonalInventoryOwnedStorage(containerId, out ItemOwnedStorageRuntime current, out _) ||
+                !ReferenceEquals(current, inspectedOwnedStorage))
+            {
+                CloseOwnedStorageInspection();
+            }
         }
 
         internal void DrawContextOverlay(Rect localWindowRect)

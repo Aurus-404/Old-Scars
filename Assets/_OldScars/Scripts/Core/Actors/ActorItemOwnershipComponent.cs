@@ -12,6 +12,7 @@ namespace OldScars.Core.Actors
         [SerializeField] private ActorEquipmentComponent equipmentComponent;
 
         private readonly List<ItemStorageEntry> entriesView = new List<ItemStorageEntry>();
+        private readonly List<ItemStorageEntry> ownedEntriesView = new List<ItemStorageEntry>();
 
         public InventoryComponent PersonalInventory
         {
@@ -81,14 +82,23 @@ namespace OldScars.Core.Actors
             return entriesView;
         }
 
+        public IReadOnlyList<ItemStorageEntry> GetAllOwnedEntries()
+        {
+            ownedEntriesView.Clear();
+            IReadOnlyList<ItemStorageEntry> directEntries = GetAllDirectEntries();
+            for (int index = 0; index < directEntries.Count; index++)
+                AppendOwnedEntryTree(ownedEntriesView, directEntries[index], new HashSet<string>());
+            return ownedEntriesView;
+        }
+
         public bool ValidateUniqueOwnership(out string error)
         {
             ResolveReferences();
             error = null;
             var seen = new HashSet<string>();
-            if (!AddUnique(seen, inventoryComponent != null ? inventoryComponent.Entries : null, "personal", out error))
+            if (!AddUniqueTree(seen, inventoryComponent != null ? inventoryComponent.Entries : null, "personal", out error))
                 return false;
-            if (!AddUnique(seen, equipmentComponent != null ? equipmentComponent.Entries : null, "equipment", out error))
+            if (!AddUniqueTree(seen, equipmentComponent != null ? equipmentComponent.Entries : null, "equipment", out error))
                 return false;
             return true;
         }
@@ -97,7 +107,7 @@ namespace OldScars.Core.Actors
         {
             ResolveReferences();
             bool valid = ValidateUniqueOwnership(out string error);
-            int instanceCount = GetAllDirectEntries().Count;
+            int instanceCount = GetAllOwnedEntries().Count;
             return new ActorItemOwnershipSnapshot(
                 inventoryComponent != null ? inventoryComponent.InternalGridBackend.StorageVersion : 0,
                 inventoryComponent != null ? inventoryComponent.InternalGridBackend.LayoutVersion : 0,
@@ -129,7 +139,7 @@ namespace OldScars.Core.Actors
                 target.Add(source[index]);
         }
 
-        private static bool AddUnique(
+        private static bool AddUniqueTree(
             HashSet<string> seen,
             IReadOnlyList<ItemStorageEntry> entries,
             string nodeName,
@@ -153,9 +163,33 @@ namespace OldScars.Core.Actors
                     error = $"Item instance '{item.InstanceId}' exists in more than one actor ownership node.";
                     return false;
                 }
+
+                if (item.HasOwnedStorage &&
+                    !AddUniqueTree(seen, item.OwnedStorage.GridStorageEntries, $"item_storage:{item.InstanceId}", out error))
+                {
+                    return false;
+                }
             }
 
             return true;
+        }
+
+        private static void AppendOwnedEntryTree(
+            List<ItemStorageEntry> target,
+            ItemStorageEntry entry,
+            HashSet<string> visited)
+        {
+            ItemInstance item = entry != null ? entry.Item : null;
+            if (item == null || !visited.Add(item.InstanceId))
+                return;
+
+            target.Add(entry);
+            if (!item.HasOwnedStorage)
+                return;
+
+            IReadOnlyList<ItemStorageEntry> contents = item.OwnedStorage.GridStorageEntries;
+            for (int index = 0; index < contents.Count; index++)
+                AppendOwnedEntryTree(target, contents[index], visited);
         }
     }
 }

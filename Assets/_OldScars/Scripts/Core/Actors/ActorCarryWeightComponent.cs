@@ -64,12 +64,7 @@ namespace OldScars.Core.Actors
                 if (entry == null || entry.Item == null || entry.Quantity < 0)
                     return InvalidSnapshot($"Inventory entry {index} is invalid while calculating carry weight.");
 
-                if (!TryGetItemWeight(
-                        entry.DefinitionId,
-                        entry.Quantity,
-                        out _,
-                        out double stackWeightKg,
-                        out error))
+                if (!ItemWeightResolver.TryGetEntryWeight(entry, entry.Quantity, out double stackWeightKg, out error))
                 {
                     return InvalidSnapshot(error);
                 }
@@ -209,6 +204,69 @@ namespace OldScars.Core.Actors
                 null);
         }
 
+        public CarryWeightAcceptance EvaluateIncomingEntry(ItemStorageEntry entry, int quantity)
+        {
+            CarryWeightSnapshot snapshot = GetSnapshot();
+            if (!snapshot.IsValid)
+            {
+                return new CarryWeightAcceptance(
+                    false, 0d, snapshot.CurrentWeightKg, snapshot.CurrentWeightKg,
+                    snapshot.HardLimitKg, snapshot.State, snapshot.Error ?? "Carry weight is unavailable.");
+            }
+
+            if (!ItemWeightResolver.TryGetEntryWeight(entry, quantity, out double addedWeightKg, out string error))
+            {
+                LogErrorOnce(error);
+                return new CarryWeightAcceptance(
+                    false, 0d, snapshot.CurrentWeightKg, snapshot.CurrentWeightKg,
+                    snapshot.HardLimitKg, snapshot.State, error);
+            }
+
+            double projectedWeightKg = snapshot.CurrentWeightKg + addedWeightKg;
+            CarryWeightState projectedState = ClassifyState(projectedWeightKg, snapshot.SoftCapacityKg, snapshot.HardLimitKg);
+            bool accepted = addedWeightKg <= LimitEpsilon || projectedWeightKg <= snapshot.HardLimitKg + LimitEpsilon;
+            return new CarryWeightAcceptance(
+                accepted,
+                addedWeightKg,
+                snapshot.CurrentWeightKg,
+                projectedWeightKg,
+                snapshot.HardLimitKg,
+                projectedState,
+                accepted ? null : $"Too heavy: {projectedWeightKg:0.00} / {snapshot.HardLimitKg:0.00} kg");
+        }
+
+        public CarryWeightQuantityLimit EvaluateIncomingEntryQuantityLimit(ItemStorageEntry entry, int requestedQuantity)
+        {
+            if (entry == null || entry.Item == null)
+                return CarryWeightQuantityLimit.Invalid(requestedQuantity, "Incoming item entry is invalid.");
+
+            if (!entry.Item.HasOwnedStorage)
+                return EvaluateIncomingQuantityLimit(entry.DefinitionId, requestedQuantity);
+
+            if (requestedQuantity < 0 || requestedQuantity > entry.Quantity)
+                return CarryWeightQuantityLimit.Invalid(requestedQuantity, "Requested quantity is invalid for the incoming entry.");
+
+            CarryWeightSnapshot snapshot = GetSnapshot();
+            if (!snapshot.IsValid)
+                return CarryWeightQuantityLimit.Invalid(requestedQuantity, snapshot.Error ?? "Carry weight is unavailable.");
+
+            if (requestedQuantity == 0)
+                return new CarryWeightQuantityLimit(true, 0, 0, 0d, snapshot.CurrentWeightKg, snapshot.HardLimitKg, null);
+
+            if (!ItemWeightResolver.TryGetEntryWeight(entry, 1, out double unitWeightKg, out string error))
+                return CarryWeightQuantityLimit.Invalid(requestedQuantity, error);
+
+            bool accepted = snapshot.CurrentWeightKg + unitWeightKg <= snapshot.HardLimitKg + LimitEpsilon;
+            return new CarryWeightQuantityLimit(
+                true,
+                requestedQuantity,
+                accepted ? 1 : 0,
+                unitWeightKg,
+                snapshot.CurrentWeightKg,
+                snapshot.HardLimitKg,
+                null);
+        }
+
         public bool TryGetItemWeight(
             string definitionId,
             int quantity,
@@ -216,59 +274,13 @@ namespace OldScars.Core.Actors
             out double stackWeightKg,
             out string error)
         {
-            unitWeightKg = 0d;
-            stackWeightKg = 0d;
-            error = null;
+            bool resolved = ItemWeightResolver.TryGetDefinitionWeight(
+                definitionId, quantity, out unitWeightKg, out stackWeightKg, out error);
+            if (resolved)
+                return true;
 
-            if (string.IsNullOrWhiteSpace(definitionId))
-            {
-                error = "Cannot calculate carry weight without an item definition id.";
-                return RejectWeightResolution(error);
-            }
-
-            if (quantity < 0)
-            {
-                error = $"Cannot calculate carry weight for '{definitionId}' with quantity {quantity}.";
-                return RejectWeightResolution(error);
-            }
-
-            if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
-            {
-                error = $"Cannot resolve physical.weight_kg for item '{definitionId}' because game data is not ready.";
-                return RejectWeightResolution(error);
-            }
-
-            GameDatabase database = GameDataManager.Instance.Database;
-            ItemDefinition definition = database != null ? database.GetItem(definitionId) : null;
-            if (definition == null)
-            {
-                error = $"Cannot resolve carry weight because item definition '{definitionId}' was not found.";
-                return RejectWeightResolution(error);
-            }
-
-            if (definition.physical == null || !definition.physical.weight_kg.HasValue)
-            {
-                error = $"Item '{definitionId}' has no explicit physical.weight_kg.";
-                return RejectWeightResolution(error);
-            }
-
-            double resolvedUnitWeight = definition.physical.weight_kg.Value;
-            if (!IsFinite(resolvedUnitWeight) || resolvedUnitWeight < 0d)
-            {
-                error = $"Item '{definitionId}' has invalid physical.weight_kg '{resolvedUnitWeight}'.";
-                return RejectWeightResolution(error);
-            }
-
-            double resolvedStackWeight = resolvedUnitWeight * quantity;
-            if (!IsFinite(resolvedStackWeight) || resolvedStackWeight < 0d)
-            {
-                error = $"Item '{definitionId}' produced invalid stack weight for quantity {quantity}.";
-                return RejectWeightResolution(error);
-            }
-
-            unitWeightKg = resolvedUnitWeight;
-            stackWeightKg = resolvedStackWeight;
-            return true;
+            RejectWeightResolution(error);
+            return false;
         }
 
         private bool ResolveInventoryComponent()

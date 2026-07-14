@@ -7,8 +7,11 @@ namespace OldScars.Core.Items
     public sealed class InventoryGridDragController
     {
         private const float DragThreshold = 4f;
+        private const float DoubleClickSeconds = 0.32f;
+        private const float EquipmentHoverSeconds = 0.30f;
 
         private readonly List<EndpointView> endpoints = new List<EndpointView>(2);
+        private readonly List<EquipmentDropTarget> equipmentTargets = new List<EquipmentDropTarget>();
         private GridStorageTransferContext transferContext;
         private EndpointView sourceEndpoint;
         private EndpointView destinationEndpoint;
@@ -29,23 +32,48 @@ namespace OldScars.Core.Items
         private DropIntent dropIntent;
         private string pendingStatusMessage;
         private InventoryToastSeverity pendingStatusSeverity;
+        private IGridStorageOwner lastClickOwner;
+        private string lastClickInstanceId;
+        private float lastClickTime = -10f;
+        private EquipmentDropTarget hoveredEquipmentTarget;
+        private float equipmentHoverStartedAt;
+        private bool equipmentHoverActivated;
 
         public bool IsDragging => isDragging;
+        public IGridStorageOwner ActiveDragSourceOwner => isDragging ? sourceEndpoint?.Owner : null;
+        public string ActiveDragSourceInstanceId => isDragging ? sourceInstanceId : null;
         public IGridStorageOwner ActiveOwner { get; private set; }
         public int SelectionVersion { get; private set; }
 
         public void BeginFrame(GridStorageTransferContext context)
         {
             endpoints.Clear();
+            equipmentTargets.Clear();
             transferContext = context;
+        }
+
+        public void RegisterEquipmentDropTarget(
+            string slotId,
+            Rect rect,
+            System.Func<InventoryEquipmentDropRequest, InventoryEquipmentDropResult> onDrop,
+            System.Action<string> onHover = null)
+        {
+            if (string.IsNullOrWhiteSpace(slotId) || onDrop == null)
+                return;
+            equipmentTargets.Add(new EquipmentDropTarget(slotId, rect, onDrop, onHover));
         }
 
         public void RegisterEndpoint(IGridStorageOwner owner, InventoryGridDebugView view, Rect rect)
         {
+            RegisterEndpoint(owner, view, rect, rect);
+        }
+
+        public void RegisterEndpoint(IGridStorageOwner owner, InventoryGridDebugView view, Rect rect, Rect clipRect)
+        {
             if (owner == null || view == null)
                 return;
 
-            endpoints.Add(new EndpointView(owner, view, rect));
+            endpoints.Add(new EndpointView(owner, view, rect, clipRect));
         }
 
         public void ProcessOnGUI()
@@ -99,6 +127,7 @@ namespace OldScars.Core.Items
         public void Reset()
         {
             endpoints.Clear();
+            equipmentTargets.Clear();
             ActiveOwner = null;
             pendingStatusMessage = null;
             ResetPointerState();
@@ -146,12 +175,22 @@ namespace OldScars.Core.Items
                 endpoint.View.SelectInstance(instanceId);
                 ActiveOwner = endpoint.Owner;
                 SelectionVersion++;
-                if (IsShiftPressed() && endpoints.Count == 2)
+                bool isDoubleClick = endpoints.Count >= 2 && ReferenceEquals(lastClickOwner, endpoint.Owner) &&
+                                     lastClickInstanceId == instanceId &&
+                                     Time.unscaledTime - lastClickTime <= DoubleClickSeconds;
+                if (IsShiftPressed() || isDoubleClick)
                 {
                     TransferQuick(endpoint, instanceId);
+                    lastClickOwner = null;
+                    lastClickInstanceId = null;
+                    lastClickTime = -10f;
                     guiEvent.Use();
                     return;
                 }
+
+                lastClickOwner = endpoint.Owner;
+                lastClickInstanceId = instanceId;
+                lastClickTime = Time.unscaledTime;
 
                 sourceEndpoint = endpoint;
                 sourceInstanceId = instanceId;
@@ -159,13 +198,13 @@ namespace OldScars.Core.Items
                 pressMousePosition = guiEvent.mousePosition;
                 lastMousePosition = guiEvent.mousePosition;
                 requestedRotated = placement.IsRotated;
-                Rect placementRect = InventoryGridDebugView.GetPlacementRect(endpoint.Rect, placement);
+                Rect placementRect = endpoint.View.GetPlacementRect(endpoint.Rect, placement);
                 grabbedCellX = Mathf.Clamp(
-                    Mathf.FloorToInt((guiEvent.mousePosition.x - placementRect.x) / InventoryGridDebugView.CellPitch),
+                    Mathf.FloorToInt((guiEvent.mousePosition.x - placementRect.x) / endpoint.View.CellPitch),
                     0,
                     placement.EffectiveWidth - 1);
                 grabbedCellY = Mathf.Clamp(
-                    Mathf.FloorToInt((guiEvent.mousePosition.y - placementRect.y) / InventoryGridDebugView.CellPitch),
+                    Mathf.FloorToInt((guiEvent.mousePosition.y - placementRect.y) / endpoint.View.CellPitch),
                     0,
                     placement.EffectiveHeight - 1);
                 guiEvent.Use();
@@ -206,9 +245,7 @@ namespace OldScars.Core.Items
                 return;
 
             GridStorageTransferQuantityPolicy quantityPolicy =
-                target.Owner is ICarryWeightLimitedOwner limitedOwner && limitedOwner.HasCarryWeightLimit
-                    ? GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit
-                    : GridStorageTransferQuantityPolicy.Exact;
+                GridStorageTransferService.GetAutomaticQuantityPolicy(source.Owner, target.Owner);
             InventoryMutationResult result = GridStorageTransferService.TransferStackAuto(
                 source.Owner,
                 target.Owner,
@@ -237,12 +274,19 @@ namespace OldScars.Core.Items
 
         private void UpdateCandidate(Vector2 mousePosition)
         {
+            EquipmentDropTarget equipmentTarget = FindEquipmentTarget(mousePosition);
+            UpdateEquipmentHover(equipmentTarget);
             destinationEndpoint = FindEndpoint(mousePosition);
             hasCandidateCoordinates = false;
             candidatePreview = default;
             mergePreview = default;
             destinationInstanceId = null;
             dropIntent = DropIntent.None;
+            if (equipmentTarget != null)
+            {
+                destinationEndpoint = null;
+                return;
+            }
             if (destinationEndpoint == null)
                 return;
 
@@ -307,6 +351,21 @@ namespace OldScars.Core.Items
 
         private void CommitCandidate()
         {
+            EquipmentDropTarget equipmentTarget = FindEquipmentTarget(lastMousePosition);
+            if (equipmentTarget != null)
+            {
+                InventoryEquipmentDropResult result = equipmentTarget.OnDrop(
+                    new InventoryEquipmentDropRequest(
+                        sourceEndpoint.Owner,
+                        sourceInstanceId,
+                        sourcePlacement,
+                        equipmentTarget.SlotId));
+                SetStatus(
+                    result.Message ?? (result.Success ? "Equipment drop completed." : "Equipment drop rejected."),
+                    result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+                return;
+            }
+
             if (!hasCandidateCoordinates || destinationEndpoint == null || dropIntent == DropIntent.None)
             {
                 SetStatus("Grid move cancelled: invalid destination.", InventoryToastSeverity.Error);
@@ -398,21 +457,29 @@ namespace OldScars.Core.Items
                 return;
 
             EndpointView drawingEndpoint = destinationEndpoint ?? sourceEndpoint;
+            GUI.BeginGroup(drawingEndpoint.ClipRect);
+            Rect localGridRect = new Rect(
+                drawingEndpoint.Rect.x - drawingEndpoint.ClipRect.x,
+                drawingEndpoint.Rect.y - drawingEndpoint.ClipRect.y,
+                drawingEndpoint.Rect.width,
+                drawingEndpoint.Rect.height);
+            Vector2 localMousePosition = lastMousePosition - drawingEndpoint.ClipRect.position;
             if (dropIntent == DropIntent.DirectedMerge && destinationEndpoint != null)
             {
                 drawingEndpoint.View.DrawMergePreview(
                     destinationEndpoint.Owner,
-                    destinationEndpoint.Rect,
+                    localGridRect,
                     destinationInstanceId,
                     mergePreview);
+                GUI.EndGroup();
                 return;
             }
 
             drawingEndpoint.View.DrawDragPreview(
                 sourceEndpoint.Owner,
-                drawingEndpoint.Rect,
+                localGridRect,
                 sourceInstanceId,
-                lastMousePosition,
+                localMousePosition,
                 grabbedCellX,
                 grabbedCellY,
                 requestedRotated,
@@ -420,13 +487,14 @@ namespace OldScars.Core.Items
                 candidateX,
                 candidateY,
                 candidatePreview);
+            GUI.EndGroup();
         }
 
         private EndpointView FindEndpoint(Vector2 mousePosition)
         {
-            for (int index = 0; index < endpoints.Count; index++)
+            for (int index = endpoints.Count - 1; index >= 0; index--)
             {
-                if (endpoints[index].Rect.Contains(mousePosition))
+                if (endpoints[index].ClipRect.Contains(mousePosition) && endpoints[index].Rect.Contains(mousePosition))
                     return endpoints[index];
             }
 
@@ -444,6 +512,35 @@ namespace OldScars.Core.Items
             return null;
         }
 
+        private EquipmentDropTarget FindEquipmentTarget(Vector2 mousePosition)
+        {
+            for (int index = 0; index < equipmentTargets.Count; index++)
+            {
+                if (equipmentTargets[index].Rect.Contains(mousePosition))
+                    return equipmentTargets[index];
+            }
+            return null;
+        }
+
+        private void UpdateEquipmentHover(EquipmentDropTarget target)
+        {
+            if (!ReferenceEquals(hoveredEquipmentTarget, target))
+            {
+                hoveredEquipmentTarget = target;
+                equipmentHoverStartedAt = Time.unscaledTime;
+                equipmentHoverActivated = false;
+            }
+
+            if (target == null || equipmentHoverActivated ||
+                Time.unscaledTime - equipmentHoverStartedAt < EquipmentHoverSeconds)
+            {
+                return;
+            }
+
+            equipmentHoverActivated = true;
+            target.OnHover?.Invoke(target.SlotId);
+        }
+
         private void ResetPointerState()
         {
             sourceEndpoint = null;
@@ -456,6 +553,8 @@ namespace OldScars.Core.Items
             mergePreview = default;
             destinationInstanceId = null;
             dropIntent = DropIntent.None;
+            hoveredEquipmentTarget = null;
+            equipmentHoverActivated = false;
         }
 
         private void SetStatus(string message, InventoryToastSeverity severity)
@@ -472,16 +571,38 @@ namespace OldScars.Core.Items
 
         private sealed class EndpointView
         {
-            internal EndpointView(IGridStorageOwner owner, InventoryGridDebugView view, Rect rect)
+            internal EndpointView(IGridStorageOwner owner, InventoryGridDebugView view, Rect rect, Rect clipRect)
             {
                 Owner = owner;
                 View = view;
                 Rect = rect;
+                ClipRect = clipRect;
             }
 
             internal IGridStorageOwner Owner { get; }
             internal InventoryGridDebugView View { get; }
             internal Rect Rect { get; }
+            internal Rect ClipRect { get; }
+        }
+
+        private sealed class EquipmentDropTarget
+        {
+            internal EquipmentDropTarget(
+                string slotId,
+                Rect rect,
+                System.Func<InventoryEquipmentDropRequest, InventoryEquipmentDropResult> onDrop,
+                System.Action<string> onHover)
+            {
+                SlotId = slotId;
+                Rect = rect;
+                OnDrop = onDrop;
+                OnHover = onHover;
+            }
+
+            internal string SlotId { get; }
+            internal Rect Rect { get; }
+            internal System.Func<InventoryEquipmentDropRequest, InventoryEquipmentDropResult> OnDrop { get; }
+            internal System.Action<string> OnHover { get; }
         }
 
         private enum DropIntent
@@ -490,6 +611,38 @@ namespace OldScars.Core.Items
             Placement,
             DirectedMerge
         }
+    }
+
+    public readonly struct InventoryEquipmentDropRequest
+    {
+        public InventoryEquipmentDropRequest(
+            IGridStorageOwner sourceOwner,
+            string sourceInstanceId,
+            GridPlacement sourcePlacement,
+            string slotId)
+        {
+            SourceOwner = sourceOwner;
+            SourceInstanceId = sourceInstanceId;
+            SourcePlacement = sourcePlacement;
+            SlotId = slotId;
+        }
+
+        public IGridStorageOwner SourceOwner { get; }
+        public string SourceInstanceId { get; }
+        public GridPlacement SourcePlacement { get; }
+        public string SlotId { get; }
+    }
+
+    public readonly struct InventoryEquipmentDropResult
+    {
+        public InventoryEquipmentDropResult(bool success, string message)
+        {
+            Success = success;
+            Message = message;
+        }
+
+        public bool Success { get; }
+        public string Message { get; }
     }
 
     internal enum InventoryToastSeverity

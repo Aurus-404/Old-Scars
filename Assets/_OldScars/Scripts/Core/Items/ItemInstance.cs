@@ -1,4 +1,5 @@
 using OldScars.Core.Data.Definitions;
+using OldScars.Core.Data;
 using System;
 
 namespace OldScars.Core.Items
@@ -8,7 +9,9 @@ namespace OldScars.Core.Items
     ///
     /// Definitions live in JSON. Instances live in runtime now, and may later
     /// be owned by save data. This class does not implement inventory,
-    /// equipment, stacks, ownership, location, or durability logic.
+    /// equipment, stacks, root ownership, location, or durability logic. M34.2
+    /// allows the instance to own one spatial storage without making it the
+    /// authority for where the instance itself is located.
     /// </summary>
     public sealed class ItemInstance
     {
@@ -18,6 +21,9 @@ namespace OldScars.Core.Items
         public string DefinitionId { get; }
         public int Condition { get; }
         public int MaxStack { get; }
+        public string OwnedStorageProfileId { get; }
+        public ItemOwnedStorageRuntime OwnedStorage { get; }
+        public bool HasOwnedStorage => OwnedStorage != null;
 
         public ItemInstance(ItemDefinition definition)
         {
@@ -25,19 +31,23 @@ namespace OldScars.Core.Items
             DefinitionId = definition != null ? definition.id : null;
             Condition = GetInitialCondition(definition);
             MaxStack = GetMaxStack(definition);
+            OwnedStorageProfileId = definition != null ? definition.owned_storage_profile_id : null;
+            OwnedStorage = CreateOwnedStorage(OwnedStorageProfileId);
         }
 
-        private ItemInstance(string definitionId, int condition, int maxStack)
+        private ItemInstance(string definitionId, int condition, int maxStack, string ownedStorageProfileId)
         {
             InstanceId = CreateRuntimeInstanceId();
             DefinitionId = definitionId;
             Condition = Math.Max(1, condition);
             MaxStack = Math.Max(1, maxStack);
+            OwnedStorageProfileId = ownedStorageProfileId;
+            OwnedStorage = CreateOwnedStorage(OwnedStorageProfileId);
         }
 
         public ItemInstance CreateStackSibling()
         {
-            return new ItemInstance(DefinitionId, Condition, MaxStack);
+            return new ItemInstance(DefinitionId, Condition, MaxStack, OwnedStorageProfileId);
         }
 
         internal static int CaptureIdSequence()
@@ -68,6 +78,15 @@ namespace OldScars.Core.Items
         private static int GetMaxStack(ItemDefinition definition)
         {
             return definition != null ? Math.Max(1, definition.max_stack) : 1;
+        }
+
+        private ItemOwnedStorageRuntime CreateOwnedStorage(string profileId)
+        {
+            if (string.IsNullOrWhiteSpace(profileId) || GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+                return null;
+
+            ItemStorageProfileDefinition profile = GameDataManager.Instance.Database?.GetItemStorageProfile(profileId);
+            return profile != null ? new ItemOwnedStorageRuntime(this, profile) : null;
         }
     }
 }

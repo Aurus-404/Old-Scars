@@ -121,12 +121,13 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(transfer.Message ?? "Equipment storage transfer failed.");
 
                 equipment.AssignSlots(preview.InstanceId, preview.SlotIds);
-                inventory.ClearLegacyRightHandForEquipmentAuthority();
                 if (ownership == null)
                     throw new InvalidOperationException("Actor ownership validation failed after equip.");
                 if (!ownership.ValidateUniqueOwnership(out string ownershipError))
                     throw new InvalidOperationException(ownershipError ?? "Actor ownership validation failed after equip.");
 
+                inventory.ClearLegacyRightHandForEquipmentAuthority();
+                equipment.RebindActorOwnedItems();
                 equipment.RecordEquipped(item);
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item equipped.", preview.InstanceId, preview.SlotIds);
             }
@@ -136,6 +137,7 @@ namespace OldScars.Core.Items
                 equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
                 equipment.RestoreEquipmentState(slotSnapshot);
                 ItemInstance.RestoreIdSequence(idSequenceSnapshot);
+                equipment.RebindActorOwnedItems();
                 return EquipmentMutationResult.Rejected($"Equip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
         }
@@ -374,12 +376,13 @@ namespace OldScars.Core.Items
                 }
 
                 equipment.AssignSlots(plan.SourceInstanceId, plan.RequestedSlotSet);
-                inventory.ClearLegacyRightHandForEquipmentAuthority();
                 if (!ownership.ValidateUniqueOwnership(out ownershipError))
                     throw new InvalidOperationException(ownershipError ?? "Actor ownership validation failed after replacement.");
 
+                inventory.ClearLegacyRightHandForEquipmentAuthority();
                 for (int index = 0; index < displacedItems.Length; index++)
                     equipment.RecordUnequipped(displacedItems[index]);
+                equipment.RebindActorOwnedItems();
                 equipment.RecordEquipped(sourceItem);
                 return new EquipmentMutationResult(
                     true,
@@ -394,6 +397,7 @@ namespace OldScars.Core.Items
                 equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
                 equipment.RestoreEquipmentState(slotSnapshot);
                 ItemInstance.RestoreIdSequence(idSequenceSnapshot);
+                equipment.RebindActorOwnedItems();
                 return EquipmentMutationResult.Rejected(
                     $"Equipment replacement rolled back: {exception.Message}",
                     plan.SourceInstanceId,
@@ -461,12 +465,13 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(transfer.Message ?? "Personal inventory transfer failed.");
 
                 equipment.ClearSlots(preview.InstanceId);
-                inventory.ClearLegacyRightHandForEquipmentAuthority();
                 if (ownership == null)
                     throw new InvalidOperationException("Actor ownership validation failed after unequip.");
                 if (!ownership.ValidateUniqueOwnership(out string ownershipError))
                     throw new InvalidOperationException(ownershipError ?? "Actor ownership validation failed after unequip.");
 
+                inventory.ClearLegacyRightHandForEquipmentAuthority();
+                equipment.RebindActorOwnedItems();
                 equipment.RecordUnequipped(item);
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item unequipped to personal inventory.", preview.InstanceId, preview.SlotIds);
             }
@@ -476,6 +481,7 @@ namespace OldScars.Core.Items
                 equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
                 equipment.RestoreEquipmentState(slotSnapshot);
                 ItemInstance.RestoreIdSequence(idSequenceSnapshot);
+                equipment.RebindActorOwnedItems();
                 return EquipmentMutationResult.Rejected($"Unequip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
         }

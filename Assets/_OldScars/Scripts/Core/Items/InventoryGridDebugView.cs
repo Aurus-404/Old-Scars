@@ -8,9 +8,8 @@ namespace OldScars.Core.Items
 {
     public sealed class InventoryGridDebugView
     {
-        public const float CellSize = 42f;
-        public const float CellGap = 2f;
-        public const float CellPitch = CellSize + CellGap;
+        public const float DefaultCellSize = 32f;
+        public const float DefaultCellGap = 2f;
         private const float ItemInset = 2f;
 
         private static readonly Color CellColor = new Color(0.11f, 0.12f, 0.14f, 1f);
@@ -23,8 +22,18 @@ namespace OldScars.Core.Items
 
         private readonly HashSet<string> loggedMissingPlacementIds = new HashSet<string>();
         private string selectedInstanceId;
+        private float cellSize = DefaultCellSize;
+        private float cellGap = DefaultCellGap;
 
         public string SelectedInstanceId => selectedInstanceId;
+        public float CellSize => cellSize;
+        public float CellGap => cellGap;
+        public float CellPitch => cellSize + cellGap;
+
+        public void SetVisualCellSize(float size)
+        {
+            cellSize = Mathf.Clamp(size, 20f, 64f);
+        }
 
         public float GetRequiredWidth(int gridWidth)
         {
@@ -254,7 +263,7 @@ namespace OldScars.Core.Items
             GUI.Label(targetRect, label, GetCenteredLabelStyle());
         }
 
-        internal static Rect GetPlacementRect(Rect gridRect, GridPlacement placement)
+        internal Rect GetPlacementRect(Rect gridRect, GridPlacement placement)
         {
             return GetPlacementRect(
                 gridRect,
@@ -351,7 +360,7 @@ namespace OldScars.Core.Items
                 DrawSolidRect(rect, new Color(0f, 0f, 0f, 0.45f));
         }
 
-        private static void DrawCandidateCells(Rect gridRect, int x, int y, int width, int height, Color color)
+        private void DrawCandidateCells(Rect gridRect, int x, int y, int width, int height, Color color)
         {
             for (int cellY = 0; cellY < height; cellY++)
             {
@@ -360,12 +369,12 @@ namespace OldScars.Core.Items
             }
         }
 
-        private static Rect GetCellRect(Rect gridRect, int x, int y)
+        private Rect GetCellRect(Rect gridRect, int x, int y)
         {
             return new Rect(gridRect.x + x * CellPitch, gridRect.y + y * CellPitch, CellSize, CellSize);
         }
 
-        private static Rect GetPlacementRect(Rect gridRect, int x, int y, int width, int height)
+        private Rect GetPlacementRect(Rect gridRect, int x, int y, int width, int height)
         {
             return new Rect(
                 gridRect.x + x * CellPitch,
@@ -395,7 +404,7 @@ namespace OldScars.Core.Items
                 $"'{item.DefinitionId}' [{item.InstanceId}]. The UI will not invent a position; use Legacy List.");
         }
 
-        private static float GetGridPixels(int cellCount)
+        private float GetGridPixels(int cellCount)
         {
             return cellCount > 0 ? cellCount * CellSize + (cellCount - 1) * CellGap : 0f;
         }

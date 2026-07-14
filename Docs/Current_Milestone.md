@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M34.1, M34.1.1, M34.1.2 y M34.1.3 estan validados manualmente en Unity. M33.3.1 Weight-Limited Partial Transfers esta `implemented` en el checkout y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2 y M34.1.3 estan validados manualmente en Unity. M34.2 Item-Owned Storage / Backpack Foundation y M34.2.1 Inventory Interaction Unification & Backpack Access permanecen pendientes mientras M34.2.1a Fix Equipment From Item-Owned Storage esta `implemented` en el checkout y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -238,7 +238,7 @@ Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 ### M33.3.1: Weight-Limited Partial Transfers
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - `GridStorageTransferQuantityPolicy` separa `Exact` de `ClampIncomingToActorHardLimit`; las APIs existentes conservan `Exact` como default compatible.
 - Take Stack/Tomar todo y Shift+clic entrante hacia un actor con autoridad de peso solicitan clamp explicito. Take 1, Take Amount, drag exacto, merge dirigido, equipamiento, outgoing y storages no actor permanecen exactos.
@@ -248,6 +248,41 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - Si queda remanente, conserva source `InstanceId`, placement y seleccion External. Si desaparece, se selecciona el destination `InstanceId`, incluido un merge existente.
 - Los hooks siguen corriendo solo tras `Success`; containers y cadaveres conservan sus decisiones de loot/vacio basadas en el contenido real posterior.
 - No se modificaron escena, JSON, arte, prefabs, tags, loot tables, equipo, pickup/drop, necesidades, puertas, visibilidad, movimiento ni combate.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.2: Item-Owned Storage / Backpack Foundation
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `owned_storage_profile_id` vincula una definicion de item con un perfil cargado desde `item_storage_profiles.json`; cada `ItemInstance` crea su propio `ItemOwnedStorageRuntime` y conserva contenido/layout por `InstanceId`.
+- `small_backpack_01` es una mochila no stackable de `1.50 kg`, footprint `4x4`, equipable en el slot generico `back` y con storage espacial `8x10` definido por `backpack_small_01`.
+- El owner raiz se resuelve transitivamente por identidad runtime. Transfers exitosos actualizan ownership despues del commit; previews y rechazos no lo mutan.
+- El peso agrega exactamente una vez item contenedor y contenido. Transferencias entre inventario personal y mochila del mismo actor tienen delta cero; entradas externas y pickup de mochila usan el hard limit sobre el peso completo.
+- Item-owned storage dentro de otro item-owned storage queda rechazado en v0 con rollback/no mutacion; no hay nesting, pockets, save/load ni multiples compartimentos.
+- La UI OnGUI conserva tres columnas: la izquierda selecciona Inventario personal o una mochila accesible/equipada, el centro mantiene Equipment/detalles y la derecha conserva external storage. Celdas visuales configurables de `32 px` y scroll no cambian dimensiones logicas.
+- La mochila inicial del Debug Player se resuelve desde un actor profile data-driven por tag `player`; `SampleScene.unity` no fue modificada.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.2.1: Inventory Interaction Unification & Backpack Access
+
+Estado: `implemented`; pendiente de validacion manual en Unity. M34.2 sigue pendiente hasta validar M34.2.1a en Play Mode.
+
+- Las acciones de usar, equipar, reemplazar y soltar se resuelven para cualquier compartimento personal por instancia, owner raiz y servicios existentes; la ubicacion solo cambia destinos de transferencia.
+- El drag hacia equipment acepta inventario personal e item-owned storage del actor. Un slot compatible usa equip/replacement atomico; un slot ocupado por storage recibe items no equipables mediante `GridStorageTransferService` y mantiene no-nesting.
+- Shift+clic y doble clic comparten una unica transferencia rapida de stack. Entradas automaticas resuelven la autoridad de peso desde el owner raiz y usan `ClampIncomingToActorHardLimit`; acciones de cantidad y drag exacto siguen siendo exactos.
+- El selector muestra solamente storages equipados. Una mochila guardada ofrece `Revisar contenedor`, abre su runtime exacto por `InstanceId` en un overlay OnGUI y vuelve a cerrarse si pierde acceso.
+- Equipment vuelve a vincular inventario y equipment al mismo owner raiz del actor despues de commit o rollback; no crea `both_hands`, no copia storage y conserva IDs/contenido.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.2.1a: Fix Equipment From Item-Owned Storage
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- Se corrigio el falso stale de replacement: la simulacion anterior llamaba una API que exigia remover un source de la grilla personal aunque la instancia viviera en la mochila.
+- El preview item-owned captura `ContainerInstanceId`, versiones de storage/layout y placement del source. El commit re-resuelve el runtime por `InstanceId`, compara versiones reales y conserva el rechazo de stale legitimo.
+- Menu contextual y drag delegan en la misma transaccion atomica; snapshots de source, personal, equipment, slots e IDs se capturan solo despues de revalidar y antes de mutar.
+- Soltar un item sobre una mochila equipada conserva el compartimento visible. El cambio automatico por hover de `0.30 s` queda diferido como mejora UX.
+- M34.2 y M34.2.1 permanecen pendientes de validacion manual hasta confirmar este fix.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
 
 ## Ultimo Estado Validado
@@ -301,7 +336,7 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 
 ## Proximo Recomendado
 
-Validar M33.3.1 Weight-Limited Partial Transfers en Unity antes de cerrarlo como `validated`. Luego quedan pendientes M34.2 Item-Owned Storage/Backpack Foundation, la granularidad de grillas inspirada en Kenshi y M34.1.4 Item Inspection Panel. Los pendientes anteriores M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su estado.
+Validar M34.2.1a en Unity antes de cerrar M34.2 y M34.2.1 como `validated`. Confirmar equip/replacement desde mochila por menu y drag, rollback sin espacio, estabilidad del compartimento visible al depositar sobre `back` y ausencia de apertura automatica por hover. M33.3.1 ya esta `validated`; M34.1.4 Item Inspection Panel y los pendientes anteriores conservan su estado.
 
 Alcance recomendado:
 

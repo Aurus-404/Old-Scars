@@ -4,9 +4,21 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar M33.3.1: Weight-Limited Partial Transfers
+### Validar M34.2.1a: Fix Equipment From Item-Owned Storage
 
-Estado: `implemented`; pendiente de validacion manual en Unity. M34.1.3 esta `validated` por confirmacion del usuario.
+Estado: `implemented`; pendiente de validacion manual en Unity. M34.2 y M34.2.1 siguen pendientes hasta completar esta correccion. M33.3.1 esta `validated` por confirmacion del usuario.
+
+- equipar palanca desde mochila hacia cada mano, tanto con slot libre como reemplazando rifle 2H;
+- arrastrar rifle desde mochila a cualquiera de las manos y confirmar una sola entry ocupando ambos slots reales;
+- llenar la grilla personal e intentar replacement; confirmar source/equipment/placements intactos ante rechazo;
+- repetir menu contextual y drag para comprobar que ambos usan la misma revalidacion item-owned;
+- soltar un item sobre `back` ocupado por mochila y confirmar transferencia first-fit sin cambiar el compartimento visible;
+- confirmar que hover no abre automaticamente la mochila; esa mejora UX queda diferida;
+- repetir regresiones de equip personal, no-nesting, doble clic, clamp, `Revisar contenedor`, drop/pickup y Console sin errores rojos.
+
+### M33.3.1: Weight-Limited Partial Transfers
+
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 Objetivo inmediato:
 
@@ -27,16 +39,20 @@ Fuera de scope: item-owned storage, mochila funcional, pockets, nesting, peso de
 
 ### M34.2: Item-Owned Storage / Backpack Foundation
 
-Estado: `planned`; siguiente bloque funcional despues de validar M33.3.1 y aprobar su plan tecnico.
+Estado: `implemented`; pendiente de validacion manual en Unity.
 
-- incorporar el primer nodo item-owned sin duplicar `ItemInstance` ni reemplazar `ItemStorage`;
-- definir ownership/traversal y peso de subtree de forma acotada para una mochila funcional;
-- preservar equipment slots como referencias y `ActorItemOwnershipComponent` como agregado del actor;
-- no adelantar nesting general, pockets arbitrarios, save/load ni UI final sin aprobacion explicita.
+- crear dos `small_backpack_01`, cargar contenidos distintos y confirmar storage/layout independiente por `InstanceId`;
+- equipar, reemplazar y desequipar en `back`; confirmar contenido, IDs, placements, ownership y peso sin cambios;
+- mover items Personal <-> Mochila y External <-> Mochila por drag, Shift+clic y acciones 1/cantidad/todo;
+- confirmar delta cero en movimientos internos aun en `HardBlocked`, y hard limit/clamp exacto al entrar desde external;
+- soltar y recoger una mochila con contenido; confirmar una sola instancia, contenido intacto y peso completo de pickup/drop;
+- intentar mochila dentro de mochila, self/cycle y confirmar rechazo sin mutaciones con el mensaje v0;
+- validar selector de compartimentos, click en equipment `back`, fallback al perder acceso, celdas `32 px`, scroll e iconos;
+- confirmar containers/cadaveres, loot state, right_hand, pickup/drop, SampleScene y Data Load sin regresiones.
 
 ### Grid Granularity Polish
 
-Estado: `planned`; celdas mas pequenas inspiradas en Kenshi quedan posteriores a M34.2 y no forman parte de M33.3.1.
+Estado: `partial`; M34.2 agrega separacion entre dimensiones logicas y celdas visuales configurables de `32 px` con scroll. El rebalance completo de footprints queda pendiente.
 
 ### M34.1.4: Item Inspection Panel
 

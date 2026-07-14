@@ -103,6 +103,38 @@ namespace OldScars.Core.Items
             out InventoryMutationResult.MutationFailure failure,
             out string error)
         {
+            return TryReserveIncomingInternal(
+                removedInstanceId,
+                true,
+                incomingEntries,
+                out reservedPlacements,
+                out failure,
+                out error);
+        }
+
+        internal bool TryReserveIncoming(
+            IReadOnlyList<ItemStorageEntry> incomingEntries,
+            out GridPlacement[] reservedPlacements,
+            out InventoryMutationResult.MutationFailure failure,
+            out string error)
+        {
+            return TryReserveIncomingInternal(
+                null,
+                false,
+                incomingEntries,
+                out reservedPlacements,
+                out failure,
+                out error);
+        }
+
+        private bool TryReserveIncomingInternal(
+            string removedInstanceId,
+            bool removeExistingSource,
+            IReadOnlyList<ItemStorageEntry> incomingEntries,
+            out GridPlacement[] reservedPlacements,
+            out InventoryMutationResult.MutationFailure failure,
+            out string error)
+        {
             int incomingCount = incomingEntries != null ? incomingEntries.Count : 0;
             reservedPlacements = new GridPlacement[incomingCount];
             failure = InventoryMutationResult.MutationFailure.None;
@@ -116,9 +148,10 @@ namespace OldScars.Core.Items
                 error = "Personal grid layout does not match its storage.";
                 return false;
             }
-            if (string.IsNullOrWhiteSpace(removedInstanceId) ||
-                storage.GetEntryByInstanceId(removedInstanceId) == null ||
-                !layout.TryGetPlacement(removedInstanceId, out _))
+            if (removeExistingSource &&
+                (string.IsNullOrWhiteSpace(removedInstanceId) ||
+                 storage.GetEntryByInstanceId(removedInstanceId) == null ||
+                 !layout.TryGetPlacement(removedInstanceId, out _)))
             {
                 failure = InventoryMutationResult.MutationFailure.SourceNotFound;
                 error = $"Source placement '{removedInstanceId}' was not found.";
@@ -128,7 +161,7 @@ namespace OldScars.Core.Items
             var simulated = new GridInventoryLayout(layout.Width, layout.Height);
             foreach (GridPlacement placement in layout.Placements)
             {
-                if (placement == null || placement.InstanceId == removedInstanceId)
+                if (placement == null || (removeExistingSource && placement.InstanceId == removedInstanceId))
                     continue;
 
                 var occupied = new GridInventoryLayout.ReservedRect(

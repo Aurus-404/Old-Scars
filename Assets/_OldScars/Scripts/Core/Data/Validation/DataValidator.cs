@@ -18,6 +18,7 @@ namespace OldScars.Core.Data.Validation
         private const string EffectTargetTarget = "target";
         private const string LegacyRightHandSlotId = "right_hand";
         private const string HandRightSlotId = "hand_right";
+        private const int MaxItemStorageDimension = 64;
         private static readonly HashSet<string> RuntimeHealthTags = new HashSet<string>
         {
             "alive_actor",
@@ -56,6 +57,7 @@ namespace OldScars.Core.Data.Validation
             ValidateWeaponProfiles();
             ValidateFirearmProfiles();
             ValidateAmmoProfiles();
+            ValidateItemStorageProfiles();
             ValidateItems();
             ValidateLootTables();
             ValidateActorProfiles();
@@ -227,6 +229,7 @@ namespace OldScars.Core.Data.Validation
 
         private void ValidateActorProfiles()
         {
+            var inventorySeedTags = new HashSet<string>();
             foreach (ActorProfileDefinition actorProfile in database.GetAllActorProfiles())
             {
                 string ctx = $"ActorProfile '{SafeId(actorProfile != null ? actorProfile.id : null)}'";
@@ -242,6 +245,19 @@ namespace OldScars.Core.Data.Validation
 
                 if (string.IsNullOrWhiteSpace(actorProfile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
+
+                if (!string.IsNullOrWhiteSpace(actorProfile.inventory_seed_actor_tag))
+                {
+                    RequireSnakeCase(actorProfile.inventory_seed_actor_tag, "inventory_seed_actor_tag", ctx);
+                    if (!tags.IsValid(actorProfile.inventory_seed_actor_tag))
+                        report.Error($"{ctx}: inventory_seed_actor_tag '{actorProfile.inventory_seed_actor_tag}' is not registered in tags.json.");
+                    if (!inventorySeedTags.Add(actorProfile.inventory_seed_actor_tag))
+                        report.Error($"{ctx}: inventory_seed_actor_tag '{actorProfile.inventory_seed_actor_tag}' is already used by another actor profile.");
+                    if (!ContainsValue(actorProfile.initial_tags, actorProfile.inventory_seed_actor_tag))
+                        report.Error($"{ctx}: inventory_seed_actor_tag '{actorProfile.inventory_seed_actor_tag}' must also appear in initial_tags.");
+                    if (actorProfile.initial_inventory == null || actorProfile.initial_inventory.Length == 0)
+                        report.Error($"{ctx}: inventory_seed_actor_tag requires a non-empty initial_inventory.");
+                }
 
                 ValidateActorProfileInitialTags(actorProfile.initial_tags, $"{ctx}: initial_tags");
                 ValidateActorProfileHealth(actorProfile.health, $"{ctx}: health");
@@ -458,6 +474,7 @@ namespace OldScars.Core.Data.Validation
 
                 ValidateItemEquip(item, ctx);
                 ValidateItemInventoryMetadata(item, ctx);
+                ValidateItemOwnedStorage(item, ctx);
 
                 if (item.combat != null)
                     ValidateItemCombat(item, ctx);
@@ -467,6 +484,40 @@ namespace OldScars.Core.Data.Validation
 
                 ValidateItemFirearmAndAmmoProfiles(item, ctx);
             }
+        }
+
+        private void ValidateItemStorageProfiles()
+        {
+            foreach (ItemStorageProfileDefinition profile in database.GetAllItemStorageProfiles())
+            {
+                string ctx = $"ItemStorageProfile '{SafeId(profile != null ? profile.id : null)}'";
+                if (profile == null)
+                {
+                    report.Error("ItemStorageProfile: null definition loaded.");
+                    continue;
+                }
+
+                RequireType(profile.type, "item_storage_profile", ctx);
+                RequireSnakeCase(profile.id, "id", ctx);
+                if (string.IsNullOrWhiteSpace(profile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+                if (profile.width <= 0 || profile.width > MaxItemStorageDimension)
+                    report.Error($"{ctx}: 'width' must be between 1 and {MaxItemStorageDimension} (got {profile.width}).");
+                if (profile.height <= 0 || profile.height > MaxItemStorageDimension)
+                    report.Error($"{ctx}: 'height' must be between 1 and {MaxItemStorageDimension} (got {profile.height}).");
+            }
+        }
+
+        private void ValidateItemOwnedStorage(ItemDefinition item, string ctx)
+        {
+            if (string.IsNullOrWhiteSpace(item.owned_storage_profile_id))
+                return;
+
+            RequireSnakeCase(item.owned_storage_profile_id, "owned_storage_profile_id", ctx);
+            if (database.GetItemStorageProfile(item.owned_storage_profile_id) == null)
+                report.Error($"{ctx}: 'owned_storage_profile_id' references '{item.owned_storage_profile_id}' which was not loaded.");
+            if (item.max_stack != 1)
+                report.Error($"{ctx}: items with 'owned_storage_profile_id' must declare 'max_stack' exactly 1.");
         }
 
         private void ValidateItemInventoryMetadata(ItemDefinition item, string ctx)

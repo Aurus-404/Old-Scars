@@ -23,6 +23,7 @@ namespace OldScars.Core.Data.Definitions
         public ItemCombat combat;   // null if not usable as a weapon.
         public ItemConsumable consumable; // null if not consumable.
         public ItemInventoryMetadata? inventory; // Optional spatial-inventory metadata. Missing data falls back to 1x1.
+        public string owned_storage_profile_id; // Optional ItemStorageProfileDefinition.id owned by each runtime instance.
         public string firearm_profile_id; // references FirearmProfileDefinition.id
         public string ammo_profile_id;    // references AmmoProfileDefinition.id
     }

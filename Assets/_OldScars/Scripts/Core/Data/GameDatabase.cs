@@ -17,6 +17,7 @@ namespace OldScars.Core.Data
     public sealed class GameDatabase
     {
         private readonly Dictionary<string, ItemDefinition> _items = new Dictionary<string, ItemDefinition>();
+        private readonly Dictionary<string, ItemStorageProfileDefinition> _itemStorageProfiles = new Dictionary<string, ItemStorageProfileDefinition>();
         private readonly Dictionary<string, EquipmentSlotDefinition> _equipmentSlots = new Dictionary<string, EquipmentSlotDefinition>();
         private readonly Dictionary<string, EquipmentLayoutDefinition> _equipmentLayouts = new Dictionary<string, EquipmentLayoutDefinition>();
         private readonly Dictionary<string, WeaponProfileDefinition> _weaponProfiles = new Dictionary<string, WeaponProfileDefinition>();
@@ -28,6 +29,7 @@ namespace OldScars.Core.Data
         private readonly Dictionary<string, WorldObjectProfileDefinition> _worldObjectProfiles = new Dictionary<string, WorldObjectProfileDefinition>();
 
         public int ItemCount => _items.Count;
+        public int ItemStorageProfileCount => _itemStorageProfiles.Count;
         public int EquipmentSlotCount => _equipmentSlots.Count;
         public int EquipmentLayoutCount => _equipmentLayouts.Count;
         public int WeaponProfileCount => _weaponProfiles.Count;
@@ -43,6 +45,11 @@ namespace OldScars.Core.Data
         public void RegisterItem(ItemDefinition definition, DataLoadReport report)
         {
             Register(_items, definition != null ? definition.id : null, definition, "Item", report);
+        }
+
+        public void RegisterItemStorageProfile(ItemStorageProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_itemStorageProfiles, definition != null ? definition.id : null, definition, "ItemStorageProfile", report);
         }
 
         public void RegisterEquipmentSlot(EquipmentSlotDefinition definition, DataLoadReport report)
@@ -120,6 +127,11 @@ namespace OldScars.Core.Data
             return Lookup(_items, id);
         }
 
+        public ItemStorageProfileDefinition GetItemStorageProfile(string id)
+        {
+            return Lookup(_itemStorageProfiles, id);
+        }
+
         public EquipmentSlotDefinition GetEquipmentSlot(string id)
         {
             return Lookup(_equipmentSlots, id);
@@ -181,6 +193,11 @@ namespace OldScars.Core.Data
             return _items.Values;
         }
 
+        public IEnumerable<ItemStorageProfileDefinition> GetAllItemStorageProfiles()
+        {
+            return _itemStorageProfiles.Values;
+        }
+
         public IEnumerable<EquipmentSlotDefinition> GetAllEquipmentSlots()
         {
             return _equipmentSlots.Values;
@@ -230,6 +247,7 @@ namespace OldScars.Core.Data
         {
             Debug.Log("[GameDatabase] Loaded definitions:" +
                       $"\n  Items:           {_items.Count}" +
+                      $"\n  ItemStorageProfiles: {_itemStorageProfiles.Count}" +
                       $"\n  EquipmentSlots:  {_equipmentSlots.Count}" +
                       $"\n  EquipmentLayouts:{_equipmentLayouts.Count}" +
                       $"\n  WeaponProfiles:  {_weaponProfiles.Count}" +

@@ -1121,7 +1121,7 @@ Con equipped item definition id none o vacio:
 - `Oven` queda preparado semanticamente como posible workstation futura solo mediante tags.
 - No se implementaron crafting, recetas, WorkstationComponent, UI nueva, puertas, player, movimiento, armas ni animaciones.
 - No se tocaron scripts C#, prefabs ni crates debug existentes.
-- Estado: implemented; pendiente de validacion manual en Unity.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario.
 
 ### Milestone 32.2: Real Door System v0
 
@@ -1141,7 +1141,7 @@ Con equipped item definition id none o vacio:
 - `WorldObjectStateView` y `WorldObjectDebugInfo` de las puertas M32 reconocen `locked_door`, `closed_door`, `opened_door` y `forced_open` legacy.
 - La puerta debug vieja fuera de M32 fue actualizada para que `opened_door` tenga reglas/textos coherentes despues del cambio global de `force_door`.
 - No se tocaron containers, loot, inventario, player, movimiento, armas, animaciones del player, UI nueva, crafting, HingeJoint, Rigidbody ni fisica real.
-- Estado: implemented; pendiente de validacion manual en Unity.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario.
 
 ### Milestone 32.4: Interior Visibility Raycast v0
 
@@ -1355,7 +1355,44 @@ Con equipped item definition id none o vacio:
 - Se agregaron toasts humanos en espanol para parcial y bloqueo total, sin cambiar el toast absoluto ni crear UI nueva.
 - No se modificaron escena, JSON, arte, sprites, prefabs, loot tables, tags, equipment, pickup/drop, necesidades, puertas, visibilidad, movimiento ni combate.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
-- Estado: implemented; pendiente de validacion manual en Unity.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario.
+
+### M34.2: Item-Owned Storage / Backpack Foundation
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- Se agrego `ItemStorageProfileDefinition` y el pipeline `item_storage_profiles.json` -> loader -> database -> validator/stats, con IDs unicos, dimensiones `1..64`, referencias validas y `max_stack = 1` obligatorio.
+- `ItemInstance` posee opcionalmente un `ItemOwnedStorageRuntime`; storage, layout `8x10`, backend, versiones y contenido pertenecen al `InstanceId`, por lo que dos mochilas iguales no comparten estado.
+- `ItemOwnedStorageRegistry` resuelve storage y owner raiz por identidad runtime, protege ciclos y solo reconcilia ownership despues de un commit exitoso.
+- `GridStorageTransferService` reutiliza los backends existentes, aplica no-nesting antes de mutar, conserva receipts/rollback/hooks y omite preflight de peso solamente cuando source y target comparten owner raiz.
+- `ItemWeightResolver` suma peso propio y subtree una sola vez. Pickup de mochila usa peso completo; entrada external -> mochila delega al hard limit del actor; movimientos Personal <-> Mochila mantienen delta cero.
+- `small_backpack_01` pesa `1.50 kg`, ocupa `4x4`, usa `backpack_small_01` (`8x10`) y se agrega al inventario inicial debug mediante actor profile por tag `player`, sin editar escena.
+- La UI OnGUI agrega selector de compartimentos, apertura desde Equipment `back`, transferencias contextuales, grilla izquierda activa frente a external, celda visual configurable y scroll horizontal/vertical.
+- Nesting, pockets, multiples compartimentos, save/load, UI final y arte permanecen fuera de scope. `SampleScene.unity`, loot tables e iconos no se modificaron.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.2.1: Inventory Interaction Unification & Backpack Access
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `InventoryContextActionResolver` ya no reduce capacidades por estar dentro de una mochila: use, equip/replacement y drop se resuelven por instancia, definicion y owner raiz.
+- Se agrego una transaccion atomica para equipar desde item-owned storage reutilizando el backend actual, con snapshots de source, personal, equipment, slots e IDs; las alternativas de dos manos siguen siendo los slots reales declarados.
+- Las filas de equipment aceptan drag: primero equip/replacement compatible y, si no aplica, transferencia first-fit al storage del ocupante con no-nesting.
+- Shift+clic y doble clic usan la misma ruta de stack. La politica automatica entrante se obtiene del owner raiz del destino y aplica clamp por hard limit; Take 1/cantidad, drag exacto y merge dirigido permanecen exactos.
+- El selector personal enumera solo storages equipados. `Revisar contenedor` abre un overlay OnGUI por `InstanceId` para una mochila guardada y `Escape` lo cierra antes que la sesion.
+- M34.2 y M34.2.1 permanecen pendientes de validacion manual hasta confirmar M34.2.1a.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo los cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.2.1a: Fix Equipment From Item-Owned Storage
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- La causa del falso stale era `TryReserveIncomingAfterRemoving(null, ...)`: esa API exige un source existente en la grilla personal y devolvia `SourceNotFound` para cualquier source real dentro de mochila.
+- `GridInventoryBackend.TryReserveIncoming` simula ahora la entrada de equipment desplazado sin remover un source personal inexistente; la variante historica con remocion conserva sus validaciones.
+- Los previews item-owned capturan container, versiones de storage/layout y placement. Equip/replacement re-resuelven el runtime por identidad, revalidan personal/equipment/source y capturan snapshots antes del commit.
+- Menu contextual y drag siguen usando `ActorEquipmentComponent` como unica entrada a la misma transaccion.
+- El drop sobre storage equipado conserva el compartimento visible y mantiene el toast existente. El cambio por hover de `0.30 s` queda diferido.
+- M34.2 y M34.2.1 siguen pendientes; M33.3.1 queda `validated` por confirmacion manual del usuario.
 
 ## Decisiones De Scope
 

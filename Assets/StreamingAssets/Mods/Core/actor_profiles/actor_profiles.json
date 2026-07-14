@@ -2,6 +2,21 @@
   "actor_profiles": [
     {
       "type": "actor_profile",
+      "id": "debug_player_inventory_01",
+      "display_name": "Debug Player Starting Inventory",
+      "inventory_seed_actor_tag": "player",
+      "equipment_layout_id": "human_standard_01",
+      "initial_tags": ["player", "human"],
+      "health": {
+        "max_health": 100,
+        "current_health": 100
+      },
+      "initial_inventory": [
+        { "item_id": "small_backpack_01", "quantity": 1 }
+      ]
+    },
+    {
+      "type": "actor_profile",
       "id": "debug_npc_capsule_01",
       "display_name": "Debug NPC Capsule",
       "equipment_layout_id": "human_standard_01",

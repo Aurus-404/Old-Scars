@@ -69,6 +69,51 @@ namespace OldScars.Core.Items
             return true;
         }
 
+        public static bool TryDrop(
+            IGridStorageOwner sourceOwner,
+            string sourceInstanceId,
+            InventoryComponent actorInventory,
+            int requestedQuantity,
+            string dropActionId,
+            string dropActionDisplayName,
+            out string message)
+        {
+            message = null;
+            if (sourceOwner == null || actorInventory == null ||
+                !ItemOwnedStorageRegistry.Instance.ShareRootOwner(sourceOwner, actorInventory) ||
+                !sourceOwner.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
+                sourceEntry?.Item == null || requestedQuantity < 1)
+            {
+                message = "Drop failed: invalid actor-owned item.";
+                return false;
+            }
+
+            int dropQuantity = Mathf.Min(requestedQuantity, sourceEntry.Quantity);
+            string definitionId = sourceEntry.DefinitionId;
+            string displayName = GetItemDisplayName(definitionId);
+            GameObject worldItem = CreateWorldItemRoot(actorInventory.transform, displayName);
+            WorldItemPickup pickup = worldItem.AddComponent<WorldItemPickup>();
+            int transferredQuantity = pickup.ReceiveDroppedItem(sourceOwner, sourceInstanceId, dropQuantity);
+            if (transferredQuantity <= 0)
+            {
+                Object.Destroy(worldItem);
+                message = $"Drop failed: {displayName} was not transferred.";
+                return false;
+            }
+
+            RecordDrop(
+                actorInventory,
+                worldItem,
+                definitionId,
+                displayName,
+                transferredQuantity,
+                dropActionId,
+                dropActionDisplayName,
+                false);
+            message = $"Dropped {displayName} x{transferredQuantity}.";
+            return true;
+        }
+
         private static GameObject CreateWorldItemRoot(Transform actorTransform, string displayName)
         {
             var worldItem = new GameObject($"Dropped World Item - {displayName}");

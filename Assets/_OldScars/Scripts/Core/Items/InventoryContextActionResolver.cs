@@ -6,6 +6,55 @@ namespace OldScars.Core.Items
 {
     public static class InventoryContextActionResolver
     {
+        public static IReadOnlyList<InventoryContextAction> ResolvePersonalCompartment(
+            IGridStorageOwner sourceOwner,
+            InventoryComponent inventory,
+            ActorEquipmentComponent equipment,
+            PersonalStorageNavigator navigator,
+            string instanceId,
+            bool hasExternalDestination)
+        {
+            var compartmentActions = new List<InventoryContextAction>();
+            if (sourceOwner == null ||
+                !sourceOwner.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry compartmentEntry) ||
+                compartmentEntry?.Item == null)
+            {
+                return compartmentActions;
+            }
+
+            if (InventoryItemUseService.IsConsumable(compartmentEntry))
+                compartmentActions.Add(new InventoryContextAction(InventoryContextActionKind.Use, "Usar / Consumir"));
+
+            AddEquipActions(compartmentActions, equipment, sourceOwner, instanceId);
+
+            if (ReferenceEquals(sourceOwner, inventory) && compartmentEntry.Item.HasOwnedStorage &&
+                navigator != null && !navigator.IsEquippedOwnedStorage(instanceId))
+            {
+                compartmentActions.Add(new InventoryContextAction(
+                    InventoryContextActionKind.ReviewOwnedStorage,
+                    "Revisar contenedor"));
+            }
+
+            if (!ReferenceEquals(sourceOwner, inventory))
+                AddMoveToPersonalActions(compartmentActions, compartmentEntry);
+
+            IReadOnlyList<PersonalStorageOption> options = navigator?.GetOptions();
+            if (!compartmentEntry.Item.HasOwnedStorage && options != null)
+            {
+                for (int index = 1; index < options.Count; index++)
+                {
+                    if (!ReferenceEquals(options[index].Owner, sourceOwner))
+                        AddMoveToOwnedStorageActions(compartmentActions, compartmentEntry, options[index]);
+                }
+            }
+
+            if (hasExternalDestination)
+                AddDepositActions(compartmentActions, compartmentEntry);
+
+            AddDropActions(compartmentActions, compartmentEntry);
+            return compartmentActions;
+        }
+
         public static IReadOnlyList<InventoryContextAction> ResolvePersonal(
             InventoryComponent inventory,
             ActorEquipmentComponent equipment,
@@ -23,7 +72,7 @@ namespace OldScars.Core.Items
             if (InventoryItemUseService.IsConsumable(entry))
                 actions.Add(new InventoryContextAction(InventoryContextActionKind.Use, "Usar / Consumir"));
 
-            AddEquipActions(actions, equipment, instanceId);
+            AddEquipActions(actions, equipment, inventory, instanceId);
 
             if (hasExternalDestination)
             {
@@ -39,16 +88,7 @@ namespace OldScars.Core.Items
                 }
             }
 
-            if (entry.Quantity == 1)
-            {
-                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar"));
-            }
-            else
-            {
-                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropOne, "Soltar 1"));
-                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropAmount, "Soltar cantidad..."));
-                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar todo"));
-            }
+            AddDropActions(actions, entry);
             return actions;
         }
 
@@ -108,16 +148,17 @@ namespace OldScars.Core.Items
         private static void AddEquipActions(
             List<InventoryContextAction> actions,
             ActorEquipmentComponent equipment,
+            IGridStorageOwner sourceOwner,
             string instanceId)
         {
             if (equipment == null)
                 return;
 
-            IReadOnlyList<EquipmentSlotSet> alternatives = equipment.GetCompatibleSlotSets(instanceId);
+            IReadOnlyList<EquipmentSlotSet> alternatives = equipment.GetCompatibleSlotSets(sourceOwner, instanceId);
             for (int index = 0; index < alternatives.Count; index++)
             {
                 string[] slotIds = alternatives[index].SlotIds;
-                EquipmentPreview preview = equipment.PreviewEquip(instanceId, slotIds);
+                EquipmentPreview preview = equipment.PreviewEquip(sourceOwner, instanceId, slotIds);
                 string slotLabel = GetSlotSetLabel(equipment, slotIds);
                 if (preview.Success && !preview.RequiresChoice)
                 {
@@ -132,7 +173,7 @@ namespace OldScars.Core.Items
 
                 if (preview.FailureCode == EquipmentFailureCode.SlotOccupied)
                 {
-                    EquipmentReplacementPlan replacement = equipment.PreviewEquipReplacing(instanceId, slotIds);
+                    EquipmentReplacementPlan replacement = equipment.PreviewEquipReplacing(sourceOwner, instanceId, slotIds);
                     string[] displacedIds = GetDisplacedIds(replacement);
                     actions.Add(new InventoryContextAction(
                         InventoryContextActionKind.EquipReplacing,
@@ -157,6 +198,73 @@ namespace OldScars.Core.Items
                     EquipmentFailureMessageFormatter.FormatFailure(preview.FailureCode, equipment, slotIds),
                     slotIds));
             }
+        }
+
+        private static void AddDropActions(List<InventoryContextAction> actions, ItemStorageEntry entry)
+        {
+            if (entry.Quantity == 1)
+            {
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar"));
+                return;
+            }
+
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.DropOne, "Soltar 1"));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.DropAmount, "Soltar cantidad..."));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar todo"));
+        }
+
+        private static void AddMoveToPersonalActions(List<InventoryContextAction> actions, ItemStorageEntry entry)
+        {
+            if (entry.Quantity == 1)
+            {
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.MoveToPersonalStack, "Mover a Inventario personal"));
+                return;
+            }
+
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.MoveToPersonalOne, "Mover 1 a Inventario personal"));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.MoveToPersonalAmount, "Mover cantidad a Inventario personal..."));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.MoveToPersonalStack, "Mover todo a Inventario personal"));
+        }
+
+        private static void AddMoveToOwnedStorageActions(
+            List<InventoryContextAction> actions,
+            ItemStorageEntry entry,
+            PersonalStorageOption option)
+        {
+            if (entry.Quantity == 1)
+            {
+                actions.Add(new InventoryContextAction(
+                    InventoryContextActionKind.MoveToOwnedStorageStack,
+                    $"Mover a {option.Label}",
+                    targetContainerInstanceId: option.ContainerInstanceId));
+                return;
+            }
+
+            actions.Add(new InventoryContextAction(
+                InventoryContextActionKind.MoveToOwnedStorageOne,
+                $"Mover 1 a {option.Label}",
+                targetContainerInstanceId: option.ContainerInstanceId));
+            actions.Add(new InventoryContextAction(
+                InventoryContextActionKind.MoveToOwnedStorageAmount,
+                $"Mover cantidad a {option.Label}...",
+                targetContainerInstanceId: option.ContainerInstanceId));
+            actions.Add(new InventoryContextAction(
+                InventoryContextActionKind.MoveToOwnedStorageStack,
+                $"Mover todo a {option.Label}",
+                targetContainerInstanceId: option.ContainerInstanceId));
+        }
+
+        private static void AddDepositActions(List<InventoryContextAction> actions, ItemStorageEntry entry)
+        {
+            if (entry.Quantity == 1)
+            {
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositStack, "Depositar"));
+                return;
+            }
+
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositOne, "Depositar 1"));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositAmount, "Depositar cantidad..."));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositStack, "Depositar todo"));
         }
 
         private static string[] GetDisplacedIds(EquipmentReplacementPlan plan)
