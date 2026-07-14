@@ -10,6 +10,7 @@ namespace OldScars.Core.Items
         ShowDetails,
         Use,
         Equip,
+        EquipReplacing,
         Unequip,
         DropOne,
         DropAmount,
@@ -36,13 +37,15 @@ namespace OldScars.Core.Items
             string label,
             bool enabled = true,
             string disabledReason = null,
-            IReadOnlyList<string> equipmentSlotIds = null)
+            IReadOnlyList<string> equipmentSlotIds = null,
+            string detail = null)
         {
             Kind = kind;
             Label = string.IsNullOrWhiteSpace(label) ? kind.ToString() : label;
             Enabled = enabled;
             DisabledReason = disabledReason;
             EquipmentSlotIds = Copy(equipmentSlotIds);
+            Detail = detail;
         }
 
         public InventoryContextActionKind Kind { get; }
@@ -50,6 +53,7 @@ namespace OldScars.Core.Items
         public bool Enabled { get; }
         public string DisabledReason { get; }
         public string[] EquipmentSlotIds { get; }
+        public string Detail { get; }
 
         public bool RequiresQuantityDialog =>
             Kind == InventoryContextActionKind.DropAmount ||

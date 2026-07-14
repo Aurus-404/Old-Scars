@@ -417,6 +417,9 @@ namespace OldScars.Core.Items
                 case InventoryContextActionKind.Equip:
                     EquipPersonalItem(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
                     return;
+                case InventoryContextActionKind.EquipReplacing:
+                    EquipReplacingPersonalItem(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    return;
                 case InventoryContextActionKind.Unequip:
                     UnequipEquipmentItem(entry.Item.InstanceId);
                     return;
@@ -636,27 +639,13 @@ namespace OldScars.Core.Items
                     out ItemStorageEntry entry))
             {
                 DrawEmptyDetails(CenterDetailsHeight);
-                DrawUnavailableTransferButtons();
                 GUILayout.FlexibleSpace();
                 GUILayout.EndVertical();
                 return;
             }
 
             DrawSelectedGridDetails(activeOwner, playerSide, entry, CenterDetailsHeight);
-            if (playerSide)
-            {
-                if (GUILayout.Button("Deposit 1", GUILayout.Height(28f)))
-                    TransferQuantity(targetInventory, storageSource, entry.Item.InstanceId, 1);
-                if (GUILayout.Button("Deposit Stack", GUILayout.Height(28f)))
-                    TransferStack(targetInventory, storageSource, entry.Item.InstanceId);
-            }
-            else
-            {
-                if (GUILayout.Button("Take 1", GUILayout.Height(28f)))
-                    TransferQuantity(storageSource, targetInventory, entry.Item.InstanceId, 1);
-                if (GUILayout.Button("Take Stack", GUILayout.Height(28f)))
-                    TransferStack(storageSource, targetInventory, entry.Item.InstanceId);
-            }
+            GUILayout.Label("Right-click the selected item for transfer actions.");
 
             GUILayout.FlexibleSpace();
             GUILayout.EndVertical();
@@ -757,15 +746,6 @@ namespace OldScars.Core.Items
             GUILayout.EndVertical();
         }
 
-        private static void DrawUnavailableTransferButtons()
-        {
-            bool previousEnabled = GUI.enabled;
-            GUI.enabled = false;
-            GUILayout.Button("Take 1 / Deposit 1", GUILayout.Height(28f));
-            GUILayout.Button("Take Stack / Deposit Stack", GUILayout.Height(28f));
-            GUI.enabled = previousEnabled;
-        }
-
         private void DrawCarryWeightSummary()
         {
             CarryWeightSnapshot snapshot = targetInventory.GetCarryWeightSnapshot();
@@ -816,8 +796,39 @@ namespace OldScars.Core.Items
         {
             EquipmentMutationResult result = actorEquipment != null
                 ? actorEquipment.Equip(actorEquipment.PreviewEquip(instanceId, slotIds))
-                : EquipmentMutationResult.Rejected("Actor equipment is unavailable.", instanceId);
-            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+                : EquipmentMutationResult.Rejected(
+                    "Actor equipment is unavailable.",
+                    instanceId,
+                    EquipmentFailureCode.MissingDependencies);
+            string message = result.Success
+                ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, false)
+                : EquipmentFailureMessageFormatter.FormatFailure(result.FailureCode, actorEquipment, slotIds);
+            toast.Show(message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
+            sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
+            ReconcileSelections();
+            GUIUtility.ExitGUI();
+        }
+
+        private void EquipReplacingPersonalItem(string instanceId, IReadOnlyList<string> slotIds)
+        {
+            EquipmentReplacementPlan plan = actorEquipment != null
+                ? actorEquipment.PreviewEquipReplacing(instanceId, slotIds)
+                : null;
+            EquipmentMutationResult result = actorEquipment != null
+                ? actorEquipment.EquipReplacing(plan)
+                : EquipmentMutationResult.Rejected(
+                    "Actor equipment is unavailable.",
+                    instanceId,
+                    EquipmentFailureCode.MissingDependencies);
+            string[] displacedIds = GetDisplacedIds(plan);
+            string message = result.Success
+                ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, true)
+                : EquipmentFailureMessageFormatter.FormatFailure(result.FailureCode, actorEquipment, slotIds, displacedIds);
+            toast.Show(message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             if (!result.Success)
                 return;
 
@@ -831,8 +842,18 @@ namespace OldScars.Core.Items
         {
             EquipmentMutationResult result = actorEquipment != null
                 ? actorEquipment.Unequip(actorEquipment.PreviewUnequip(instanceId))
-                : EquipmentMutationResult.Rejected("Actor equipment is unavailable.", instanceId);
-            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+                : EquipmentMutationResult.Rejected(
+                    "Actor equipment is unavailable.",
+                    instanceId,
+                    EquipmentFailureCode.MissingDependencies);
+            string message = result.Success
+                ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, true, false)
+                : EquipmentFailureMessageFormatter.FormatFailure(
+                    result.FailureCode,
+                    actorEquipment,
+                    actorEquipment != null ? actorEquipment.GetSlotsOccupiedBy(instanceId) : null,
+                    new[] { instanceId });
+            toast.Show(message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             if (!result.Success)
                 return;
 
@@ -841,6 +862,15 @@ namespace OldScars.Core.Items
             playerGridView.SelectInstance(result.InstanceId);
             ReconcileSelections();
             GUIUtility.ExitGUI();
+        }
+
+        private static string[] GetDisplacedIds(EquipmentReplacementPlan plan)
+        {
+            int count = plan?.DisplacedItems?.Length ?? 0;
+            var result = new string[count];
+            for (int index = 0; index < count; index++)
+                result[index] = plan.DisplacedItems[index]?.InstanceId;
+            return result;
         }
 
         private void DropPersonalItem(

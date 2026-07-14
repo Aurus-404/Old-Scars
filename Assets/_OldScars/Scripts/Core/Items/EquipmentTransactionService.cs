@@ -16,7 +16,7 @@ namespace OldScars.Core.Items
             bool availableOnly)
         {
             var result = new List<EquipmentSlotSet>();
-            if (!TryResolvePersonalEntry(equipment, instanceId, out ItemStorageEntry entry, out _))
+            if (!TryResolvePersonalEntry(equipment, instanceId, out ItemStorageEntry entry, out _, out _))
                 return result;
 
             ItemDefinition definition = ResolveItemDefinition(entry.DefinitionId);
@@ -39,22 +39,29 @@ namespace OldScars.Core.Items
             string instanceId,
             IReadOnlyList<string> requestedSlotSet)
         {
-            if (!TryResolvePersonalEntry(equipment, instanceId, out ItemStorageEntry entry, out string error))
-                return Invalid(error, instanceId, equipment);
+            if (!TryResolvePersonalEntry(
+                    equipment,
+                    instanceId,
+                    out ItemStorageEntry entry,
+                    out EquipmentFailureCode resolutionFailure,
+                    out string error))
+            {
+                return Invalid(resolutionFailure, error, instanceId, equipment);
+            }
             if (entry.Quantity != 1)
-                return Invalid($"Item instance '{instanceId}' must have quantity 1 to equip.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.InvalidQuantity, $"Item instance '{instanceId}' must have quantity 1 to equip.", instanceId, equipment);
 
             ItemDefinition definition = ResolveItemDefinition(entry.DefinitionId);
             if (!IsEquipEnabled(definition))
-                return Invalid($"Item '{entry.DefinitionId}' is not equipable.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.NotEquipable, $"Item '{entry.DefinitionId}' is not equipable.", instanceId, equipment);
             if (definition.max_stack != 1)
-                return Invalid($"Equipable item '{entry.DefinitionId}' must use max_stack = 1.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.InvalidQuantity, $"Equipable item '{entry.DefinitionId}' must use max_stack = 1.", instanceId, equipment);
 
             IReadOnlyList<EquipmentSlotSet> available = GetCompatibleSlotSets(equipment, instanceId, true);
             if (requestedSlotSet == null || requestedSlotSet.Count == 0)
             {
                 if (available.Count == 0)
-                    return Invalid("No compatible free slot set is available.", instanceId, equipment);
+                    return Invalid(EquipmentFailureCode.SlotOccupied, "No compatible free slot set is available.", instanceId, equipment);
                 if (available.Count > 1)
                     return ChoiceRequired(instanceId, equipment);
                 return Valid(instanceId, available[0].SlotIds, null, equipment);
@@ -72,9 +79,9 @@ namespace OldScars.Core.Items
                 }
             }
             if (!declared)
-                return Invalid("Requested slots are not a declared complete alternative for this item.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.InvalidSlotSet, "Requested slots are not a declared complete alternative for this item.", instanceId, equipment);
             if (!IsSlotSetCompatible(equipment, requested, true, instanceId))
-                return Invalid("One or more requested equipment slots are occupied or unavailable.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.SlotOccupied, "One or more requested equipment slots are occupied or unavailable.", instanceId, equipment);
 
             return Valid(instanceId, requested, null, equipment);
         }
@@ -84,13 +91,16 @@ namespace OldScars.Core.Items
             EquipmentPreview preview)
         {
             if (equipment == null || preview == null || !preview.Success || preview.RequiresChoice)
-                return EquipmentMutationResult.Rejected(preview?.Message ?? "A valid equip preview is required.", preview?.InstanceId);
+                return EquipmentMutationResult.Rejected(
+                    preview?.Message ?? "A valid equip preview is required.",
+                    preview?.InstanceId,
+                    preview?.FailureCode ?? EquipmentFailureCode.InvalidPreview);
             if (!VersionsMatch(equipment, preview))
-                return EquipmentMutationResult.Rejected("Equipment preview is stale; retry the operation.", preview.InstanceId);
+                return EquipmentMutationResult.Rejected("Equipment preview is stale; retry the operation.", preview.InstanceId, EquipmentFailureCode.StaleState);
 
             EquipmentPreview current = PreviewEquip(equipment, preview.InstanceId, preview.SlotIds);
             if (!current.Success || current.RequiresChoice)
-                return EquipmentMutationResult.Rejected(current.Message, preview.InstanceId);
+                return EquipmentMutationResult.Rejected(current.Message, preview.InstanceId, current.FailureCode);
 
             InventoryComponent inventory = equipment.PersonalInventory;
             ActorItemOwnershipComponent ownership = equipment.Ownership;
@@ -118,7 +128,7 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(ownershipError ?? "Actor ownership validation failed after equip.");
 
                 equipment.RecordEquipped(item);
-                return new EquipmentMutationResult(true, "Item equipped.", preview.InstanceId, preview.SlotIds);
+                return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item equipped.", preview.InstanceId, preview.SlotIds);
             }
             catch (Exception exception)
             {
@@ -126,7 +136,268 @@ namespace OldScars.Core.Items
                 equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
                 equipment.RestoreEquipmentState(slotSnapshot);
                 ItemInstance.RestoreIdSequence(idSequenceSnapshot);
-                return EquipmentMutationResult.Rejected($"Equip rolled back: {exception.Message}", preview.InstanceId);
+                return EquipmentMutationResult.Rejected($"Equip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
+            }
+        }
+
+        public static EquipmentReplacementPlan PreviewEquipReplacing(
+            ActorEquipmentComponent equipment,
+            string instanceId,
+            IReadOnlyList<string> requestedSlotSet)
+        {
+            if (!TryResolvePersonalEntry(
+                    equipment,
+                    instanceId,
+                    out ItemStorageEntry sourceEntry,
+                    out EquipmentFailureCode resolutionFailure,
+                    out string error))
+            {
+                return InvalidReplacement(resolutionFailure, error, instanceId, requestedSlotSet, null, equipment);
+            }
+            if (sourceEntry.Quantity != 1)
+            {
+                return InvalidReplacement(
+                    EquipmentFailureCode.InvalidQuantity,
+                    $"Item instance '{instanceId}' must have quantity 1 to equip.",
+                    instanceId,
+                    requestedSlotSet,
+                    null,
+                    equipment);
+            }
+
+            ItemDefinition definition = ResolveItemDefinition(sourceEntry.DefinitionId);
+            if (!IsEquipEnabled(definition))
+                return InvalidReplacement(EquipmentFailureCode.NotEquipable, $"Item '{sourceEntry.DefinitionId}' is not equipable.", instanceId, requestedSlotSet, null, equipment);
+            if (definition.max_stack != 1)
+                return InvalidReplacement(EquipmentFailureCode.InvalidQuantity, $"Equipable item '{sourceEntry.DefinitionId}' must use max_stack = 1.", instanceId, requestedSlotSet, null, equipment);
+
+            string[] requested = Copy(requestedSlotSet);
+            if (requested.Length == 0 || !IsDeclaredAlternative(equipment, instanceId, requested))
+            {
+                return InvalidReplacement(
+                    EquipmentFailureCode.InvalidSlotSet,
+                    "Requested slots are not a declared complete alternative for this item.",
+                    instanceId,
+                    requested,
+                    null,
+                    equipment);
+            }
+
+            var displacedIds = new List<string>();
+            var uniqueDisplacedIds = new HashSet<string>();
+            for (int index = 0; index < requested.Length; index++)
+            {
+                string slotId = requested[index];
+                if (!equipment.HasSlot(slotId))
+                    return InvalidReplacement(EquipmentFailureCode.InvalidSlotSet, $"Equipment slot '{slotId}' is unavailable.", instanceId, requested, null, equipment);
+                if (equipment.TryGetSlotOccupant(slotId, out string occupiedBy) && uniqueDisplacedIds.Add(occupiedBy))
+                    displacedIds.Add(occupiedBy);
+            }
+
+            if (displacedIds.Count == 0)
+            {
+                return InvalidReplacement(
+                    EquipmentFailureCode.InvalidPreview,
+                    "Replacement requires at least one occupied requested slot.",
+                    instanceId,
+                    requested,
+                    null,
+                    equipment);
+            }
+
+            ActorItemOwnershipComponent ownership = equipment.Ownership;
+            string ownershipError = null;
+            if (ownership == null || !ownership.ValidateUniqueOwnership(out ownershipError))
+            {
+                return InvalidReplacement(
+                    EquipmentFailureCode.OwnershipChanged,
+                    ownershipError ?? "Actor item ownership is invalid.",
+                    instanceId,
+                    requested,
+                    null,
+                    equipment);
+            }
+
+            var displacedEntries = new List<ItemStorageEntry>(displacedIds.Count);
+            var displacementPlans = new EquipmentDisplacementPlan[displacedIds.Count];
+            for (int index = 0; index < displacedIds.Count; index++)
+            {
+                string displacedId = displacedIds[index];
+                if (!ownership.TryLocateInstance(displacedId, out ActorItemStorageNodeKind node, out ItemStorageEntry displacedEntry) ||
+                    node != ActorItemStorageNodeKind.Equipment || displacedEntry?.Item == null)
+                {
+                    return InvalidReplacement(
+                        EquipmentFailureCode.OwnershipChanged,
+                        $"Displaced equipment instance '{displacedId}' is not uniquely owned by equipment storage.",
+                        instanceId,
+                        requested,
+                        displacementPlans,
+                        equipment);
+                }
+
+                string[] releasedSlots = Copy(equipment.GetSlotsOccupiedBy(displacedId));
+                if (releasedSlots.Length == 0)
+                {
+                    return InvalidReplacement(
+                        EquipmentFailureCode.OwnershipChanged,
+                        $"Displaced equipment instance '{displacedId}' has no occupied slots.",
+                        instanceId,
+                        requested,
+                        displacementPlans,
+                        equipment);
+                }
+
+                displacedEntries.Add(displacedEntry);
+                displacementPlans[index] = new EquipmentDisplacementPlan(displacedId, releasedSlots, null);
+            }
+
+            InventoryComponent inventory = equipment.PersonalInventory;
+            if (!inventory.InternalGridBackend.TryReserveIncomingAfterRemoving(
+                    instanceId,
+                    displacedEntries,
+                    out GridPlacement[] placements,
+                    out InventoryMutationResult.MutationFailure placementFailure,
+                    out string placementError))
+            {
+                return InvalidReplacement(
+                    placementFailure == InventoryMutationResult.MutationFailure.NoGridSpace
+                        ? EquipmentFailureCode.NoPersonalInventorySpace
+                        : EquipmentFailureCode.StaleState,
+                    placementError ?? "Displaced equipment does not fit in personal inventory.",
+                    instanceId,
+                    requested,
+                    displacementPlans,
+                    equipment);
+            }
+
+            for (int index = 0; index < displacementPlans.Length; index++)
+            {
+                EquipmentDisplacementPlan item = displacementPlans[index];
+                displacementPlans[index] = new EquipmentDisplacementPlan(
+                    item.InstanceId,
+                    item.ReleasedSlotIds,
+                    placements[index]);
+            }
+
+            return CreateReplacementPlan(
+                true,
+                EquipmentFailureCode.None,
+                null,
+                instanceId,
+                requested,
+                displacementPlans,
+                equipment);
+        }
+
+        public static EquipmentMutationResult EquipReplacing(
+            ActorEquipmentComponent equipment,
+            EquipmentReplacementPlan plan)
+        {
+            if (equipment == null || plan == null || !plan.Success)
+            {
+                return EquipmentMutationResult.Rejected(
+                    plan?.Message ?? "A valid equipment replacement plan is required.",
+                    plan?.SourceInstanceId,
+                    plan?.FailureCode ?? EquipmentFailureCode.InvalidPreview);
+            }
+            if (!ReplacementVersionsMatch(equipment, plan))
+            {
+                return EquipmentMutationResult.Rejected(
+                    "Equipment replacement plan is stale; retry the operation.",
+                    plan.SourceInstanceId,
+                    EquipmentFailureCode.StaleState);
+            }
+
+            ActorItemOwnershipComponent ownership = equipment.Ownership;
+            string ownershipError = null;
+            if (ownership == null || !ownership.ValidateUniqueOwnership(out ownershipError))
+            {
+                return EquipmentMutationResult.Rejected(
+                    ownershipError ?? "Actor item ownership changed.",
+                    plan.SourceInstanceId,
+                    EquipmentFailureCode.OwnershipChanged);
+            }
+
+            EquipmentReplacementPlan current = PreviewEquipReplacing(
+                equipment,
+                plan.SourceInstanceId,
+                plan.RequestedSlotSet);
+            if (!current.Success || !SameReplacementPlan(plan, current))
+            {
+                return EquipmentMutationResult.Rejected(
+                    current.Message ?? "Equipment replacement state changed.",
+                    plan.SourceInstanceId,
+                    current.Success ? EquipmentFailureCode.StaleState : current.FailureCode);
+            }
+
+            InventoryComponent inventory = equipment.PersonalInventory;
+            GridInventoryBackend.BackendStateSnapshot personalSnapshot = inventory.InternalGridBackend.CaptureBackendState();
+            GridInventoryBackend.BackendStateSnapshot equipmentStorageSnapshot = equipment.Backend.CaptureBackendState();
+            ActorEquipmentComponent.EquipmentStateSnapshot slotSnapshot = equipment.CaptureEquipmentState();
+            int idSequenceSnapshot = ItemInstance.CaptureIdSequence();
+            var displacedItems = new ItemInstance[plan.DisplacedItems.Length];
+
+            try
+            {
+                ItemStorageEntry sourceEntry = inventory.GetStorageEntryByInstanceId(plan.SourceInstanceId);
+                ItemInstance sourceItem = sourceEntry != null ? sourceEntry.Item : null;
+                if (sourceItem == null)
+                    throw new InvalidOperationException("Replacement source is no longer in personal storage.");
+
+                InventoryMutationResult sourceTransfer = inventory.InternalGridBackend.TransferTo(
+                    equipment.Backend,
+                    plan.SourceInstanceId,
+                    1);
+                if (!sourceTransfer.Success)
+                    throw new InvalidOperationException(sourceTransfer.Message ?? "Replacement source transfer failed.");
+
+                for (int index = 0; index < plan.DisplacedItems.Length; index++)
+                {
+                    EquipmentDisplacementPlan displaced = plan.DisplacedItems[index];
+                    ItemStorageEntry displacedEntry = equipment.Backend.Storage.GetEntryByInstanceId(displaced.InstanceId);
+                    displacedItems[index] = displacedEntry != null ? displacedEntry.Item : null;
+                    if (displacedItems[index] == null)
+                        throw new InvalidOperationException($"Displaced instance '{displaced.InstanceId}' is no longer equipped.");
+
+                    InventoryMutationResult displacedTransfer = displaced.DestinationPlacement != null
+                        ? equipment.Backend.TransferToExact(
+                            inventory.InternalGridBackend,
+                            displaced.InstanceId,
+                            displaced.DestinationPlacement.X,
+                            displaced.DestinationPlacement.Y,
+                            displaced.DestinationPlacement.IsRotated)
+                        : equipment.Backend.TransferTo(inventory.InternalGridBackend, displaced.InstanceId, 1);
+                    if (!displacedTransfer.Success)
+                        throw new InvalidOperationException(displacedTransfer.Message ?? $"Displaced instance '{displaced.InstanceId}' transfer failed.");
+
+                    equipment.ClearSlots(displaced.InstanceId);
+                }
+
+                equipment.AssignSlots(plan.SourceInstanceId, plan.RequestedSlotSet);
+                inventory.ClearLegacyRightHandForEquipmentAuthority();
+                if (!ownership.ValidateUniqueOwnership(out ownershipError))
+                    throw new InvalidOperationException(ownershipError ?? "Actor ownership validation failed after replacement.");
+
+                for (int index = 0; index < displacedItems.Length; index++)
+                    equipment.RecordUnequipped(displacedItems[index]);
+                equipment.RecordEquipped(sourceItem);
+                return new EquipmentMutationResult(
+                    true,
+                    EquipmentFailureCode.None,
+                    "Equipment replaced.",
+                    plan.SourceInstanceId,
+                    plan.RequestedSlotSet);
+            }
+            catch (Exception exception)
+            {
+                inventory.InternalGridBackend.RestoreBackendState(personalSnapshot);
+                equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
+                equipment.RestoreEquipmentState(slotSnapshot);
+                ItemInstance.RestoreIdSequence(idSequenceSnapshot);
+                return EquipmentMutationResult.Rejected(
+                    $"Equipment replacement rolled back: {exception.Message}",
+                    plan.SourceInstanceId,
+                    EquipmentFailureCode.StorageMutationFailed);
             }
         }
 
@@ -135,22 +406,22 @@ namespace OldScars.Core.Items
             string instanceId)
         {
             if (equipment == null || equipment.PersonalInventory == null || equipment.Ownership == null)
-                return Invalid("Actor equipment dependencies are missing.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.MissingDependencies, "Actor equipment dependencies are missing.", instanceId, equipment);
             if (!equipment.Ownership.TryLocateInstance(instanceId, out ActorItemStorageNodeKind node, out ItemStorageEntry entry) ||
                 node != ActorItemStorageNodeKind.Equipment || entry == null || entry.Item == null)
             {
-                return Invalid($"Equipped item instance '{instanceId}' was not found.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.SourceNotFound, $"Equipped item instance '{instanceId}' was not found.", instanceId, equipment);
             }
 
             IReadOnlyList<string> occupied = equipment.GetSlotsOccupiedBy(instanceId);
             if (occupied.Count == 0)
-                return Invalid($"Item instance '{instanceId}' has no occupied slots.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.InvalidSlotSet, $"Item instance '{instanceId}' has no occupied slots.", instanceId, equipment);
 
             GridPlacementValidationResult placementPreview = equipment.Backend.PreviewTransferTo(
                 equipment.PersonalInventory.InternalGridBackend,
                 instanceId);
             if (!placementPreview.IsValid)
-                return Invalid(placementPreview.Message ?? "Personal inventory has no valid destination placement.", instanceId, equipment);
+                return Invalid(EquipmentFailureCode.NoPersonalInventorySpace, placementPreview.Message ?? "Personal inventory has no valid destination placement.", instanceId, equipment);
 
             return Valid(instanceId, Copy(occupied), placementPreview.Candidate, equipment);
         }
@@ -160,13 +431,16 @@ namespace OldScars.Core.Items
             EquipmentPreview preview)
         {
             if (equipment == null || preview == null || !preview.Success)
-                return EquipmentMutationResult.Rejected(preview?.Message ?? "A valid unequip preview is required.", preview?.InstanceId);
+                return EquipmentMutationResult.Rejected(
+                    preview?.Message ?? "A valid unequip preview is required.",
+                    preview?.InstanceId,
+                    preview?.FailureCode ?? EquipmentFailureCode.InvalidPreview);
             if (!VersionsMatch(equipment, preview))
-                return EquipmentMutationResult.Rejected("Equipment preview is stale; retry the operation.", preview.InstanceId);
+                return EquipmentMutationResult.Rejected("Equipment preview is stale; retry the operation.", preview.InstanceId, EquipmentFailureCode.StaleState);
 
             EquipmentPreview current = PreviewUnequip(equipment, preview.InstanceId);
             if (!current.Success)
-                return EquipmentMutationResult.Rejected(current.Message, preview.InstanceId);
+                return EquipmentMutationResult.Rejected(current.Message, preview.InstanceId, current.FailureCode);
 
             InventoryComponent inventory = equipment.PersonalInventory;
             ActorItemOwnershipComponent ownership = equipment.Ownership;
@@ -194,7 +468,7 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(ownershipError ?? "Actor ownership validation failed after unequip.");
 
                 equipment.RecordUnequipped(item);
-                return new EquipmentMutationResult(true, "Item unequipped to personal inventory.", preview.InstanceId, preview.SlotIds);
+                return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item unequipped to personal inventory.", preview.InstanceId, preview.SlotIds);
             }
             catch (Exception exception)
             {
@@ -202,7 +476,7 @@ namespace OldScars.Core.Items
                 equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
                 equipment.RestoreEquipmentState(slotSnapshot);
                 ItemInstance.RestoreIdSequence(idSequenceSnapshot);
-                return EquipmentMutationResult.Rejected($"Unequip rolled back: {exception.Message}", preview.InstanceId);
+                return EquipmentMutationResult.Rejected($"Unequip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
         }
 
@@ -210,23 +484,28 @@ namespace OldScars.Core.Items
             ActorEquipmentComponent equipment,
             string instanceId,
             out ItemStorageEntry entry,
+            out EquipmentFailureCode failureCode,
             out string error)
         {
             entry = null;
+            failureCode = EquipmentFailureCode.None;
             error = null;
             if (equipment == null || equipment.PersonalInventory == null || equipment.Ownership == null)
             {
+                failureCode = EquipmentFailureCode.MissingDependencies;
                 error = "Actor equipment dependencies are missing.";
                 return false;
             }
             if (equipment.GetActiveLayout() == null)
             {
+                failureCode = EquipmentFailureCode.LayoutUnavailable;
                 error = $"Equipment layout '{equipment.EquipmentLayoutId}' is unavailable.";
                 return false;
             }
             if (!equipment.Ownership.TryLocateInstance(instanceId, out ActorItemStorageNodeKind node, out entry) ||
                 node != ActorItemStorageNodeKind.Personal || entry == null || entry.Item == null)
             {
+                failureCode = EquipmentFailureCode.SourceNotFound;
                 error = $"Personal item instance '{instanceId}' was not found.";
                 return false;
             }
@@ -297,28 +576,97 @@ namespace OldScars.Core.Items
                    equipment.Version == preview.EquipmentVersion;
         }
 
+        private static bool ReplacementVersionsMatch(
+            ActorEquipmentComponent equipment,
+            EquipmentReplacementPlan plan)
+        {
+            InventoryComponent inventory = equipment.PersonalInventory;
+            return inventory != null &&
+                   inventory.InternalGridBackend.StorageVersion == plan.PersonalStorageVersion &&
+                   inventory.InternalGridBackend.LayoutVersion == plan.PersonalLayoutVersion &&
+                   equipment.StorageVersion == plan.EquipmentStorageVersion &&
+                   equipment.Version == plan.EquipmentVersion;
+        }
+
+        private static bool IsDeclaredAlternative(
+            ActorEquipmentComponent equipment,
+            string instanceId,
+            string[] requested)
+        {
+            IReadOnlyList<EquipmentSlotSet> compatible = GetCompatibleSlotSets(equipment, instanceId, false);
+            for (int index = 0; index < compatible.Count; index++)
+            {
+                if (SameSlots(compatible[index].SlotIds, requested))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool SameReplacementPlan(
+            EquipmentReplacementPlan left,
+            EquipmentReplacementPlan right)
+        {
+            if (left == null || right == null || left.SourceInstanceId != right.SourceInstanceId ||
+                !SameSlots(left.RequestedSlotSet, right.RequestedSlotSet) ||
+                left.DisplacedItems.Length != right.DisplacedItems.Length)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < left.DisplacedItems.Length; index++)
+            {
+                EquipmentDisplacementPlan leftItem = left.DisplacedItems[index];
+                EquipmentDisplacementPlan rightItem = right.DisplacedItems[index];
+                if (leftItem == null || rightItem == null || leftItem.InstanceId != rightItem.InstanceId ||
+                    !SameSlots(leftItem.ReleasedSlotIds, rightItem.ReleasedSlotIds) ||
+                    !SamePlacement(leftItem.DestinationPlacement, rightItem.DestinationPlacement))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool SamePlacement(GridPlacement left, GridPlacement right)
+        {
+            if (left == null || right == null)
+                return left == null && right == null;
+            return left.InstanceId == right.InstanceId &&
+                   left.X == right.X &&
+                   left.Y == right.Y &&
+                   left.IsRotated == right.IsRotated &&
+                   left.EffectiveWidth == right.EffectiveWidth &&
+                   left.EffectiveHeight == right.EffectiveHeight;
+        }
+
         private static EquipmentPreview Valid(
             string instanceId,
             string[] slotIds,
             GridPlacement placement,
             ActorEquipmentComponent equipment)
         {
-            return CreatePreview(true, false, null, instanceId, slotIds, placement, equipment);
+            return CreatePreview(true, false, EquipmentFailureCode.None, null, instanceId, slotIds, placement, equipment);
         }
 
         private static EquipmentPreview ChoiceRequired(string instanceId, ActorEquipmentComponent equipment)
         {
-            return CreatePreview(true, true, "Choose one compatible slot alternative.", instanceId, null, null, equipment);
+            return CreatePreview(true, true, EquipmentFailureCode.None, "Choose one compatible slot alternative.", instanceId, null, null, equipment);
         }
 
-        private static EquipmentPreview Invalid(string message, string instanceId, ActorEquipmentComponent equipment)
+        private static EquipmentPreview Invalid(
+            EquipmentFailureCode failureCode,
+            string message,
+            string instanceId,
+            ActorEquipmentComponent equipment)
         {
-            return CreatePreview(false, false, message, instanceId, null, null, equipment);
+            return CreatePreview(false, false, failureCode, message, instanceId, null, null, equipment);
         }
 
         private static EquipmentPreview CreatePreview(
             bool success,
             bool requiresChoice,
+            EquipmentFailureCode failureCode,
             string message,
             string instanceId,
             string[] slotIds,
@@ -329,10 +677,52 @@ namespace OldScars.Core.Items
             return new EquipmentPreview(
                 success,
                 requiresChoice,
+                failureCode,
                 message,
                 instanceId,
                 slotIds,
                 placement,
+                inventory != null ? inventory.InternalGridBackend.StorageVersion : 0,
+                inventory != null ? inventory.InternalGridBackend.LayoutVersion : 0,
+                equipment != null ? equipment.StorageVersion : 0,
+                equipment != null ? equipment.Version : 0);
+        }
+
+        private static EquipmentReplacementPlan InvalidReplacement(
+            EquipmentFailureCode failureCode,
+            string message,
+            string sourceInstanceId,
+            IReadOnlyList<string> requestedSlotSet,
+            EquipmentDisplacementPlan[] displacedItems,
+            ActorEquipmentComponent equipment)
+        {
+            return CreateReplacementPlan(
+                false,
+                failureCode,
+                message,
+                sourceInstanceId,
+                Copy(requestedSlotSet),
+                displacedItems,
+                equipment);
+        }
+
+        private static EquipmentReplacementPlan CreateReplacementPlan(
+            bool success,
+            EquipmentFailureCode failureCode,
+            string message,
+            string sourceInstanceId,
+            string[] requestedSlotSet,
+            EquipmentDisplacementPlan[] displacedItems,
+            ActorEquipmentComponent equipment)
+        {
+            InventoryComponent inventory = equipment != null ? equipment.PersonalInventory : null;
+            return new EquipmentReplacementPlan(
+                success,
+                failureCode,
+                message,
+                sourceInstanceId,
+                requestedSlotSet,
+                displacedItems,
                 inventory != null ? inventory.InternalGridBackend.StorageVersion : 0,
                 inventory != null ? inventory.InternalGridBackend.LayoutVersion : 0,
                 equipment != null ? equipment.StorageVersion : 0,

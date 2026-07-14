@@ -392,6 +392,9 @@ namespace OldScars.Core.Items
                 case InventoryContextActionKind.Equip:
                     EquipSelected(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
                     return;
+                case InventoryContextActionKind.EquipReplacing:
+                    EquipReplacingSelected(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    return;
                 case InventoryContextActionKind.Unequip:
                     UnequipSelected(entry.Item.InstanceId);
                     return;
@@ -549,7 +552,28 @@ namespace OldScars.Core.Items
         {
             EquipmentPreview preview = actorEquipment.PreviewEquip(instanceId, slotIds);
             EquipmentMutationResult result = actorEquipment.Equip(preview);
-            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            string message = result.Success
+                ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, false)
+                : EquipmentFailureMessageFormatter.FormatFailure(result.FailureCode, actorEquipment, slotIds);
+            toast.Show(message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
+            sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
+            gridView.ReconcileSelection(inventory);
+            GUIUtility.ExitGUI();
+        }
+
+        private void EquipReplacingSelected(string instanceId, IReadOnlyList<string> slotIds)
+        {
+            EquipmentReplacementPlan plan = actorEquipment.PreviewEquipReplacing(instanceId, slotIds);
+            EquipmentMutationResult result = actorEquipment.EquipReplacing(plan);
+            string[] displacedIds = GetDisplacedIds(plan);
+            string message = result.Success
+                ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, true)
+                : EquipmentFailureMessageFormatter.FormatFailure(result.FailureCode, actorEquipment, slotIds, displacedIds);
+            toast.Show(message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             if (!result.Success)
                 return;
 
@@ -563,7 +587,14 @@ namespace OldScars.Core.Items
         {
             EquipmentPreview preview = actorEquipment.PreviewUnequip(instanceId);
             EquipmentMutationResult result = actorEquipment.Unequip(preview);
-            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            string message = result.Success
+                ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, true, false)
+                : EquipmentFailureMessageFormatter.FormatFailure(
+                    result.FailureCode,
+                    actorEquipment,
+                    actorEquipment.GetSlotsOccupiedBy(instanceId),
+                    new[] { instanceId });
+            toast.Show(message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             if (!result.Success)
                 return;
 
@@ -571,6 +602,15 @@ namespace OldScars.Core.Items
             sessionController?.Selection.SelectPersonalFromContext(result.InstanceId);
             gridView.SelectInstance(result.InstanceId);
             GUIUtility.ExitGUI();
+        }
+
+        private static string[] GetDisplacedIds(EquipmentReplacementPlan plan)
+        {
+            int count = plan?.DisplacedItems?.Length ?? 0;
+            var result = new string[count];
+            for (int index = 0; index < count; index++)
+                result[index] = plan.DisplacedItems[index]?.InstanceId;
+            return result;
         }
 
         private void DrawLegacyStorage(float height)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using OldScars.Core.Feedback;
+using OldScars.Core.Items;
 using UnityEngine;
 
 namespace OldScars.Core.Actors
@@ -11,10 +12,11 @@ namespace OldScars.Core.Actors
 
         [SerializeField] private ActorNeedsComponent actorNeeds;
         [SerializeField] private ActorHealthComponent actorHealth;
+        [SerializeField] private InventoryUISessionController inventorySessionController;
         [SerializeField] private float debugDamageAmount = 25f;
         [SerializeField] private bool visible = true;
 
-        public bool IsVisible => visible;
+        public bool IsVisible => visible && (inventorySessionController == null || !inventorySessionController.IsOpen);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureRuntimePanel()
@@ -41,17 +43,24 @@ namespace OldScars.Core.Actors
         {
             ResolveActorNeeds();
             ResolveActorHealth();
+            ResolveInventorySessionController();
         }
 
         private void OnEnable()
         {
             ResolveActorNeeds();
             ResolveActorHealth();
+            ResolveInventorySessionController();
+        }
+
+        private void Start()
+        {
+            ResolveInventorySessionController();
         }
 
         private void OnGUI()
         {
-            if (!visible)
+            if (!IsVisible)
             {
                 return;
             }
@@ -110,7 +119,7 @@ namespace OldScars.Core.Actors
 
         public bool ContainsScreenPosition(Vector2 screenPosition)
         {
-            if (!visible)
+            if (!IsVisible)
             {
                 return false;
             }
@@ -182,6 +191,12 @@ namespace OldScars.Core.Actors
 
             if (actorHealth == null)
                 actorHealth = FindAnyObjectByType<ActorHealthComponent>();
+        }
+
+        private void ResolveInventorySessionController()
+        {
+            if (inventorySessionController == null)
+                inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
         }
 
         private static Rect GetPanelRect()

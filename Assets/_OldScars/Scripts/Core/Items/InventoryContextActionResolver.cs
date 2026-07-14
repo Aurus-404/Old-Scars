@@ -27,17 +27,28 @@ namespace OldScars.Core.Items
 
             if (hasExternalDestination)
             {
-                actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositOne, "Depositar 1"));
-                if (entry.Quantity > 1)
+                if (entry.Quantity == 1)
+                {
+                    actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositStack, "Depositar"));
+                }
+                else
+                {
+                    actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositOne, "Depositar 1"));
                     actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositAmount, "Depositar cantidad..."));
-                actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositStack, "Depositar todo"));
+                    actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositStack, "Depositar todo"));
+                }
             }
 
-            actions.Add(new InventoryContextAction(InventoryContextActionKind.DropOne, "Soltar 1"));
-            if (entry.Quantity > 1)
+            if (entry.Quantity == 1)
+            {
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar"));
+            }
+            else
+            {
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropOne, "Soltar 1"));
                 actions.Add(new InventoryContextAction(InventoryContextActionKind.DropAmount, "Soltar cantidad..."));
-            actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar todo"));
-            actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Ver detalles"));
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar todo"));
+            }
             return actions;
         }
 
@@ -53,11 +64,16 @@ namespace OldScars.Core.Items
                 return actions;
             }
 
-            actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeOne, "Tomar 1"));
-            if (entry.Quantity > 1)
+            if (entry.Quantity == 1)
+            {
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeStack, "Tomar"));
+            }
+            else
+            {
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeOne, "Tomar 1"));
                 actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeAmount, "Tomar cantidad..."));
-            actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeStack, "Tomar todo"));
-            actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Ver detalles"));
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeStack, "Tomar todo"));
+            }
             return actions;
         }
 
@@ -79,8 +95,13 @@ namespace OldScars.Core.Items
                 InventoryContextActionKind.Unequip,
                 "Desequipar al inventario",
                 preview.Success,
-                preview.Success ? null : preview.Message));
-            actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Ver detalles"));
+                preview.Success
+                    ? null
+                    : EquipmentFailureMessageFormatter.FormatFailure(
+                        preview.FailureCode,
+                        equipment,
+                        preview.SlotIds,
+                        new[] { instanceId })));
             return actions;
         }
 
@@ -97,13 +118,54 @@ namespace OldScars.Core.Items
             {
                 string[] slotIds = alternatives[index].SlotIds;
                 EquipmentPreview preview = equipment.PreviewEquip(instanceId, slotIds);
+                string slotLabel = GetSlotSetLabel(equipment, slotIds);
+                if (preview.Success && !preview.RequiresChoice)
+                {
+                    actions.Add(new InventoryContextAction(
+                        InventoryContextActionKind.Equip,
+                        $"Equipar — {slotLabel}",
+                        true,
+                        null,
+                        slotIds));
+                    continue;
+                }
+
+                if (preview.FailureCode == EquipmentFailureCode.SlotOccupied)
+                {
+                    EquipmentReplacementPlan replacement = equipment.PreviewEquipReplacing(instanceId, slotIds);
+                    string[] displacedIds = GetDisplacedIds(replacement);
+                    actions.Add(new InventoryContextAction(
+                        InventoryContextActionKind.EquipReplacing,
+                        $"Equipar y reemplazar — {slotLabel}",
+                        replacement.Success,
+                        replacement.Success
+                            ? null
+                            : EquipmentFailureMessageFormatter.FormatFailure(
+                                replacement.FailureCode,
+                                equipment,
+                                slotIds,
+                                displacedIds),
+                        slotIds,
+                        EquipmentFailureMessageFormatter.FormatReplacementSummary(equipment, replacement)));
+                    continue;
+                }
+
                 actions.Add(new InventoryContextAction(
                     InventoryContextActionKind.Equip,
-                    $"Equipar - {GetSlotSetLabel(equipment, slotIds)}",
-                    preview.Success && !preview.RequiresChoice,
-                    preview.Success ? null : preview.Message,
+                    $"Equipar — {slotLabel}",
+                    false,
+                    EquipmentFailureMessageFormatter.FormatFailure(preview.FailureCode, equipment, slotIds),
                     slotIds));
             }
+        }
+
+        private static string[] GetDisplacedIds(EquipmentReplacementPlan plan)
+        {
+            int count = plan?.DisplacedItems?.Length ?? 0;
+            var result = new string[count];
+            for (int index = 0; index < count; index++)
+                result[index] = plan.DisplacedItems[index]?.InstanceId;
+            return result;
         }
 
         private static string GetSlotSetLabel(

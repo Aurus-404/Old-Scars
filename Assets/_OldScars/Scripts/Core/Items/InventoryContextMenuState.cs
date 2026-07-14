@@ -11,7 +11,7 @@ namespace OldScars.Core.Items
         private const float MenuPadding = 6f;
         private const float MaximumMenuHeight = 340f;
         private const float QuantityDialogWidth = 300f;
-        private const float QuantityDialogHeight = 176f;
+        private const float QuantityDialogHeight = 202f;
 
         private InventoryContextMenuRequest request;
         private InventoryContextAction quantityDialogAction;
@@ -121,7 +121,7 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            float contentHeight = request.Actions.Count * MenuRowHeight;
+            float contentHeight = GetContentHeight(request.Actions);
             float height = Mathf.Min(MaximumMenuHeight, MenuHeaderHeight + contentHeight + MenuPadding * 2f);
             Rect menuRect = ClampToWindow(
                 new Rect(ContextMenuPosition.x, ContextMenuPosition.y, MenuWidth, height),
@@ -158,18 +158,19 @@ namespace OldScars.Core.Items
             menuScrollPosition.x = 0f;
 
             InventoryContextAction chosen = null;
+            float rowY = 0f;
             for (int index = 0; index < request.Actions.Count; index++)
             {
                 InventoryContextAction action = request.Actions[index];
-                Rect rowRect = new Rect(0f, index * MenuRowHeight, content.width, MenuRowHeight - 2f);
+                float rowHeight = GetActionRowHeight(action);
+                Rect rowRect = new Rect(0f, rowY, content.width, rowHeight - 2f);
                 bool previousEnabled = GUI.enabled;
                 GUI.enabled = previousEnabled && action.Enabled;
-                string label = action.Enabled || string.IsNullOrWhiteSpace(action.DisabledReason)
-                    ? action.Label
-                    : $"{action.Label} ({ShortReason(action.DisabledReason)})";
+                string label = GetActionButtonLabel(action);
                 if (GUI.Button(rowRect, label))
                     chosen = action;
                 GUI.enabled = previousEnabled;
+                rowY += rowHeight;
             }
             GUI.EndScrollView();
 
@@ -214,30 +215,43 @@ namespace OldScars.Core.Items
             }
 
             GUI.Box(dialogRect, GUIContent.none);
-            GUI.Label(new Rect(dialogRect.x + 16f, dialogRect.y + 12f, dialogRect.width - 32f, 22f), "Cantidad:");
+            GUI.Label(new Rect(dialogRect.x + 16f, dialogRect.y + 10f, dialogRect.width - 32f, 22f), "Cantidad");
+
+            bool shift = Event.current != null && Event.current.shift;
+            if (GUI.Button(new Rect(dialogRect.x + 16f, dialogRect.y + 38f, 42f, 28f), "-"))
+                SetQuantity(QuantityDialogValue - (shift ? 10 : 1));
+            float sliderValue = GUI.HorizontalSlider(
+                new Rect(dialogRect.x + 68f, dialogRect.y + 46f, dialogRect.width - 136f, 20f),
+                QuantityDialogValue,
+                1f,
+                QuantityDialogMaximum);
+            int sliderQuantity = Mathf.Clamp(
+                Mathf.RoundToInt(sliderValue),
+                1,
+                Mathf.Max(1, QuantityDialogMaximum));
+            if (sliderQuantity != QuantityDialogValue)
+                SetQuantity(sliderQuantity);
+            if (GUI.Button(new Rect(dialogRect.xMax - 58f, dialogRect.y + 38f, 42f, 28f), "+"))
+                SetQuantity(QuantityDialogValue + (shift ? 10 : 1));
+
+            GUI.Label(
+                new Rect(dialogRect.x + 16f, dialogRect.y + 70f, dialogRect.width - 32f, 24f),
+                $"{QuantityDialogValue} / {QuantityDialogMaximum}",
+                CenteredLabel());
 
             string edited = GUI.TextField(
-                new Rect(dialogRect.x + 16f, dialogRect.y + 38f, dialogRect.width - 32f, 28f),
+                new Rect(dialogRect.x + 16f, dialogRect.y + 98f, dialogRect.width - 32f, 28f),
                 quantityText);
             quantityText = FilterDigits(edited);
             if (int.TryParse(quantityText, out int parsed))
                 SetQuantity(parsed);
 
-            if (GUI.Button(new Rect(dialogRect.x + 16f, dialogRect.y + 76f, 54f, 28f), "-"))
-                SetQuantity(QuantityDialogValue - 1);
-            GUI.Label(
-                new Rect(dialogRect.x + 76f, dialogRect.y + 76f, dialogRect.width - 152f, 28f),
-                $"{QuantityDialogValue} / {QuantityDialogMaximum}",
-                CenteredLabel());
-            if (GUI.Button(new Rect(dialogRect.xMax - 70f, dialogRect.y + 76f, 54f, 28f), "+"))
-                SetQuantity(QuantityDialogValue + 1);
-
-            if (GUI.Button(new Rect(dialogRect.x + 16f, dialogRect.y + 120f, 126f, 32f), "Confirmar"))
+            if (GUI.Button(new Rect(dialogRect.x + 16f, dialogRect.y + 148f, 126f, 32f), "Confirmar"))
             {
                 ConfirmQuantity();
                 return;
             }
-            if (GUI.Button(new Rect(dialogRect.xMax - 142f, dialogRect.y + 120f, 126f, 32f), "Cancelar"))
+            if (GUI.Button(new Rect(dialogRect.xMax - 142f, dialogRect.y + 148f, 126f, 32f), "Cancelar"))
                 CancelQuantityDialog();
         }
 
@@ -319,6 +333,34 @@ namespace OldScars.Core.Items
             const int maximumLength = 42;
             string safe = reason.Trim();
             return safe.Length <= maximumLength ? safe : safe.Substring(0, maximumLength - 3) + "...";
+        }
+
+        private static float GetContentHeight(System.Collections.Generic.IReadOnlyList<InventoryContextAction> actions)
+        {
+            float height = 0f;
+            for (int index = 0; index < actions.Count; index++)
+                height += GetActionRowHeight(actions[index]);
+            return height;
+        }
+
+        private static float GetActionRowHeight(InventoryContextAction action)
+        {
+            float height = MenuRowHeight;
+            if (!string.IsNullOrWhiteSpace(action?.Detail))
+                height += 18f;
+            if (action != null && !action.Enabled && !string.IsNullOrWhiteSpace(action.DisabledReason))
+                height += 18f;
+            return height;
+        }
+
+        private static string GetActionButtonLabel(InventoryContextAction action)
+        {
+            string label = action?.Label ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(action?.Detail))
+                label += $"\n{action.Detail}";
+            if (action != null && !action.Enabled && !string.IsNullOrWhiteSpace(action.DisabledReason))
+                label += $"\n{ShortReason(action.DisabledReason)}";
+            return label;
         }
 
         private static GUIStyle CenteredLabel()

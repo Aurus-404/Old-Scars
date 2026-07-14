@@ -2,6 +2,24 @@ using System;
 
 namespace OldScars.Core.Items
 {
+    public enum EquipmentFailureCode
+    {
+        None,
+        InvalidPreview,
+        MissingDependencies,
+        LayoutUnavailable,
+        SourceNotFound,
+        InvalidQuantity,
+        NotEquipable,
+        InvalidSlotSet,
+        SlotOccupied,
+        NoPersonalInventorySpace,
+        StaleState,
+        OwnershipChanged,
+        StorageMutationFailed,
+        InternalFailure
+    }
+
     public enum ActorItemStorageNodeKind
     {
         Personal,
@@ -23,6 +41,7 @@ namespace OldScars.Core.Items
         internal EquipmentPreview(
             bool success,
             bool requiresChoice,
+            EquipmentFailureCode failureCode,
             string message,
             string instanceId,
             string[] slotIds,
@@ -34,6 +53,7 @@ namespace OldScars.Core.Items
         {
             Success = success;
             RequiresChoice = requiresChoice;
+            FailureCode = failureCode;
             Message = message;
             InstanceId = instanceId;
             SlotIds = slotIds != null ? (string[])slotIds.Clone() : Array.Empty<string>();
@@ -46,6 +66,7 @@ namespace OldScars.Core.Items
 
         public bool Success { get; }
         public bool RequiresChoice { get; }
+        public EquipmentFailureCode FailureCode { get; }
         public string Message { get; }
         public string InstanceId { get; }
         public string[] SlotIds { get; }
@@ -58,23 +79,94 @@ namespace OldScars.Core.Items
 
     public readonly struct EquipmentMutationResult
     {
-        public EquipmentMutationResult(bool success, string message, string instanceId, string[] slotIds)
+        public EquipmentMutationResult(
+            bool success,
+            EquipmentFailureCode failureCode,
+            string message,
+            string instanceId,
+            string[] slotIds)
         {
             Success = success;
+            FailureCode = failureCode;
             Message = message;
             InstanceId = instanceId;
             SlotIds = slotIds != null ? (string[])slotIds.Clone() : Array.Empty<string>();
         }
 
         public bool Success { get; }
+        public EquipmentFailureCode FailureCode { get; }
         public string Message { get; }
         public string InstanceId { get; }
         public string[] SlotIds { get; }
 
-        public static EquipmentMutationResult Rejected(string message, string instanceId = null)
+        public static EquipmentMutationResult Rejected(
+            string message,
+            string instanceId = null,
+            EquipmentFailureCode failureCode = EquipmentFailureCode.InternalFailure)
         {
-            return new EquipmentMutationResult(false, message, instanceId, null);
+            return new EquipmentMutationResult(false, failureCode, message, instanceId, null);
         }
+    }
+
+    public sealed class EquipmentDisplacementPlan
+    {
+        internal EquipmentDisplacementPlan(
+            string instanceId,
+            string[] releasedSlotIds,
+            GridPlacement destinationPlacement)
+        {
+            InstanceId = instanceId;
+            ReleasedSlotIds = releasedSlotIds != null
+                ? (string[])releasedSlotIds.Clone()
+                : Array.Empty<string>();
+            DestinationPlacement = destinationPlacement;
+        }
+
+        public string InstanceId { get; }
+        public string[] ReleasedSlotIds { get; }
+        public GridPlacement DestinationPlacement { get; }
+    }
+
+    public sealed class EquipmentReplacementPlan
+    {
+        internal EquipmentReplacementPlan(
+            bool success,
+            EquipmentFailureCode failureCode,
+            string message,
+            string sourceInstanceId,
+            string[] requestedSlotSet,
+            EquipmentDisplacementPlan[] displacedItems,
+            int personalStorageVersion,
+            int personalLayoutVersion,
+            int equipmentStorageVersion,
+            int equipmentVersion)
+        {
+            Success = success;
+            FailureCode = failureCode;
+            Message = message;
+            SourceInstanceId = sourceInstanceId;
+            RequestedSlotSet = requestedSlotSet != null
+                ? (string[])requestedSlotSet.Clone()
+                : Array.Empty<string>();
+            DisplacedItems = displacedItems != null
+                ? (EquipmentDisplacementPlan[])displacedItems.Clone()
+                : Array.Empty<EquipmentDisplacementPlan>();
+            PersonalStorageVersion = personalStorageVersion;
+            PersonalLayoutVersion = personalLayoutVersion;
+            EquipmentStorageVersion = equipmentStorageVersion;
+            EquipmentVersion = equipmentVersion;
+        }
+
+        public bool Success { get; }
+        public EquipmentFailureCode FailureCode { get; }
+        public string Message { get; }
+        public string SourceInstanceId { get; }
+        public string[] RequestedSlotSet { get; }
+        public EquipmentDisplacementPlan[] DisplacedItems { get; }
+        internal int PersonalStorageVersion { get; }
+        internal int PersonalLayoutVersion { get; }
+        internal int EquipmentStorageVersion { get; }
+        internal int EquipmentVersion { get; }
     }
 
     public readonly struct ActorItemOwnershipSnapshot

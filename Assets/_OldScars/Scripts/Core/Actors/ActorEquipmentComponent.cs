@@ -197,6 +197,18 @@ namespace OldScars.Core.Actors
             return EquipmentTransactionService.Equip(this, preview);
         }
 
+        public EquipmentReplacementPlan PreviewEquipReplacing(
+            string instanceId,
+            IReadOnlyList<string> requestedSlotSet)
+        {
+            return EquipmentTransactionService.PreviewEquipReplacing(this, instanceId, requestedSlotSet);
+        }
+
+        public EquipmentMutationResult EquipReplacing(EquipmentReplacementPlan plan)
+        {
+            return EquipmentTransactionService.EquipReplacing(this, plan);
+        }
+
         public EquipmentPreview PreviewUnequip(string instanceId)
         {
             return EquipmentTransactionService.PreviewUnequip(this, instanceId);
@@ -212,6 +224,14 @@ namespace OldScars.Core.Actors
             if (!slotToInstanceId.TryGetValue(slotId, out string occupiedBy))
                 return true;
             return !string.IsNullOrWhiteSpace(exceptInstanceId) && occupiedBy == exceptInstanceId;
+        }
+
+        internal bool TryGetSlotOccupant(string slotId, out string instanceId)
+        {
+            instanceId = null;
+            return !string.IsNullOrWhiteSpace(slotId) &&
+                   slotToInstanceId.TryGetValue(slotId, out instanceId) &&
+                   !string.IsNullOrWhiteSpace(instanceId);
         }
 
         internal EquipmentStateSnapshot CaptureEquipmentState()

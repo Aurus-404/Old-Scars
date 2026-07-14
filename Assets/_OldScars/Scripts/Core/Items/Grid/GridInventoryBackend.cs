@@ -96,6 +96,98 @@ namespace OldScars.Core.Items
             return GridFootprint.TryResolve(definition, out footprint, out usedFallback, out error);
         }
 
+        internal bool TryReserveIncomingAfterRemoving(
+            string removedInstanceId,
+            IReadOnlyList<ItemStorageEntry> incomingEntries,
+            out GridPlacement[] reservedPlacements,
+            out InventoryMutationResult.MutationFailure failure,
+            out string error)
+        {
+            int incomingCount = incomingEntries != null ? incomingEntries.Count : 0;
+            reservedPlacements = new GridPlacement[incomingCount];
+            failure = InventoryMutationResult.MutationFailure.None;
+            error = null;
+
+            if (layout == null)
+                return true;
+            if (!ValidateLayoutMatchesStorage(storage, layout))
+            {
+                failure = InventoryMutationResult.MutationFailure.StalePlan;
+                error = "Personal grid layout does not match its storage.";
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(removedInstanceId) ||
+                storage.GetEntryByInstanceId(removedInstanceId) == null ||
+                !layout.TryGetPlacement(removedInstanceId, out _))
+            {
+                failure = InventoryMutationResult.MutationFailure.SourceNotFound;
+                error = $"Source placement '{removedInstanceId}' was not found.";
+                return false;
+            }
+
+            var simulated = new GridInventoryLayout(layout.Width, layout.Height);
+            foreach (GridPlacement placement in layout.Placements)
+            {
+                if (placement == null || placement.InstanceId == removedInstanceId)
+                    continue;
+
+                var occupied = new GridInventoryLayout.ReservedRect(
+                    placement.X,
+                    placement.Y,
+                    placement.EffectiveWidth,
+                    placement.EffectiveHeight,
+                    placement.IsRotated);
+                if (!simulated.TryAddPlacement(placement.InstanceId, occupied))
+                {
+                    failure = InventoryMutationResult.MutationFailure.StalePlan;
+                    error = $"Existing placement '{placement.InstanceId}' could not be copied into the simulation.";
+                    return false;
+                }
+            }
+
+            var reservations = new List<GridInventoryLayout.ReservedRect>(incomingCount);
+            var incomingIds = new HashSet<string>();
+            for (int index = 0; index < incomingCount; index++)
+            {
+                ItemStorageEntry entry = incomingEntries[index];
+                ItemInstance item = entry != null ? entry.Item : null;
+                if (item == null || string.IsNullOrWhiteSpace(item.InstanceId) || !incomingIds.Add(item.InstanceId))
+                {
+                    failure = InventoryMutationResult.MutationFailure.InvalidArguments;
+                    error = "Incoming placement simulation requires unique valid item instances.";
+                    return false;
+                }
+                if (simulated.TryGetPlacement(item.InstanceId, out _))
+                {
+                    failure = InventoryMutationResult.MutationFailure.PlacementConflict;
+                    error = $"Incoming instance '{item.InstanceId}' already has a personal grid placement.";
+                    return false;
+                }
+                if (!TryResolveFootprint(item.DefinitionId, out GridFootprint footprint, out _, out error))
+                {
+                    failure = InventoryMutationResult.MutationFailure.InvalidFootprint;
+                    return false;
+                }
+                if (!simulated.TryFindFirstFit(footprint, reservations, out GridInventoryLayout.ReservedRect reservation))
+                {
+                    failure = InventoryMutationResult.MutationFailure.NoGridSpace;
+                    error = $"No personal grid placement is available for '{item.InstanceId}'.";
+                    return false;
+                }
+
+                reservations.Add(reservation);
+                reservedPlacements[index] = new GridPlacement(
+                    item.InstanceId,
+                    reservation.X,
+                    reservation.Y,
+                    reservation.IsRotated,
+                    reservation.Width,
+                    reservation.Height);
+            }
+
+            return true;
+        }
+
         public GridPlacementValidationResult PreviewMovePlacement(
             string instanceId,
             int x,

@@ -1324,7 +1324,23 @@ Con equipped item definition id none o vacio:
 - Use desde equipment se omite porque el servicio actual consume por indice del inventario personal; no se agrego una ruta improvisada.
 - No se implementaron auto-swap, equip desde external, drop equipado, transferencias parciales automaticas por peso, item-owned storage ni UI final.
 - No se modificaron `SampleScene.unity`, JSON Core, sprites, arte, `ItemStorage`, backends espaciales, ownership, peso, Equipment/transfer services, containers, cadaveres ni pickup.
-- Compilacion estatica de `Assembly-CSharp`: 0 errores; estado `implemented`, pendiente de validacion manual en Unity.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores.
+- Estado: validated; validado manualmente en Unity por confirmacion del usuario, incluidos menu personal/external/equipment, cantidades, transferencias, drop, consumo y Data Load 0 errors / 0 warnings.
+
+### M34.1.3: Inventory Context QoL & Atomic Equipment Replacement
+
+- Se agregaron `EquipmentFailureCode`, `EquipmentReplacementPlan` y `EquipmentDisplacementPlan`: source, alternativa solicitada, desplazados unicos, todos sus slots, placements reservados y cuatro versiones esperadas.
+- `PreviewEquipReplacing` valida equipabilidad/ownership/slots y usa una simulacion pura del layout personal que omite source antes de reservar todos los desplazados con el first-fit existente.
+- La deduplicacion por `InstanceId` hace que un rifle referenciado por ambas manos se desplace una sola vez; cada desplazado conserva instancia, entry, cantidad y condiciones.
+- `EquipReplacing` vuelve a ejecutar preview, compara plan y reservations, captura snapshots y realiza transfers cerrados; ante excepcion restaura personal/equipment storage, layout, mapas, versiones y secuencia de IDs.
+- El reemplazo no consulta hard limit porque el ownership agregado y el peso total del actor no cambian; no usa external storage, auto-drop ni nuevos destinos.
+- `EquipmentFailureMessageFormatter` traduce failure codes a mensajes de UI; el resolver ofrece `Equipar` para slots libres y `Equipar y reemplazar` con resumen de desplazados cuando el preview es viable.
+- El modal Amount suma slider horizontal con redondeo entero, campo sincronizado, clamp `1..maximum` y saltos `-/+` de 1 o 10 con Shift.
+- Para stacks de cantidad 1 se muestran solo `Tomar`, `Depositar` o `Soltar`; `Ver detalles` se oculta hasta M34.1.4.
+- `ActorNeedsDebugPanel` cachea `InventoryUISessionController` y deja de dibujarse durante cualquier sesion. El footer externo elimina los botones Take/Deposit fijos; clic derecho, Shift+click, drag, merge y rotacion no se cambiaron.
+- No se modificaron `ItemStorage`, `GridInventoryLayout`, transfer service, ownership/peso, containers, cadaveres, pickup/drop/use, escena, JSON, arte, prefabs ni loot tables. `GridInventoryBackend` solo agrega la simulacion interna reusable y sin mutaciones.
+- Compilacion estatica de `Assembly-CSharp`: 0 errores; solo cuatro warnings preexistentes de `BuildingVisibilityManager`.
+- Estado: implemented; pendiente de validacion manual en Unity.
 
 ## Decisiones De Scope
 
