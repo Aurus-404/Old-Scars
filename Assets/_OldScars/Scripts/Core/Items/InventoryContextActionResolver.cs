@@ -117,31 +117,185 @@ namespace OldScars.Core.Items
             return actions;
         }
 
-        public static IReadOnlyList<InventoryContextAction> ResolveEquipment(
+        public static IReadOnlyList<InventoryContextAction> ResolveWorldItem(
+            WorldItemPickup source,
             ActorEquipmentComponent equipment,
-            string equipmentSlotId,
-            string instanceId)
+            PersonalStorageNavigator navigator,
+            string instanceId,
+            GridStorageTransferContext transferContext)
         {
             var actions = new List<InventoryContextAction>();
-            if (equipment == null || string.IsNullOrWhiteSpace(equipmentSlotId) ||
-                !equipment.TryGetEntryByInstanceId(instanceId, out ItemStorageEntry entry) ||
+            if (source == null ||
+                !source.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry) ||
                 entry?.Item == null)
             {
                 return actions;
             }
 
-            EquipmentPreview preview = equipment.PreviewUnequip(instanceId);
-            actions.Add(new InventoryContextAction(
-                InventoryContextActionKind.Unequip,
-                "Desequipar al inventario",
-                preview.Success,
-                preview.Success
-                    ? null
-                    : EquipmentFailureMessageFormatter.FormatFailure(
-                        preview.FailureCode,
+            if (equipment != null)
+            {
+                IReadOnlyList<EquipmentSlotSet> alternatives =
+                    WorldItemEquipmentTransactionService.GetCompatibleSlotSets(equipment, source, instanceId);
+                var seenSlotSets = new HashSet<string>();
+                for (int index = 0; index < alternatives.Count; index++)
+                {
+                    string[] slotIds = alternatives[index].SlotIds;
+                    if (slotIds == null || slotIds.Length == 0 || !seenSlotSets.Add(string.Join("\u001f", slotIds)))
+                        continue;
+
+                    string slotLabel = GetWorldSlotSetLabel(equipment, slotIds);
+                    EquipmentPreview preview = WorldItemEquipmentTransactionService.PreviewEquip(
                         equipment,
-                        preview.SlotIds,
-                        new[] { instanceId })));
+                        source,
+                        instanceId,
+                        slotIds);
+                    if (preview.Success && !preview.RequiresChoice)
+                    {
+                        actions.Add(new InventoryContextAction(
+                            InventoryContextActionKind.Equip,
+                            $"Equipar — {slotLabel}",
+                            equipmentSlotIds: slotIds));
+                        continue;
+                    }
+
+                    if (preview.FailureCode != EquipmentFailureCode.SlotOccupied)
+                        continue;
+
+                    EquipmentReplacementPlan replacement = WorldItemEquipmentTransactionService.PreviewEquipReplacing(
+                        equipment,
+                        source,
+                        instanceId,
+                        slotIds);
+                    if (!replacement.Success)
+                        continue;
+
+                    actions.Add(new InventoryContextAction(
+                        InventoryContextActionKind.EquipReplacing,
+                        $"Reemplazar — {slotLabel}",
+                        equipmentSlotIds: slotIds,
+                        detail: EquipmentFailureMessageFormatter.FormatReplacementSummary(equipment, replacement)));
+                }
+            }
+
+            IReadOnlyList<PersonalStorageOption> options = navigator?.GetOptions();
+            if (options != null)
+            {
+                for (int index = 1; index < options.Count; index++)
+                {
+                    PersonalStorageOption option = options[index];
+                    if (option.Owner == null || string.IsNullOrWhiteSpace(option.ContainerInstanceId))
+                        continue;
+
+                    GridStorageAutoTransferPreview preview = GridStorageTransferService.PreviewTransferQuantityAuto(
+                        source,
+                        option.Owner,
+                        instanceId,
+                        entry.Quantity,
+                        GridStorageTransferQuantityPolicy.Exact,
+                        transferContext);
+                    if (!preview.IsValid || preview.EffectiveQuantity != entry.Quantity)
+                        continue;
+
+                    actions.Add(new InventoryContextAction(
+                        InventoryContextActionKind.MoveToOwnedStorageStack,
+                        $"Guardar en {GetWorldStorageLabel(options, index)}",
+                        targetContainerInstanceId: option.ContainerInstanceId));
+                }
+            }
+
+            return actions;
+        }
+
+        public static IReadOnlyList<InventoryContextAction> ResolveEquipment(
+            ActorEquipmentComponent equipment,
+            string equipmentSlotId,
+            string instanceId,
+            PersonalStorageNavigator navigator,
+            IGridStorageOwner externalDestination,
+            GridStorageTransferContext transferContext)
+        {
+            var actions = new List<InventoryContextAction>();
+            if (equipment == null || string.IsNullOrWhiteSpace(equipmentSlotId) ||
+                !equipment.TryGetEntryByInstanceId(instanceId, out ItemStorageEntry entry) ||
+                entry?.Item == null || !equipment.IsEquipped(instanceId))
+            {
+                return actions;
+            }
+
+            IReadOnlyList<string> occupiedSlots = equipment.GetSlotsOccupiedBy(instanceId);
+            if (!ContainsSlot(occupiedSlots, equipmentSlotId))
+                return actions;
+
+            if (entry.Item.HasOwnedStorage && navigator != null && navigator.IsEquippedOwnedStorage(instanceId))
+            {
+                actions.Add(new InventoryContextAction(
+                    InventoryContextActionKind.ReviewOwnedStorage,
+                    "Revisar contenedor"));
+            }
+
+            IReadOnlyList<EquipmentSlotSet> alternatives = equipment.GetCompatibleEquippedSlotSets(instanceId);
+            for (int index = 0; index < alternatives.Count; index++)
+            {
+                string[] targetSlots = alternatives[index].SlotIds;
+                if (SameSlotSet(occupiedSlots, targetSlots))
+                    continue;
+
+                EquipmentRelocationPlan relocation = equipment.PreviewRelocateEquipped(instanceId, targetSlots);
+                if (!relocation.Success)
+                    continue;
+
+                bool replacing = relocation.DisplacedItems.Length > 0;
+                string slotLabel = GetSlotSetLabel(equipment, targetSlots);
+                actions.Add(new InventoryContextAction(
+                    replacing ? InventoryContextActionKind.EquipReplacing : InventoryContextActionKind.Equip,
+                    replacing ? $"Equipar y reemplazar â€” {slotLabel}" : $"Mover a {slotLabel}",
+                    true,
+                    null,
+                    targetSlots));
+            }
+
+            EquipmentPreview preview = equipment.PreviewUnequip(instanceId);
+            if (preview.Success)
+            {
+                actions.Add(new InventoryContextAction(
+                    InventoryContextActionKind.Unequip,
+                    "Desequipar al inventario"));
+            }
+
+            if (!entry.Item.HasOwnedStorage && navigator != null)
+            {
+                IReadOnlyList<PersonalStorageOption> options = navigator.GetOptions();
+                for (int index = 1; index < options.Count; index++)
+                {
+                    PersonalStorageOption option = options[index];
+                    if (option.Owner == null || option.ContainerInstanceId == instanceId)
+                        continue;
+
+                    EquipmentStorageTransferPlan storagePlan = equipment.PreviewTransferEquippedToStorage(
+                        instanceId,
+                        option.Owner,
+                        transferContext);
+                    if (!storagePlan.Success)
+                        continue;
+
+                    actions.Add(new InventoryContextAction(
+                        InventoryContextActionKind.MoveToOwnedStorageStack,
+                        $"Mover a {option.Label}",
+                        targetContainerInstanceId: option.ContainerInstanceId));
+                }
+            }
+
+            if (externalDestination != null)
+            {
+                EquipmentStorageTransferPlan externalPlan = equipment.PreviewTransferEquippedToStorage(
+                    instanceId,
+                    externalDestination,
+                    transferContext);
+                if (externalPlan.Success)
+                    actions.Add(new InventoryContextAction(InventoryContextActionKind.DepositStack, "Depositar"));
+            }
+
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar"));
             return actions;
         }
 
@@ -302,6 +456,79 @@ namespace OldScars.Core.Items
                     : slotIds[index];
             }
             return string.Join(" + ", labels);
+        }
+
+        private static string GetWorldSlotSetLabel(
+            ActorEquipmentComponent equipment,
+            IReadOnlyList<string> slotIds)
+        {
+            string label = GetSlotSetLabel(equipment, slotIds);
+            return label == "Ambas manos" ? "2 manos" : label;
+        }
+
+        private static string GetWorldStorageLabel(
+            IReadOnlyList<PersonalStorageOption> options,
+            int optionIndex)
+        {
+            PersonalStorageOption option = options[optionIndex];
+            string label = RemoveContainerInstanceId(option.Label, option.ContainerInstanceId);
+            int matchingLabels = 0;
+            for (int index = 1; index < options.Count; index++)
+            {
+                PersonalStorageOption candidate = options[index];
+                if (candidate.Owner != null &&
+                    RemoveContainerInstanceId(candidate.Label, candidate.ContainerInstanceId) == label)
+                {
+                    matchingLabels++;
+                }
+            }
+
+            return matchingLabels > 1 ? $"{label} ({option.ContainerInstanceId})" : label;
+        }
+
+        private static string RemoveContainerInstanceId(string rawLabel, string containerInstanceId)
+        {
+            string label = string.IsNullOrWhiteSpace(rawLabel) ? null : rawLabel.Trim();
+            if (!string.IsNullOrWhiteSpace(label) && !string.IsNullOrWhiteSpace(containerInstanceId))
+                label = label.Replace(containerInstanceId, string.Empty).Trim().Trim(' ', '(', ')', '[', ']', '-', '—', ':');
+
+            return string.IsNullOrWhiteSpace(label) ? "Contenedor equipado" : label;
+        }
+
+        private static bool ContainsSlot(IReadOnlyList<string> slots, string slotId)
+        {
+            if (slots == null || string.IsNullOrWhiteSpace(slotId))
+                return false;
+            for (int index = 0; index < slots.Count; index++)
+            {
+                if (slots[index] == slotId)
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool SameSlotSet(IReadOnlyList<string> left, IReadOnlyList<string> right)
+        {
+            int leftCount = left?.Count ?? 0;
+            int rightCount = right?.Count ?? 0;
+            if (leftCount != rightCount)
+                return false;
+
+            for (int leftIndex = 0; leftIndex < leftCount; leftIndex++)
+            {
+                bool found = false;
+                for (int rightIndex = 0; rightIndex < rightCount; rightIndex++)
+                {
+                    if (left[leftIndex] == right[rightIndex])
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
         }
     }
 }

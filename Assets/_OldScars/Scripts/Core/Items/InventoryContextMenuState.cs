@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace OldScars.Core.Items
@@ -379,13 +380,44 @@ namespace OldScars.Core.Items
 
             if (request.SourceKind == InventoryContextSourceKind.Equipment)
             {
-                return request.Equipment != null &&
-                       request.Equipment.GetEquippedStorageEntry(request.EquipmentSlotId)?.Item?.InstanceId == request.InstanceId;
+                if (request.Equipment == null ||
+                    request.Equipment.GetEquippedStorageEntry(request.EquipmentSlotId)?.Item?.InstanceId != request.InstanceId)
+                {
+                    return false;
+                }
+
+                return SameSlotSet(
+                    request.SourceEquipmentSlotIds,
+                    request.Equipment.GetSlotsOccupiedBy(request.InstanceId));
             }
 
             return request.Owner != null &&
                    request.Owner.TryGetEntryByInstanceId(request.InstanceId, out _, out ItemStorageEntry entry) &&
                    entry?.Item != null;
+        }
+
+        private static bool SameSlotSet(IReadOnlyList<string> left, IReadOnlyList<string> right)
+        {
+            int leftCount = left?.Count ?? 0;
+            int rightCount = right?.Count ?? 0;
+            if (leftCount == 0 || leftCount != rightCount)
+                return false;
+
+            for (int leftIndex = 0; leftIndex < leftCount; leftIndex++)
+            {
+                bool found = false;
+                for (int rightIndex = 0; rightIndex < rightCount; rightIndex++)
+                {
+                    if (left[leftIndex] == right[rightIndex])
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
         }
     }
 }

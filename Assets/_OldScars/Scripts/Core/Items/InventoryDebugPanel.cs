@@ -437,7 +437,11 @@ namespace OldScars.Core.Items
             IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolveEquipment(
                 actorEquipment,
                 click.SlotId,
-                click.InstanceId);
+                click.InstanceId,
+                personalStorageNavigator,
+                null,
+                default);
+            IReadOnlyList<string> occupiedSlots = actorEquipment.GetSlotsOccupiedBy(click.InstanceId);
             sessionController.OpenContextMenu(
                 new InventoryContextMenuRequest(
                     InventoryContextSourceKind.Equipment,
@@ -447,7 +451,8 @@ namespace OldScars.Core.Items
                     click.SlotId,
                     entry.Quantity,
                     actions,
-                    ExecuteContextAction),
+                    ExecuteContextAction,
+                    occupiedSlots),
                 guiEvent != null ? ToPanelLocalPosition(guiEvent.mousePosition) : click.RowRect.position);
         }
 
@@ -713,10 +718,16 @@ namespace OldScars.Core.Items
                     UseItem(owner, entry.Item.InstanceId);
                     return;
                 case InventoryContextActionKind.Equip:
-                    EquipSelected(owner, entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
+                        RelocateEquipmentItem(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    else
+                        EquipSelected(owner, entry.Item.InstanceId, currentAction.EquipmentSlotIds);
                     return;
                 case InventoryContextActionKind.EquipReplacing:
-                    EquipReplacingSelected(owner, entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
+                        RelocateEquipmentItem(entry.Item.InstanceId, currentAction.EquipmentSlotIds);
+                    else
+                        EquipReplacingSelected(owner, entry.Item.InstanceId, currentAction.EquipmentSlotIds);
                     return;
                 case InventoryContextActionKind.Unequip:
                     UnequipSelected(entry.Item.InstanceId);
@@ -728,7 +739,10 @@ namespace OldScars.Core.Items
                     DropItem(owner, entry.Item.InstanceId, quantity, "drop_amount", "Drop Amount");
                     return;
                 case InventoryContextActionKind.DropStack:
-                    DropItem(owner, entry.Item.InstanceId, entry.Quantity, "drop_stack", "Drop Stack");
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
+                        DropEquipmentItem(entry.Item.InstanceId);
+                    else
+                        DropItem(owner, entry.Item.InstanceId, entry.Quantity, "drop_stack", "Drop Stack");
                     return;
                 case InventoryContextActionKind.MoveToPersonalOne:
                     TransferPersonalCompartment(owner, inventory, entry.Item.InstanceId, 1, false);
@@ -754,12 +768,19 @@ namespace OldScars.Core.Items
                         : currentAction.Kind == InventoryContextActionKind.MoveToOwnedStorageAmount
                             ? quantity
                             : entry.Quantity;
-                    TransferPersonalCompartment(
-                        owner,
-                        ownedTarget,
-                        entry.Item.InstanceId,
-                        moveQuantity,
-                        currentAction.Kind == InventoryContextActionKind.MoveToOwnedStorageStack);
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
+                    {
+                        TransferEquipmentItem(entry.Item.InstanceId, ownedTarget, default);
+                    }
+                    else
+                    {
+                        TransferPersonalCompartment(
+                            owner,
+                            ownedTarget,
+                            entry.Item.InstanceId,
+                            moveQuantity,
+                            currentAction.Kind == InventoryContextActionKind.MoveToOwnedStorageStack);
+                    }
                     return;
                 default:
                     toast.Show("Context action is not valid in the personal session.", InventoryToastSeverity.Error);
@@ -820,6 +841,7 @@ namespace OldScars.Core.Items
             {
                 if (!ReferenceEquals(request.Equipment, actorEquipment) || actorEquipment == null ||
                     actorEquipment.GetEquippedStorageEntry(request.EquipmentSlotId)?.Item?.InstanceId != request.InstanceId ||
+                    !SameSlotSet(request.SourceEquipmentSlotIds, actorEquipment.GetSlotsOccupiedBy(request.InstanceId)) ||
                     !actorEquipment.TryGetEntryByInstanceId(request.InstanceId, out entry) || entry?.Item == null)
                 {
                     return false;
@@ -827,7 +849,10 @@ namespace OldScars.Core.Items
                 actions = InventoryContextActionResolver.ResolveEquipment(
                     actorEquipment,
                     request.EquipmentSlotId,
-                    request.InstanceId);
+                    request.InstanceId,
+                    personalStorageNavigator,
+                    null,
+                    default);
             }
             else
             {
@@ -865,6 +890,29 @@ namespace OldScars.Core.Items
             for (int index = 0; index < leftCount; index++)
             {
                 if (left[index] != right[index])
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool SameSlotSet(IReadOnlyList<string> left, IReadOnlyList<string> right)
+        {
+            int leftCount = left?.Count ?? 0;
+            int rightCount = right?.Count ?? 0;
+            if (leftCount == 0 || leftCount != rightCount)
+                return false;
+            for (int leftIndex = 0; leftIndex < leftCount; leftIndex++)
+            {
+                bool found = false;
+                for (int rightIndex = 0; rightIndex < rightCount; rightIndex++)
+                {
+                    if (left[leftIndex] == right[rightIndex])
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
                     return false;
             }
             return true;
@@ -982,7 +1030,62 @@ namespace OldScars.Core.Items
             GUIUtility.ExitGUI();
         }
 
+        private void RelocateEquipmentItem(string instanceId, IReadOnlyList<string> slotIds)
+        {
+            EquipmentRelocationPlan plan = actorEquipment?.PreviewRelocateEquipped(instanceId, slotIds);
+            EquipmentMutationResult result = actorEquipment != null
+                ? actorEquipment.RelocateEquipped(plan)
+                : EquipmentMutationResult.Rejected("Actor equipment is unavailable.", instanceId, EquipmentFailureCode.MissingDependencies);
+            string[] displacedIds = GetDisplacedIds(plan);
+            string message = result.Success
+                ? EquipmentFailureMessageFormatter.FormatSuccess(actorEquipment, result.InstanceId, false, plan != null && plan.DisplacedItems.Length > 0)
+                : EquipmentFailureMessageFormatter.FormatFailure(result.FailureCode, actorEquipment, slotIds, displacedIds);
+            toast.Show(message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            string primarySlot = result.SlotIds.Length > 0 ? result.SlotIds[0] : null;
+            sessionController?.Selection.SelectEquipmentFromContext(primarySlot, result.InstanceId, true);
+            sessionController?.CloseContextMenu();
+            GUIUtility.ExitGUI();
+        }
+
+        private void TransferEquipmentItem(
+            string instanceId,
+            IGridStorageOwner destination,
+            GridStorageTransferContext context)
+        {
+            EquipmentStorageTransferPlan plan = actorEquipment?.PreviewTransferEquippedToStorage(instanceId, destination, context);
+            EquipmentMutationResult result = actorEquipment != null
+                ? actorEquipment.TransferEquippedToStorage(destination, plan, context)
+                : EquipmentMutationResult.Rejected("Actor equipment is unavailable.", instanceId, EquipmentFailureCode.MissingDependencies);
+            toast.Show(
+                result.Success ? $"Transferred {result.InstanceId}." : result.Message ?? "Equipment transfer failed.",
+                result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!result.Success)
+                return;
+
+            sessionController?.Selection.ClearEquipment();
+            if (ReferenceEquals(GetActivePersonalOwner(), destination))
+            {
+                gridView.SelectInstance(result.InstanceId);
+                sessionController?.Selection.SelectPersonalFromContext(result.InstanceId);
+            }
+            sessionController?.CloseContextMenu();
+            gridView.ReconcileSelection(GetActivePersonalOwner());
+            GUIUtility.ExitGUI();
+        }
+
         private static string[] GetDisplacedIds(EquipmentReplacementPlan plan)
+        {
+            int count = plan?.DisplacedItems?.Length ?? 0;
+            var result = new string[count];
+            for (int index = 0; index < count; index++)
+                result[index] = plan.DisplacedItems[index]?.InstanceId;
+            return result;
+        }
+
+        private static string[] GetDisplacedIds(EquipmentRelocationPlan plan)
         {
             int count = plan?.DisplacedItems?.Length ?? 0;
             var result = new string[count];
@@ -1160,6 +1263,24 @@ namespace OldScars.Core.Items
                 sessionController?.Selection.ClearPersonalIfMissing(sourceInstanceId);
                 sessionController?.CloseContextMenu();
             }
+            GUIUtility.ExitGUI();
+        }
+
+        private void DropEquipmentItem(string instanceId)
+        {
+            bool dropped = DroppedWorldItemSpawner.TryDrop(
+                actorEquipment,
+                instanceId,
+                inventory,
+                "drop_stack",
+                "Drop Stack",
+                out string message);
+            toast.Show(message, dropped ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
+            if (!dropped)
+                return;
+
+            sessionController?.Selection.ClearEquipment();
+            sessionController?.CloseContextMenu();
             GUIUtility.ExitGUI();
         }
 

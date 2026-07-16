@@ -193,6 +193,96 @@ namespace OldScars.Core.Items
         internal GridPlacement SourcePlacement { get; }
     }
 
+    public sealed class EquipmentRelocationPlan
+    {
+        internal EquipmentRelocationPlan(
+            bool success,
+            EquipmentFailureCode failureCode,
+            string message,
+            string sourceInstanceId,
+            string[] sourceSlotSet,
+            string[] requestedSlotSet,
+            EquipmentDisplacementPlan[] displacedItems,
+            int personalStorageVersion,
+            int personalLayoutVersion,
+            int equipmentStorageVersion,
+            int equipmentVersion)
+        {
+            Success = success;
+            FailureCode = failureCode;
+            Message = message;
+            SourceInstanceId = sourceInstanceId;
+            SourceSlotSet = sourceSlotSet != null ? (string[])sourceSlotSet.Clone() : Array.Empty<string>();
+            RequestedSlotSet = requestedSlotSet != null ? (string[])requestedSlotSet.Clone() : Array.Empty<string>();
+            DisplacedItems = displacedItems != null
+                ? (EquipmentDisplacementPlan[])displacedItems.Clone()
+                : Array.Empty<EquipmentDisplacementPlan>();
+            PersonalStorageVersion = personalStorageVersion;
+            PersonalLayoutVersion = personalLayoutVersion;
+            EquipmentStorageVersion = equipmentStorageVersion;
+            EquipmentVersion = equipmentVersion;
+        }
+
+        public bool Success { get; }
+        public EquipmentFailureCode FailureCode { get; }
+        public string Message { get; }
+        public string SourceInstanceId { get; }
+        public string[] SourceSlotSet { get; }
+        public string[] RequestedSlotSet { get; }
+        public EquipmentDisplacementPlan[] DisplacedItems { get; }
+        internal int PersonalStorageVersion { get; }
+        internal int PersonalLayoutVersion { get; }
+        internal int EquipmentStorageVersion { get; }
+        internal int EquipmentVersion { get; }
+    }
+
+    public sealed class EquipmentStorageTransferPlan
+    {
+        internal EquipmentStorageTransferPlan(
+            bool success,
+            EquipmentFailureCode failureCode,
+            string message,
+            string sourceInstanceId,
+            string[] sourceSlotSet,
+            IGridStorageOwner destinationOwner,
+            GridPlacement destinationPlacement,
+            int personalStorageVersion,
+            int personalLayoutVersion,
+            int equipmentStorageVersion,
+            int equipmentVersion,
+            int destinationStorageVersion,
+            int destinationLayoutVersion)
+        {
+            Success = success;
+            FailureCode = failureCode;
+            Message = message;
+            SourceInstanceId = sourceInstanceId;
+            SourceSlotSet = sourceSlotSet != null ? (string[])sourceSlotSet.Clone() : Array.Empty<string>();
+            DestinationOwner = destinationOwner;
+            DestinationPlacement = destinationPlacement;
+            PersonalStorageVersion = personalStorageVersion;
+            PersonalLayoutVersion = personalLayoutVersion;
+            EquipmentStorageVersion = equipmentStorageVersion;
+            EquipmentVersion = equipmentVersion;
+            DestinationStorageVersion = destinationStorageVersion;
+            DestinationLayoutVersion = destinationLayoutVersion;
+        }
+
+        public bool Success { get; }
+        public EquipmentFailureCode FailureCode { get; }
+        public string Message { get; }
+        public string SourceInstanceId { get; }
+        public string[] SourceSlotSet { get; }
+        public GridPlacement DestinationPlacement { get; }
+        internal IGridStorageOwner DestinationOwner { get; }
+        internal int PersonalStorageVersion { get; }
+        internal int PersonalLayoutVersion { get; }
+        internal int EquipmentStorageVersion { get; }
+        internal int EquipmentVersion { get; }
+        internal int DestinationStorageVersion { get; }
+        internal int DestinationLayoutVersion { get; }
+    }
+
     public readonly struct ActorItemOwnershipSnapshot
     {
         public ActorItemOwnershipSnapshot(

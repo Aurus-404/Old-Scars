@@ -40,21 +40,16 @@ namespace OldScars.Core.Interactions
             if (uiInputBlocker != null && uiInputBlocker.ConsumeLeftClickIfNeeded(mousePosition))
                 return;
 
-            if (IsActionInProgress())
-            {
-                Debug.Log("[PointClickMovementInputController] Movement click ignored because a debug action is in progress.");
-                return;
-            }
-
             TrySetMovementTarget(mousePosition);
         }
 
-        private bool IsActionInProgress()
+        private void CancelActiveActionForMovement()
         {
             if (progressController == null)
                 progressController = FindAnyObjectByType<DebugActionProgressController>();
 
-            return progressController != null && progressController.IsActionInProgress;
+            if (progressController != null)
+                progressController.TryCancelActiveAction("valid movement order received");
         }
 
         private void TrySetMovementTarget(Vector2 mousePosition)
@@ -80,7 +75,10 @@ namespace OldScars.Core.Interactions
             Ray ray = inputCamera.ScreenPointToRay(new Vector3(mousePosition.x, mousePosition.y, 0f));
 
             if (Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, groundLayerMask, QueryTriggerInteraction.Ignore))
+            {
+                CancelActiveActionForMovement();
                 movementController.SetTarget(hit.point);
+            }
         }
     }
 }

@@ -127,6 +127,7 @@ namespace OldScars.Core.Items
                 ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
                 equipment.RebindActorOwnedItems();
                 equipment.RecordEquipped(item);
+                equipment.CommitVisualState(EquipmentVisualCommitKind.EquipFromItemOwnedStorage);
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item equipped.", preview.InstanceId, preview.SlotIds);
             }
             catch (Exception exception)
@@ -265,6 +266,7 @@ namespace OldScars.Core.Items
                 for (int index = 0; index < displacedItems.Length; index++)
                     equipment.RecordUnequipped(displacedItems[index]);
                 equipment.RecordEquipped(sourceItem);
+                equipment.CommitVisualState(EquipmentVisualCommitKind.ReplacementFromItemOwnedStorage);
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Equipment replaced.", plan.SourceInstanceId, plan.RequestedSlotSet);
             }
             catch (Exception exception)
@@ -313,7 +315,7 @@ namespace OldScars.Core.Items
             return true;
         }
 
-        private static bool IsDeclaredSlotSetAvailable(ActorEquipmentComponent equipment, IReadOnlyList<string> slots)
+        internal static bool IsDeclaredSlotSetAvailable(ActorEquipmentComponent equipment, IReadOnlyList<string> slots)
         {
             if (slots == null || slots.Count == 0)
                 return false;
@@ -326,7 +328,7 @@ namespace OldScars.Core.Items
             return true;
         }
 
-        private static bool AreSlotsFree(ActorEquipmentComponent equipment, IReadOnlyList<string> slots)
+        internal static bool AreSlotsFree(ActorEquipmentComponent equipment, IReadOnlyList<string> slots)
         {
             for (int index = 0; index < slots.Count; index++)
             {
@@ -336,7 +338,7 @@ namespace OldScars.Core.Items
             return true;
         }
 
-        private static bool IsDeclaredAlternative(ItemDefinition definition, IReadOnlyList<string> requested)
+        internal static bool IsDeclaredAlternative(ItemDefinition definition, IReadOnlyList<string> requested)
         {
             string[][] alternatives = ResolveSlotSets(definition);
             if (alternatives == null)
@@ -349,7 +351,7 @@ namespace OldScars.Core.Items
             return false;
         }
 
-        private static string[][] ResolveSlotSets(ItemDefinition definition)
+        internal static string[][] ResolveSlotSets(ItemDefinition definition)
         {
             if (definition?.equip?.slot_sets != null && definition.equip.slot_sets.Length > 0)
                 return definition.equip.slot_sets;
@@ -378,12 +380,12 @@ namespace OldScars.Core.Items
             return slotId == "right_hand" ? ActorEquipmentComponent.HandRightSlotId : slotId;
         }
 
-        private static bool IsEquipEnabled(ItemDefinition definition)
+        internal static bool IsEquipEnabled(ItemDefinition definition)
         {
             return definition?.equip?.equippable ?? definition?.equippable ?? false;
         }
 
-        private static ItemDefinition ResolveDefinition(string definitionId)
+        internal static ItemDefinition ResolveDefinition(string definitionId)
         {
             return GameDataManager.Instance != null && GameDataManager.Instance.IsReady
                 ? GameDataManager.Instance.Database?.GetItem(definitionId)
@@ -463,7 +465,7 @@ namespace OldScars.Core.Items
                 sourcePlacement);
         }
 
-        private static bool EquipmentVersionsMatch(
+        internal static bool EquipmentVersionsMatch(
             ActorEquipmentComponent equipment,
             EquipmentPreview preview)
         {
@@ -475,7 +477,7 @@ namespace OldScars.Core.Items
                    equipment.Version == preview.EquipmentVersion;
         }
 
-        private static bool EquipmentVersionsMatch(
+        internal static bool EquipmentVersionsMatch(
             ActorEquipmentComponent equipment,
             EquipmentReplacementPlan plan)
         {
@@ -579,7 +581,7 @@ namespace OldScars.Core.Items
             return true;
         }
 
-        private static bool SameSlots(IReadOnlyList<string> left, IReadOnlyList<string> right)
+        internal static bool SameSlots(IReadOnlyList<string> left, IReadOnlyList<string> right)
         {
             if ((left?.Count ?? 0) != (right?.Count ?? 0))
                 return false;
@@ -591,7 +593,7 @@ namespace OldScars.Core.Items
             return true;
         }
 
-        private static string[] Copy(IReadOnlyList<string> values)
+        internal static string[] Copy(IReadOnlyList<string> values)
         {
             if (values == null)
                 return Array.Empty<string>();

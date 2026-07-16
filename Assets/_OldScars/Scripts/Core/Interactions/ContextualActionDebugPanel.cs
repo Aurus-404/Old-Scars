@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using OldScars.Core.Actions;
 using OldScars.Core.Data.Definitions;
+using OldScars.Core.Items;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,10 +11,11 @@ namespace OldScars.Core.Interactions
     public sealed class ContextualActionDebugPanel : MonoBehaviour
     {
         private const string DefaultRequiredContext = "world_interaction";
-        private const float PanelWidth = 360f;
+        private const float PanelWidth = 420f;
         private const float PanelHeight = 260f;
 
         private readonly List<ActionDefinition> actions = new List<ActionDefinition>();
+        private readonly List<InventoryContextAction> worldQuickActions = new List<InventoryContextAction>();
         private readonly InteractionSystem interactionSystem = new InteractionSystem();
 
         [SerializeField] private DebugActionProgressController progressController;
@@ -26,6 +29,8 @@ namespace OldScars.Core.Interactions
         private string lastObservedEquippedItemDefinitionId;
         private Vector2 guiPosition;
         private Vector2 scrollPosition;
+        private Func<IReadOnlyList<InventoryContextAction>> worldQuickActionsProvider;
+        private Func<InventoryContextAction, bool> worldQuickActionHandler;
 
         public bool IsVisible => isVisible;
 
@@ -50,6 +55,27 @@ namespace OldScars.Core.Interactions
 
         public void ShowActions(IReadOnlyList<ActionDefinition> availableActions, WorldObjectTags target, string debugItemId, Vector2 mousePosition, ActorInteractionContext actorContext, string actionContext)
         {
+            ShowActions(
+                availableActions,
+                target,
+                debugItemId,
+                mousePosition,
+                actorContext,
+                actionContext,
+                null,
+                null);
+        }
+
+        public void ShowActions(
+            IReadOnlyList<ActionDefinition> availableActions,
+            WorldObjectTags target,
+            string debugItemId,
+            Vector2 mousePosition,
+            ActorInteractionContext actorContext,
+            string actionContext,
+            Func<IReadOnlyList<InventoryContextAction>> quickActionsProvider,
+            Func<InventoryContextAction, bool> quickActionHandler)
+        {
             actions.Clear();
 
             if (availableActions != null)
@@ -68,6 +94,9 @@ namespace OldScars.Core.Interactions
             lastObservedEquippedItemDefinitionId = debugItemId;
             guiPosition = ToGuiPosition(mousePosition);
             scrollPosition = Vector2.zero;
+            worldQuickActionsProvider = quickActionsProvider;
+            worldQuickActionHandler = quickActionHandler;
+            RefreshWorldQuickActions();
             isVisible = true;
         }
 
@@ -75,11 +104,14 @@ namespace OldScars.Core.Interactions
         {
             isVisible = false;
             actions.Clear();
+            worldQuickActions.Clear();
             currentTarget = null;
             currentActorContext = null;
             requiredContext = null;
             itemId = null;
             lastObservedEquippedItemDefinitionId = null;
+            worldQuickActionsProvider = null;
+            worldQuickActionHandler = null;
         }
 
         public bool ContainsScreenPosition(Vector2 screenPosition)
@@ -115,30 +147,52 @@ namespace OldScars.Core.Interactions
             GUILayout.BeginArea(GetPanelRect(), GUI.skin.box);
             GUILayout.Label("Contextual Actions (Debug)");
             GUILayout.Label($"Target: {SafeText(GetTargetName())}");
-            GUILayout.Label($"Item: {SafeText(itemId)}");
+            GUILayout.Label($"Equipado: {SafeText(itemId)}");
 
             GUILayout.Space(8f);
 
-            if (actions.Count == 0)
+            if (actions.Count == 0 && worldQuickActions.Count == 0)
             {
                 GUILayout.Label("No hay acciones disponibles");
             }
             else
             {
-                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(150f));
+                var buttonStyle = new GUIStyle(GUI.skin.button)
+                {
+                    wordWrap = true
+                };
+                scrollPosition.x = 0f;
+                scrollPosition = GUILayout.BeginScrollView(
+                    scrollPosition,
+                    false,
+                    false,
+                    GUIStyle.none,
+                    GUI.skin.verticalScrollbar,
+                    GUILayout.Height(150f));
 
                 for (int index = 0; index < actions.Count; index++)
                 {
                     ActionDefinition action = actions[index];
                     string label = GetActionLabel(action);
 
-                    if (GUILayout.Button(label, GUILayout.Height(28f)))
+                    if (GUILayout.Button(label, buttonStyle, GUILayout.Height(28f), GUILayout.ExpandWidth(true)))
                     {
                         TryStartAction(action);
                     }
                 }
 
+                for (int index = 0; index < worldQuickActions.Count; index++)
+                {
+                    InventoryContextAction action = worldQuickActions[index];
+                    bool previousEnabled = GUI.enabled;
+                    GUI.enabled = previousEnabled && action.Enabled;
+                    if (GUILayout.Button(action.Label, buttonStyle, GUILayout.Height(28f), GUILayout.ExpandWidth(true)))
+                        TryStartWorldQuickAction(action);
+                    GUI.enabled = previousEnabled;
+                }
+
                 GUILayout.EndScrollView();
+                scrollPosition.x = 0f;
             }
 
             GUILayout.Space(8f);
@@ -171,8 +225,9 @@ namespace OldScars.Core.Interactions
 
         private static Vector2 ClampGuiPosition(Vector2 position)
         {
-            float maxX = Mathf.Max(0f, Screen.width - PanelWidth);
-            float maxY = Mathf.Max(0f, Screen.height - PanelHeight);
+            Vector2 panelSize = GetPanelSize();
+            float maxX = Mathf.Max(0f, Screen.width - panelSize.x);
+            float maxY = Mathf.Max(0f, Screen.height - panelSize.y);
 
             return new Vector2(
                 Mathf.Clamp(position.x, 0f, maxX),
@@ -182,7 +237,15 @@ namespace OldScars.Core.Interactions
         private Rect GetPanelRect()
         {
             Vector2 clampedPosition = ClampGuiPosition(guiPosition);
-            return new Rect(clampedPosition.x, clampedPosition.y, PanelWidth, PanelHeight);
+            Vector2 panelSize = GetPanelSize();
+            return new Rect(clampedPosition.x, clampedPosition.y, panelSize.x, panelSize.y);
+        }
+
+        private static Vector2 GetPanelSize()
+        {
+            return new Vector2(
+                Mathf.Min(PanelWidth, Mathf.Max(0f, Screen.width)),
+                Mathf.Min(PanelHeight, Mathf.Max(0f, Screen.height)));
         }
 
         private string GetTargetName()
@@ -208,6 +271,20 @@ namespace OldScars.Core.Interactions
 
             if (started)
                 Hide();
+        }
+
+        private void TryStartWorldQuickAction(InventoryContextAction action)
+        {
+            if (action == null || !action.Enabled || worldQuickActionHandler == null)
+                return;
+
+            if (worldQuickActionHandler(action))
+            {
+                Hide();
+                return;
+            }
+
+            RefreshWorldQuickActions();
         }
 
         private bool TryRevalidateAction(ActionDefinition action, out DebugActionExecutionContext executionContext)
@@ -313,6 +390,20 @@ namespace OldScars.Core.Interactions
 
             itemId = currentItemId;
             lastObservedEquippedItemDefinitionId = currentItemId;
+        }
+
+        private void RefreshWorldQuickActions()
+        {
+            worldQuickActions.Clear();
+            IReadOnlyList<InventoryContextAction> refreshed = worldQuickActionsProvider?.Invoke();
+            if (refreshed == null)
+                return;
+
+            for (int index = 0; index < refreshed.Count; index++)
+            {
+                if (refreshed[index] != null)
+                    worldQuickActions.Add(refreshed[index]);
+            }
         }
 
         private void ShowUnavailableActionFeedback(ActionDefinition action, ActionAvailabilityDiagnosticReport diagnosticReport, string explicitReason)

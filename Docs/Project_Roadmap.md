@@ -112,13 +112,18 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 34.1.2: Inventory Context Menu v0 | Reemplazar acciones fijas de items por un menu contextual central con cantidades y delegacion a servicios existentes. | validated | Validado manualmente en Unity por confirmacion del usuario. |
 | Milestone 34.1.3: Inventory Context QoL & Atomic Equipment Replacement | Agregar reemplazo atomico de slots ocupados y pulir menu, cantidades y overlays debug sin crear item-owned storage. | validated | Validado manualmente en Unity por confirmacion del usuario, con Data Load 0/0 y regresiones principales confirmadas. |
 | Milestone 34.1.4: Item Inspection Panel | Dar contenido real a Ver detalles sin abrir una UI paralela ni inventar estadisticas. | planned | Diferido; no implementado. |
-| Milestone 33.3.1: Weight-Limited Partial Transfers | Limitar solo transferencias automaticas entrantes de stack al maximo entero permitido por hard limit, preservando rutas exactas. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
-| Milestone 34.2: Item-Owned Storage / Backpack Foundation | Agregar el primer storage propiedad de un item y peso de subtree sobre la base de ownership de M34.1. | planned | Diferido hasta validar M34.1 y aprobar el plan tecnico; no implementado. |
+| Milestone 33.3.1: Weight-Limited Partial Transfers | Limitar solo transferencias automaticas entrantes de stack al maximo entero permitido por hard limit, preservando rutas exactas. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.2: Item-Owned Storage / Backpack Foundation | Agregar el primer storage propiedad de un item y peso de subtree sobre la base de ownership de M34.1. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.2.1: Inventory Interaction Unification & Backpack Access | Unificar interacciones entre personal, mochila, equipment y external storage. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.2.1a: Fix Equipment From Item-Owned Storage | Corregir equip/replacement atomico desde item-owned storage. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.2.1b: Unified Context Actions for Equipped Items | Reutilizar el menu universal para acciones atomicas desde slots equipados. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 34.2.1c: World Item Quick Actions | Extender el menu contextual de items mundiales con pickup+equip/replacement y pickup+storage derivados del estado real. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
+| Milestone 35.0: Universal Visual Rig & Attachment Framework | Representar equipment confirmado mediante rigs, sockets, capabilities, providers y poses data-driven. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M34.1, M34.1.1, M34.1.2 y M34.1.3 estan validados manualmente en Unity. M33.3.1 esta implementado en el checkout y pendiente de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c y M35.0 estan `implemented` y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los ultimos milestones cerrados como `validated` son:
 
@@ -132,14 +137,19 @@ Los ultimos milestones cerrados como `validated` son:
 - M33.2.1: Partial Directed Merge + Stable Dual Grid UI.
 - M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish.
 - M33.3: Basic Carry Weight System v0.
+- M33.3.1: Weight-Limited Partial Transfers.
 - M34.1: Equipment Ownership & Slots Foundation.
 - M34.1.1: Inventory & Equipment UI Cleanup.
 - M34.1.2: Inventory Context Menu v0.
 - M34.1.3: Inventory Context QoL & Atomic Equipment Replacement.
+- M34.2: Item-Owned Storage / Backpack Foundation.
+- M34.2.1: Inventory Interaction Unification & Backpack Access.
+- M34.2.1a: Fix Equipment From Item-Owned Storage.
+- M34.2.1b: Unified Context Actions for Equipped Items.
 
 ## Proximo Recomendado
 
-Validar M33.3.1 Weight-Limited Partial Transfers en Unity antes de cerrarlo como `validated`. Despues siguen M34.2 Item-Owned Storage / Backpack Foundation, la granularidad de grillas inspirada en Kenshi y M34.1.4 Item Inspection Panel. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
+Validar M34.2.1c desde items mundiales y validar M35.0 con jugador, NPC humano y Debug Cargo Rig. Confirmar stale-state, transacciones, rollback, una sola actualizacion visual por commit de Equipment y cero actualizaciones de Equipment al guardar en storage. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
 
 M34.2 debe reutilizar ownership agregado, `ItemStorage` y referencias por `InstanceId`; no debe adelantar nesting general, pockets arbitrarios, save/load ni UI final.
 

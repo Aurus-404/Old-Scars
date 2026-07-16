@@ -22,6 +22,8 @@ namespace OldScars.Core.Data.Loading
     /// - world_object_profiles
     /// - firearm_profiles
     /// - ammo_profiles
+    /// - visual_capabilities / visual_rig_profiles
+    /// - visual_assets / item_visual_profiles / attachment_poses
     ///
     /// No entities, save system, IA, final combat or protection profiles yet.
     /// </summary>
@@ -122,6 +124,11 @@ namespace OldScars.Core.Data.Loading
             LoadItemStorageProfilesFrom(Path.Combine(modDirectory, "item_storage_profiles"));
             LoadEquipmentSlotsFrom(Path.Combine(modDirectory, "equipment_slots"));
             LoadEquipmentLayoutsFrom(Path.Combine(modDirectory, "equipment_layouts"));
+            LoadVisualRigCapabilitiesFrom(Path.Combine(modDirectory, "visual_capabilities"));
+            LoadVisualRigProfilesFrom(Path.Combine(modDirectory, "visual_rig_profiles"));
+            LoadVisualAssetsFrom(Path.Combine(modDirectory, "visual_assets"));
+            LoadItemVisualProfilesFrom(Path.Combine(modDirectory, "item_visual_profiles"));
+            LoadAttachmentPosesFrom(Path.Combine(modDirectory, "attachment_poses"));
             LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"));
             LoadActorProfilesFrom(Path.Combine(modDirectory, "actor_profiles"));
             LoadWorldObjectProfilesFrom(Path.Combine(modDirectory, "world_object_profiles"));
@@ -289,6 +296,96 @@ namespace OldScars.Core.Data.Loading
             }
         }
 
+        private void LoadVisualRigCapabilitiesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                VisualRigCapabilitiesWrapper wrapper = Parse<VisualRigCapabilitiesWrapper>(file);
+                if (wrapper == null || wrapper.visual_rig_capabilities == null)
+                {
+                    report.Warning($"No 'visual_rig_capabilities' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (VisualRigCapabilityDefinition capability in wrapper.visual_rig_capabilities)
+                    Database.RegisterVisualRigCapability(capability, report);
+
+                Debug.Log($"[GameDataLoader] VisualRigCapabilities: {wrapper.visual_rig_capabilities.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadVisualRigProfilesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                VisualRigProfilesWrapper wrapper = Parse<VisualRigProfilesWrapper>(file);
+                if (wrapper == null || wrapper.visual_rig_profiles == null)
+                {
+                    report.Warning($"No 'visual_rig_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (VisualRigProfileDefinition profile in wrapper.visual_rig_profiles)
+                    Database.RegisterVisualRigProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] VisualRigProfiles: {wrapper.visual_rig_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadVisualAssetsFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                VisualAssetsWrapper wrapper = Parse<VisualAssetsWrapper>(file);
+                if (wrapper == null || wrapper.visual_assets == null)
+                {
+                    report.Warning($"No 'visual_assets' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (VisualAssetDefinition asset in wrapper.visual_assets)
+                    Database.RegisterVisualAsset(asset, report);
+
+                Debug.Log($"[GameDataLoader] VisualAssets: {wrapper.visual_assets.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadItemVisualProfilesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                ItemVisualProfilesWrapper wrapper = Parse<ItemVisualProfilesWrapper>(file);
+                if (wrapper == null || wrapper.item_visual_profiles == null)
+                {
+                    report.Warning($"No 'item_visual_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (ItemVisualProfileDefinition profile in wrapper.item_visual_profiles)
+                    Database.RegisterItemVisualProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] ItemVisualProfiles: {wrapper.item_visual_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadAttachmentPosesFrom(string directory)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                AttachmentPosesWrapper wrapper = Parse<AttachmentPosesWrapper>(file);
+                if (wrapper == null || wrapper.attachment_poses == null)
+                {
+                    report.Warning($"No 'attachment_poses' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (AttachmentPoseDefinition pose in wrapper.attachment_poses)
+                    Database.RegisterAttachmentPose(pose, report);
+
+                Debug.Log($"[GameDataLoader] AttachmentPoses: {wrapper.attachment_poses.Length} entries from {FileName(file)}");
+            }
+        }
+
         private void LoadLootTablesFrom(string directory)
         {
             foreach (string file in JsonFilesIn(directory))
@@ -383,6 +480,11 @@ namespace OldScars.Core.Data.Loading
         [Serializable] private sealed class ItemStorageProfilesWrapper { public ItemStorageProfileDefinition[] item_storage_profiles; }
         [Serializable] private sealed class EquipmentSlotsWrapper { public EquipmentSlotDefinition[] equipment_slots; }
         [Serializable] private sealed class EquipmentLayoutsWrapper { public EquipmentLayoutDefinition[] equipment_layouts; }
+        [Serializable] private sealed class VisualRigCapabilitiesWrapper { public VisualRigCapabilityDefinition[] visual_rig_capabilities; }
+        [Serializable] private sealed class VisualRigProfilesWrapper { public VisualRigProfileDefinition[] visual_rig_profiles; }
+        [Serializable] private sealed class VisualAssetsWrapper { public VisualAssetDefinition[] visual_assets; }
+        [Serializable] private sealed class ItemVisualProfilesWrapper { public ItemVisualProfileDefinition[] item_visual_profiles; }
+        [Serializable] private sealed class AttachmentPosesWrapper { public AttachmentPoseDefinition[] attachment_poses; }
         [Serializable] private sealed class LootTablesWrapper { public LootTableDefinition[] loot_tables; }
         [Serializable] private sealed class ActorProfilesWrapper { public ActorProfileDefinition[] actor_profiles; }
         [Serializable] private sealed class WorldObjectProfilesWrapper { public WorldObjectProfileDefinition[] world_object_profiles; }

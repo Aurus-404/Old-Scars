@@ -27,6 +27,13 @@ namespace OldScars.Core.Data
         private readonly Dictionary<string, LootTableDefinition> _lootTables = new Dictionary<string, LootTableDefinition>();
         private readonly Dictionary<string, ActorProfileDefinition> _actorProfiles = new Dictionary<string, ActorProfileDefinition>();
         private readonly Dictionary<string, WorldObjectProfileDefinition> _worldObjectProfiles = new Dictionary<string, WorldObjectProfileDefinition>();
+        private readonly Dictionary<string, VisualRigCapabilityDefinition> _visualRigCapabilities = new Dictionary<string, VisualRigCapabilityDefinition>();
+        private readonly Dictionary<string, VisualRigProfileDefinition> _visualRigProfiles = new Dictionary<string, VisualRigProfileDefinition>();
+        private readonly Dictionary<string, VisualAssetDefinition> _visualAssets = new Dictionary<string, VisualAssetDefinition>();
+        private readonly Dictionary<string, VisualAssetDefinition> _visualAssetsByKey = new Dictionary<string, VisualAssetDefinition>();
+        private readonly Dictionary<string, ItemVisualProfileDefinition> _itemVisualProfiles = new Dictionary<string, ItemVisualProfileDefinition>();
+        private readonly Dictionary<string, ItemVisualProfileDefinition> _itemVisualProfilesByItem = new Dictionary<string, ItemVisualProfileDefinition>();
+        private readonly Dictionary<string, AttachmentPoseDefinition> _attachmentPoses = new Dictionary<string, AttachmentPoseDefinition>();
 
         public int ItemCount => _items.Count;
         public int ItemStorageProfileCount => _itemStorageProfiles.Count;
@@ -39,6 +46,11 @@ namespace OldScars.Core.Data
         public int LootTableCount => _lootTables.Count;
         public int ActorProfileCount => _actorProfiles.Count;
         public int WorldObjectProfileCount => _worldObjectProfiles.Count;
+        public int VisualRigCapabilityCount => _visualRigCapabilities.Count;
+        public int VisualRigProfileCount => _visualRigProfiles.Count;
+        public int VisualAssetCount => _visualAssets.Count;
+        public int ItemVisualProfileCount => _itemVisualProfiles.Count;
+        public int AttachmentPoseCount => _attachmentPoses.Count;
 
         // Registration --------------------------------------------------------
 
@@ -95,6 +107,51 @@ namespace OldScars.Core.Data
         public void RegisterWorldObjectProfile(WorldObjectProfileDefinition definition, DataLoadReport report)
         {
             Register(_worldObjectProfiles, definition != null ? definition.id : null, definition, "WorldObjectProfile", report);
+        }
+
+        public void RegisterVisualRigCapability(VisualRigCapabilityDefinition definition, DataLoadReport report)
+        {
+            Register(_visualRigCapabilities, definition != null ? definition.id : null, definition, "VisualRigCapability", report);
+        }
+
+        public void RegisterVisualRigProfile(VisualRigProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_visualRigProfiles, definition != null ? definition.id : null, definition, "VisualRigProfile", report);
+        }
+
+        public void RegisterVisualAsset(VisualAssetDefinition definition, DataLoadReport report)
+        {
+            int before = _visualAssets.Count;
+            Register(_visualAssets, definition != null ? definition.id : null, definition, "VisualAsset", report);
+            if (_visualAssets.Count == before || definition == null || string.IsNullOrWhiteSpace(definition.asset_key))
+                return;
+
+            if (_visualAssetsByKey.ContainsKey(definition.asset_key))
+            {
+                report.Error($"Duplicate VisualAsset asset_key '{definition.asset_key}'. The second definition was rejected.");
+                return;
+            }
+            _visualAssetsByKey[definition.asset_key] = definition;
+        }
+
+        public void RegisterItemVisualProfile(ItemVisualProfileDefinition definition, DataLoadReport report)
+        {
+            int before = _itemVisualProfiles.Count;
+            Register(_itemVisualProfiles, definition != null ? definition.id : null, definition, "ItemVisualProfile", report);
+            if (_itemVisualProfiles.Count == before || definition == null || string.IsNullOrWhiteSpace(definition.item_definition_id))
+                return;
+
+            if (_itemVisualProfilesByItem.ContainsKey(definition.item_definition_id))
+            {
+                report.Error($"Duplicate ItemVisualProfile item_definition_id '{definition.item_definition_id}'. The second definition was rejected.");
+                return;
+            }
+            _itemVisualProfilesByItem[definition.item_definition_id] = definition;
+        }
+
+        public void RegisterAttachmentPose(AttachmentPoseDefinition definition, DataLoadReport report)
+        {
+            Register(_attachmentPoses, definition != null ? definition.id : null, definition, "AttachmentPose", report);
         }
 
         private static void Register<T>(Dictionary<string, T> dictionary, string id, T definition, string typeName, DataLoadReport report) where T : class
@@ -177,6 +234,41 @@ namespace OldScars.Core.Data
             return Lookup(_worldObjectProfiles, id);
         }
 
+        public VisualRigCapabilityDefinition GetVisualRigCapability(string id)
+        {
+            return Lookup(_visualRigCapabilities, id);
+        }
+
+        public VisualRigProfileDefinition GetVisualRigProfile(string id)
+        {
+            return Lookup(_visualRigProfiles, id);
+        }
+
+        public VisualAssetDefinition GetVisualAsset(string id)
+        {
+            return Lookup(_visualAssets, id);
+        }
+
+        public VisualAssetDefinition GetVisualAssetByKey(string assetKey)
+        {
+            return Lookup(_visualAssetsByKey, assetKey);
+        }
+
+        public ItemVisualProfileDefinition GetItemVisualProfile(string id)
+        {
+            return Lookup(_itemVisualProfiles, id);
+        }
+
+        public ItemVisualProfileDefinition GetItemVisualProfileByItemDefinitionId(string itemDefinitionId)
+        {
+            return Lookup(_itemVisualProfilesByItem, itemDefinitionId);
+        }
+
+        public AttachmentPoseDefinition GetAttachmentPose(string id)
+        {
+            return Lookup(_attachmentPoses, id);
+        }
+
         private static T Lookup<T>(Dictionary<string, T> dictionary, string id) where T : class
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -243,6 +335,31 @@ namespace OldScars.Core.Data
             return _worldObjectProfiles.Values;
         }
 
+        public IEnumerable<VisualRigCapabilityDefinition> GetAllVisualRigCapabilities()
+        {
+            return _visualRigCapabilities.Values;
+        }
+
+        public IEnumerable<VisualRigProfileDefinition> GetAllVisualRigProfiles()
+        {
+            return _visualRigProfiles.Values;
+        }
+
+        public IEnumerable<VisualAssetDefinition> GetAllVisualAssets()
+        {
+            return _visualAssets.Values;
+        }
+
+        public IEnumerable<ItemVisualProfileDefinition> GetAllItemVisualProfiles()
+        {
+            return _itemVisualProfiles.Values;
+        }
+
+        public IEnumerable<AttachmentPoseDefinition> GetAllAttachmentPoses()
+        {
+            return _attachmentPoses.Values;
+        }
+
         public void LogStats()
         {
             Debug.Log("[GameDatabase] Loaded definitions:" +
@@ -256,7 +373,12 @@ namespace OldScars.Core.Data
                       $"\n  Actions:         {_actions.Count}" +
                       $"\n  LootTables:      {_lootTables.Count}" +
                       $"\n  ActorProfiles:   {_actorProfiles.Count}" +
-                      $"\n  WorldObjectProfiles: {_worldObjectProfiles.Count}");
+                      $"\n  WorldObjectProfiles: {_worldObjectProfiles.Count}" +
+                      $"\n  VisualRigCapabilities: {_visualRigCapabilities.Count}" +
+                      $"\n  VisualRigProfiles: {_visualRigProfiles.Count}" +
+                      $"\n  VisualAssets: {_visualAssets.Count}" +
+                      $"\n  ItemVisualProfiles: {_itemVisualProfiles.Count}" +
+                      $"\n  AttachmentPoses: {_attachmentPoses.Count}");
         }
     }
 }

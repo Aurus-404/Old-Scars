@@ -1,0 +1,43 @@
+{
+  "item_visual_profiles": [
+    {
+      "type": "item_visual_profile",
+      "id": "small_backpack_visual",
+      "item_definition_id": "small_backpack_01",
+      "world_asset_key": "core:small_backpack_world",
+      "equipped_asset_key": "core:small_backpack_equipped",
+      "socket_policy": "preferred_role_then_capability",
+      "primary_socket_role": "back",
+      "required_socket_capabilities": ["mount_storage"],
+      "fallback_visual": "debug_box",
+      "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "rusted_crowbar_visual",
+      "item_definition_id": "rusted_crowbar_01",
+      "world_asset_key": "core:rusted_crowbar_world",
+      "equipped_asset_key": "core:rusted_crowbar_held",
+      "socket_policy": "equipment_slot",
+      "required_socket_capabilities": ["hold_primary"],
+      "primary_grip_binding": "Grip_Primary",
+      "fallback_visual": "debug_box",
+      "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "lee_enfield_visual",
+      "item_definition_id": "lee_enfield_rifle_01",
+      "world_asset_key": "core:lee_enfield_world",
+      "equipped_asset_key": "core:lee_enfield_held",
+      "socket_policy": "preferred_role_then_capability",
+      "primary_socket_role": "hand_right",
+      "required_socket_capabilities": ["hold_primary"],
+      "persistent_pose_id": "lee_enfield_human_two_hand_pose",
+      "primary_grip_binding": "Grip_Primary",
+      "secondary_grip_binding": "Grip_Secondary",
+      "fallback_visual": "debug_box",
+      "enabled": true
+    }
+  ]
+}

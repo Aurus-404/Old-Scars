@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2 y M34.1.3 estan validados manualmente en Unity. M34.2 Item-Owned Storage / Backpack Foundation y M34.2.1 Inventory Interaction Unification & Backpack Access permanecen pendientes mientras M34.2.1a Fix Equipment From Item-Owned Storage esta `implemented` en el checkout y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c World Item Quick Actions y M35.0 Universal Visual Rig & Attachment Framework estan `implemented` en el checkout y pendientes de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -18,10 +18,15 @@ Los ultimos milestones cerrados y validados en Unity son:
 - M33.2.1: Partial Directed Merge + Stable Dual Grid UI.
 - M33.2.2: Data-Driven Initial Item Orientation + Footprint Polish.
 - M33.3: Basic Carry Weight System v0.
+- M33.3.1: Weight-Limited Partial Transfers.
 - M34.1: Equipment Ownership & Slots Foundation.
 - M34.1.1: Inventory & Equipment UI Cleanup.
 - M34.1.2: Inventory Context Menu v0.
 - M34.1.3: Inventory Context QoL & Atomic Equipment Replacement.
+- M34.2: Item-Owned Storage / Backpack Foundation.
+- M34.2.1: Inventory Interaction Unification & Backpack Access.
+- M34.2.1a: Fix Equipment From Item-Owned Storage.
+- M34.2.1b: Unified Context Actions for Equipped Items.
 
 La validacion confirmada de M33.1 incluye Data Load OK con 0 errors y 0 warnings y las regresiones principales funcionando.
 
@@ -252,7 +257,7 @@ Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 ### M34.2: Item-Owned Storage / Backpack Foundation
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - `owned_storage_profile_id` vincula una definicion de item con un perfil cargado desde `item_storage_profiles.json`; cada `ItemInstance` crea su propio `ItemOwnedStorageRuntime` y conserva contenido/layout por `InstanceId`.
 - `small_backpack_01` es una mochila no stackable de `1.50 kg`, footprint `4x4`, equipable en el slot generico `back` y con storage espacial `8x10` definido por `backpack_small_01`.
@@ -265,7 +270,7 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 
 ### M34.2.1: Inventory Interaction Unification & Backpack Access
 
-Estado: `implemented`; pendiente de validacion manual en Unity. M34.2 sigue pendiente hasta validar M34.2.1a en Play Mode.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - Las acciones de usar, equipar, reemplazar y soltar se resuelven para cualquier compartimento personal por instancia, owner raiz y servicios existentes; la ubicacion solo cambia destinos de transferencia.
 - El drag hacia equipment acepta inventario personal e item-owned storage del actor. Un slot compatible usa equip/replacement atomico; un slot ocupado por storage recibe items no equipables mediante `GridStorageTransferService` y mantiene no-nesting.
@@ -276,14 +281,50 @@ Estado: `implemented`; pendiente de validacion manual en Unity. M34.2 sigue pend
 
 ### M34.2.1a: Fix Equipment From Item-Owned Storage
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - Se corrigio el falso stale de replacement: la simulacion anterior llamaba una API que exigia remover un source de la grilla personal aunque la instancia viviera en la mochila.
 - El preview item-owned captura `ContainerInstanceId`, versiones de storage/layout y placement del source. El commit re-resuelve el runtime por `InstanceId`, compara versiones reales y conserva el rechazo de stale legitimo.
 - Menu contextual y drag delegan en la misma transaccion atomica; snapshots de source, personal, equipment, slots e IDs se capturan solo despues de revalidar y antes de mutar.
 - Soltar un item sobre una mochila equipada conserva el compartimento visible. El cambio automatico por hover de `0.30 s` queda diferido como mejora UX.
-- M34.2 y M34.2.1 permanecen pendientes de validacion manual hasta confirmar este fix.
+- M34.2, M34.2.1 y M34.2.1a quedaron validados manualmente por confirmacion del usuario. El hover temporizado para abrir mochila sigue diferido y no bloquea.
 - Compilacion estatica de `Assembly-CSharp`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`.
+
+### M34.2.1b: Unified Context Actions for Equipped Items
+
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
+
+- Los slots ocupados abren el mismo menu contextual y resolver de inventario, con origen `Equipment`, `InstanceId` y copia de todos los slots ocupados.
+- El resolver omite el slot actual, alternativas incompatibles y no-op; una instancia multi-slot produce un solo conjunto de acciones desde cualquiera de sus filas.
+- Mover entre alternativas de equipment y reemplazar usa una transaccion atomica que conserva la misma instancia, reserva placements para desplazados y restaura storage, slots, versiones e IDs ante fallo.
+- Desequipar, mover a storage personal accesible, depositar en external y soltar pasan por operaciones cerradas; no-nesting, peso, ownership y hooks del destino se revalidan antes del commit.
+- Cada commit exitoso publica una sola vez el snapshot visual final; preview, stale state, fallo y rollback no publican.
+- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores. El usuario confirmo posteriormente la validacion manual de M34.2.1b.
+
+### M34.2.1c: World Item Quick Actions
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- El menu contextual mundial existente conserva `Examinar` y `Recoger` y agrega acciones rapidas de equip, replacement y storage desde estado real, sin tabla por item ni renderer paralelo.
+- `WorldItemPickup` aporta referencia, `InstanceId`, definicion, cantidad y version de contenido estables. Preview y progreso no cambian tags, renderers, colliders ni fisica; la presentacion se finaliza solo despues del commit total.
+- `WorldItemEquipmentTransactionService` coordina world -> equipment directamente, reserva destinos de desplazados y revierte source, personal, equipment y slots ante fallo, sin crear IDs ni usar inventario personal como staging.
+- Los slot sets se resuelven completos: un rifle 2H ofrece una sola accion y produce un solo `CommitVisualState` despues de equip/replacement exitoso; preview, stale, fallo y rollback producen cero.
+- Guardar en item-owned storage reutiliza transferencia exacta completa y su semantica canonica de stacks. No produce eventos visuales de Equipment y conserva exactamente `InstanceId` para no-stackables.
+- `Recoger y consumir` queda omitido: falta un contrato autoritativo mundo -> consumo que revierta conjuntamente cantidad fuente y cambios de necesidades/salud.
+- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; validacion manual pendiente.
+
+### M35.0: Universal Visual Rig & Attachment Framework
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- Se agregaron contratos data-driven para capabilities, rig profiles, partes, sockets, visual assets, item visual profiles y attachment poses.
+- Equipment publica snapshots inmutables exclusivamente gameplay mediante un evento central post-commit; no publica en preview, fallo o rollback.
+- `EntityEquipmentVisualSynchronizer` es comun para actor y Debug Cargo, no hace polling permanente y deduplica visuals por `InstanceId`.
+- El rig humano usa bindings sobre una instancia visual reemplazable; la herramienta Editor crea sockets bajo `spine_02`, `hand_l` y `hand_r` con Undo y nunca modifica el FBX fuente ni guarda la escena automaticamente.
+- Mochila, palanca y Lee-Enfield tienen perfiles visuales. La mochila reutiliza `Backpack` equipada y `Backpack.001` de mundo mediante una generacion Editor manual; no se duplico el ZIP ni se importo arte nuevo.
+- Debug Cargo usa `mount_storage -> cargo_mount` con la misma fuente/synchronizer universal y sin inventario, ownership ni gameplay.
+- `WorldItemVisualResolver` conserva migracion progresiva: profile/provider, sistema world existente y fallback debug.
+- Compilacion estatica de runtime y Editor: 0 errores; validacion visual y offsets permanecen pendientes de Unity.
 
 ## Ultimo Estado Validado
 
@@ -336,7 +377,7 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 
 ## Proximo Recomendado
 
-Validar M34.2.1a en Unity antes de cerrar M34.2 y M34.2.1 como `validated`. Confirmar equip/replacement desde mochila por menu y drag, rollback sin espacio, estabilidad del compartimento visible al depositar sobre `back` y ausencia de apertura automatica por hover. M33.3.1 ya esta `validated`; M34.1.4 Item Inspection Panel y los pendientes anteriores conservan su estado.
+Validar M34.2.1c y M35.0 en Unity: probar quick actions sobre items mundiales y luego revisar mochila/palanca/rifle en player y NPC humano junto con el Debug Cargo Rig. M33.3.1, M34.2, M34.2.1, M34.2.1a y M34.2.1b ya estan `validated`; el hover temporizado de mochila sigue diferido.
 
 Alcance recomendado:
 
@@ -363,6 +404,6 @@ No implementar todavia:
 - contenedores creados por jugador;
 - rediseno de cuerpos;
 - loot avanzado;
-- item-owned storage, mochila funcional, pockets y nesting;
-- equipamiento en NPCs/cadaveres, armor, modelos y attachment al esqueleto;
+- pockets, nesting general y nuevos compartimentos item-owned;
+- armor, equipment corporal final y animacion/IK de attachments;
 - combate o IA.

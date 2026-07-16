@@ -792,9 +792,12 @@ namespace OldScars.Core.Items
             EquipmentPreview preview = equipment.PreviewEquip(
                 entry.Item.InstanceId,
                 new[] { ActorEquipmentComponent.HandRightSlotId });
-            EquipmentMutationResult result = equipment.Equip(preview);
+            EquipmentMutationResult result = equipment.EquipLegacyMigration(preview);
             if (result.Success)
+            {
                 rightHandItemInstanceId = null;
+                equipment.CommitLegacyMigrationVisualState();
+            }
             return result.Success;
         }
 

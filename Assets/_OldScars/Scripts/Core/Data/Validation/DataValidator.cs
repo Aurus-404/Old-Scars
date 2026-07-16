@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using OldScars.Core.Actions;
@@ -15,6 +16,7 @@ namespace OldScars.Core.Data.Validation
     public sealed class DataValidator
     {
         private static readonly Regex SnakeCasePattern = new Regex("^[a-z0-9_]+$", RegexOptions.Compiled);
+        private static readonly Regex AssetKeyPattern = new Regex("^[a-z0-9_]+:[a-z0-9_]+$", RegexOptions.Compiled);
         private const string EffectTargetTarget = "target";
         private const string LegacyRightHandSlotId = "right_hand";
         private const string HandRightSlotId = "hand_right";
@@ -53,6 +55,11 @@ namespace OldScars.Core.Data.Validation
         {
             ValidateEquipmentSlots();
             ValidateEquipmentLayouts();
+            ValidateVisualRigCapabilities();
+            ValidateVisualRigProfiles();
+            ValidateVisualAssets();
+            ValidateItemVisualProfiles();
+            ValidateAttachmentPoses();
             ValidateActions();
             ValidateWeaponProfiles();
             ValidateFirearmProfiles();
@@ -168,6 +175,365 @@ namespace OldScars.Core.Data.Validation
             }
         }
 
+        private void ValidateVisualRigCapabilities()
+        {
+            foreach (VisualRigCapabilityDefinition capability in database.GetAllVisualRigCapabilities())
+            {
+                string ctx = $"VisualRigCapability '{SafeId(capability != null ? capability.id : null)}'";
+                if (capability == null)
+                {
+                    report.Error("VisualRigCapability: null definition loaded.");
+                    continue;
+                }
+                RequireType(capability.type, "visual_rig_capability", ctx);
+                RequireSnakeCase(capability.id, "id", ctx);
+                if (string.IsNullOrWhiteSpace(capability.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+            }
+        }
+
+        private void ValidateVisualRigProfiles()
+        {
+            foreach (VisualRigProfileDefinition profile in database.GetAllVisualRigProfiles())
+            {
+                string ctx = $"VisualRigProfile '{SafeId(profile != null ? profile.id : null)}'";
+                if (profile == null)
+                {
+                    report.Error("VisualRigProfile: null definition loaded.");
+                    continue;
+                }
+
+                RequireType(profile.type, "visual_rig_profile", ctx);
+                RequireSnakeCase(profile.id, "id", ctx);
+                RequireSnakeCase(profile.family_id, "family_id", ctx);
+                if (string.IsNullOrWhiteSpace(profile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+
+                var parts = new Dictionary<string, VisualPartDefinition>();
+                if (profile.parts == null || profile.parts.Length == 0)
+                {
+                    report.Error($"{ctx}: 'parts' is required and must not be empty.");
+                }
+                else
+                {
+                    for (int index = 0; index < profile.parts.Length; index++)
+                    {
+                        VisualPartDefinition part = profile.parts[index];
+                        string partCtx = $"{ctx}: parts[{index}]";
+                        if (part == null)
+                        {
+                            report.Error($"{partCtx} must not be null.");
+                            continue;
+                        }
+                        RequireSnakeCase(part.id, "id", partCtx);
+                        if (!string.IsNullOrWhiteSpace(part.parent_part_id))
+                            RequireSnakeCase(part.parent_part_id, "parent_part_id", partCtx);
+                        if (!string.IsNullOrWhiteSpace(part.damage_region_id))
+                            RequireSnakeCase(part.damage_region_id, "damage_region_id", partCtx);
+                        if (!parts.ContainsKey(part.id ?? string.Empty))
+                            parts[part.id ?? string.Empty] = part;
+                        else
+                            report.Error($"{ctx}: duplicate part id '{SafeId(part.id)}'.");
+                    }
+
+                    foreach (VisualPartDefinition part in parts.Values)
+                    {
+                        if (!string.IsNullOrWhiteSpace(part.parent_part_id) && !parts.ContainsKey(part.parent_part_id))
+                            report.Error($"{ctx}: part '{part.id}' references missing parent_part_id '{part.parent_part_id}'.");
+                    }
+                    ValidateVisualPartCycles(parts, ctx);
+                }
+
+                var socketIds = new HashSet<string>();
+                var socketRoles = new HashSet<string>();
+                if (profile.sockets == null || profile.sockets.Length == 0)
+                {
+                    report.Error($"{ctx}: 'sockets' is required and must not be empty.");
+                }
+                else
+                {
+                    for (int index = 0; index < profile.sockets.Length; index++)
+                    {
+                        VisualSocketDefinition socket = profile.sockets[index];
+                        string socketCtx = $"{ctx}: sockets[{index}]";
+                        if (socket == null)
+                        {
+                            report.Error($"{socketCtx} must not be null.");
+                            continue;
+                        }
+                        RequireSnakeCase(socket.id, "id", socketCtx);
+                        RequireSnakeCase(socket.part_id, "part_id", socketCtx);
+                        RequireSnakeCase(socket.role, "role", socketCtx);
+                        if (!socketIds.Add(socket.id ?? string.Empty))
+                            report.Error($"{ctx}: duplicate socket id '{SafeId(socket.id)}'.");
+                        socketRoles.Add(socket.role ?? string.Empty);
+                        if (!parts.ContainsKey(socket.part_id ?? string.Empty))
+                            report.Error($"{socketCtx}: part_id references '{SafeId(socket.part_id)}' which is not declared by this rig.");
+                        if (socket.capabilities == null || socket.capabilities.Length == 0)
+                            report.Error($"{socketCtx}: 'capabilities' is required and must not be empty.");
+                        else
+                        {
+                            var seenCapabilities = new HashSet<string>();
+                            for (int capabilityIndex = 0; capabilityIndex < socket.capabilities.Length; capabilityIndex++)
+                            {
+                                string capabilityId = socket.capabilities[capabilityIndex];
+                                RequireSnakeCase(capabilityId, "capability", socketCtx);
+                                if (!seenCapabilities.Add(capabilityId ?? string.Empty))
+                                    report.Error($"{socketCtx}: duplicate capability '{SafeId(capabilityId)}'.");
+                                if (database.GetVisualRigCapability(capabilityId) == null)
+                                    report.Error($"{socketCtx}: capability '{SafeId(capabilityId)}' was not loaded.");
+                            }
+                        }
+                    }
+                }
+
+                var mappedEquipmentSlots = new HashSet<string>();
+                VisualEquipmentSocketMappingDefinition[] mappings = profile.equipment_slot_mappings ?? Array.Empty<VisualEquipmentSocketMappingDefinition>();
+                for (int index = 0; index < mappings.Length; index++)
+                {
+                    VisualEquipmentSocketMappingDefinition mapping = mappings[index];
+                    string mappingCtx = $"{ctx}: equipment_slot_mappings[{index}]";
+                    if (mapping == null)
+                    {
+                        report.Error($"{mappingCtx} must not be null.");
+                        continue;
+                    }
+                    RequireSnakeCase(mapping.equipment_slot_id, "equipment_slot_id", mappingCtx);
+                    RequireSnakeCase(mapping.socket_role, "socket_role", mappingCtx);
+                    if (!mappedEquipmentSlots.Add(mapping.equipment_slot_id ?? string.Empty))
+                        report.Error($"{mappingCtx}: duplicate mapping for equipment slot '{SafeId(mapping.equipment_slot_id)}'.");
+                    if (database.GetEquipmentSlot(mapping.equipment_slot_id) == null)
+                        report.Error($"{mappingCtx}: equipment slot '{SafeId(mapping.equipment_slot_id)}' was not loaded.");
+                    if (!socketRoles.Contains(mapping.socket_role ?? string.Empty))
+                        report.Error($"{mappingCtx}: socket role '{SafeId(mapping.socket_role)}' is not declared by this rig.");
+                }
+            }
+        }
+
+        private void ValidateVisualAssets()
+        {
+            foreach (VisualAssetDefinition asset in database.GetAllVisualAssets())
+            {
+                string ctx = $"VisualAsset '{SafeId(asset != null ? asset.id : null)}'";
+                if (asset == null)
+                {
+                    report.Error("VisualAsset: null definition loaded.");
+                    continue;
+                }
+                RequireType(asset.type, "visual_asset", ctx);
+                RequireSnakeCase(asset.id, "id", ctx);
+                RequireAssetKey(asset.asset_key, "asset_key", ctx);
+                if (asset.provider_id != "builtin")
+                    report.Error($"{ctx}: unsupported provider_id '{SafeId(asset.provider_id)}'. M35.0 supports only 'builtin'.");
+                if (string.IsNullOrWhiteSpace(asset.provider_asset_id))
+                    report.Error($"{ctx}: 'provider_asset_id' is required.");
+            }
+        }
+
+        private void ValidateItemVisualProfiles()
+        {
+            foreach (ItemVisualProfileDefinition profile in database.GetAllItemVisualProfiles())
+            {
+                string ctx = $"ItemVisualProfile '{SafeId(profile != null ? profile.id : null)}'";
+                if (profile == null)
+                {
+                    report.Error("ItemVisualProfile: null definition loaded.");
+                    continue;
+                }
+                RequireType(profile.type, "item_visual_profile", ctx);
+                RequireSnakeCase(profile.id, "id", ctx);
+                RequireSnakeCase(profile.item_definition_id, "item_definition_id", ctx);
+                ItemDefinition item = database.GetItem(profile.item_definition_id);
+                if (item == null)
+                    report.Error($"{ctx}: item_definition_id '{SafeId(profile.item_definition_id)}' was not loaded.");
+                ValidateVisualAssetReference(profile.world_asset_key, "world_asset_key", ctx);
+                ValidateVisualAssetReference(profile.equipped_asset_key, "equipped_asset_key", ctx);
+
+                if (profile.socket_policy != ItemVisualSocketPolicy.EquipmentSlot &&
+                    profile.socket_policy != ItemVisualSocketPolicy.PreferredRoleThenCapability)
+                {
+                    report.Error($"{ctx}: socket_policy must be '{ItemVisualSocketPolicy.EquipmentSlot}' or '{ItemVisualSocketPolicy.PreferredRoleThenCapability}'.");
+                }
+                if (!string.IsNullOrWhiteSpace(profile.primary_socket_role))
+                    RequireSnakeCase(profile.primary_socket_role, "primary_socket_role", ctx);
+                if (profile.required_socket_capabilities == null || profile.required_socket_capabilities.Length == 0)
+                {
+                    report.Error($"{ctx}: 'required_socket_capabilities' is required and must not be empty.");
+                }
+                else
+                {
+                    var seen = new HashSet<string>();
+                    for (int index = 0; index < profile.required_socket_capabilities.Length; index++)
+                    {
+                        string capability = profile.required_socket_capabilities[index];
+                        RequireSnakeCase(capability, "required_socket_capability", ctx);
+                        if (!seen.Add(capability ?? string.Empty))
+                            report.Error($"{ctx}: duplicate required capability '{SafeId(capability)}'.");
+                        if (database.GetVisualRigCapability(capability) == null)
+                            report.Error($"{ctx}: required capability '{SafeId(capability)}' was not loaded.");
+                    }
+                }
+
+                if (profile.fallback_visual != ItemVisualFallback.None && profile.fallback_visual != ItemVisualFallback.DebugBox)
+                    report.Error($"{ctx}: fallback_visual must be '{ItemVisualFallback.None}' or '{ItemVisualFallback.DebugBox}'.");
+                if (!string.IsNullOrWhiteSpace(profile.persistent_pose_id) && database.GetAttachmentPose(profile.persistent_pose_id) == null)
+                    report.Error($"{ctx}: persistent_pose_id references '{profile.persistent_pose_id}' which was not loaded.");
+
+                if (HasMultiSlotAlternative(item) && string.IsNullOrWhiteSpace(profile.primary_socket_role))
+                    report.Error($"{ctx}: a multi-slot item requires 'primary_socket_role' so it produces one primary visual.");
+            }
+        }
+
+        private void ValidateAttachmentPoses()
+        {
+            var resolutionKeys = new HashSet<string>();
+            foreach (AttachmentPoseDefinition pose in database.GetAllAttachmentPoses())
+            {
+                string ctx = $"AttachmentPose '{SafeId(pose != null ? pose.id : null)}'";
+                if (pose == null)
+                {
+                    report.Error("AttachmentPose: null definition loaded.");
+                    continue;
+                }
+                RequireType(pose.type, "attachment_pose", ctx);
+                RequireSnakeCase(pose.id, "id", ctx);
+                RequireSnakeCase(pose.visual_profile_id, "visual_profile_id", ctx);
+                if (database.GetItemVisualProfile(pose.visual_profile_id) == null)
+                    report.Error($"{ctx}: visual_profile_id references '{SafeId(pose.visual_profile_id)}' which was not loaded.");
+
+                if (!string.IsNullOrWhiteSpace(pose.rig_profile_id) && !string.IsNullOrWhiteSpace(pose.rig_family_id))
+                    report.Error($"{ctx}: use either rig_profile_id or rig_family_id, not both.");
+                if (!string.IsNullOrWhiteSpace(pose.rig_profile_id))
+                {
+                    RequireSnakeCase(pose.rig_profile_id, "rig_profile_id", ctx);
+                    if (database.GetVisualRigProfile(pose.rig_profile_id) == null)
+                        report.Error($"{ctx}: rig_profile_id references '{pose.rig_profile_id}' which was not loaded.");
+                }
+                if (!string.IsNullOrWhiteSpace(pose.rig_family_id))
+                {
+                    RequireSnakeCase(pose.rig_family_id, "rig_family_id", ctx);
+                    if (!VisualRigFamilyExists(pose.rig_family_id))
+                        report.Error($"{ctx}: rig_family_id '{pose.rig_family_id}' is not used by a loaded rig profile.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(pose.socket_id) && !string.IsNullOrWhiteSpace(pose.socket_role))
+                    report.Error($"{ctx}: use either socket_id or socket_role, not both.");
+                if (!string.IsNullOrWhiteSpace(pose.socket_id))
+                    RequireSnakeCase(pose.socket_id, "socket_id", ctx);
+                if (!string.IsNullOrWhiteSpace(pose.socket_role))
+                    RequireSnakeCase(pose.socket_role, "socket_role", ctx);
+                if (!PoseSocketExists(pose))
+                    report.Error($"{ctx}: socket selector does not exist on the referenced rig profile or family.");
+
+                ValidateFiniteVector(pose.local_position, "local_position", ctx, false);
+                ValidateFiniteVector(pose.local_rotation, "local_rotation", ctx, false);
+                ValidateFiniteVector(pose.local_scale, "local_scale", ctx, true);
+
+                string key = string.Join("|", pose.visual_profile_id, pose.rig_profile_id, pose.rig_family_id, pose.socket_id, pose.socket_role);
+                if (!resolutionKeys.Add(key))
+                    report.Error($"{ctx}: duplicate attachment pose resolution key '{key}'.");
+            }
+        }
+
+        private void ValidateVisualPartCycles(Dictionary<string, VisualPartDefinition> parts, string context)
+        {
+            foreach (string partId in parts.Keys)
+            {
+                var visited = new HashSet<string>();
+                string current = partId;
+                while (!string.IsNullOrWhiteSpace(current) && parts.TryGetValue(current, out VisualPartDefinition part))
+                {
+                    if (!visited.Add(current))
+                    {
+                        report.Error($"{context}: cycle detected in visual parts at '{current}'.");
+                        break;
+                    }
+                    current = part.parent_part_id;
+                }
+            }
+        }
+
+        private void ValidateVisualAssetReference(string assetKey, string fieldName, string context)
+        {
+            RequireAssetKey(assetKey, fieldName, context);
+            if (database.GetVisualAssetByKey(assetKey) == null)
+                report.Error($"{context}: {fieldName} references '{SafeId(assetKey)}' which was not loaded.");
+        }
+
+        private void RequireAssetKey(string value, string fieldName, string context)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                report.Error($"{context}: '{fieldName}' is required.");
+                return;
+            }
+            if (!AssetKeyPattern.IsMatch(value))
+                report.Error($"{context}: '{fieldName}' value '{value}' must use namespace:name with snake_case segments.");
+        }
+
+        private bool VisualRigFamilyExists(string familyId)
+        {
+            foreach (VisualRigProfileDefinition profile in database.GetAllVisualRigProfiles())
+            {
+                if (profile != null && profile.family_id == familyId)
+                    return true;
+            }
+            return false;
+        }
+
+        private bool PoseSocketExists(AttachmentPoseDefinition pose)
+        {
+            if (string.IsNullOrWhiteSpace(pose.socket_id) && string.IsNullOrWhiteSpace(pose.socket_role))
+                return true;
+            foreach (VisualRigProfileDefinition profile in database.GetAllVisualRigProfiles())
+            {
+                if (profile == null ||
+                    (!string.IsNullOrWhiteSpace(pose.rig_profile_id) && profile.id != pose.rig_profile_id) ||
+                    (!string.IsNullOrWhiteSpace(pose.rig_family_id) && profile.family_id != pose.rig_family_id) ||
+                    profile.sockets == null)
+                    continue;
+                for (int index = 0; index < profile.sockets.Length; index++)
+                {
+                    VisualSocketDefinition socket = profile.sockets[index];
+                    if (socket != null &&
+                        (string.IsNullOrWhiteSpace(pose.socket_id) || socket.id == pose.socket_id) &&
+                        (string.IsNullOrWhiteSpace(pose.socket_role) || socket.role == pose.socket_role))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private void ValidateFiniteVector(Float3Definition value, string fieldName, string context, bool requirePositive)
+        {
+            if (value == null)
+            {
+                report.Error($"{context}: '{fieldName}' is required.");
+                return;
+            }
+            float[] components = { value.x, value.y, value.z };
+            for (int index = 0; index < components.Length; index++)
+            {
+                float component = components[index];
+                if (float.IsNaN(component) || float.IsInfinity(component))
+                    report.Error($"{context}: '{fieldName}' must contain finite values.");
+                if (requirePositive && component <= 0f)
+                    report.Error($"{context}: '{fieldName}' components must be > 0.");
+            }
+        }
+
+        private static bool HasMultiSlotAlternative(ItemDefinition item)
+        {
+            if (item?.equip?.slot_sets == null)
+                return false;
+            for (int index = 0; index < item.equip.slot_sets.Length; index++)
+            {
+                if (item.equip.slot_sets[index] != null && item.equip.slot_sets[index].Length > 1)
+                    return true;
+            }
+            return false;
+        }
+
         private void ValidateWorldObjectProfiles()
         {
             foreach (WorldObjectProfileDefinition worldObjectProfile in database.GetAllWorldObjectProfiles())
@@ -268,6 +634,13 @@ namespace OldScars.Core.Data.Validation
                     RequireSnakeCase(actorProfile.equipment_layout_id, "equipment_layout_id", ctx);
                     if (database.GetEquipmentLayout(actorProfile.equipment_layout_id) == null)
                         report.Error($"{ctx}: equipment_layout_id references '{actorProfile.equipment_layout_id}' which was not loaded.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(actorProfile.visual_rig_profile_id))
+                {
+                    RequireSnakeCase(actorProfile.visual_rig_profile_id, "visual_rig_profile_id", ctx);
+                    if (database.GetVisualRigProfile(actorProfile.visual_rig_profile_id) == null)
+                        report.Error($"{ctx}: visual_rig_profile_id references '{actorProfile.visual_rig_profile_id}' which was not loaded.");
                 }
 
                 if (actorProfile.equipped != null)

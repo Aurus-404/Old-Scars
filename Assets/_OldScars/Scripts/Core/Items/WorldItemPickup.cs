@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Feedback;
@@ -16,7 +18,7 @@ namespace OldScars.Core.Items
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BoxCollider))]
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class WorldItemPickup : MonoBehaviour
+    public sealed class WorldItemPickup : MonoBehaviour, IGridStorageOwner, IGridStorageTransferEndpoint
     {
         private const string PickupableTag = "pickupable";
         private const string PickedUpTag = "picked_up";
@@ -26,7 +28,9 @@ namespace OldScars.Core.Items
         [SerializeField] private string itemDefinitionId;
 
         private readonly ItemStorage storage = new ItemStorage();
+        private GridInventoryBackend transferBackend;
         private bool destroyAfterPickup;
+        private bool sourceInitialized;
 
         public string ItemDefinitionId
         {
@@ -45,6 +49,20 @@ namespace OldScars.Core.Items
                 return entry != null ? entry.Quantity : 0;
             }
         }
+
+        public string GridStorageDisplayName => ItemDefinitionId;
+        public IReadOnlyList<ItemStorageEntry> GridStorageEntries => storage.Entries;
+        internal int ContentVersion => storage.Version;
+        internal GridInventoryBackend TransactionBackend => GetTransferBackend();
+        public bool UsesGridLayout => false;
+        public int GridWidth => 0;
+        public int GridHeight => 0;
+        public int ConfiguredGridWidth => 0;
+        public int ConfiguredGridHeight => 0;
+        public GridStorageInitializationState GridInitializationState => GridStorageInitializationState.Disabled;
+        public string GridInitializationError => null;
+
+        GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => GetTransferBackend();
 
         private void Awake()
         {
@@ -67,6 +85,7 @@ namespace OldScars.Core.Items
 
             ItemStorageEntry entry = storage.GetEntry(0);
             itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
+            sourceInitialized = true;
             ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             destroyAfterPickup = true;
             return transferredQuantity;
@@ -86,9 +105,93 @@ namespace OldScars.Core.Items
 
             ItemStorageEntry entry = storage.GetEntry(0);
             itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
+            sourceInitialized = true;
             ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             destroyAfterPickup = true;
             return result.AffectedQuantity;
+        }
+
+        public int ReceiveDroppedEquipment(ActorEquipmentComponent sourceEquipment, string sourceInstanceId)
+        {
+            if (sourceEquipment == null || !storage.IsEmpty || string.IsNullOrWhiteSpace(sourceInstanceId))
+                return 0;
+
+            EquipmentStorageTransferPlan plan = sourceEquipment.PreviewTransferEquippedToStorage(
+                sourceInstanceId,
+                this,
+                default);
+            EquipmentMutationResult result = sourceEquipment.TransferEquippedToStorage(
+                this,
+                plan,
+                default);
+            if (!result.Success)
+                return 0;
+
+            ItemStorageEntry entry = storage.GetEntry(0);
+            itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
+            sourceInitialized = true;
+            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
+            destroyAfterPickup = true;
+            return entry != null ? entry.Quantity : 0;
+        }
+
+        public bool TryGetEntryByInstanceId(string instanceId, out int index, out ItemStorageEntry entry)
+        {
+            index = storage.GetEntryIndexByInstanceId(instanceId);
+            entry = index >= 0 ? storage.GetEntry(index) : null;
+            return entry?.Item != null;
+        }
+
+        public bool TryGetGridPlacement(string instanceId, out GridPlacement placement)
+        {
+            placement = null;
+            return false;
+        }
+
+        public bool TryGetGridFootprint(string definitionId, out GridFootprint footprint, out bool usedFallback)
+        {
+            return GridFootprint.TryResolve(GetItemDefinition(definitionId), out footprint, out usedFallback, out _);
+        }
+
+        public GridPlacementValidationResult PreviewGridPlacementMove(string instanceId, int x, int y, bool isRotated)
+        {
+            return GridPlacementValidationResult.Invalid(
+                InventoryMutationResult.MutationFailure.InvalidArguments,
+                "World item storage is linear.");
+        }
+
+        public InventoryMutationResult MoveGridPlacement(string instanceId, int x, int y, bool isRotated)
+        {
+            return InventoryMutationResult.Rejected(
+                InventoryMutationResult.MutationFailure.InvalidArguments,
+                "World item storage is linear.",
+                0,
+                instanceId);
+        }
+
+        public bool IsInstanceEquipped(string instanceId)
+        {
+            return false;
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferOut(GridStorageTransferContext context, out string reason)
+        {
+            reason = null;
+            return true;
+        }
+
+        bool IGridStorageTransferEndpoint.CanTransferIn(GridStorageTransferContext context, out string reason)
+        {
+            reason = storage.IsEmpty ? null : "World item storage already contains an item.";
+            return storage.IsEmpty;
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedOut(GridStorageTransferReceipt receipt, GridStorageTransferContext context)
+        {
+        }
+
+        void IGridStorageTransferEndpoint.OnTransferCommittedIn(GridStorageTransferReceipt receipt, GridStorageTransferContext context)
+        {
         }
 
         public DebugActionExecutionResult PickUp(ActorInteractionContext actorContext, WorldObjectTags targetTags)
@@ -137,34 +240,121 @@ namespace OldScars.Core.Items
             }
 
             int transferredQuantity = transferResult.AffectedQuantity;
+            return FinalizeCommittedPickup(
+                actorContext,
+                targetTags,
+                item,
+                transferredQuantity,
+                "Recoger",
+                "Recogiste");
+        }
 
+        internal bool TryPrepareTransactionSource(out ItemStorageEntry entry, out string error)
+        {
+            entry = null;
+            error = null;
+            if (!EnsureConfiguredItemStorage())
+            {
+                error = $"No se pudo validar '{SafeText(itemDefinitionId)}'.";
+                return false;
+            }
+
+            entry = storage.GetEntry(0);
+            if (entry?.Item == null || entry.Quantity < 1)
+            {
+                error = "La fuente mundial no contiene una instancia transferible.";
+                return false;
+            }
+
+            return true;
+        }
+
+        internal bool TryValidateTransactionSource(
+            string expectedInstanceId,
+            string expectedDefinitionId,
+            int expectedQuantity,
+            int expectedContentVersion,
+            out ItemStorageEntry entry,
+            out string error)
+        {
+            entry = null;
+            error = null;
+            if (this == null || !isActiveAndEnabled || gameObject == null || !gameObject.activeInHierarchy)
+            {
+                error = "El objeto mundial ya no existe o no estÃ¡ activo.";
+                return false;
+            }
+
+            if (storage.Version != expectedContentVersion)
+            {
+                error = "La cantidad o el estado de la fuente mundial cambiÃ³.";
+                return false;
+            }
+
+            if (!TryGetEntryByInstanceId(expectedInstanceId, out _, out entry) || entry?.Item == null)
+            {
+                error = "La instancia mundial seleccionada ya no estÃ¡ disponible.";
+                return false;
+            }
+
+            if (entry.DefinitionId != expectedDefinitionId || entry.Quantity != expectedQuantity)
+            {
+                error = "La definiciÃ³n o cantidad del objeto mundial cambiÃ³.";
+                return false;
+            }
+
+            return true;
+        }
+
+        internal bool IsTransactionSourceEmpty(string instanceId)
+        {
+            return storage.GetEntryByInstanceId(instanceId) == null;
+        }
+
+        internal DebugActionExecutionResult FinalizeCommittedPickup(
+            ActorInteractionContext actorContext,
+            WorldObjectTags targetTags,
+            ItemInstance item,
+            int transferredQuantity,
+            string resultTitle,
+            string resultVerb)
+        {
             bool addedPickedUp = targetTags.AddTag(PickedUpTag);
             bool removedPickupable = targetTags.RemoveTag(PickupableTag);
             DisableVisiblePickupParts();
             DisablePhysics();
 
-            string displayName = GetItemDisplayName(item.DefinitionId);
+            string displayName = GetItemDisplayName(item != null ? item.DefinitionId : itemDefinitionId);
             RecordItemPickedUp(actorContext, targetTags, item, displayName, transferredQuantity);
             RecordTargetStateChanged(actorContext, targetTags, addedPickedUp, removedPickupable);
 
-            Debug.Log($"[WorldItemPickup] Picked up {item.DefinitionId} x{transferredQuantity} [{item.InstanceId}].");
+            Debug.Log($"[WorldItemPickup] Committed {SafeText(item?.DefinitionId)} x{transferredQuantity} [{SafeText(item?.InstanceId)}].");
 
             if (destroyAfterPickup)
                 Destroy(gameObject);
 
-            return DebugActionExecutionResult.Info("Recoger", $"Recogiste {displayName} x{transferredQuantity}.");
+            return DebugActionExecutionResult.Info(
+                string.IsNullOrWhiteSpace(resultTitle) ? "Recoger" : resultTitle,
+                $"{(string.IsNullOrWhiteSpace(resultVerb) ? "Recogiste" : resultVerb)} {displayName} x{transferredQuantity}.");
         }
 
         private bool EnsureConfiguredItemStorage()
         {
             if (!storage.IsEmpty)
+            {
+                sourceInitialized = true;
                 return true;
+            }
+
+            if (sourceInitialized)
+                return false;
 
             ItemDefinition definition = GetItemDefinition(itemDefinitionId);
             if (definition == null)
                 return false;
 
             storage.AddItem(new ItemInstance(definition));
+            sourceInitialized = true;
             ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             return true;
         }
@@ -285,6 +475,13 @@ namespace OldScars.Core.Items
 
             GameDatabase database = GameDataManager.Instance.Database;
             return database != null ? database.GetItem(definitionId) : null;
+        }
+
+        private GridInventoryBackend GetTransferBackend()
+        {
+            if (transferBackend == null)
+                transferBackend = new GridInventoryBackend(storage, GetItemDefinition);
+            return transferBackend;
         }
 
         private static string SafeText(string value)

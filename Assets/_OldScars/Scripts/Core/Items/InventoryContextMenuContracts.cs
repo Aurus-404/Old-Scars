@@ -35,7 +35,8 @@ namespace OldScars.Core.Items
         Personal,
         External,
         Equipment,
-        InspectedOwnedStorage
+        InspectedOwnedStorage,
+        World
     }
 
     public sealed class InventoryContextAction
@@ -95,7 +96,8 @@ namespace OldScars.Core.Items
             string equipmentSlotId,
             int maximumQuantity,
             IReadOnlyList<InventoryContextAction> actions,
-            Action<InventoryContextActionInvocation> executor)
+            Action<InventoryContextActionInvocation> executor,
+            IReadOnlyList<string> sourceEquipmentSlotIds = null)
         {
             SourceKind = sourceKind;
             Owner = owner;
@@ -105,6 +107,7 @@ namespace OldScars.Core.Items
             MaximumQuantity = Mathf.Max(1, maximumQuantity);
             Actions = actions ?? Array.Empty<InventoryContextAction>();
             Executor = executor;
+            SourceEquipmentSlotIds = Array.AsReadOnly(Copy(sourceEquipmentSlotIds));
         }
 
         public InventoryContextSourceKind SourceKind { get; }
@@ -112,9 +115,21 @@ namespace OldScars.Core.Items
         public ActorEquipmentComponent Equipment { get; }
         public string InstanceId { get; }
         public string EquipmentSlotId { get; }
+        public IReadOnlyList<string> SourceEquipmentSlotIds { get; }
         public int MaximumQuantity { get; }
         public IReadOnlyList<InventoryContextAction> Actions { get; }
         internal Action<InventoryContextActionInvocation> Executor { get; }
+
+        private static string[] Copy(IReadOnlyList<string> source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<string>();
+
+            var copy = new string[source.Count];
+            for (int index = 0; index < source.Count; index++)
+                copy[index] = source[index];
+            return copy;
+        }
     }
 
     public readonly struct InventoryContextActionInvocation

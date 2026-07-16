@@ -173,10 +173,10 @@ namespace OldScars.Core.Items
                 return false;
 
             PersonalStorageNavigator navigator = PersonalStorageNavigator;
-            if (navigator == null || !navigator.TryGetPersonalInventoryOwnedStorage(
+            if (navigator == null || !TryResolveInspectableOwnedStorage(
+                    navigator,
                     containerInstanceId,
-                    out ItemOwnedStorageRuntime storage,
-                    out _))
+                    out ItemOwnedStorageRuntime storage))
             {
                 return false;
             }
@@ -207,11 +207,24 @@ namespace OldScars.Core.Items
                 return;
 
             string containerId = inspectedOwnedStorage.ContainerInstanceId;
-            if (!PersonalStorageNavigator.TryGetPersonalInventoryOwnedStorage(containerId, out ItemOwnedStorageRuntime current, out _) ||
+            if (!TryResolveInspectableOwnedStorage(PersonalStorageNavigator, containerId, out ItemOwnedStorageRuntime current) ||
                 !ReferenceEquals(current, inspectedOwnedStorage))
             {
                 CloseOwnedStorageInspection();
             }
+        }
+
+        private static bool TryResolveInspectableOwnedStorage(
+            PersonalStorageNavigator navigator,
+            string containerInstanceId,
+            out ItemOwnedStorageRuntime storage)
+        {
+            storage = null;
+            if (navigator == null)
+                return false;
+
+            return navigator.TryGetPersonalInventoryOwnedStorage(containerInstanceId, out storage, out _) ||
+                   navigator.TryGetOwnedStorage(containerInstanceId, out storage);
         }
 
         internal void DrawContextOverlay(Rect localWindowRect)

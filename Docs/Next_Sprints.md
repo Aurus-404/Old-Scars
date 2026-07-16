@@ -4,17 +4,29 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar M34.2.1a: Fix Equipment From Item-Owned Storage
+### Validar M34.2.1c: World Item Quick Actions
 
-Estado: `implemented`; pendiente de validacion manual en Unity. M34.2 y M34.2.1 siguen pendientes hasta completar esta correccion. M33.3.1 esta `validated` por confirmacion del usuario.
+Estado: `implemented`; pendiente de validacion manual en Unity.
 
-- equipar palanca desde mochila hacia cada mano, tanto con slot libre como reemplazando rifle 2H;
-- arrastrar rifle desde mochila a cualquiera de las manos y confirmar una sola entry ocupando ambos slots reales;
-- llenar la grilla personal e intentar replacement; confirmar source/equipment/placements intactos ante rechazo;
-- repetir menu contextual y drag para comprobar que ambos usan la misma revalidacion item-owned;
-- soltar un item sobre `back` ocupado por mochila y confirmar transferencia first-fit sin cambiar el compartimento visible;
-- confirmar que hover no abre automaticamente la mochila; esa mejora UX queda diferida;
-- repetir regresiones de equip personal, no-nesting, doble clic, clamp, `Revisar contenedor`, drop/pickup y Console sin errores rojos.
+- abrir un pickup y confirmar que `Examinar`/`Recoger` permanecen junto a quick actions validas, sin acciones deshabilitadas ni duplicadas;
+- equipar palanca y mochila desde mundo con slots libres; confirmar misma instancia/contenido y exactamente un evento visual por commit;
+- probar Lee-Enfield con ambas manos libres y ocupadas; confirmar una sola accion 2H, replacement atomico, rollback sin espacio y un solo visual;
+- guardar no-stackables y stacks completos en una mochila equipada; confirmar identidad del no-stackable, merge canonico del stack y cero eventos de Equipment;
+- mover actor fuera de alcance o cambiar source/equipment/storage durante los `0.5 s`; confirmar rechazo, world item intacto, cero mutaciones y cero visuales;
+- confirmar que una mochila mundial no puede anidarse y que `Recoger y consumir` no aparece;
+- confirmar Console sin errores rojos. M34.2.1c no debe marcarse `validated` hasta completar estas pruebas. M34.2.1b ya esta `validated` por confirmacion manual del usuario.
+
+### Validar M35.0: Universal Visual Rig & Attachment Framework
+
+Estado: `implemented`; pendiente de validacion manual en Unity. M33.3.1, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan `validated` por confirmacion del usuario.
+
+- generar los cuatro prefabs visuales M35 y el Debug Cargo Rig desde `Old Scars/Visuals/M35`;
+- configurar sobre instancias reemplazables del jugador y NPC humano los sockets bajo `spine_02`, `hand_l` y `hand_r`, sin editar el FBX fuente;
+- equipar mochila, palanca izquierda/derecha y rifle 2H; confirmar un visual por `InstanceId` y ausencia de visuales transitorios ante rollback;
+- comprobar que el Debug Cargo resuelve la mochila por `mount_storage -> cargo_mount` usando el mismo synchronizer;
+- ajustar poses locales, copiar sus fragmentos JSON y trasladarlos manualmente a `attachment_poses.json`;
+- verificar world drops mediante profile/provider, ruta legacy y fallback debug;
+- confirmar Data Load 0 errors/0 warnings y Console sin errores rojos. El hover de mochila sigue diferido.
 
 ### M33.3.1: Weight-Limited Partial Transfers
 
@@ -39,7 +51,7 @@ Fuera de scope: item-owned storage, mochila funcional, pockets, nesting, peso de
 
 ### M34.2: Item-Owned Storage / Backpack Foundation
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - crear dos `small_backpack_01`, cargar contenidos distintos y confirmar storage/layout independiente por `InstanceId`;
 - equipar, reemplazar y desequipar en `back`; confirmar contenido, IDs, placements, ownership y peso sin cambios;

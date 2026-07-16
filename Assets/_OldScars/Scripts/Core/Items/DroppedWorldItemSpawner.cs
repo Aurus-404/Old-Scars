@@ -1,3 +1,4 @@
+using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Feedback;
@@ -95,6 +96,48 @@ namespace OldScars.Core.Items
             WorldItemPickup pickup = worldItem.AddComponent<WorldItemPickup>();
             int transferredQuantity = pickup.ReceiveDroppedItem(sourceOwner, sourceInstanceId, dropQuantity);
             if (transferredQuantity <= 0)
+            {
+                Object.Destroy(worldItem);
+                message = $"Drop failed: {displayName} was not transferred.";
+                return false;
+            }
+
+            RecordDrop(
+                actorInventory,
+                worldItem,
+                definitionId,
+                displayName,
+                transferredQuantity,
+                dropActionId,
+                dropActionDisplayName,
+                false);
+            message = $"Dropped {displayName} x{transferredQuantity}.";
+            return true;
+        }
+
+        public static bool TryDrop(
+            ActorEquipmentComponent sourceEquipment,
+            string sourceInstanceId,
+            InventoryComponent actorInventory,
+            string dropActionId,
+            string dropActionDisplayName,
+            out string message)
+        {
+            message = null;
+            if (sourceEquipment == null || actorInventory == null ||
+                !sourceEquipment.TryGetEntryByInstanceId(sourceInstanceId, out ItemStorageEntry sourceEntry) ||
+                sourceEntry?.Item == null || !sourceEquipment.IsEquipped(sourceInstanceId))
+            {
+                message = "Drop failed: invalid equipped item.";
+                return false;
+            }
+
+            string definitionId = sourceEntry.DefinitionId;
+            string displayName = GetItemDisplayName(definitionId);
+            GameObject worldItem = CreateWorldItemRoot(actorInventory.transform, displayName);
+            WorldItemPickup pickup = worldItem.AddComponent<WorldItemPickup>();
+            int transferredQuantity = pickup.ReceiveDroppedEquipment(sourceEquipment, sourceInstanceId);
+            if (transferredQuantity != 1)
             {
                 Object.Destroy(worldItem);
                 message = $"Drop failed: {displayName} was not transferred.";

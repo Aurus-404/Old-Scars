@@ -357,6 +357,17 @@ Ejemplo de apertura posterior de storage:
   ]
 }
 
+## Visual rigs y attachments M35.0
+
+- `visual_capabilities/*.json` declara IDs cerrados de compatibilidad estructural. Los IDs usan snake_case y no representan especies ni clases C#.
+- `visual_rig_profiles/*.json` declara familia, partes, jerarquia, sockets, roles, capabilities y mappings desde equipment slots. Parent parts, sockets y capabilities deben existir y no puede haber ciclos ni duplicados.
+- `visual_assets/*.json` separa `asset_key` namespaced (`namespace:name`) del provider. M35.0 admite solamente `provider_id = builtin`; no se permiten tipos, metodos, reflection ni scripts desde JSON.
+- `item_visual_profiles/*.json` vincula un `item_definition_id` con assets world/equipped, politica cerrada de socket, capabilities requeridas, pose/grips opcionales y fallback cerrado.
+- `attachment_poses/*.json` contiene posicion, rotacion Euler y escala locales por visual + rig exacto o familia + socket ID/role. La escala debe ser positiva y todos los valores finitos.
+- `actor_profiles.visual_rig_profile_id` referencia el rig visual de la entidad, separado de `equipment_layout_id`.
+- Equipment slots siguen siendo autoridad gameplay. Sockets, poses y prefabs son presentacion y no pueden contener storage, ownership, interacciones, arma runtime, colliders ni rigidbodies.
+- Asset keys pueden ser agregadas por mods de datos, pero M35.0 no carga AssetBundles, assemblies ni scripting de mods.
+
 ## No incluir todavía
 
 No incluir por ahora:

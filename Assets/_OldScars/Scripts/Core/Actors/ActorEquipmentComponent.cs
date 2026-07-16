@@ -12,7 +12,7 @@ namespace OldScars.Core.Actors
     [DisallowMultipleComponent]
     [RequireComponent(typeof(InventoryComponent))]
     [RequireComponent(typeof(ActorItemOwnershipComponent))]
-    public sealed class ActorEquipmentComponent : MonoBehaviour
+    public sealed class ActorEquipmentComponent : MonoBehaviour, IEquipmentVisualSource
     {
         public const string BackSlotId = "back";
         public const string DefaultHumanLayoutId = "human_standard_01";
@@ -28,12 +28,20 @@ namespace OldScars.Core.Actors
         private readonly Dictionary<string, string[]> instanceToSlots = new Dictionary<string, string[]>();
         private GridInventoryBackend equipmentBackend;
         private int equipmentVersion;
+        private long committedVisualRevision;
+
+        public event EventHandler<EquipmentVisualStateCommittedEventArgs> VisualStateCommitted;
 
         public string EquipmentLayoutId => equipmentLayoutId;
         public int Version => equipmentVersion;
         public int StorageVersion => equipmentStorage.Version;
         public IReadOnlyList<ItemStorageEntry> Entries => equipmentStorage.Entries;
         public bool IsEmpty => equipmentStorage.IsEmpty;
+
+        public EquipmentVisualStateSnapshot CaptureVisualSnapshot()
+        {
+            return CaptureVisualSnapshot(committedVisualRevision);
+        }
 
         internal InventoryComponent PersonalInventory
         {
@@ -190,6 +198,11 @@ namespace OldScars.Core.Actors
                 : EquipmentOwnedStorageTransactionService.GetCompatibleSlotSets(this, sourceOwner, instanceId);
         }
 
+        public IReadOnlyList<EquipmentSlotSet> GetCompatibleEquippedSlotSets(string instanceId)
+        {
+            return EquipmentTransactionService.GetCompatibleEquippedSlotSets(this, instanceId);
+        }
+
         public IReadOnlyList<EquipmentSlotSet> GetAvailableSlotSets(string instanceId)
         {
             return EquipmentTransactionService.GetCompatibleSlotSets(this, instanceId, true);
@@ -213,6 +226,16 @@ namespace OldScars.Core.Actors
         public EquipmentMutationResult Equip(EquipmentPreview preview)
         {
             return EquipmentTransactionService.Equip(this, preview);
+        }
+
+        internal EquipmentMutationResult EquipLegacyMigration(EquipmentPreview preview)
+        {
+            return EquipmentTransactionService.Equip(this, preview, null);
+        }
+
+        internal void CommitLegacyMigrationVisualState()
+        {
+            CommitVisualState(EquipmentVisualCommitKind.LegacyMigration);
         }
 
         public EquipmentMutationResult Equip(IGridStorageOwner sourceOwner, EquipmentPreview preview)
@@ -259,6 +282,34 @@ namespace OldScars.Core.Actors
         public EquipmentMutationResult Unequip(EquipmentPreview preview)
         {
             return EquipmentTransactionService.Unequip(this, preview);
+        }
+
+        public EquipmentRelocationPlan PreviewRelocateEquipped(
+            string instanceId,
+            IReadOnlyList<string> requestedSlotSet)
+        {
+            return EquipmentTransactionService.PreviewRelocateEquipped(this, instanceId, requestedSlotSet);
+        }
+
+        public EquipmentMutationResult RelocateEquipped(EquipmentRelocationPlan plan)
+        {
+            return EquipmentTransactionService.RelocateEquipped(this, plan);
+        }
+
+        public EquipmentStorageTransferPlan PreviewTransferEquippedToStorage(
+            string instanceId,
+            IGridStorageOwner destination,
+            GridStorageTransferContext context)
+        {
+            return EquipmentTransactionService.PreviewTransferEquippedToStorage(this, instanceId, destination, context);
+        }
+
+        public EquipmentMutationResult TransferEquippedToStorage(
+            IGridStorageOwner destination,
+            EquipmentStorageTransferPlan plan,
+            GridStorageTransferContext context)
+        {
+            return EquipmentTransactionService.TransferEquippedToStorage(this, destination, plan, context);
         }
 
         internal bool IsSlotFree(string slotId, string exceptInstanceId = null)
@@ -347,6 +398,62 @@ namespace OldScars.Core.Actors
         internal void RecordUnequipped(ItemInstance item)
         {
             RecordFeedback(GameplayFeedbackEntryType.ItemUnequipped, "Desequipaste", item);
+        }
+
+        internal void CommitVisualState(EquipmentVisualCommitKind commitKind)
+        {
+            try
+            {
+                long nextRevision = committedVisualRevision + 1L;
+                EquipmentVisualStateSnapshot snapshot = CaptureVisualSnapshot(nextRevision);
+                committedVisualRevision = nextRevision;
+
+                EventHandler<EquipmentVisualStateCommittedEventArgs> handlers = VisualStateCommitted;
+                if (handlers == null)
+                    return;
+
+                var args = new EquipmentVisualStateCommittedEventArgs(commitKind, snapshot);
+                Delegate[] subscribers = handlers.GetInvocationList();
+                for (int index = 0; index < subscribers.Length; index++)
+                {
+                    try
+                    {
+                        ((EventHandler<EquipmentVisualStateCommittedEventArgs>)subscribers[index])(this, args);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception, this);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                // Presentation observers must never turn a confirmed gameplay commit into a rollback.
+                Debug.LogException(exception, this);
+            }
+        }
+
+        private EquipmentVisualStateSnapshot CaptureVisualSnapshot(long revision)
+        {
+            var items = new List<EquipmentVisualItemSnapshot>(equipmentStorage.Entries.Count);
+            for (int index = 0; index < equipmentStorage.Entries.Count; index++)
+            {
+                ItemStorageEntry entry = equipmentStorage.Entries[index];
+                if (entry == null || entry.Item == null || string.IsNullOrWhiteSpace(entry.Item.InstanceId))
+                    continue;
+
+                items.Add(new EquipmentVisualItemSnapshot(
+                    entry.Item.InstanceId,
+                    entry.Item.DefinitionId,
+                    GetSlotsOccupiedBy(entry.Item.InstanceId)));
+            }
+
+            return new EquipmentVisualStateSnapshot(
+                revision,
+                equipmentVersion,
+                equipmentStorage.Version,
+                equipmentLayoutId,
+                items);
         }
 
         private void RecordFeedback(GameplayFeedbackEntryType type, string verb, ItemInstance item)

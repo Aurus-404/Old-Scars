@@ -17,6 +17,7 @@ namespace OldScars.Core.Data.Definitions
         public ActorProfileHealth health;
         public ActorProfileInventoryEntry[] initial_inventory;
         public string equipment_layout_id;
+        public string visual_rig_profile_id;
         public ActorProfileEquipped equipped; // Unsupported until a later M24 pass.
     }
 

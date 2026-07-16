@@ -1,3 +1,4 @@
+using System;
 using OldScars.Core.Data.Definitions;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace OldScars.Core.Interactions
         private float duration;
         private float elapsed;
         private bool isActionInProgress;
+        private Func<DebugActionExecutionResult> activeCompletion;
 
         public bool IsActionInProgress => isActionInProgress;
         public float Progress01 => duration > 0f ? Mathf.Clamp01(elapsed / duration) : 0f;
@@ -34,7 +36,7 @@ namespace OldScars.Core.Interactions
             if (!isActionInProgress)
                 return;
 
-            if (activeExecutionContext.Target == null)
+            if (activeExecutionContext.Target == null && activeCompletion == null)
             {
                 AbortActiveAction("target became invalid before completion");
                 return;
@@ -100,6 +102,67 @@ namespace OldScars.Core.Interactions
             return true;
         }
 
+        internal bool TryStartAction(
+            ActionDefinition timingAction,
+            DebugActionExecutionContext executionContext,
+            string displayName,
+            Func<DebugActionExecutionResult> completion)
+        {
+            if (isActionInProgress)
+            {
+                Debug.LogWarning("[DebugActionProgressController] Cannot start a world quick action while another action is in progress.");
+                return false;
+            }
+
+            if (timingAction == null || executionContext.Target == null || completion == null)
+            {
+                Debug.LogWarning("[DebugActionProgressController] World quick action requires timing, target, and completion contracts.");
+                return false;
+            }
+
+            float actionDuration = GetActionDuration(timingAction);
+            if (actionDuration <= 0f)
+            {
+                ShowResult(completion());
+                return true;
+            }
+
+            activeAction = timingAction;
+            activeExecutionContext = executionContext;
+            activeActionName = string.IsNullOrWhiteSpace(displayName)
+                ? GetActionDisplayName(timingAction)
+                : displayName;
+            activeTargetName = executionContext.Target.name;
+            duration = actionDuration;
+            elapsed = 0f;
+            activeCompletion = completion;
+            isActionInProgress = true;
+
+            Debug.Log(
+                "[DebugActionProgressController] Started world quick action." +
+                $"\n  Action: {SafeText(activeActionName)}" +
+                $"\n  Target: {SafeText(activeTargetName)}" +
+                $"\n  Duration: {duration:0.00}s");
+            return true;
+        }
+
+        public bool TryCancelActiveAction(string reason)
+        {
+            if (!isActionInProgress)
+                return false;
+
+            string cancelledActionName = activeActionName;
+            string cancelledTargetName = activeTargetName;
+            ClearActiveAction();
+
+            Debug.Log(
+                "[DebugActionProgressController] Cancelled debug action." +
+                $"\n  Action: {SafeText(cancelledActionName)}" +
+                $"\n  Target: {SafeText(cancelledTargetName)}" +
+                $"\n  Reason: {SafeText(reason)}");
+            return true;
+        }
+
         private void CompleteActiveAction()
         {
             ActionDefinition completedAction = activeAction;
@@ -107,10 +170,11 @@ namespace OldScars.Core.Interactions
             WorldObjectTags completedTarget = completedExecutionContext.Target;
             string completedActionName = activeActionName;
             string completedTargetName = activeTargetName;
+            Func<DebugActionExecutionResult> completedCallback = activeCompletion;
 
             ClearActiveAction();
 
-            if (completedTarget == null)
+            if (completedTarget == null && completedCallback == null)
             {
                 Debug.LogWarning($"[DebugActionProgressController] Action '{SafeText(completedActionName)}' aborted because target became invalid at completion.");
                 return;
@@ -121,7 +185,10 @@ namespace OldScars.Core.Interactions
                 $"\n  Action: {SafeText(completedActionName)}" +
                 $"\n  Target: {SafeText(completedTargetName)}");
 
-            ExecuteAction(completedAction, completedExecutionContext);
+            if (completedCallback != null)
+                ShowResult(completedCallback());
+            else
+                ExecuteAction(completedAction, completedExecutionContext);
         }
 
         private void AbortActiveAction(string reason)
@@ -141,7 +208,11 @@ namespace OldScars.Core.Interactions
         private void ExecuteAction(ActionDefinition action, DebugActionExecutionContext executionContext)
         {
             DebugActionExecutionResult result = DebugActionExecutor.Execute(action, executionContext);
+            ShowResult(result);
+        }
 
+        private void ShowResult(DebugActionExecutionResult result)
+        {
             if (!result.hasResult)
                 return;
 
@@ -163,6 +234,7 @@ namespace OldScars.Core.Interactions
             activeExecutionContext = default;
             activeActionName = null;
             activeTargetName = null;
+            activeCompletion = null;
             duration = 0f;
             elapsed = 0f;
             isActionInProgress = false;

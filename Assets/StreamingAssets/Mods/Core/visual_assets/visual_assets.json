@@ -1,0 +1,46 @@
+{
+  "visual_assets": [
+    {
+      "type": "visual_asset",
+      "id": "small_backpack_world",
+      "asset_key": "core:small_backpack_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Small_Backpack_World_PSX"
+    },
+    {
+      "type": "visual_asset",
+      "id": "small_backpack_equipped",
+      "asset_key": "core:small_backpack_equipped",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Small_Backpack_Equipped_PSX"
+    },
+    {
+      "type": "visual_asset",
+      "id": "rusted_crowbar_world",
+      "asset_key": "core:rusted_crowbar_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Rusted_Crowbar_PSX"
+    },
+    {
+      "type": "visual_asset",
+      "id": "rusted_crowbar_held",
+      "asset_key": "core:rusted_crowbar_held",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Rusted_Crowbar_Held_PSX"
+    },
+    {
+      "type": "visual_asset",
+      "id": "lee_enfield_world",
+      "asset_key": "core:lee_enfield_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Lee_Enfield_PSX"
+    },
+    {
+      "type": "visual_asset",
+      "id": "lee_enfield_held",
+      "asset_key": "core:lee_enfield_held",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Lee_Enfield_Held_PSX"
+    }
+  ]
+}

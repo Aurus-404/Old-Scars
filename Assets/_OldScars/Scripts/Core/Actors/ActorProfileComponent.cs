@@ -3,6 +3,7 @@ using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Interactions;
 using OldScars.Core.Items;
+using OldScars.Core.Visuals;
 using UnityEngine;
 
 namespace OldScars.Core.Actors
@@ -64,6 +65,7 @@ namespace OldScars.Core.Actors
             ApplyHealth(profile);
             ApplyInitialInventory(profile);
             ApplyEquipmentLayout(profile);
+            ApplyVisualRigProfile(profile);
 
             Debug.Log($"[ActorProfileComponent] '{name}' applied actor profile '{actorProfileId}'.");
         }
@@ -168,6 +170,23 @@ namespace OldScars.Core.Actors
                 Debug.LogWarning(
                     $"[ActorProfileComponent] '{name}' could not apply equipment layout " +
                     $"'{profile.equipment_layout_id}': {reason}");
+            }
+        }
+
+        private void ApplyVisualRigProfile(ActorProfileDefinition profile)
+        {
+            if (string.IsNullOrWhiteSpace(profile.visual_rig_profile_id))
+                return;
+
+            EntityVisualRigRuntime visualRig = GetComponent<EntityVisualRigRuntime>();
+            if (visualRig == null)
+                return;
+
+            if (!visualRig.TrySetProfile(profile.visual_rig_profile_id, out string reason))
+            {
+                Debug.LogWarning(
+                    $"[ActorProfileComponent] '{name}' could not apply visual rig profile " +
+                    $"'{profile.visual_rig_profile_id}': {reason}");
             }
         }
 
