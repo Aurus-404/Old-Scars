@@ -41,6 +41,34 @@ namespace OldScars.Core.Visuals
         [ContextMenu("Publish Backpack Equipped Snapshot")]
         public void PublishBackpackEquipped()
         {
+            PublishItem("debug_visual_backpack_0001", "small_backpack_01", "back");
+        }
+
+        [ContextMenu("Publish Crowbar Right Hand Snapshot")]
+        public void PublishCrowbarRightHand()
+        {
+            PublishItem("debug_visual_crowbar_0001", "rusted_crowbar_01", "hand_right");
+        }
+
+        [ContextMenu("Publish Crowbar Left Hand Snapshot")]
+        public void PublishCrowbarLeftHand()
+        {
+            PublishItem("debug_visual_crowbar_0001", "rusted_crowbar_01", "hand_left");
+        }
+
+        [ContextMenu("Publish Lee-Enfield Two-Hand Snapshot")]
+        public void PublishLeeEnfieldTwoHand()
+        {
+            PublishItem(
+                "debug_visual_lee_enfield_0001",
+                "lee_enfield_rifle_01",
+                "hand_left",
+                "hand_right");
+        }
+
+        [ContextMenu("Publish Configured Item Snapshot")]
+        public void PublishConfiguredItem()
+        {
             includeItem = true;
             Publish(EquipmentVisualCommitKind.Equip);
         }
@@ -50,6 +78,15 @@ namespace OldScars.Core.Visuals
         {
             includeItem = false;
             Publish(EquipmentVisualCommitKind.Unequip);
+        }
+
+        private void PublishItem(string configuredInstanceId, string configuredDefinitionId, params string[] slots)
+        {
+            instanceId = configuredInstanceId;
+            definitionId = configuredDefinitionId;
+            occupiedSlots = slots ?? Array.Empty<string>();
+            includeItem = true;
+            Publish(EquipmentVisualCommitKind.Equip);
         }
 
         private void Publish(EquipmentVisualCommitKind kind)

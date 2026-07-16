@@ -28,6 +28,17 @@ namespace OldScars.EditorTools
         [MenuItem(MenuRoot + "Configure Selected Human Rig")]
         private static void ConfigureSelectedHumanRig()
         {
+            ConfigureSelectedHumanRig(false);
+        }
+
+        [MenuItem(MenuRoot + "Configure Selected Human Debug Rig")]
+        private static void ConfigureSelectedHumanDebugRig()
+        {
+            ConfigureSelectedHumanRig(true);
+        }
+
+        private static void ConfigureSelectedHumanRig(bool useDebugSource)
+        {
             GameObject actorRoot = Selection.activeGameObject;
             if (actorRoot == null)
             {
@@ -45,12 +56,23 @@ namespace OldScars.EditorTools
             Transform handRight = FindDescendant(actorRoot.transform, "hand_r");
             if (spine == null || handLeft == null || handRight == null)
             {
-                Debug.LogError("[M35VisualRigTools] Required bones spine_02, hand_l and hand_r were not found under the selected instance.");
+                var missingBones = new List<string>();
+                if (spine == null)
+                    missingBones.Add("spine_02");
+                if (handLeft == null)
+                    missingBones.Add("hand_l");
+                if (handRight == null)
+                    missingBones.Add("hand_r");
+                Debug.LogError(
+                    $"[M35VisualRigTools] Selected human '{actorRoot.name}' is missing required bones: {string.Join(", ", missingBones)}.",
+                    actorRoot);
                 return;
             }
 
             int undoGroup = Undo.GetCurrentGroup();
-            Undo.SetCurrentGroupName("Configure M35 Human Visual Rig");
+            Undo.SetCurrentGroupName(useDebugSource
+                ? "Configure M35 Human Debug Visual Rig"
+                : "Configure M35 Human Visual Rig");
             EntityVisualRigRuntime rig = actorRoot.GetComponent<EntityVisualRigRuntime>();
             if (rig == null)
                 rig = Undo.AddComponent<EntityVisualRigRuntime>(actorRoot);
@@ -83,20 +105,35 @@ namespace OldScars.EditorTools
             if (synchronizer == null)
                 synchronizer = Undo.AddComponent<EntityEquipmentVisualSynchronizer>(actorRoot);
             ActorEquipmentComponent equipment = actorRoot.GetComponent<ActorEquipmentComponent>();
+            DebugEquipmentVisualSnapshotSource debugSource = null;
+            MonoBehaviour source = equipment;
+            if (useDebugSource)
+            {
+                debugSource = actorRoot.GetComponent<DebugEquipmentVisualSnapshotSource>();
+                if (debugSource == null)
+                    debugSource = Undo.AddComponent<DebugEquipmentVisualSnapshotSource>(actorRoot);
+                source = debugSource;
+            }
             Undo.RecordObject(synchronizer, "Configure equipment visual synchronizer");
-            synchronizer.Configure(equipment, rig);
+            synchronizer.Configure(source, rig);
 
             EditorUtility.SetDirty(rig);
             EditorUtility.SetDirty(synchronizer);
+            if (debugSource != null)
+                EditorUtility.SetDirty(debugSource);
             Undo.CollapseUndoOperations(undoGroup);
-            if (equipment == null)
+            if (!useDebugSource && equipment == null)
             {
                 Debug.LogWarning(
                     "[M35VisualRigTools] Rig configured, but the selected root has no ActorEquipmentComponent. " +
                     "The same synchronizer is ready and will require an IEquipmentVisualSource before Play Mode.",
                     actorRoot);
             }
-            Debug.Log("[M35VisualRigTools] Human visual rig configured with Undo. The scene was not saved.", actorRoot);
+            Debug.Log(
+                useDebugSource
+                    ? "[M35VisualRigTools] Human debug visual rig configured with snapshot presets and Undo. The scene was not saved."
+                    : "[M35VisualRigTools] Human visual rig configured with Undo. The scene was not saved.",
+                actorRoot);
         }
 
         [MenuItem(MenuRoot + "Generate M35 Visual Prefabs")]
