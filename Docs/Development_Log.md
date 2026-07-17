@@ -1434,6 +1434,17 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - Los meshes `Backpack` y `Backpack.001` ya estaban en Survival PSX, por lo que no se extrajo ni duplico el ZIP. Se preparan como variante equipada y de mundo respectivamente.
 - Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; quedan pendientes la generacion de prefabs, ajuste de poses y validacion visual manual en Unity.
 
+### Lootable Actor Real Equipment Bootstrap
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- Se agrego `initial_equipment` opcional a Actor Profiles. Cada entrada referencia un `item_id`; `slot_ids` sólo selecciona una alternativa completa cuando el servicio no puede elegir una unica opcion.
+- `ActorProfileComponent` aplica layout antes del contenido, crea instancias reales en el inventario y delega el equip a una operacion atomica acotada de `EquipmentTransactionService`.
+- La operacion captura personal storage, Equipment, slots y secuencia de IDs; ante cualquier fallo restaura todo el lote y reestablece bindings de item-owned storage.
+- `debug_npc_capsule_01` usa mochila + palanca derecha. `debug_npc_capsule_rifle_test_01` usa mochila + Lee-Enfield 2H como variante sin conflicto de manos.
+- `Debug NPC Capsule` incorpora `ActorEquipmentComponent` y `ActorItemOwnershipComponent`; el synchronizer visual escucha Equipment real y ya no usa el snapshot source debug del NPC.
+- No se implementaron UI de loot, transferencias, muerte, persistencia, IA, combate ni contenido anidado inicial.
+
 ## Decisiones De Scope
 
 - No hay inventario final.

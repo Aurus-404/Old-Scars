@@ -636,6 +636,11 @@ namespace OldScars.Core.Data.Validation
                         report.Error($"{ctx}: equipment_layout_id references '{actorProfile.equipment_layout_id}' which was not loaded.");
                 }
 
+                ValidateActorProfileEquipment(
+                    actorProfile.initial_equipment,
+                    actorProfile.equipment_layout_id,
+                    $"{ctx}: initial_equipment");
+
                 if (!string.IsNullOrWhiteSpace(actorProfile.visual_rig_profile_id))
                 {
                     RequireSnakeCase(actorProfile.visual_rig_profile_id, "visual_rig_profile_id", ctx);
@@ -731,6 +736,191 @@ namespace OldScars.Core.Data.Validation
 
             if (entry.quantity <= 0)
                 report.Error($"{context}: 'quantity' must be > 0 (got {entry.quantity}).");
+        }
+
+        private void ValidateActorProfileEquipment(
+            ActorProfileInitialEquipmentEntry[] initialEquipment,
+            string layoutId,
+            string context)
+        {
+            if (initialEquipment == null || initialEquipment.Length == 0)
+                return;
+
+            if (string.IsNullOrWhiteSpace(layoutId))
+            {
+                report.Error($"{context}: equipment_layout_id is required when initial_equipment is present.");
+                return;
+            }
+
+            EquipmentLayoutDefinition layout = database.GetEquipmentLayout(layoutId);
+            if (layout == null)
+                return;
+
+            var occupiedSlots = new HashSet<string>();
+            for (int index = 0; index < initialEquipment.Length; index++)
+            {
+                ActorProfileInitialEquipmentEntry entry = initialEquipment[index];
+                string entryContext = $"{context}[{index}]";
+                if (entry == null)
+                {
+                    report.Error($"{entryContext}: entry must not be null.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(entry.item_id))
+                {
+                    report.Error($"{entryContext}: 'item_id' is required.");
+                    continue;
+                }
+
+                RequireSnakeCase(entry.item_id, "item_id", entryContext);
+                ItemDefinition item = database.GetItem(entry.item_id);
+                if (item == null)
+                {
+                    report.Error($"{entryContext}: item_id '{entry.item_id}' references an item that was not loaded.");
+                    continue;
+                }
+
+                bool isEquippable = item.equip != null && item.equip.equippable.GetValueOrDefault(
+                    item.equippable.GetValueOrDefault(false));
+                string[][] declaredSlotSets = ResolveActorProfileSlotSets(item);
+                if (!isEquippable || item.max_stack != 1 || declaredSlotSets == null || declaredSlotSets.Length == 0)
+                {
+                    report.Error($"{entryContext}: item '{entry.item_id}' is not a quantity-1 equipable item with declared slots.");
+                    continue;
+                }
+
+                string[] selectedSlots = null;
+                if (entry.slot_ids != null)
+                {
+                    if (entry.slot_ids.Length == 0)
+                    {
+                        report.Error($"{entryContext}: slot_ids must be omitted or contain a complete slot set.");
+                        continue;
+                    }
+
+                    var requestedSlots = new HashSet<string>();
+                    for (int slotIndex = 0; slotIndex < entry.slot_ids.Length; slotIndex++)
+                    {
+                        string slotId = entry.slot_ids[slotIndex];
+                        RequireSnakeCase(slotId, $"slot_ids[{slotIndex}]", entryContext);
+                        if (!requestedSlots.Add(slotId))
+                            report.Error($"{entryContext}: duplicate slot_id '{SafeId(slotId)}'.");
+                    }
+
+                    for (int setIndex = 0; setIndex < declaredSlotSets.Length; setIndex++)
+                    {
+                        if (SameSlotSet(declaredSlotSets[setIndex], entry.slot_ids))
+                        {
+                            selectedSlots = entry.slot_ids;
+                            break;
+                        }
+                    }
+
+                    if (selectedSlots == null)
+                    {
+                        report.Error($"{entryContext}: slot_ids are not a declared complete alternative for item '{entry.item_id}'.");
+                        continue;
+                    }
+                }
+                else
+                {
+                    int availableCount = 0;
+                    for (int setIndex = 0; setIndex < declaredSlotSets.Length; setIndex++)
+                    {
+                        string[] candidate = declaredSlotSets[setIndex];
+                        if (!AreProfileSlotsAvailable(layout, candidate, occupiedSlots))
+                            continue;
+                        selectedSlots = candidate;
+                        availableCount++;
+                    }
+
+                    if (availableCount != 1)
+                    {
+                        report.Error(
+                            availableCount == 0
+                                ? $"{entryContext}: item '{entry.item_id}' has no compatible free slot set in layout '{layoutId}'."
+                                : $"{entryContext}: item '{entry.item_id}' has multiple free slot alternatives; slot_ids must select one.");
+                        continue;
+                    }
+                }
+
+                if (!AreProfileSlotsAvailable(layout, selectedSlots, occupiedSlots))
+                {
+                    report.Error($"{entryContext}: one or more selected slots are absent or already occupied in layout '{layoutId}'.");
+                    continue;
+                }
+
+                for (int slotIndex = 0; slotIndex < selectedSlots.Length; slotIndex++)
+                    occupiedSlots.Add(selectedSlots[slotIndex]);
+            }
+        }
+
+        private static string[][] ResolveActorProfileSlotSets(ItemDefinition item)
+        {
+            if (item?.equip == null)
+                return null;
+            if (item.equip.slot_sets != null && item.equip.slot_sets.Length > 0)
+                return item.equip.slot_sets;
+            if (item.equip.occupied_slots != null && item.equip.occupied_slots.Length > 0)
+                return new[] { MapActorProfileSlots(item.equip.occupied_slots) };
+            if (item.equip.allowed_slots == null || item.equip.allowed_slots.Length == 0)
+                return null;
+
+            var alternatives = new string[item.equip.allowed_slots.Length][];
+            for (int index = 0; index < alternatives.Length; index++)
+                alternatives[index] = MapActorProfileSlots(new[] { item.equip.allowed_slots[index] });
+            return alternatives;
+        }
+
+        private static string[] MapActorProfileSlots(string[] slots)
+        {
+            var mapped = new string[slots.Length];
+            for (int index = 0; index < slots.Length; index++)
+                mapped[index] = slots[index] == LegacyRightHandSlotId ? HandRightSlotId : slots[index];
+            return mapped;
+        }
+
+        private static bool SameSlotSet(string[] left, string[] right)
+        {
+            if (left == null || right == null || left.Length != right.Length)
+                return false;
+            var expected = new HashSet<string>(left);
+            for (int index = 0; index < right.Length; index++)
+            {
+                if (!expected.Contains(right[index]))
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool AreProfileSlotsAvailable(
+            EquipmentLayoutDefinition layout,
+            string[] slotIds,
+            HashSet<string> occupiedSlots)
+        {
+            if (layout?.slots == null || slotIds == null || slotIds.Length == 0)
+                return false;
+            for (int slotIndex = 0; slotIndex < slotIds.Length; slotIndex++)
+            {
+                string slotId = slotIds[slotIndex];
+                if (occupiedSlots.Contains(slotId))
+                    return false;
+
+                bool found = false;
+                for (int layoutIndex = 0; layoutIndex < layout.slots.Length; layoutIndex++)
+                {
+                    EquipmentLayoutSlotDefinition slot = layout.slots[layoutIndex];
+                    if (slot != null && slot.slot_id == slotId)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
         }
 
         private void ValidateLootTables()

@@ -326,6 +326,16 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - `WorldItemVisualResolver` conserva migracion progresiva: profile/provider, sistema world existente y fallback debug.
 - Compilacion estatica de runtime y Editor: 0 errores; validacion visual y offsets permanecen pendientes de Unity.
 
+### Lootable Actor Real Equipment Bootstrap
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `ActorProfile` admite `initial_equipment` opcional con `item_id` y `slot_ids` solamente cuando debe desambiguarse una alternativa valida.
+- `debug_npc_capsule_01` crea Equipment real para mochila y palanca; `debug_npc_capsule_rifle_test_01` separa la prueba de mochila y rifle 2H sin conflicto simultaneo de manos.
+- La inicializacion aplica primero `human_standard_01`, crea instancias mediante `InventoryComponent` y las equipa atomica y autoritativamente mediante `EquipmentTransactionService`.
+- `Debug NPC Capsule` usa `ActorEquipmentComponent` como fuente de `EntityEquipmentVisualSynchronizer`; su source visual debug fue retirado sin alterar Debug Cargo.
+- No se agregaron UI, transferencias de loot, Equipment funcional de NPC, IA, combate, persistencia ni contenido interno inicial para la mochila.
+
 ## Ultimo Estado Validado
 
 ### World Object Profiles

@@ -488,7 +488,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a984f960e146d741b641319b4c73250, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorProfileComponent
-  actorProfileId: debug_npc_capsule_01
+  actorProfileId: debug_house_npc_01
 --- !u!114 &150633519
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8360,7 +8360,8 @@ GameObject:
   - component: {fileID: 2700000011}
   - component: {fileID: 2700000014}
   - component: {fileID: 2700000013}
-  - component: {fileID: 2700000012}
+  - component: {fileID: 2700000015}
+  - component: {fileID: 2700000016}
   m_Layer: 6
   m_Name: Debug NPC Capsule
   m_TagString: Untagged
@@ -8588,7 +8589,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a984f960e146d741b641319b4c73250, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorProfileComponent
-  actorProfileId: debug_npc_capsule_01
+  actorProfileId: debug_npc_capsule_rifle_test_01
 --- !u!114 &2700000011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8646,24 +8647,6 @@ MonoBehaviour:
     - {fileID: 2700000003}
     applyDebugColor: 1
     debugColor: {r: 0.02, g: 0.02, b: 0.02, a: 1}
---- !u!114 &2700000012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2700000000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ae1b7063d514f489a0af1c29747600f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.DebugEquipmentVisualSnapshotSource
-  equipmentLayoutId: debug_cargo_visual_layout
-  instanceId: debug_visual_backpack_0001
-  definitionId: small_backpack_01
-  occupiedSlots:
-  - back
-  includeItem: 1
 --- !u!114 &2700000013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8676,7 +8659,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5584e5f3428843d697a9702161a761b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.EntityEquipmentVisualSynchronizer
-  equipmentVisualSourceBehaviour: {fileID: 2700000012}
+  equipmentVisualSourceBehaviour: {fileID: 2700000015}
   visualRig: {fileID: 2700000014}
   logWarnings: 1
 --- !u!114 &2700000014
@@ -8710,6 +8693,35 @@ MonoBehaviour:
     target: {fileID: 1571722710}
   - socketId: human_hand_right_socket
     target: {fileID: 1403501688}
+--- !u!114 &2700000015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2700000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6150b2d000ab4f8f88e6d486ffd33dc2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorEquipmentComponent
+  equipmentLayoutId: human_standard_01
+  inventoryComponent: {fileID: 2700000007}
+  ownershipComponent: {fileID: 2700000016}
+--- !u!114 &2700000016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2700000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 677c932a938a425f96f6fb1fe3fa3338, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorItemOwnershipComponent
+  inventoryComponent: {fileID: 2700000007}
+  equipmentComponent: {fileID: 2700000015}
 --- !u!114 &2800000001
 MonoBehaviour:
   m_ObjectHideFlags: 0

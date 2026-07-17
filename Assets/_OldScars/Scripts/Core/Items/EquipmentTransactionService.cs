@@ -116,6 +116,75 @@ namespace OldScars.Core.Items
             return Equip(equipment, preview, EquipmentVisualCommitKind.Equip);
         }
 
+        public static bool TryEquipInitialItems(
+            ActorEquipmentComponent equipment,
+            IReadOnlyList<ActorProfileInitialEquipmentEntry> entries,
+            out string error)
+        {
+            error = null;
+            if (entries == null || entries.Count == 0)
+                return true;
+            if (equipment == null || equipment.PersonalInventory == null || equipment.Ownership == null)
+            {
+                error = "Actor equipment, personal inventory and ownership are required.";
+                return false;
+            }
+            if (!equipment.IsEmpty)
+            {
+                error = "Initial equipment can only be applied to empty Equipment.";
+                return false;
+            }
+
+            InventoryComponent inventory = equipment.PersonalInventory;
+            ActorItemOwnershipComponent ownership = equipment.Ownership;
+            GridInventoryBackend.BackendStateSnapshot personalSnapshot = inventory.InternalGridBackend.CaptureBackendState();
+            GridInventoryBackend.BackendStateSnapshot equipmentSnapshot = equipment.Backend.CaptureBackendState();
+            ActorEquipmentComponent.EquipmentStateSnapshot slotSnapshot = equipment.CaptureEquipmentState();
+            int idSequenceSnapshot = ItemInstance.CaptureIdSequence();
+            var createdInstanceIds = new List<string>(entries.Count);
+
+            try
+            {
+                for (int index = 0; index < entries.Count; index++)
+                {
+                    ActorProfileInitialEquipmentEntry entry = entries[index];
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.item_id))
+                        throw new InvalidOperationException($"initial_equipment[{index}] is invalid.");
+
+                    ItemInstance item = inventory.AddItemByDefinitionId(entry.item_id, 1);
+                    if (item == null)
+                        throw new InvalidOperationException($"Could not create personal item '{entry.item_id}'.");
+                    createdInstanceIds.Add(item.InstanceId);
+
+                    EquipmentPreview preview = PreviewEquip(equipment, item.InstanceId, entry.slot_ids);
+                    if (!preview.Success || preview.RequiresChoice)
+                        throw new InvalidOperationException($"Could not preview '{entry.item_id}': {preview.Message}");
+
+                    EquipmentMutationResult result = Equip(equipment, preview, null);
+                    if (!result.Success)
+                        throw new InvalidOperationException($"Could not equip '{entry.item_id}': {result.Message}");
+                }
+
+                if (!ownership.ValidateUniqueOwnership(out string ownershipError))
+                    throw new InvalidOperationException(ownershipError ?? "Actor ownership validation failed after initial equipment.");
+
+                equipment.CommitVisualState(EquipmentVisualCommitKind.Equip);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                for (int index = 0; index < createdInstanceIds.Count; index++)
+                    ItemOwnedStorageRegistry.Instance.UnbindItem(createdInstanceIds[index]);
+                inventory.InternalGridBackend.RestoreBackendState(personalSnapshot);
+                equipment.Backend.RestoreBackendState(equipmentSnapshot);
+                equipment.RestoreEquipmentState(slotSnapshot);
+                ItemInstance.RestoreIdSequence(idSequenceSnapshot);
+                equipment.RebindActorOwnedItems();
+                error = exception.Message;
+                return false;
+            }
+        }
+
         internal static EquipmentMutationResult Equip(
             ActorEquipmentComponent equipment,
             EquipmentPreview preview,

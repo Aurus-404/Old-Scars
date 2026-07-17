@@ -30,6 +30,45 @@
       "initial_inventory": [
         { "item_id": "bandage_01", "quantity": 3 },
         { "item_id": "scrap_metal_01", "quantity": 2 }
+      ],
+      "initial_equipment": [
+        { "item_id": "small_backpack_01" },
+        { "item_id": "rusted_crowbar_01", "slot_ids": ["hand_right"] }
+      ]
+    },
+    {
+      "type": "actor_profile",
+      "id": "debug_house_npc_01",
+      "display_name": "Debug NPC Capsule",
+      "visual_rig_profile_id": "human_standard_visual_rig",
+      "initial_tags": ["human", "inspectable"],
+      "health": {
+        "max_health": 100,
+        "current_health": 100
+      },
+      "initial_inventory": [
+        { "item_id": "bandage_01", "quantity": 3 },
+        { "item_id": "scrap_metal_01", "quantity": 2 }
+      ]
+    },
+    {
+      "type": "actor_profile",
+      "id": "debug_npc_capsule_rifle_test_01",
+      "display_name": "Debug NPC Capsule Rifle Test",
+      "equipment_layout_id": "human_standard_01",
+      "visual_rig_profile_id": "human_standard_visual_rig",
+      "initial_tags": ["human", "inspectable"],
+      "health": {
+        "max_health": 100,
+        "current_health": 100
+      },
+      "initial_inventory": [
+        { "item_id": "bandage_01", "quantity": 3 },
+        { "item_id": "scrap_metal_01", "quantity": 2 }
+      ],
+      "initial_equipment": [
+        { "item_id": "small_backpack_01" },
+        { "item_id": "lee_enfield_rifle_01" }
       ]
     }
   ]

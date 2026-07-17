@@ -63,8 +63,9 @@ namespace OldScars.Core.Actors
             ApplyDisplayName(profile);
             ApplyInitialTags(profile);
             ApplyHealth(profile);
-            ApplyInitialInventory(profile);
             ApplyEquipmentLayout(profile);
+            ApplyInitialInventory(profile);
+            ApplyInitialEquipment(profile);
             ApplyVisualRigProfile(profile);
 
             Debug.Log($"[ActorProfileComponent] '{name}' applied actor profile '{actorProfileId}'.");
@@ -170,6 +171,28 @@ namespace OldScars.Core.Actors
                 Debug.LogWarning(
                     $"[ActorProfileComponent] '{name}' could not apply equipment layout " +
                     $"'{profile.equipment_layout_id}': {reason}");
+            }
+        }
+
+        private void ApplyInitialEquipment(ActorProfileDefinition profile)
+        {
+            if (profile.initial_equipment == null || profile.initial_equipment.Length == 0)
+                return;
+
+            ActorEquipmentComponent equipment = GetComponent<ActorEquipmentComponent>();
+            if (equipment == null)
+            {
+                Debug.LogError(
+                    $"[ActorProfileComponent] '{name}' cannot apply initial_equipment from actor profile " +
+                    $"'{actorProfileId}' because ActorEquipmentComponent is missing.");
+                return;
+            }
+
+            if (!EquipmentTransactionService.TryEquipInitialItems(equipment, profile.initial_equipment, out string error))
+            {
+                Debug.LogError(
+                    $"[ActorProfileComponent] '{name}' failed to apply initial_equipment atomically from actor profile " +
+                    $"'{actorProfileId}': {error}");
             }
         }
 
