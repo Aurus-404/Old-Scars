@@ -119,11 +119,12 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 34.2.1b: Unified Context Actions for Equipped Items | Reutilizar el menu universal para acciones atomicas desde slots equipados. | validated | Validado manualmente en Unity por confirmacion del usuario. |
 | Milestone 34.2.1c: World Item Quick Actions | Extender el menu contextual de items mundiales con pickup+equip/replacement y pickup+storage derivados del estado real. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
 | Milestone 35.0: Universal Visual Rig & Attachment Framework | Representar equipment confirmado mediante rigs, sockets, capabilities, providers y poses data-driven. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
+| Lootable Entity Inventory UI V1 | Mostrar y transferir pertenencias reales de una entidad saqueable desde Equipment, inventario y contenedores equipados. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c y M35.0 estan `implemented` y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c, M35.0 y Lootable Entity Inventory UI V1 estan `implemented` y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los ultimos milestones cerrados como `validated` son:
 

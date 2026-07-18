@@ -117,6 +117,23 @@ namespace OldScars.Core.Items
             return actions;
         }
 
+        public static IReadOnlyList<InventoryContextAction> ResolveLootableEquipment(
+            ActorEquipmentComponent equipment,
+            string equipmentSlotId,
+            string instanceId)
+        {
+            var actions = new List<InventoryContextAction>();
+            if (equipment == null || string.IsNullOrWhiteSpace(equipmentSlotId) ||
+                !equipment.IsEquipped(instanceId) ||
+                equipment.GetEquippedStorageEntry(equipmentSlotId)?.Item?.InstanceId != instanceId)
+            {
+                return actions;
+            }
+
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeStack, "Tomar"));
+            return actions;
+        }
+
         public static IReadOnlyList<InventoryContextAction> ResolveWorldItem(
             WorldItemPickup source,
             ActorEquipmentComponent equipment,

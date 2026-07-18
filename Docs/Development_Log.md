@@ -1445,6 +1445,18 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - `Debug NPC Capsule` incorpora `ActorEquipmentComponent` y `ActorItemOwnershipComponent`; el synchronizer visual escucha Equipment real y ya no usa el snapshot source debug del NPC.
 - No se implementaron UI de loot, transferencias, muerte, persistencia, IA, combate ni contenido anidado inicial.
 
+### Lootable Entity Inventory UI V1
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `LootableActorInventoryComponent` representa inventario, Equipment y storages directos de items equipados como pertenencias reales del actor.
+- `ItemStorageDebugPanel` conserva el lado del jugador y agrega en el mismo panel derecho las vistas `Equipamiento`, `Inventario` y `Contenedores`.
+- La vista Equipment deduplica por `InstanceId`, muestra todos los slots ocupados y retira hacia el inventario personal mediante `EquipmentTransactionService.TransferEquippedToStorage`.
+- Inventario y storages item-owned reutilizan `InventoryGridDebugView` y `GridStorageTransferService`; no existe external storage temporal ni copia del cadaver.
+- La subvista de contenedor se reconcilia por `ContainerInstanceId` y vuelve a la lista si el item deja de estar equipado.
+- `lootable_actor` usa las tres fuentes reales y se remueve solo cuando todas quedan vacias.
+- No se agregaron JSON, escena, servicios globales, drag nuevo entre Equipment y jugador, ventanas multiples, nesting recursivo, persistencia, IA ni combate.
+
 ## Decisiones De Scope
 
 - No hay inventario final.

@@ -8,12 +8,79 @@ using UnityEngine;
 
 namespace OldScars.Core.Actors
 {
+    public readonly struct LootableActorOwnedStorage
+    {
+        public LootableActorOwnedStorage(
+            ItemStorageEntry containerEntry,
+            ItemOwnedStorageRuntime storage,
+            IReadOnlyList<string> occupiedSlots)
+        {
+            ContainerEntry = containerEntry;
+            Storage = storage;
+            OccupiedSlots = occupiedSlots;
+        }
+
+        public ItemStorageEntry ContainerEntry { get; }
+        public ItemOwnedStorageRuntime Storage { get; }
+        public IReadOnlyList<string> OccupiedSlots { get; }
+    }
+
     public sealed class LootableActorInventoryComponent : MonoBehaviour, IItemStorageDebugSource, IGridStorageTransferEndpoint
     {
         [SerializeField] private InventoryComponent inventory;
+        [SerializeField] private ActorEquipmentComponent equipment;
+        [SerializeField] private ActorItemOwnershipComponent ownership;
         [SerializeField] private WorldObjectTags worldObjectTags;
 
-        public bool HasStoredItems => inventory != null && !inventory.IsEmpty;
+        private readonly List<LootableActorOwnedStorage> equippedOwnedStorages =
+            new List<LootableActorOwnedStorage>();
+
+        public InventoryComponent Inventory
+        {
+            get
+            {
+                ResolveReferences();
+                return inventory;
+            }
+        }
+
+        public ActorEquipmentComponent Equipment
+        {
+            get
+            {
+                ResolveReferences();
+                return equipment;
+            }
+        }
+
+        public ActorItemOwnershipComponent Ownership
+        {
+            get
+            {
+                ResolveReferences();
+                return ownership;
+            }
+        }
+
+        public bool HasInventoryItems => Inventory != null && !Inventory.IsEmpty;
+        public bool HasEquipmentItems => Equipment != null && !Equipment.IsEmpty;
+        public bool HasStoredItems => HasLootableContent;
+        public bool HasLootableContent
+        {
+            get
+            {
+                if (HasInventoryItems || HasEquipmentItems)
+                    return true;
+
+                IReadOnlyList<LootableActorOwnedStorage> storages = GetEquippedOwnedStorages();
+                for (int index = 0; index < storages.Count; index++)
+                {
+                    if (storages[index].Storage != null && storages[index].Storage.GridStorageEntries.Count > 0)
+                        return true;
+                }
+                return false;
+            }
+        }
         public IReadOnlyList<ItemStorageEntry> StorageEntries => inventory != null ? inventory.GetStorageEntries() : EmptyEntries;
         public string GridStorageDisplayName => name;
         public IReadOnlyList<ItemStorageEntry> GridStorageEntries => StorageEntries;
@@ -53,10 +120,72 @@ namespace OldScars.Core.Actors
 
         public string GetStorageDebugTitle(WorldObjectTags target)
         {
-            string targetName = target != null ? target.name : name;
-            WorldObjectDebugInfo debugInfo = target != null ? target.GetComponent<WorldObjectDebugInfo>() : null;
-            string displayName = debugInfo != null ? debugInfo.GetDisplayNameOrFallback(targetName, target) : targetName;
-            return $"{displayName} Inventory (Debug)";
+            return $"Cadaver - {GetActorDisplayName(target)}";
+        }
+
+        public string GetActorDisplayName(WorldObjectTags target = null)
+        {
+            WorldObjectTags resolvedTarget = target != null ? target : worldObjectTags;
+            string targetName = resolvedTarget != null ? resolvedTarget.name : name;
+            WorldObjectDebugInfo debugInfo = resolvedTarget != null
+                ? resolvedTarget.GetComponent<WorldObjectDebugInfo>()
+                : GetComponent<WorldObjectDebugInfo>();
+            return debugInfo != null
+                ? debugInfo.GetDisplayNameOrFallback(targetName, resolvedTarget)
+                : targetName;
+        }
+
+        public IReadOnlyList<LootableActorOwnedStorage> GetEquippedOwnedStorages()
+        {
+            ResolveReferences();
+            equippedOwnedStorages.Clear();
+            if (equipment == null)
+                return equippedOwnedStorages;
+
+            IReadOnlyList<ItemStorageEntry> entries = equipment.Entries;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                ItemInstance item = entry?.Item;
+                if (item == null || !item.HasOwnedStorage ||
+                    !ItemOwnedStorageRegistry.Instance.TryResolveOwnedStorage(
+                        item.InstanceId,
+                        out ItemOwnedStorageRuntime storage))
+                {
+                    continue;
+                }
+
+                equippedOwnedStorages.Add(new LootableActorOwnedStorage(
+                    entry,
+                    storage,
+                    equipment.GetSlotsOccupiedBy(item.InstanceId)));
+            }
+            return equippedOwnedStorages;
+        }
+
+        public bool TryGetEquippedOwnedStorage(
+            string containerInstanceId,
+            out LootableActorOwnedStorage option)
+        {
+            IReadOnlyList<LootableActorOwnedStorage> options = GetEquippedOwnedStorages();
+            for (int index = 0; index < options.Count; index++)
+            {
+                LootableActorOwnedStorage candidate = options[index];
+                if (candidate.Storage != null &&
+                    candidate.Storage.ContainerInstanceId == containerInstanceId)
+                {
+                    option = candidate;
+                    return true;
+                }
+            }
+
+            option = default;
+            return false;
+        }
+
+        public void RefreshLootableState()
+        {
+            SyncLootableTag();
         }
 
         public bool CanOpenStorage(out string reason)
@@ -264,7 +393,7 @@ namespace OldScars.Core.Actors
                 return false;
             }
 
-            if (inventory == null || inventory.IsEmpty)
+            if (!HasLootableContent)
             {
                 reason = "No queda contenido en este cuerpo.";
                 return false;
@@ -296,13 +425,13 @@ namespace OldScars.Core.Actors
         private void SyncLootableTag()
         {
             ResolveReferences();
-            if (worldObjectTags == null || inventory == null)
+            if (worldObjectTags == null)
                 return;
 
             if (!worldObjectTags.HasTag(ActorHealthComponent.DeadActorTag))
                 return;
 
-            if (inventory.IsEmpty)
+            if (!HasLootableContent)
                 worldObjectTags.RemoveTag(ActorHealthComponent.LootableActorTag);
             else
                 worldObjectTags.AddTag(ActorHealthComponent.LootableActorTag);
@@ -312,6 +441,12 @@ namespace OldScars.Core.Actors
         {
             if (inventory == null)
                 inventory = GetComponent<InventoryComponent>();
+
+            if (equipment == null)
+                equipment = GetComponent<ActorEquipmentComponent>();
+
+            if (ownership == null)
+                ownership = GetComponent<ActorItemOwnershipComponent>();
 
             if (worldObjectTags == null)
                 worldObjectTags = GetComponent<WorldObjectTags>();

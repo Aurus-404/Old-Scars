@@ -24,7 +24,8 @@ namespace OldScars.Core.Items
             float width,
             float height,
             Action<EquipmentDebugRowClick> onRowClick = null,
-            Action<string, Rect> onRowDrawn = null)
+            Action<string, Rect> onRowDrawn = null,
+            bool deduplicateInstances = false)
         {
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
             GUILayout.Label("Equipment");
@@ -60,6 +61,7 @@ namespace OldScars.Core.Items
             selection.EquipmentScrollPosition = scrollPosition;
 
             float rowWidth = Mathf.Max(120f, width - 30f);
+            var drawnInstanceIds = deduplicateInstances ? new HashSet<string>() : null;
 
             for (int groupIndex = 0; groupIndex < orderedGroups.Count; groupIndex++)
             {
@@ -70,7 +72,20 @@ namespace OldScars.Core.Items
                     EquipmentLayoutSlotDefinition slot = orderedSlots[slotIndex];
                     if (slot.group_id != group.id)
                         continue;
-                    DrawSlotRow(equipment, selection, slot, rowWidth, onRowClick, onRowDrawn);
+                    ItemStorageEntry entry = equipment.GetEquippedStorageEntry(slot.slot_id);
+                    if (drawnInstanceIds != null && entry?.Item != null &&
+                        !drawnInstanceIds.Add(entry.Item.InstanceId))
+                    {
+                        continue;
+                    }
+                    DrawSlotRow(
+                        equipment,
+                        selection,
+                        slot,
+                        rowWidth,
+                        onRowClick,
+                        onRowDrawn,
+                        deduplicateInstances);
                 }
             }
 
@@ -84,13 +99,16 @@ namespace OldScars.Core.Items
             EquipmentLayoutSlotDefinition slot,
             float width,
             Action<EquipmentDebugRowClick> onRowClick,
-            Action<string, Rect> onRowDrawn)
+            Action<string, Rect> onRowDrawn,
+            bool showAllOccupiedSlots)
         {
             EquipmentSlotDefinition definition = equipment.GetSlotDefinition(slot.slot_id);
             string slotName = definition != null && !string.IsNullOrWhiteSpace(definition.display_name)
                 ? definition.display_name
                 : slot.slot_id;
             ItemStorageEntry entry = equipment.GetEquippedStorageEntry(slot.slot_id);
+            if (showAllOccupiedSlots && entry?.Item != null)
+                slotName = GetOccupiedSlotLabel(equipment, entry.Item.InstanceId, slotName);
             string itemName = entry != null ? GetItemName(entry) : "Vacío";
             string multiSlot = IsTwoHanded(equipment, entry) ? " — 2H" : string.Empty;
             bool selected = selection.SelectedEquipmentSlotId == slot.slot_id;
@@ -242,6 +260,26 @@ namespace OldScars.Core.Items
                 right |= slots[index] == ActorEquipmentComponent.HandRightSlotId;
             }
             return left && right;
+        }
+
+        private static string GetOccupiedSlotLabel(
+            ActorEquipmentComponent equipment,
+            string instanceId,
+            string fallback)
+        {
+            IReadOnlyList<string> slots = equipment.GetSlotsOccupiedBy(instanceId);
+            if (slots == null || slots.Count == 0)
+                return fallback;
+
+            var names = new string[slots.Count];
+            for (int index = 0; index < slots.Count; index++)
+            {
+                EquipmentSlotDefinition definition = equipment.GetSlotDefinition(slots[index]);
+                names[index] = definition != null && !string.IsNullOrWhiteSpace(definition.display_name)
+                    ? definition.display_name
+                    : slots[index];
+            }
+            return string.Join(" + ", names);
         }
 
         private static string GetItemName(ItemStorageEntry entry)

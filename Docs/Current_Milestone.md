@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c World Item Quick Actions y M35.0 Universal Visual Rig & Attachment Framework estan `implemented` en el checkout y pendientes de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c World Item Quick Actions y M35.0 Universal Visual Rig & Attachment Framework estan `implemented` en el checkout y pendientes de validacion manual en Unity. Lootable Entity Inventory UI V1 esta `implemented` y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -335,6 +335,16 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - La inicializacion aplica primero `human_standard_01`, crea instancias mediante `InventoryComponent` y las equipa atomica y autoritativamente mediante `EquipmentTransactionService`.
 - `Debug NPC Capsule` usa `ActorEquipmentComponent` como fuente de `EntityEquipmentVisualSynchronizer`; su source visual debug fue retirado sin alterar Debug Cargo.
 - No se agregaron UI, transferencias de loot, Equipment funcional de NPC, IA, combate, persistencia ni contenido interno inicial para la mochila.
+
+### Lootable Entity Inventory UI V1
+
+Estado: `implemented`; pendiente de validacion manual en Unity.
+
+- `search_body` abre un unico `ItemStorageDebugPanel` con el lado del jugador intacto y una fuente compuesta navegable a la derecha.
+- Las vistas `Equipamiento`, `Inventario` y `Contenedores` leen Equipment, inventario y storages item-owned reales de la entidad, sin copias temporales.
+- Equipment se retira mediante `EquipmentTransactionService.TransferEquippedToStorage`; grillas y storages usan `GridStorageTransferService` y conservan `InstanceId`/ownership.
+- `lootable_actor` permanece mientras exista contenido real en cualquiera de las fuentes y se remueve mediante el flujo de tags existente cuando todas quedan vacias.
+- Estado: `implemented`; no `validated` hasta completar la prueba manual en Unity.
 
 ## Ultimo Estado Validado
 
