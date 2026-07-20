@@ -288,7 +288,8 @@ namespace OldScars.Core.Items
                 EquipmentColumnWidth - 12f,
                 equipmentHeight,
                 HandleEquipmentRowClick,
-                RegisterEquipmentDropTarget);
+                RegisterEquipmentDropTarget,
+                EquipmentDebugListPresentation.OccupiedItemsOnly);
 
             GUILayout.Space(ColumnGap);
             DrawPersonalSessionFooter(Mathf.Max(1f, bodyHeight - equipmentHeight - ColumnGap - 12f));
@@ -391,22 +392,6 @@ namespace OldScars.Core.Items
 
         private void HandleEquipmentRowClick(EquipmentDebugRowClick click)
         {
-            if (click.MouseButton == 0 && click.SlotId == ActorEquipmentComponent.BackSlotId)
-            {
-                ResolveActorEquipment();
-                if (actorEquipment != null &&
-                    actorEquipment.TryGetEntryByInstanceId(click.InstanceId, out ItemStorageEntry selectedEntry) &&
-                    selectedEntry?.Item?.HasOwnedStorage == true &&
-                    personalStorageNavigator.TrySelectContainer(click.InstanceId))
-                {
-                    dragController.CancelDrag();
-                    gridView.Reset();
-                    gridScrollPosition = Vector2.zero;
-                    sessionController?.CloseContextMenu();
-                }
-                return;
-            }
-
             if (click.MouseButton != 1 || sessionController == null || sessionController.QuantityDialogOpen)
                 return;
 
@@ -709,6 +694,13 @@ namespace OldScars.Core.Items
             switch (currentAction.Kind)
             {
                 case InventoryContextActionKind.ShowDetails:
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
+                    {
+                        sessionController?.Selection.SelectEquipmentFromContext(
+                            invocation.Request.EquipmentSlotId,
+                            entry.Item.InstanceId,
+                            true);
+                    }
                     return;
                 case InventoryContextActionKind.ReviewOwnedStorage:
                     if (sessionController == null || !sessionController.OpenOwnedStorageInspection(entry.Item.InstanceId))

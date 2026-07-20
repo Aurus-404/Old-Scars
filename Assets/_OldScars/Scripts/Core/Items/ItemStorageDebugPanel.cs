@@ -412,7 +412,7 @@ namespace OldScars.Core.Items
                 listHeight,
                 HandleLootableEquipmentRowClick,
                 null,
-                true);
+                EquipmentDebugListPresentation.OccupiedItemsOnly);
 
             string selectedId = lootableEquipmentSelection.SelectedEquippedInstanceId;
             if (equipment == null || string.IsNullOrWhiteSpace(selectedId) ||
@@ -496,15 +496,7 @@ namespace OldScars.Core.Items
                     $"Contenido: {option.Storage.GridStorageEntries.Count} entries | " +
                     $"Grilla: {option.Storage.GridWidth}x{option.Storage.GridHeight}");
                 if (GUILayout.Button("Abrir", GUILayout.Height(24f)))
-                {
-                    dragController.CancelDrag();
-                    sessionController?.CloseContextMenu();
-                    lootableOwnedStorage = option.Storage;
-                    lootableOwnedStorageInstanceId = option.Storage.ContainerInstanceId;
-                    lootableActorView = LootableActorView.ContainerStorage;
-                    externalGridView.Reset();
-                    externalGridScroll = Vector2.zero;
-                }
+                    OpenLootableOwnedStorage(option.Storage.ContainerInstanceId);
                 GUILayout.EndVertical();
             }
             GUILayout.EndScrollView();
@@ -575,6 +567,26 @@ namespace OldScars.Core.Items
             return lootableActorView == LootableActorView.ContainerStorage && lootableOwnedStorage != null
                 ? lootableOwnedStorage
                 : storageSource;
+        }
+
+        private bool OpenLootableOwnedStorage(string containerInstanceId)
+        {
+            if (lootableActorSource == null ||
+                !lootableActorSource.TryGetEquippedOwnedStorage(containerInstanceId, out LootableActorOwnedStorage option) ||
+                option.Storage == null)
+            {
+                return false;
+            }
+
+            dragController.CancelDrag();
+            sessionController?.CloseContextMenu();
+            lootableOwnedStorage = option.Storage;
+            lootableOwnedStorageInstanceId = option.Storage.ContainerInstanceId;
+            lootableActorView = LootableActorView.ContainerStorage;
+            externalGridView.Reset();
+            externalGridScroll = Vector2.zero;
+            sessionController?.Selection.SelectExternal(null);
+            return true;
         }
 
         private void DrawStorageColumn(
@@ -854,20 +866,6 @@ namespace OldScars.Core.Items
 
         private void HandleEquipmentRowClick(EquipmentDebugRowClick click)
         {
-            if (click.MouseButton == 0 && click.SlotId == ActorEquipmentComponent.BackSlotId &&
-                actorEquipment != null && actorEquipment.TryGetEntryByInstanceId(click.InstanceId, out ItemStorageEntry selectedEntry) &&
-                selectedEntry?.Item?.HasOwnedStorage == true)
-            {
-                if (personalStorageNavigator.TrySelectContainer(click.InstanceId))
-                {
-                    dragController.CancelDrag();
-                    playerGridView.Reset();
-                    playerGridScroll = Vector2.zero;
-                    sessionController?.CloseContextMenu();
-                }
-                return;
-            }
-
             if (click.MouseButton != 1 || sessionController == null || sessionController.QuantityDialogOpen)
                 return;
 
@@ -1053,8 +1051,34 @@ namespace OldScars.Core.Items
             switch (currentAction.Kind)
             {
                 case InventoryContextActionKind.ShowDetails:
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
+                    {
+                        if (lootableActorSource != null &&
+                            ReferenceEquals(invocation.Request.Equipment, lootableActorSource.Equipment))
+                        {
+                            lootableEquipmentSelection.SelectEquipment(
+                                invocation.Request.EquipmentSlotId,
+                                entry.Item.InstanceId,
+                                false);
+                        }
+                        else
+                        {
+                            sessionController?.Selection.SelectEquipmentFromContext(
+                                invocation.Request.EquipmentSlotId,
+                                entry.Item.InstanceId,
+                                true);
+                        }
+                    }
                     return;
                 case InventoryContextActionKind.ReviewOwnedStorage:
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment &&
+                        lootableActorSource != null &&
+                        ReferenceEquals(invocation.Request.Equipment, lootableActorSource.Equipment))
+                    {
+                        if (!OpenLootableOwnedStorage(entry.Item.InstanceId))
+                            toast.Show("El contenedor equipado ya no pertenece al cadáver.", InventoryToastSeverity.Error);
+                        return;
+                    }
                     if (sessionController == null || !sessionController.OpenOwnedStorageInspection(entry.Item.InstanceId))
                         toast.Show("La mochila ya no pertenece al actor.", InventoryToastSeverity.Error);
                     return;
@@ -1384,7 +1408,8 @@ namespace OldScars.Core.Items
                 CenterColumnWidth - 12f,
                 equipmentHeight,
                 HandleEquipmentRowClick,
-                RegisterEquipmentDropTarget);
+                RegisterEquipmentDropTarget,
+                EquipmentDebugListPresentation.OccupiedItemsOnly);
             GUILayout.Space(ColumnGap);
             DrawCenterFooter(Mathf.Max(1f, bodyHeight - equipmentHeight - ColumnGap - 12f));
             GUILayout.EndVertical();

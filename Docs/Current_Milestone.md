@@ -346,6 +346,13 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - `lootable_actor` permanece mientras exista contenido real en cualquiera de las fuentes y se remueve mediante el flujo de tags existente cuando todas quedan vacias.
 - Estado: `implemented`; no `validated` hasta completar la prueba manual en Unity.
 
+### Inventory Window Redesign Phase A — VALIDATED
+
+Estado: `validated` en Unity.
+
+- `EquipmentDebugListView` ahora ofrece una presentacion explicita de items equipados ocupados: omite slots/grupos vacios y deduplica por `ItemInstance.InstanceId` manteniendo el orden del layout.
+- El inventario principal y la vista Equipment del cadaver reutilizan esa presentacion; los menus contextuales resuelven `Revisar` y `Examinar` desde el owner/equipment real, sin cambiar transacciones ni crear ventanas flotantes.
+
 ## Ultimo Estado Validado
 
 ### World Object Profiles

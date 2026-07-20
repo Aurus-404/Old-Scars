@@ -6,6 +6,12 @@ using UnityEngine;
 
 namespace OldScars.Core.Items
 {
+    public enum EquipmentDebugListPresentation
+    {
+        FullLayout,
+        OccupiedItemsOnly
+    }
+
     public sealed class EquipmentDebugListView
     {
         private const float RowHeight = 28f;
@@ -24,8 +30,68 @@ namespace OldScars.Core.Items
             float width,
             float height,
             Action<EquipmentDebugRowClick> onRowClick = null,
-            Action<string, Rect> onRowDrawn = null,
-            bool deduplicateInstances = false)
+            Action<string, Rect> onRowDrawn = null)
+        {
+            DrawInternal(
+                equipment,
+                selection,
+                width,
+                height,
+                onRowClick,
+                onRowDrawn,
+                EquipmentDebugListPresentation.FullLayout,
+                false);
+        }
+
+        public void Draw(
+            ActorEquipmentComponent equipment,
+            InventoryUISessionSelection selection,
+            float width,
+            float height,
+            Action<EquipmentDebugRowClick> onRowClick,
+            Action<string, Rect> onRowDrawn,
+            bool deduplicateInstances)
+        {
+            DrawInternal(
+                equipment,
+                selection,
+                width,
+                height,
+                onRowClick,
+                onRowDrawn,
+                EquipmentDebugListPresentation.FullLayout,
+                deduplicateInstances);
+        }
+
+        public void Draw(
+            ActorEquipmentComponent equipment,
+            InventoryUISessionSelection selection,
+            float width,
+            float height,
+            Action<EquipmentDebugRowClick> onRowClick,
+            Action<string, Rect> onRowDrawn,
+            EquipmentDebugListPresentation presentation)
+        {
+            DrawInternal(
+                equipment,
+                selection,
+                width,
+                height,
+                onRowClick,
+                onRowDrawn,
+                presentation,
+                presentation == EquipmentDebugListPresentation.OccupiedItemsOnly);
+        }
+
+        private void DrawInternal(
+            ActorEquipmentComponent equipment,
+            InventoryUISessionSelection selection,
+            float width,
+            float height,
+            Action<EquipmentDebugRowClick> onRowClick,
+            Action<string, Rect> onRowDrawn,
+            EquipmentDebugListPresentation presentation,
+            bool deduplicateInstances)
         {
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
             GUILayout.Label("Equipment");
@@ -62,10 +128,14 @@ namespace OldScars.Core.Items
 
             float rowWidth = Mathf.Max(120f, width - 30f);
             var drawnInstanceIds = deduplicateInstances ? new HashSet<string>() : null;
+            bool occupiedItemsOnly = presentation == EquipmentDebugListPresentation.OccupiedItemsOnly;
 
             for (int groupIndex = 0; groupIndex < orderedGroups.Count; groupIndex++)
             {
                 EquipmentLayoutGroupDefinition group = orderedGroups[groupIndex];
+                if (occupiedItemsOnly && !HasFirstOccupiedItemInGroup(equipment, group.id))
+                    continue;
+
                 GUILayout.Label(group.display_name, GUILayout.Width(rowWidth), GUILayout.Height(GroupHeight));
                 for (int slotIndex = 0; slotIndex < orderedSlots.Count; slotIndex++)
                 {
@@ -73,6 +143,8 @@ namespace OldScars.Core.Items
                     if (slot.group_id != group.id)
                         continue;
                     ItemStorageEntry entry = equipment.GetEquippedStorageEntry(slot.slot_id);
+                    if (occupiedItemsOnly && entry?.Item == null)
+                        continue;
                     if (drawnInstanceIds != null && entry?.Item != null &&
                         !drawnInstanceIds.Add(entry.Item.InstanceId))
                     {
@@ -85,12 +157,26 @@ namespace OldScars.Core.Items
                         rowWidth,
                         onRowClick,
                         onRowDrawn,
-                        deduplicateInstances);
+                        occupiedItemsOnly);
                 }
             }
 
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
+        }
+
+        private bool HasFirstOccupiedItemInGroup(ActorEquipmentComponent equipment, string groupId)
+        {
+            var seenInstanceIds = new HashSet<string>();
+            for (int index = 0; index < orderedSlots.Count; index++)
+            {
+                EquipmentLayoutSlotDefinition slot = orderedSlots[index];
+                ItemInstance item = equipment.GetEquippedStorageEntry(slot.slot_id)?.Item;
+                if (item != null && seenInstanceIds.Add(item.InstanceId) && slot.group_id == groupId)
+                    return true;
+            }
+
+            return false;
         }
 
         private void DrawSlotRow(

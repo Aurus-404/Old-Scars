@@ -130,7 +130,16 @@ namespace OldScars.Core.Items
                 return actions;
             }
 
+            ItemStorageEntry entry = equipment.GetEquippedStorageEntry(equipmentSlotId);
+            if (entry?.Item?.HasOwnedStorage == true)
+            {
+                actions.Add(new InventoryContextAction(
+                    InventoryContextActionKind.ReviewOwnedStorage,
+                    "Revisar"));
+            }
+
             actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeStack, "Tomar"));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Examinar"));
             return actions;
         }
 
@@ -247,7 +256,7 @@ namespace OldScars.Core.Items
             {
                 actions.Add(new InventoryContextAction(
                     InventoryContextActionKind.ReviewOwnedStorage,
-                    "Revisar contenedor"));
+                    "Revisar"));
             }
 
             IReadOnlyList<EquipmentSlotSet> alternatives = equipment.GetCompatibleEquippedSlotSets(instanceId);
@@ -313,6 +322,7 @@ namespace OldScars.Core.Items
             }
 
             actions.Add(new InventoryContextAction(InventoryContextActionKind.DropStack, "Soltar"));
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Examinar"));
             return actions;
         }
 
