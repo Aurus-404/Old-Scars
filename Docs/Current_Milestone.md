@@ -353,6 +353,16 @@ Estado: `validated` en Unity.
 - `EquipmentDebugListView` ahora ofrece una presentacion explicita de items equipados ocupados: omite slots/grupos vacios y deduplica por `ItemInstance.InstanceId` manteniendo el orden del layout.
 - El inventario principal y la vista Equipment del cadaver reutilizan esa presentacion; los menus contextuales resuelven `Revisar` y `Examinar` desde el owner/equipment real, sin cambiar transacciones ni crear ventanas flotantes.
 
+### Inventory Window Redesign Phase B — VALIDATED
+
+Estado: `validated` en Unity por confirmacion manual del usuario.
+
+- `Revisar` abre una unica ventana flotante reutilizable para el storage real de una mochila propia o equipada en un cadaver saqueable.
+- El binding conserva `InstanceId`, owner esperado y storage esperado, pero re-resuelve registro, pertenencia y acceso antes de dibujar o mutar.
+- La ventana mantiene posicion durante la sesion, usa seleccion/scroll propios y comparte menus, drag y transferencias existentes con el inventario personal como counterpart explicito.
+- Equipment, inventario raiz y pestañas del cadaver permanecen activos; la ruta cadaver raiz ↔ ventana se rechaza y tomar la mochila cierra solo la ventana.
+- No se modificaron servicios transaccionales, JSON, escenas ni prefabs. La validacion manual confirmo movimiento por todo el Game View, hitboxes y contextuales alineados, transferencias explicitas, cierres seguros y ausencia de duplicaciones o referencias stale.
+
 ## Ultimo Estado Validado
 
 ### World Object Profiles
@@ -401,6 +411,7 @@ Estado: `validated` en Unity.
 - Limpiar gradualmente la dependencia de tags legacy `lootable_container` / `looted_container` sin romper compatibilidad.
 - Normalizar titulos debug inconsistentes como `Contenedor saqueado Contents (Debug)`.
 - Revisar como deuda de balance los `max_stack = 999` actuales antes de una fase posterior de inventario; Grid Inventory Backend v0 no cambia esos valores.
+- La futura fase de multiples ventanas debe permitir abrir simultaneamente la mochila del jugador y la mochila del cadaver, con posicion, scroll y seleccion independientes y routing de transferencias inequivoco.
 
 ## Proximo Recomendado
 

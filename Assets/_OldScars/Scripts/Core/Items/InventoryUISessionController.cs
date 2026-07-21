@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using OldScars.Core.Actors;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Interactions;
 using UnityEngine;
@@ -12,6 +14,158 @@ namespace OldScars.Core.Items
         External
     }
 
+    internal enum FloatingStorageWindowSourceKind
+    {
+        PersonalOwned,
+        LootableActorEquipment
+    }
+
+    internal readonly struct FloatingStorageWindowResolution
+    {
+        internal FloatingStorageWindowResolution(
+            FloatingStorageWindowSourceKind sourceKind,
+            ItemStorageEntry containerEntry,
+            ItemOwnedStorageRuntime storage,
+            string sourceLabel)
+        {
+            SourceKind = sourceKind;
+            ContainerEntry = containerEntry;
+            Storage = storage;
+            SourceLabel = sourceLabel;
+        }
+
+        internal FloatingStorageWindowSourceKind SourceKind { get; }
+        internal ItemStorageEntry ContainerEntry { get; }
+        internal ItemOwnedStorageRuntime Storage { get; }
+        internal string SourceLabel { get; }
+    }
+
+    internal sealed class FloatingStorageWindowBinding
+    {
+        private readonly FloatingStorageWindowSourceKind sourceKind;
+        private readonly string containerInstanceId;
+        private readonly InventoryComponent expectedPersonalInventory;
+        private readonly LootableActorInventoryComponent expectedLootableActor;
+        private readonly ItemOwnedStorageRuntime expectedStorage;
+
+        internal FloatingStorageWindowBinding(
+            FloatingStorageWindowSourceKind sourceKind,
+            string containerInstanceId,
+            ItemOwnedStorageRuntime expectedStorage,
+            InventoryComponent expectedPersonalInventory,
+            LootableActorInventoryComponent expectedLootableActor)
+        {
+            this.sourceKind = sourceKind;
+            this.containerInstanceId = containerInstanceId;
+            this.expectedStorage = expectedStorage;
+            this.expectedPersonalInventory = expectedPersonalInventory;
+            this.expectedLootableActor = expectedLootableActor;
+        }
+
+        internal FloatingStorageWindowSourceKind SourceKind => sourceKind;
+        internal LootableActorInventoryComponent ExpectedLootableActor => expectedLootableActor;
+
+        internal bool TryResolve(
+            PersonalStorageNavigator navigator,
+            out FloatingStorageWindowResolution resolution)
+        {
+            resolution = default;
+            if (string.IsNullOrWhiteSpace(containerInstanceId) || expectedStorage == null ||
+                !ItemOwnedStorageRegistry.Instance.TryResolveOwnedStorage(
+                    containerInstanceId,
+                    out ItemOwnedStorageRuntime currentStorage) ||
+                !ReferenceEquals(currentStorage, expectedStorage))
+            {
+                return false;
+            }
+
+            if (sourceKind == FloatingStorageWindowSourceKind.PersonalOwned)
+                return TryResolvePersonal(navigator, currentStorage, out resolution);
+
+            return TryResolveLootableActor(currentStorage, out resolution);
+        }
+
+        private bool TryResolvePersonal(
+            PersonalStorageNavigator navigator,
+            ItemOwnedStorageRuntime currentStorage,
+            out FloatingStorageWindowResolution resolution)
+        {
+            resolution = default;
+            if (expectedPersonalInventory == null || navigator == null ||
+                !ReferenceEquals(navigator.PersonalInventory, expectedPersonalInventory) ||
+                !navigator.TryGetContainerEntry(containerInstanceId, out ItemStorageEntry entry) ||
+                entry?.Item?.InstanceId != containerInstanceId ||
+                !ReferenceEquals(entry.Item.OwnedStorage, currentStorage) ||
+                !ItemOwnedStorageRegistry.Instance.TryResolveRootOwner(
+                    containerInstanceId,
+                    out object rootOwner,
+                    out _) ||
+                !ReferenceEquals(rootOwner, expectedPersonalInventory))
+            {
+                return false;
+            }
+
+            ActorEquipmentComponent equipment = expectedPersonalInventory.GetComponent<ActorEquipmentComponent>();
+            string sourceLabel = navigator.IsEquippedOwnedStorage(containerInstanceId)
+                ? GetEquipmentSourceLabel(equipment, containerInstanceId)
+                : "Inventario personal";
+            resolution = new FloatingStorageWindowResolution(
+                sourceKind,
+                entry,
+                currentStorage,
+                sourceLabel);
+            return true;
+        }
+
+        private bool TryResolveLootableActor(
+            ItemOwnedStorageRuntime currentStorage,
+            out FloatingStorageWindowResolution resolution)
+        {
+            resolution = default;
+            if (expectedLootableActor == null || !expectedLootableActor.CanOpenStorage(out _) ||
+                !expectedLootableActor.TryGetEquippedOwnedStorage(
+                    containerInstanceId,
+                    out LootableActorOwnedStorage option) ||
+                option.ContainerEntry?.Item?.InstanceId != containerInstanceId ||
+                !ReferenceEquals(option.ContainerEntry.Item.OwnedStorage, currentStorage) ||
+                !ReferenceEquals(option.Storage, currentStorage) ||
+                !ItemOwnedStorageRegistry.Instance.TryResolveRootOwner(
+                    containerInstanceId,
+                    out object rootOwner,
+                    out _) ||
+                !ReferenceEquals(rootOwner, expectedLootableActor.Inventory))
+            {
+                return false;
+            }
+
+            resolution = new FloatingStorageWindowResolution(
+                sourceKind,
+                option.ContainerEntry,
+                currentStorage,
+                GetEquipmentSourceLabel(expectedLootableActor.Equipment, containerInstanceId));
+            return true;
+        }
+
+        private static string GetEquipmentSourceLabel(
+            ActorEquipmentComponent equipment,
+            string instanceId)
+        {
+            IReadOnlyList<string> slots = equipment?.GetSlotsOccupiedBy(instanceId);
+            if (slots == null || slots.Count == 0)
+                return "Equipment";
+
+            var labels = new string[slots.Count];
+            for (int index = 0; index < slots.Count; index++)
+            {
+                EquipmentSlotDefinition definition = equipment.GetSlotDefinition(slots[index]);
+                labels[index] = definition != null && !string.IsNullOrWhiteSpace(definition.display_name)
+                    ? definition.display_name
+                    : slots[index];
+            }
+            return string.Join(" + ", labels);
+        }
+    }
+
     public sealed class InventoryUISessionController : MonoBehaviour
     {
         [SerializeField] private InventoryDebugPanel inventoryPanel;
@@ -22,7 +176,9 @@ namespace OldScars.Core.Items
         private readonly InventoryUISessionSelection selection = new InventoryUISessionSelection();
         private readonly InventoryContextMenuState contextMenuState = new InventoryContextMenuState();
         private PersonalStorageNavigator personalStorageNavigator;
-        private ItemOwnedStorageRuntime inspectedOwnedStorage;
+        private FloatingStorageWindowBinding floatingStorageBinding;
+        private string personalSelectionBeforeFloatingWindow;
+        private bool hasCapturedPersonalSelection;
 
         public InventoryUISessionState State { get; private set; }
         public bool BlocksWorldInput => State != InventoryUISessionState.Closed;
@@ -45,8 +201,7 @@ namespace OldScars.Core.Items
                 return personalStorageNavigator;
             }
         }
-        public ItemOwnedStorageRuntime InspectedOwnedStorage => inspectedOwnedStorage;
-        public bool HasOwnedStorageInspection => inspectedOwnedStorage != null;
+        internal bool HasFloatingStorageWindow => floatingStorageBinding != null;
 
         public static InventoryUISessionController GetOrCreate()
         {
@@ -82,7 +237,7 @@ namespace OldScars.Core.Items
             if (!IsOpen)
                 return;
 
-            ValidateOwnedStorageInspection();
+            ValidateFloatingStorageWindow();
 
             if ((keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame) &&
                 contextMenuState.ConfirmQuantityFromKeyboard())
@@ -100,7 +255,7 @@ namespace OldScars.Core.Items
                 return;
             if (!CancelActiveDrag())
             {
-                if (!CloseOwnedStorageInspection())
+                if (!CloseFloatingStorageWindow())
                     CloseSession();
             }
         }
@@ -114,6 +269,7 @@ namespace OldScars.Core.Items
                 return;
             }
 
+            CloseFloatingStorageWindowInternal(true);
             BeginSession();
             storagePanel?.HideFromSession();
             inventoryPanel.ShowFromSession();
@@ -136,6 +292,7 @@ namespace OldScars.Core.Items
             if (inventory != null)
                 playerInventory = inventory;
 
+            CloseFloatingStorageWindowInternal(true);
             BeginSession();
             inventoryPanel?.HideFromSession();
             storagePanel.ShowFromSession(source, playerInventory, context, action);
@@ -146,7 +303,7 @@ namespace OldScars.Core.Items
         {
             contextMenuState.CloseAll();
             CancelActiveDrag();
-            inspectedOwnedStorage = null;
+            CloseFloatingStorageWindowInternal(false);
             inventoryPanel?.HideFromSession();
             storagePanel?.HideFromSession();
             selection.ResetTransient();
@@ -167,13 +324,13 @@ namespace OldScars.Core.Items
             contextMenuState.CloseAll();
         }
 
-        public bool OpenOwnedStorageInspection(string containerInstanceId)
+        public bool OpenPersonalOwnedStorageWindow(string containerInstanceId)
         {
             if (!IsOpen)
                 return false;
 
             PersonalStorageNavigator navigator = PersonalStorageNavigator;
-            if (navigator == null || !TryResolveInspectableOwnedStorage(
+            if (navigator == null || !TryResolvePersonalOwnedStorage(
                     navigator,
                     containerInstanceId,
                     out ItemOwnedStorageRuntime storage))
@@ -181,40 +338,70 @@ namespace OldScars.Core.Items
                 return false;
             }
 
-            CancelActiveDrag();
-            contextMenuState.CloseAll();
-            navigator.SelectPersonalInventory();
-            inspectedOwnedStorage = storage;
-            selection.SelectPersonal(null);
-            return true;
+            return OpenFloatingStorageWindow(new FloatingStorageWindowBinding(
+                FloatingStorageWindowSourceKind.PersonalOwned,
+                containerInstanceId,
+                storage,
+                playerInventory,
+                null));
         }
 
-        public bool CloseOwnedStorageInspection()
+        public bool OpenLootableEquipmentStorageWindow(
+            LootableActorInventoryComponent lootableActor,
+            string containerInstanceId)
         {
-            if (inspectedOwnedStorage == null)
+            if (!IsOpen || State != InventoryUISessionState.External || lootableActor == null ||
+                !lootableActor.CanOpenStorage(out _) ||
+                !lootableActor.TryGetEquippedOwnedStorage(
+                    containerInstanceId,
+                    out LootableActorOwnedStorage option) ||
+                option.ContainerEntry?.Item?.InstanceId != containerInstanceId ||
+                option.Storage == null)
+            {
+                return false;
+            }
+
+            return OpenFloatingStorageWindow(new FloatingStorageWindowBinding(
+                FloatingStorageWindowSourceKind.LootableActorEquipment,
+                containerInstanceId,
+                option.Storage,
+                playerInventory,
+                lootableActor));
+        }
+
+        public bool CloseFloatingStorageWindow()
+        {
+            return CloseFloatingStorageWindowInternal(true);
+        }
+
+        internal bool TryResolveFloatingStorageWindow(out FloatingStorageWindowResolution resolution)
+        {
+            resolution = default;
+            if (floatingStorageBinding == null)
                 return false;
 
-            CancelActiveDrag();
-            contextMenuState.CloseAll();
-            inspectedOwnedStorage = null;
-            selection.SelectPersonal(null);
+            PersonalStorageNavigator navigator = PersonalStorageNavigator;
+            navigator?.SelectPersonalInventory();
+            bool expectedSessionSource =
+                floatingStorageBinding.SourceKind != FloatingStorageWindowSourceKind.LootableActorEquipment ||
+                State == InventoryUISessionState.External && storagePanel != null &&
+                storagePanel.IsBoundToLootableActor(floatingStorageBinding.ExpectedLootableActor);
+            if (!expectedSessionSource ||
+                !floatingStorageBinding.TryResolve(navigator, out resolution))
+            {
+                CloseFloatingStorageWindowInternal(true);
+                return false;
+            }
             return true;
         }
 
-        public void ValidateOwnedStorageInspection()
+        public void ValidateFloatingStorageWindow()
         {
-            if (inspectedOwnedStorage == null)
-                return;
-
-            string containerId = inspectedOwnedStorage.ContainerInstanceId;
-            if (!TryResolveInspectableOwnedStorage(PersonalStorageNavigator, containerId, out ItemOwnedStorageRuntime current) ||
-                !ReferenceEquals(current, inspectedOwnedStorage))
-            {
-                CloseOwnedStorageInspection();
-            }
+            if (floatingStorageBinding != null)
+                TryResolveFloatingStorageWindow(out _);
         }
 
-        private static bool TryResolveInspectableOwnedStorage(
+        private static bool TryResolvePersonalOwnedStorage(
             PersonalStorageNavigator navigator,
             string containerInstanceId,
             out ItemOwnedStorageRuntime storage)
@@ -225,6 +412,62 @@ namespace OldScars.Core.Items
 
             return navigator.TryGetPersonalInventoryOwnedStorage(containerInstanceId, out storage, out _) ||
                    navigator.TryGetOwnedStorage(containerInstanceId, out storage);
+        }
+
+        private bool OpenFloatingStorageWindow(FloatingStorageWindowBinding binding)
+        {
+            if (binding == null)
+                return false;
+
+            PersonalStorageNavigator navigator = PersonalStorageNavigator;
+            if (navigator == null || !binding.TryResolve(navigator, out _))
+                return false;
+
+            if (!hasCapturedPersonalSelection)
+            {
+                personalSelectionBeforeFloatingWindow = navigator.SelectedContainerInstanceId;
+                hasCapturedPersonalSelection = true;
+            }
+
+            CancelActiveDrag();
+            contextMenuState.CloseAll();
+            floatingStorageBinding = binding;
+            navigator.SelectPersonalInventory();
+            selection.SelectPersonal(null);
+            ResetFloatingStorageWindowViews(false);
+            return true;
+        }
+
+        private bool CloseFloatingStorageWindowInternal(bool restorePersonalSelection)
+        {
+            if (floatingStorageBinding == null)
+                return false;
+
+            CancelActiveDrag();
+            contextMenuState.CloseAll();
+            floatingStorageBinding = null;
+            selection.SelectPersonal(null);
+            ResetFloatingStorageWindowViews(false);
+
+            PersonalStorageNavigator navigator = personalStorageNavigator;
+            if (restorePersonalSelection && navigator != null && hasCapturedPersonalSelection)
+            {
+                if (string.IsNullOrWhiteSpace(personalSelectionBeforeFloatingWindow) ||
+                    !navigator.TrySelectContainer(personalSelectionBeforeFloatingWindow))
+                {
+                    navigator.SelectPersonalInventory();
+                }
+            }
+
+            personalSelectionBeforeFloatingWindow = null;
+            hasCapturedPersonalSelection = false;
+            return true;
+        }
+
+        private void ResetFloatingStorageWindowViews(bool resetPosition)
+        {
+            inventoryPanel?.ResetFloatingStorageWindow(resetPosition);
+            storagePanel?.ResetFloatingStorageWindow(resetPosition);
         }
 
         internal void DrawContextOverlay(Rect localWindowRect)

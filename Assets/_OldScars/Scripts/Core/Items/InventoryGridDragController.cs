@@ -12,6 +12,9 @@ namespace OldScars.Core.Items
 
         private readonly List<EndpointView> endpoints = new List<EndpointView>(2);
         private readonly List<EquipmentDropTarget> equipmentTargets = new List<EquipmentDropTarget>();
+        private readonly List<BlockedTransferRoute> blockedTransferRoutes = new List<BlockedTransferRoute>();
+        private readonly Dictionary<IGridStorageOwner, IGridStorageOwner> quickTransferTargets =
+            new Dictionary<IGridStorageOwner, IGridStorageOwner>();
         private GridStorageTransferContext transferContext;
         private EndpointView sourceEndpoint;
         private EndpointView destinationEndpoint;
@@ -29,6 +32,7 @@ namespace OldScars.Core.Items
         private GridPlacementValidationResult candidatePreview;
         private GridStorageMergePreview mergePreview;
         private string destinationInstanceId;
+        private string candidateRejectionMessage;
         private DropIntent dropIntent;
         private string pendingStatusMessage;
         private InventoryToastSeverity pendingStatusSeverity;
@@ -49,7 +53,26 @@ namespace OldScars.Core.Items
         {
             endpoints.Clear();
             equipmentTargets.Clear();
+            blockedTransferRoutes.Clear();
+            quickTransferTargets.Clear();
             transferContext = context;
+        }
+
+        public void SetQuickTransferTarget(IGridStorageOwner source, IGridStorageOwner target)
+        {
+            if (source == null || target == null || ReferenceEquals(source, target))
+                return;
+            quickTransferTargets[source] = target;
+        }
+
+        public void BlockTransferRoute(
+            IGridStorageOwner first,
+            IGridStorageOwner second,
+            string message)
+        {
+            if (first == null || second == null || ReferenceEquals(first, second))
+                return;
+            blockedTransferRoutes.Add(new BlockedTransferRoute(first, second, message));
         }
 
         public void RegisterEquipmentDropTarget(
@@ -128,6 +151,8 @@ namespace OldScars.Core.Items
         {
             endpoints.Clear();
             equipmentTargets.Clear();
+            blockedTransferRoutes.Clear();
+            quickTransferTargets.Clear();
             ActiveOwner = null;
             pendingStatusMessage = null;
             ResetPointerState();
@@ -240,9 +265,18 @@ namespace OldScars.Core.Items
 
         private void TransferQuick(EndpointView source, string instanceId)
         {
-            EndpointView target = FindOtherEndpoint(source);
+            EndpointView target = FindQuickTransferTarget(source);
             if (target == null)
+            {
+                SetStatus("Elegí explícitamente el inventario de destino.", InventoryToastSeverity.Warning);
                 return;
+            }
+
+            if (TryGetBlockedTransferMessage(source.Owner, target.Owner, out string blockedMessage))
+            {
+                SetStatus(blockedMessage, InventoryToastSeverity.Error);
+                return;
+            }
 
             GridStorageTransferQuantityPolicy quantityPolicy =
                 GridStorageTransferService.GetAutomaticQuantityPolicy(source.Owner, target.Owner);
@@ -281,6 +315,7 @@ namespace OldScars.Core.Items
             candidatePreview = default;
             mergePreview = default;
             destinationInstanceId = null;
+            candidateRejectionMessage = null;
             dropIntent = DropIntent.None;
             if (equipmentTarget != null)
             {
@@ -312,6 +347,15 @@ namespace OldScars.Core.Items
                     candidateX,
                     candidateY,
                     requestedRotated);
+                return;
+            }
+
+            if (TryGetBlockedTransferMessage(
+                    sourceEndpoint.Owner,
+                    destinationEndpoint.Owner,
+                    out candidateRejectionMessage))
+            {
+                dropIntent = DropIntent.Blocked;
                 return;
             }
 
@@ -369,6 +413,14 @@ namespace OldScars.Core.Items
             if (!hasCandidateCoordinates || destinationEndpoint == null || dropIntent == DropIntent.None)
             {
                 SetStatus("Grid move cancelled: invalid destination.", InventoryToastSeverity.Error);
+                return;
+            }
+
+            if (dropIntent == DropIntent.Blocked)
+            {
+                SetStatus(
+                    candidateRejectionMessage ?? "Esa transferencia directa no está disponible.",
+                    InventoryToastSeverity.Error);
                 return;
             }
 
@@ -501,8 +553,21 @@ namespace OldScars.Core.Items
             return null;
         }
 
-        private EndpointView FindOtherEndpoint(EndpointView source)
+        private EndpointView FindQuickTransferTarget(EndpointView source)
         {
+            if (source != null && quickTransferTargets.TryGetValue(source.Owner, out IGridStorageOwner targetOwner))
+            {
+                for (int index = 0; index < endpoints.Count; index++)
+                {
+                    if (ReferenceEquals(endpoints[index].Owner, targetOwner))
+                        return endpoints[index];
+                }
+                return null;
+            }
+
+            if (endpoints.Count != 2)
+                return null;
+
             for (int index = 0; index < endpoints.Count; index++)
             {
                 if (!ReferenceEquals(endpoints[index], source))
@@ -510,6 +575,25 @@ namespace OldScars.Core.Items
             }
 
             return null;
+        }
+
+        private bool TryGetBlockedTransferMessage(
+            IGridStorageOwner source,
+            IGridStorageOwner target,
+            out string message)
+        {
+            for (int index = 0; index < blockedTransferRoutes.Count; index++)
+            {
+                BlockedTransferRoute route = blockedTransferRoutes[index];
+                if (route.Matches(source, target))
+                {
+                    message = route.Message;
+                    return true;
+                }
+            }
+
+            message = null;
+            return false;
         }
 
         private EquipmentDropTarget FindEquipmentTarget(Vector2 mousePosition)
@@ -552,6 +636,7 @@ namespace OldScars.Core.Items
             candidatePreview = default;
             mergePreview = default;
             destinationInstanceId = null;
+            candidateRejectionMessage = null;
             dropIntent = DropIntent.None;
             hoveredEquipmentTarget = null;
             equipmentHoverActivated = false;
@@ -609,7 +694,33 @@ namespace OldScars.Core.Items
         {
             None,
             Placement,
-            DirectedMerge
+            DirectedMerge,
+            Blocked
+        }
+
+        private sealed class BlockedTransferRoute
+        {
+            internal BlockedTransferRoute(
+                IGridStorageOwner first,
+                IGridStorageOwner second,
+                string message)
+            {
+                First = first;
+                Second = second;
+                Message = string.IsNullOrWhiteSpace(message)
+                    ? "Esa transferencia directa no está disponible."
+                    : message;
+            }
+
+            internal IGridStorageOwner First { get; }
+            internal IGridStorageOwner Second { get; }
+            internal string Message { get; }
+
+            internal bool Matches(IGridStorageOwner source, IGridStorageOwner target)
+            {
+                return ReferenceEquals(First, source) && ReferenceEquals(Second, target) ||
+                       ReferenceEquals(First, target) && ReferenceEquals(Second, source);
+            }
         }
     }
 

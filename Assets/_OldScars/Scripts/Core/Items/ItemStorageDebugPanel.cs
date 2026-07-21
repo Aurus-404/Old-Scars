@@ -14,8 +14,7 @@ namespace OldScars.Core.Items
             Empty,
             Equipment,
             Inventory,
-            Containers,
-            ContainerStorage
+            Containers
         }
 
         private const float MaxPanelWidth = 1120f;
@@ -51,8 +50,6 @@ namespace OldScars.Core.Items
         private ActorEquipmentComponent actorEquipment;
         private LootableActorInventoryComponent lootableActorSource;
         private LootableActorView lootableActorView;
-        private ItemOwnedStorageRuntime lootableOwnedStorage;
-        private string lootableOwnedStorageInstanceId;
         private Vector2 lootableContainersScroll;
         private Vector2 centerDetailsScrollPosition;
         private Vector2 playerGridScroll;
@@ -70,6 +67,11 @@ namespace OldScars.Core.Items
         private int observedGridSelectionVersion;
 
         public bool IsVisible => isVisible;
+
+        internal bool IsBoundToLootableActor(LootableActorInventoryComponent source)
+        {
+            return isVisible && source != null && ReferenceEquals(lootableActorSource, source);
+        }
 
         public static ItemStorageDebugPanel GetOrCreate()
         {
@@ -136,13 +138,10 @@ namespace OldScars.Core.Items
             playerGridScroll = Vector2.zero;
             externalGridScroll = Vector2.zero;
             lootableContainersScroll = Vector2.zero;
-            lootableOwnedStorage = null;
-            lootableOwnedStorageInstanceId = null;
             lootableEquipmentSelection.ResetTransient();
             lootableActorView = GetInitialLootableActorView();
             playerGridView.SetVisualCellSize(gridVisualCellSize);
             externalGridView.SetVisualCellSize(gridVisualCellSize);
-            inspectionView.Reset(gridVisualCellSize);
             playerGridView.Reset();
             externalGridView.Reset();
             dragController.Reset();
@@ -162,8 +161,6 @@ namespace OldScars.Core.Items
             storageSource = null;
             lootableActorSource = null;
             lootableActorView = LootableActorView.Empty;
-            lootableOwnedStorage = null;
-            lootableOwnedStorageInstanceId = null;
             lootableContainersScroll = Vector2.zero;
             lootableEquipmentSelection.ResetTransient();
             targetInventory = null;
@@ -179,6 +176,14 @@ namespace OldScars.Core.Items
             externalGridView.Reset();
             dragController.Reset();
             toast.Clear();
+        }
+
+        internal void ResetFloatingStorageWindow(bool resetPosition)
+        {
+            if (resetPosition)
+                inspectionView.Reset(gridVisualCellSize);
+            else
+                inspectionView.ResetContent();
         }
 
         internal bool CancelActiveDrag()
@@ -216,8 +221,8 @@ namespace OldScars.Core.Items
                 ConsumeDragStatus();
                 toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUI.enabled = previousEnabled;
-                sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUILayout.EndArea();
+                sessionController?.DrawContextOverlay(new Rect(0f, 0f, Screen.width, Screen.height));
                 sessionController?.ConsumeCurrentOnGUIEvent();
                 return;
             }
@@ -239,41 +244,48 @@ namespace OldScars.Core.Items
                 DrawStorageColumn(storageSource, externalGridView, false, externalColumnWidth, bodyHeight);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-            DrawOwnedStorageInspection(panelRect);
+            GUILayout.EndArea();
+            DrawOwnedStorageInspection();
+            ConfigureFloatingStorageRoutes(personalOwner);
             if (!(sessionController?.BlocksInventoryContentInput ?? false))
                 dragController.ProcessOnGUI();
             SyncGridSelectionToSession();
             ConsumeDragStatus();
-            toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
+            toast.Draw(panelRect);
             GUI.enabled = previousEnabled;
-            sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
-            GUILayout.EndArea();
+            sessionController?.DrawContextOverlay(new Rect(0f, 0f, Screen.width, Screen.height));
             sessionController?.ConsumeCurrentOnGUIEvent();
         }
 
-        private void DrawOwnedStorageInspection(Rect panelRect)
+        private void DrawOwnedStorageInspection()
         {
-            sessionController?.ValidateOwnedStorageInspection();
-            ItemOwnedStorageRuntime inspected = sessionController?.InspectedOwnedStorage;
-            if (inspected == null)
+            sessionController?.ValidateFloatingStorageWindow();
+            if (sessionController == null ||
+                !sessionController.TryResolveFloatingStorageWindow(
+                    out FloatingStorageWindowResolution resolution))
+            {
                 return;
+            }
 
-            var rect = new Rect(panelRect.width - 360f, 42f, 344f, Mathf.Min(570f, panelRect.height - 58f));
             inspectionView.Draw(
-                rect,
-                inspected,
+                new Rect(0f, 0f, Screen.width, Screen.height),
+                resolution,
                 dragController,
                 out bool closeRequested,
                 out string rightClickedInstanceId,
                 out Vector2 rightClickPosition);
             if (closeRequested)
             {
-                sessionController.CloseOwnedStorageInspection();
+                sessionController.CloseFloatingStorageWindow();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(rightClickedInstanceId) || sessionController.QuantityDialogOpen ||
-                !inspected.TryGetEntryByInstanceId(rightClickedInstanceId, out _, out ItemStorageEntry entry) ||
+                !sessionController.TryResolveFloatingStorageWindow(out resolution) ||
+                !resolution.Storage.TryGetEntryByInstanceId(
+                    rightClickedInstanceId,
+                    out _,
+                    out ItemStorageEntry entry) ||
                 entry?.Item == null)
             {
                 return;
@@ -287,17 +299,17 @@ namespace OldScars.Core.Items
             }
 
             inspectionView.GridView.SelectInstance(rightClickedInstanceId);
-            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolvePersonalCompartment(
-                inspected,
+            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolveFloatingStorage(
+                resolution.SourceKind,
+                resolution.Storage,
                 targetInventory,
                 actorEquipment,
                 personalStorageNavigator,
-                rightClickedInstanceId,
-                true);
+                rightClickedInstanceId);
             sessionController.OpenContextMenu(
                 new InventoryContextMenuRequest(
                     InventoryContextSourceKind.InspectedOwnedStorage,
-                    inspected,
+                    resolution.Storage,
                     actorEquipment,
                     rightClickedInstanceId,
                     null,
@@ -306,6 +318,40 @@ namespace OldScars.Core.Items
                     ExecuteContextAction),
                 rightClickPosition);
             Event.current?.Use();
+        }
+
+        private void ConfigureFloatingStorageRoutes(IGridStorageOwner personalOwner)
+        {
+            if (sessionController == null ||
+                !sessionController.TryResolveFloatingStorageWindow(
+                    out FloatingStorageWindowResolution resolution) ||
+                targetInventory == null || !ReferenceEquals(personalOwner, targetInventory))
+            {
+                return;
+            }
+
+            IGridStorageOwner floatingOwner = resolution.Storage;
+            IGridStorageOwner externalOwner = GetActiveExternalOwner();
+            dragController.SetQuickTransferTarget(floatingOwner, targetInventory);
+
+            bool externalGridVisible = lootableActorSource == null ||
+                                       lootableActorView == LootableActorView.Inventory;
+            if (externalGridVisible && externalOwner != null && !ReferenceEquals(externalOwner, floatingOwner))
+            {
+                dragController.SetQuickTransferTarget(targetInventory, externalOwner);
+                dragController.SetQuickTransferTarget(externalOwner, targetInventory);
+                string blockedMessage = lootableActorSource != null
+                    ? "No podés mover items directamente entre el inventario del cadáver y la mochila. Usá el inventario personal."
+                    : "No podés mover items directamente entre el storage externo y la mochila. Usá el inventario personal.";
+                dragController.BlockTransferRoute(
+                    externalOwner,
+                    floatingOwner,
+                    blockedMessage);
+            }
+            else
+            {
+                dragController.SetQuickTransferTarget(targetInventory, floatingOwner);
+            }
         }
 
         private void DrawHeader()
@@ -354,9 +400,6 @@ namespace OldScars.Core.Items
                 case LootableActorView.Containers:
                     DrawLootableContainersView(contentHeight);
                     break;
-                case LootableActorView.ContainerStorage:
-                    DrawLootableContainerStorage(columnWidth, contentHeight);
-                    break;
                 default:
                     GUILayout.FlexibleSpace();
                     GUILayout.Label("No quedan pertenencias reales en esta entidad.");
@@ -379,11 +422,8 @@ namespace OldScars.Core.Items
         private void DrawLootableActorTab(string label, LootableActorView view)
         {
             Color previous = GUI.backgroundColor;
-            if (lootableActorView == view ||
-                (view == LootableActorView.Containers && lootableActorView == LootableActorView.ContainerStorage))
-            {
+            if (lootableActorView == view)
                 GUI.backgroundColor = new Color(0.32f, 0.68f, 0.92f);
-            }
             if (GUILayout.Button(label, GUILayout.Height(26f)))
                 SelectLootableActorView(view);
             GUI.backgroundColor = previous;
@@ -394,8 +434,6 @@ namespace OldScars.Core.Items
             dragController.CancelDrag();
             sessionController?.CloseContextMenu();
             lootableActorView = view;
-            lootableOwnedStorage = null;
-            lootableOwnedStorageInstanceId = null;
             externalGridView.Reset();
             externalGridScroll = Vector2.zero;
             sessionController?.Selection.SelectExternal(null);
@@ -496,33 +534,10 @@ namespace OldScars.Core.Items
                     $"Contenido: {option.Storage.GridStorageEntries.Count} entries | " +
                     $"Grilla: {option.Storage.GridWidth}x{option.Storage.GridHeight}");
                 if (GUILayout.Button("Abrir", GUILayout.Height(24f)))
-                    OpenLootableOwnedStorage(option.Storage.ContainerInstanceId);
+                    OpenLootableOwnedStorageWindow(option.Storage.ContainerInstanceId);
                 GUILayout.EndVertical();
             }
             GUILayout.EndScrollView();
-        }
-
-        private void DrawLootableContainerStorage(float columnWidth, float contentHeight)
-        {
-            if (lootableOwnedStorage == null)
-            {
-                GUILayout.Label("El contenedor equipado ya no esta disponible.");
-                return;
-            }
-
-            if (GUILayout.Button("Volver a contenedores", GUILayout.Height(26f)))
-            {
-                SelectLootableActorView(LootableActorView.Containers);
-                return;
-            }
-
-            DrawStorageColumnBody(
-                lootableOwnedStorage,
-                externalGridView,
-                false,
-                columnWidth,
-                Mathf.Max(100f, contentHeight - 30f),
-                lootableOwnedStorage.GridStorageDisplayName);
         }
 
         private void ReconcileLootableActorView()
@@ -534,8 +549,6 @@ namespace OldScars.Core.Items
             if (!lootableActorSource.HasLootableContent)
             {
                 lootableActorView = LootableActorView.Empty;
-                lootableOwnedStorage = null;
-                lootableOwnedStorageInstanceId = null;
                 return;
             }
 
@@ -543,50 +556,19 @@ namespace OldScars.Core.Items
                 lootableActorView = GetInitialLootableActorView();
             if (lootableActorView == LootableActorView.Equipment && !lootableActorSource.HasEquipmentItems)
                 lootableActorView = LootableActorView.Inventory;
-
-            if (lootableActorView != LootableActorView.ContainerStorage)
-                return;
-
-            if (!lootableActorSource.TryGetEquippedOwnedStorage(
-                    lootableOwnedStorageInstanceId,
-                    out LootableActorOwnedStorage current) ||
-                !ReferenceEquals(current.Storage, lootableOwnedStorage))
-            {
-                lootableActorView = LootableActorView.Containers;
-                lootableOwnedStorage = null;
-                lootableOwnedStorageInstanceId = null;
-                externalGridView.Reset();
-                externalGridScroll = Vector2.zero;
-                sessionController?.CloseContextMenu();
-                sessionController?.Selection.SelectExternal(null);
-            }
         }
 
         private IGridStorageOwner GetActiveExternalOwner()
         {
-            return lootableActorView == LootableActorView.ContainerStorage && lootableOwnedStorage != null
-                ? lootableOwnedStorage
-                : storageSource;
+            return storageSource;
         }
 
-        private bool OpenLootableOwnedStorage(string containerInstanceId)
+        private bool OpenLootableOwnedStorageWindow(string containerInstanceId)
         {
-            if (lootableActorSource == null ||
-                !lootableActorSource.TryGetEquippedOwnedStorage(containerInstanceId, out LootableActorOwnedStorage option) ||
-                option.Storage == null)
-            {
-                return false;
-            }
-
-            dragController.CancelDrag();
-            sessionController?.CloseContextMenu();
-            lootableOwnedStorage = option.Storage;
-            lootableOwnedStorageInstanceId = option.Storage.ContainerInstanceId;
-            lootableActorView = LootableActorView.ContainerStorage;
-            externalGridView.Reset();
-            externalGridScroll = Vector2.zero;
-            sessionController?.Selection.SelectExternal(null);
-            return true;
+            return sessionController != null &&
+                   sessionController.OpenLootableEquipmentStorageWindow(
+                       lootableActorSource,
+                       containerInstanceId);
         }
 
         private void DrawStorageColumn(
@@ -618,9 +600,6 @@ namespace OldScars.Core.Items
             float bodyHeight,
             string heading)
         {
-            bool previousEnabled = GUI.enabled;
-            if (!isPlayer && (sessionController?.HasOwnedStorageInspection ?? false))
-                GUI.enabled = false;
             GUILayout.Label(heading);
             if (isPlayer)
                 DrawPersonalStorageSelector();
@@ -651,7 +630,6 @@ namespace OldScars.Core.Items
             }
 
             GUILayout.FlexibleSpace();
-            GUI.enabled = previousEnabled;
         }
 
         private IGridStorageOwner GetActivePersonalOwner()
@@ -676,11 +654,15 @@ namespace OldScars.Core.Items
             GUILayout.BeginHorizontal();
             bool previousEnabled = GUI.enabled;
             GUI.enabled = previousEnabled && options.Count > 1;
+            if (sessionController?.HasFloatingStorageWindow ?? false)
+                GUI.enabled = false;
             if (GUILayout.Button("<", GUILayout.Width(24f), GUILayout.Height(22f)))
                 SelectPersonalStorageOption(options[(selectedIndex - 1 + options.Count) % options.Count]);
             GUI.enabled = previousEnabled;
             GUILayout.Label(options[selectedIndex].Label, GUILayout.ExpandWidth(true));
             GUI.enabled = previousEnabled && options.Count > 1;
+            if (sessionController?.HasFloatingStorageWindow ?? false)
+                GUI.enabled = false;
             if (GUILayout.Button(">", GUILayout.Width(24f), GUILayout.Height(22f)))
                 SelectPersonalStorageOption(options[(selectedIndex + 1) % options.Count]);
             GUI.enabled = previousEnabled;
@@ -699,6 +681,9 @@ namespace OldScars.Core.Items
 
         private void SelectPersonalStorageOption(PersonalStorageOption option)
         {
+            if (sessionController?.HasFloatingStorageWindow ?? false)
+                return;
+
             dragController.CancelDrag();
             sessionController?.CloseContextMenu();
             if (option.IsPersonalInventory)
@@ -756,18 +741,20 @@ namespace OldScars.Core.Items
             GUI.BeginGroup(clipRect);
             Rect localGridRect = new Rect(-scroll.x, -scroll.y, contentWidth, contentHeight);
             view.Draw(owner, localGridRect, dragController);
-            bool blocksExternal = !isPlayer && (sessionController?.HasOwnedStorageInspection ?? false);
-            if (!blocksExternal)
-                HandleGridRightClick(owner, view, localGridRect, isPlayer);
+            HandleGridRightClick(owner, view, localGridRect, isPlayer);
             GUI.EndGroup();
 
+            Vector2 screenClipPosition = GUIUtility.GUIToScreenPoint(clipRect.position);
             Rect globalGridRect = new Rect(
-                clipRect.x - scroll.x,
-                clipRect.y - scroll.y,
+                screenClipPosition.x - scroll.x,
+                screenClipPosition.y - scroll.y,
                 contentWidth,
                 contentHeight);
-            if (!blocksExternal)
-                dragController.RegisterEndpoint(owner, view, globalGridRect, clipRect);
+            dragController.RegisterEndpoint(
+                owner,
+                view,
+                globalGridRect,
+                new Rect(screenClipPosition, clipRect.size));
 
             if (isPlayer)
                 playerGridScroll = scroll;
@@ -910,7 +897,6 @@ namespace OldScars.Core.Items
 
         private void RegisterEquipmentDropTarget(string slotId, Rect rowRect)
         {
-            rowRect.position -= GetPanelRect().position;
             dragController.RegisterEquipmentDropTarget(
                 slotId,
                 rowRect,
@@ -922,6 +908,16 @@ namespace OldScars.Core.Items
             if (actorEquipment == null || request.SourceOwner == null)
             {
                 return new InventoryEquipmentDropResult(false, "El origen o equipment ya no está disponible.");
+            }
+
+            if (sessionController != null &&
+                sessionController.TryResolveFloatingStorageWindow(
+                    out FloatingStorageWindowResolution floating) &&
+                ReferenceEquals(request.SourceOwner, floating.Storage))
+            {
+                return new InventoryEquipmentDropResult(
+                    false,
+                    "Mové primero el item al inventario personal.");
             }
 
             bool actorOwned = ItemOwnedStorageRegistry.Instance.ShareRootOwner(request.SourceOwner, targetInventory);
@@ -1051,6 +1047,11 @@ namespace OldScars.Core.Items
             switch (currentAction.Kind)
             {
                 case InventoryContextActionKind.ShowDetails:
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage)
+                    {
+                        inspectionView.GridView.SelectInstance(entry.Item.InstanceId);
+                        return;
+                    }
                     if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
                     {
                         if (lootableActorSource != null &&
@@ -1075,11 +1076,11 @@ namespace OldScars.Core.Items
                         lootableActorSource != null &&
                         ReferenceEquals(invocation.Request.Equipment, lootableActorSource.Equipment))
                     {
-                        if (!OpenLootableOwnedStorage(entry.Item.InstanceId))
+                        if (!OpenLootableOwnedStorageWindow(entry.Item.InstanceId))
                             toast.Show("El contenedor equipado ya no pertenece al cadáver.", InventoryToastSeverity.Error);
                         return;
                     }
-                    if (sessionController == null || !sessionController.OpenOwnedStorageInspection(entry.Item.InstanceId))
+                    if (sessionController == null || !sessionController.OpenPersonalOwnedStorageWindow(entry.Item.InstanceId))
                         toast.Show("La mochila ya no pertenece al actor.", InventoryToastSeverity.Error);
                     return;
                 case InventoryContextActionKind.Use:
@@ -1113,10 +1114,26 @@ namespace OldScars.Core.Items
                         DropPersonalItem(owner, entry.Item.InstanceId, entry.Quantity, "drop_stack", "Drop Stack");
                     return;
                 case InventoryContextActionKind.TakeOne:
-                    ApplyContextTransfer(TransferQuantity(owner, GetActivePersonalOwner(), entry.Item.InstanceId, 1), true);
+                    ApplyContextTransfer(
+                        TransferQuantity(
+                            owner,
+                            invocation.Request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage
+                                ? targetInventory
+                                : GetActivePersonalOwner(),
+                            entry.Item.InstanceId,
+                            1),
+                        true);
                     return;
                 case InventoryContextActionKind.TakeAmount:
-                    ApplyContextTransfer(TransferQuantity(owner, GetActivePersonalOwner(), entry.Item.InstanceId, requestedQuantity), true);
+                    ApplyContextTransfer(
+                        TransferQuantity(
+                            owner,
+                            invocation.Request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage
+                                ? targetInventory
+                                : GetActivePersonalOwner(),
+                            entry.Item.InstanceId,
+                            requestedQuantity),
+                        true);
                     return;
                 case InventoryContextActionKind.TakeStack:
                     if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment &&
@@ -1126,7 +1143,14 @@ namespace OldScars.Core.Items
                         TransferLootableEquipmentItem(invocation.Request.Equipment, entry.Item.InstanceId);
                         return;
                     }
-                    ApplyContextTransfer(TransferStack(owner, GetActivePersonalOwner(), entry.Item.InstanceId), true);
+                    ApplyContextTransfer(
+                        TransferStack(
+                            owner,
+                            invocation.Request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage
+                                ? targetInventory
+                                : GetActivePersonalOwner(),
+                            entry.Item.InstanceId),
+                        true);
                     return;
                 case InventoryContextActionKind.DepositOne:
                     ApplyContextTransfer(TransferQuantity(owner, GetActiveExternalOwner(), entry.Item.InstanceId, 1), false);
@@ -1237,19 +1261,24 @@ namespace OldScars.Core.Items
             }
             else if (request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage)
             {
-                owner = sessionController?.InspectedOwnedStorage;
-                if (!ReferenceEquals(request.Owner, owner) || owner == null ||
+                if (!sessionController.TryResolveFloatingStorageWindow(
+                        out FloatingStorageWindowResolution resolution))
+                {
+                    return false;
+                }
+                owner = resolution.Storage;
+                if (!ReferenceEquals(request.Owner, owner) ||
                     !owner.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) || entry?.Item == null)
                 {
                     return false;
                 }
-                actions = InventoryContextActionResolver.ResolvePersonalCompartment(
+                actions = InventoryContextActionResolver.ResolveFloatingStorage(
+                    resolution.SourceKind,
                     owner,
                     targetInventory,
                     actorEquipment,
                     personalStorageNavigator,
-                    request.InstanceId,
-                    true);
+                    request.InstanceId);
             }
             else if (request.SourceKind == InventoryContextSourceKind.Equipment)
             {
@@ -1765,6 +1794,9 @@ namespace OldScars.Core.Items
             sessionController?.Selection.SelectPersonalFromContext(result.InstanceId);
             sessionController?.CloseContextMenu();
             lootableActorSource?.RefreshLootableState();
+            sessionController?.ValidateFloatingStorageWindow();
+            playerGridView.ReconcileSelection(targetInventory);
+            externalGridView.ReconcileSelection(storageSource);
             ReconcileLootableActorView();
             ReconcileSelections();
             GUIUtility.ExitGUI();
@@ -2013,7 +2045,7 @@ namespace OldScars.Core.Items
 
         private Vector2 ToPanelLocalPosition(Vector2 currentGuiPosition)
         {
-            return GUIUtility.GUIToScreenPoint(currentGuiPosition) - GetPanelRect().position;
+            return GUIUtility.GUIToScreenPoint(currentGuiPosition);
         }
 
         private static Rect CalculatePanelRect(float leftColumnWidth, float rightColumnWidth)

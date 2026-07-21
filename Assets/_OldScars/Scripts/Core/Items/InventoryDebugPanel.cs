@@ -104,6 +104,14 @@ namespace OldScars.Core.Items
             toast.Clear();
         }
 
+        internal void ResetFloatingStorageWindow(bool resetPosition)
+        {
+            if (resetPosition)
+                inspectionView.Reset(gridVisualCellSize);
+            else
+                inspectionView.ResetContent();
+        }
+
         internal bool CancelActiveDrag()
         {
             return dragController.CancelDrag();
@@ -141,19 +149,23 @@ namespace OldScars.Core.Items
                 ConsumeDragStatus();
                 toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUI.enabled = previousEnabled;
-                sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
                 GUILayout.EndArea();
+                sessionController?.DrawContextOverlay(new Rect(0f, 0f, Screen.width, Screen.height));
                 sessionController?.ConsumeCurrentOnGUIEvent();
                 return;
             }
 
             DrawThreeColumnBody(Mathf.Max(1f, panelRect.height - BodyVerticalReserve));
-
-            ConsumeDragStatus();
-            toast.Draw(new Rect(0f, 0f, panelRect.width, panelRect.height));
-            GUI.enabled = previousEnabled;
-            sessionController?.DrawContextOverlay(new Rect(0f, 0f, panelRect.width, panelRect.height));
             GUILayout.EndArea();
+            DrawOwnedStorageInspection();
+            ConfigureFloatingStorageRoutes();
+            if (!(sessionController?.BlocksInventoryContentInput ?? false))
+                dragController.ProcessOnGUI();
+            SyncGridSelectionToSession();
+            ConsumeDragStatus();
+            toast.Draw(panelRect);
+            GUI.enabled = previousEnabled;
+            sessionController?.DrawContextOverlay(new Rect(0f, 0f, Screen.width, Screen.height));
             sessionController?.ConsumeCurrentOnGUIEvent();
         }
 
@@ -172,36 +184,37 @@ namespace OldScars.Core.Items
             DrawDetailsColumn(bodyHeight);
 
             GUILayout.EndHorizontal();
-            DrawOwnedStorageInspection();
-            if (!(sessionController?.BlocksInventoryContentInput ?? false))
-                dragController.ProcessOnGUI();
-            SyncGridSelectionToSession();
         }
 
         private void DrawOwnedStorageInspection()
         {
-            sessionController?.ValidateOwnedStorageInspection();
-            ItemOwnedStorageRuntime inspected = sessionController?.InspectedOwnedStorage;
-            if (inspected == null)
+            sessionController?.ValidateFloatingStorageWindow();
+            if (sessionController == null ||
+                !sessionController.TryResolveFloatingStorageWindow(
+                    out FloatingStorageWindowResolution resolution))
+            {
                 return;
+            }
 
-            Rect panelRect = GetPanelRect();
-            var rect = new Rect(panelRect.width - 360f, 42f, 344f, Mathf.Min(570f, panelRect.height - 58f));
             inspectionView.Draw(
-                rect,
-                inspected,
+                new Rect(0f, 0f, Screen.width, Screen.height),
+                resolution,
                 dragController,
                 out bool closeRequested,
                 out string rightClickedInstanceId,
                 out Vector2 rightClickPosition);
             if (closeRequested)
             {
-                sessionController.CloseOwnedStorageInspection();
+                sessionController.CloseFloatingStorageWindow();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(rightClickedInstanceId) || sessionController.QuantityDialogOpen ||
-                !inspected.TryGetEntryByInstanceId(rightClickedInstanceId, out _, out ItemStorageEntry entry) ||
+                !sessionController.TryResolveFloatingStorageWindow(out resolution) ||
+                !resolution.Storage.TryGetEntryByInstanceId(
+                    rightClickedInstanceId,
+                    out _,
+                    out ItemStorageEntry entry) ||
                 entry?.Item == null)
             {
                 return;
@@ -215,17 +228,17 @@ namespace OldScars.Core.Items
             }
 
             inspectionView.GridView.SelectInstance(rightClickedInstanceId);
-            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolvePersonalCompartment(
-                inspected,
+            IReadOnlyList<InventoryContextAction> actions = InventoryContextActionResolver.ResolveFloatingStorage(
+                resolution.SourceKind,
+                resolution.Storage,
                 inventory,
                 actorEquipment,
                 personalStorageNavigator,
-                rightClickedInstanceId,
-                false);
+                rightClickedInstanceId);
             sessionController.OpenContextMenu(
                 new InventoryContextMenuRequest(
                     InventoryContextSourceKind.InspectedOwnedStorage,
-                    inspected,
+                    resolution.Storage,
                     actorEquipment,
                     rightClickedInstanceId,
                     null,
@@ -234,6 +247,20 @@ namespace OldScars.Core.Items
                     ExecuteContextAction),
                 rightClickPosition);
             Event.current?.Use();
+        }
+
+        private void ConfigureFloatingStorageRoutes()
+        {
+            if (sessionController == null ||
+                !sessionController.TryResolveFloatingStorageWindow(
+                    out FloatingStorageWindowResolution resolution) ||
+                inventory == null)
+            {
+                return;
+            }
+
+            dragController.SetQuickTransferTarget(resolution.Storage, inventory);
+            dragController.SetQuickTransferTarget(inventory, resolution.Storage);
         }
 
         private void DrawPlayerColumn(float bodyHeight)
@@ -443,7 +470,6 @@ namespace OldScars.Core.Items
 
         private void RegisterEquipmentDropTarget(string slotId, Rect rowRect)
         {
-            rowRect.position -= GetPanelRect().position;
             dragController.RegisterEquipmentDropTarget(
                 slotId,
                 rowRect,
@@ -456,6 +482,16 @@ namespace OldScars.Core.Items
             if (actorEquipment == null || request.SourceOwner == null)
             {
                 return new InventoryEquipmentDropResult(false, "El origen o equipment ya no está disponible.");
+            }
+
+            if (sessionController != null &&
+                sessionController.TryResolveFloatingStorageWindow(
+                    out FloatingStorageWindowResolution floating) &&
+                ReferenceEquals(request.SourceOwner, floating.Storage))
+            {
+                return new InventoryEquipmentDropResult(
+                    false,
+                    "Mové primero el item al inventario personal.");
             }
 
             bool actorOwned = ItemOwnedStorageRegistry.Instance.ShareRootOwner(request.SourceOwner, inventory);
@@ -586,11 +622,15 @@ namespace OldScars.Core.Items
             GUILayout.BeginHorizontal();
             bool previousEnabled = GUI.enabled;
             GUI.enabled = previousEnabled && options.Count > 1;
+            if (sessionController?.HasFloatingStorageWindow ?? false)
+                GUI.enabled = false;
             if (GUILayout.Button("<", GUILayout.Width(24f), GUILayout.Height(22f)))
                 SelectPersonalStorageOption(options[(selectedIndex - 1 + options.Count) % options.Count]);
             GUI.enabled = previousEnabled;
             GUILayout.Label(options[selectedIndex].Label, GUILayout.ExpandWidth(true));
             GUI.enabled = previousEnabled && options.Count > 1;
+            if (sessionController?.HasFloatingStorageWindow ?? false)
+                GUI.enabled = false;
             if (GUILayout.Button(">", GUILayout.Width(24f), GUILayout.Height(22f)))
                 SelectPersonalStorageOption(options[(selectedIndex + 1) % options.Count]);
             GUI.enabled = previousEnabled;
@@ -607,6 +647,9 @@ namespace OldScars.Core.Items
 
         private void SelectPersonalStorageOption(PersonalStorageOption option)
         {
+            if (sessionController?.HasFloatingStorageWindow ?? false)
+                return;
+
             dragController.CancelDrag();
             sessionController?.CloseContextMenu();
             if (option.IsPersonalInventory)
@@ -663,12 +706,17 @@ namespace OldScars.Core.Items
             HandleGridRightClick(owner, gridView, localGridRect);
             GUI.EndGroup();
 
+            Vector2 screenClipPosition = GUIUtility.GUIToScreenPoint(clipRect.position);
             Rect globalGridRect = new Rect(
-                clipRect.x - gridScrollPosition.x,
-                clipRect.y - gridScrollPosition.y,
+                screenClipPosition.x - gridScrollPosition.x,
+                screenClipPosition.y - gridScrollPosition.y,
                 contentWidth,
                 contentHeight);
-            dragController.RegisterEndpoint(owner, gridView, globalGridRect, clipRect);
+            dragController.RegisterEndpoint(
+                owner,
+                gridView,
+                globalGridRect,
+                new Rect(screenClipPosition, clipRect.size));
         }
 
         private void ExecuteContextAction(InventoryContextActionInvocation invocation)
@@ -694,6 +742,11 @@ namespace OldScars.Core.Items
             switch (currentAction.Kind)
             {
                 case InventoryContextActionKind.ShowDetails:
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage)
+                    {
+                        inspectionView.GridView.SelectInstance(entry.Item.InstanceId);
+                        return;
+                    }
                     if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
                     {
                         sessionController?.Selection.SelectEquipmentFromContext(
@@ -703,7 +756,7 @@ namespace OldScars.Core.Items
                     }
                     return;
                 case InventoryContextActionKind.ReviewOwnedStorage:
-                    if (sessionController == null || !sessionController.OpenOwnedStorageInspection(entry.Item.InstanceId))
+                    if (sessionController == null || !sessionController.OpenPersonalOwnedStorageWindow(entry.Item.InstanceId))
                         toast.Show("La mochila ya no pertenece al actor.", InventoryToastSeverity.Error);
                     return;
                 case InventoryContextActionKind.Use:
@@ -815,19 +868,25 @@ namespace OldScars.Core.Items
             }
             else if (request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage)
             {
-                owner = sessionController?.InspectedOwnedStorage;
-                if (!ReferenceEquals(request.Owner, owner) || owner == null ||
+                if (sessionController == null ||
+                    !sessionController.TryResolveFloatingStorageWindow(
+                        out FloatingStorageWindowResolution resolution))
+                {
+                    return false;
+                }
+                owner = resolution.Storage;
+                if (!ReferenceEquals(request.Owner, owner) ||
                     !owner.TryGetEntryByInstanceId(request.InstanceId, out index, out entry) || entry?.Item == null)
                 {
                     return false;
                 }
-                actions = InventoryContextActionResolver.ResolvePersonalCompartment(
+                actions = InventoryContextActionResolver.ResolveFloatingStorage(
+                    resolution.SourceKind,
                     owner,
                     inventory,
                     actorEquipment,
                     personalStorageNavigator,
-                    request.InstanceId,
-                    false);
+                    request.InstanceId);
             }
             else if (request.SourceKind == InventoryContextSourceKind.Equipment)
             {
@@ -1423,7 +1482,7 @@ namespace OldScars.Core.Items
 
         private static Vector2 ToPanelLocalPosition(Vector2 currentGuiPosition)
         {
-            return GUIUtility.GUIToScreenPoint(currentGuiPosition) - GetPanelRect().position;
+            return GUIUtility.GUIToScreenPoint(currentGuiPosition);
         }
 
         private void ResolveActorNeeds()

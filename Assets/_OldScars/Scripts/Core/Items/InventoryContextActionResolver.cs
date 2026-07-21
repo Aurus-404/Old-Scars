@@ -6,6 +6,29 @@ namespace OldScars.Core.Items
 {
     public static class InventoryContextActionResolver
     {
+        internal static IReadOnlyList<InventoryContextAction> ResolveFloatingStorage(
+            FloatingStorageWindowSourceKind sourceKind,
+            IGridStorageOwner sourceOwner,
+            InventoryComponent personalInventory,
+            ActorEquipmentComponent equipment,
+            PersonalStorageNavigator navigator,
+            string instanceId)
+        {
+            IReadOnlyList<InventoryContextAction> resolved =
+                sourceKind == FloatingStorageWindowSourceKind.LootableActorEquipment
+                    ? ResolveExternal(sourceOwner, instanceId)
+                    : ResolvePersonalCompartment(
+                        sourceOwner,
+                        personalInventory,
+                        equipment,
+                        navigator,
+                        instanceId,
+                        false);
+            var actions = new List<InventoryContextAction>(resolved);
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Examinar"));
+            return actions;
+        }
+
         public static IReadOnlyList<InventoryContextAction> ResolvePersonalCompartment(
             IGridStorageOwner sourceOwner,
             InventoryComponent inventory,
