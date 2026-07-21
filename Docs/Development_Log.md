@@ -1408,7 +1408,7 @@ Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 ### M34.2.1c: World Item Quick Actions
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - `WorldInteractionDebugTester` y `ContextualActionDebugPanel` reutilizan el menu mundial existente. Las quick actions se recalculan desde `InteractionSystem`, la misma instancia mundial, Equipment y los item-owned storages accesibles.
 - El progreso usa la `ActionDefinition` `pick_up_item` y su costo de `0.5 s`; al terminar revalida referencia, `InstanceId`, `DefinitionId`, cantidad, version, alcance y destino antes de ejecutar.
@@ -1417,11 +1417,11 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - Equip y replacement emiten exactamente un `CommitVisualState` post-exito. Guardar en storage emite cero eventos de Equipment y usa cantidad exacta completa: no-stackables conservan `InstanceId`, mientras stacks mantienen merge canonico sin clamp ni parcial.
 - Los slot sets se resuelven como unidad; Lee-Enfield produce una sola accion 2H y un solo visual por `InstanceId`. Una mochila soltada conserva instancia, contenido y ownership, y los guards vigentes rechazan nesting.
 - `Recoger y consumir` se omite deliberadamente porque `InventoryItemUseService` no ofrece una transaccion mundo -> consumo con snapshot/rollback conjunto de source y estado del actor.
-- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`. Validacion manual pendiente.
+- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; permanecen cuatro warnings preexistentes de `BuildingVisibilityManager`. Validado manualmente en Unity por confirmacion del usuario.
 
 ### M35.0: Universal Visual Rig & Attachment Framework
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - Se agregaron pipelines JSON para capabilities, rig profiles, visual assets, item visual profiles y attachment poses, con registro, stats y validacion de referencias, ciclos, duplicados y politicas cerradas.
 - `EquipmentVisualStateSnapshot` copia solamente revision confirmada, versiones, layout e items equipados con `InstanceId`, `DefinitionId` y slots read-only.
@@ -1432,11 +1432,11 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - `WorldItemVisualResolver` intenta profile/provider, conserva el sistema legacy y deja el fallback debug como ultima ruta.
 - La herramienta Editor genera visuales derivados y el prefab cargo, configura sockets con Undo sobre instancias reemplazables y copia poses locales como JSON; no edita el FBX ni guarda escenas automaticamente.
 - Los meshes `Backpack` y `Backpack.001` ya estaban en Survival PSX, por lo que no se extrajo ni duplico el ZIP. Se preparan como variante equipada y de mundo respectivamente.
-- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; quedan pendientes la generacion de prefabs, ajuste de poses y validacion visual manual en Unity.
+- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; validado manualmente en Unity por confirmacion del usuario.
 
-### Lootable Actor Real Equipment Bootstrap
+### M35.1: Lootable Actor Real Equipment Bootstrap
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - Se agrego `initial_equipment` opcional a Actor Profiles. Cada entrada referencia un `item_id`; `slot_ids` sólo selecciona una alternativa completa cuando el servicio no puede elegir una unica opcion.
 - `ActorProfileComponent` aplica layout antes del contenido, crea instancias reales en el inventario y delega el equip a una operacion atomica acotada de `EquipmentTransactionService`.
@@ -1445,9 +1445,9 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - `Debug NPC Capsule` incorpora `ActorEquipmentComponent` y `ActorItemOwnershipComponent`; el synchronizer visual escucha Equipment real y ya no usa el snapshot source debug del NPC.
 - No se implementaron UI de loot, transferencias, muerte, persistencia, IA, combate ni contenido anidado inicial.
 
-### Lootable Entity Inventory UI V1
+### M35.2: Lootable Entity Inventory UI V1
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `in progress`; M35.2.1 y M35.2.2 estan validadas y M35.2.3 esta en implementacion.
 
 - `LootableActorInventoryComponent` representa inventario, Equipment y storages directos de items equipados como pertenencias reales del actor.
 - `ItemStorageDebugPanel` conserva el lado del jugador y agrega en el mismo panel derecho las vistas `Equipamiento`, `Inventario` y `Contenedores`.
@@ -1456,6 +1456,12 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - La subvista de contenedor se reconcilia por `ContainerInstanceId` y vuelve a la lista si el item deja de estar equipado.
 - `lootable_actor` usa las tres fuentes reales y se remueve solo cuando todas quedan vacias.
 - No se agregaron JSON, escena, servicios globales, drag nuevo entre Equipment y jugador, ventanas multiples, nesting recursivo, persistencia, IA ni combate.
+
+### Serie M35.2: fases de rediseño de ventana
+
+- M35.2.1 Inventory Window Redesign Phase A (Equipment ocupado y acciones contextuales unificadas) esta `validated`.
+- M35.2.2 Inventory Window Redesign Phase B (ventana flotante de storage item-owned) esta `validated`.
+- M35.2.3 Unified Corpse Belongings Surface esta `planned / implementing`; M35.2.4 Persistent Body Review queda `planned` y M35.2.5 Multiple Floating Storage Windows queda `planned / deferred`.
 
 ## Decisiones De Scope
 

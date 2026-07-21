@@ -43,7 +43,7 @@ Estado de M34.2, M34.2.1 y M34.2.1a: `validated` por confirmacion manual del usu
 - Sacar una instancia equipada hacia item-owned, external o world storage usa preview y commit cerrado, conserva ownership por `InstanceId`, ejecuta guards/peso/hooks y libera todos sus slots atomicamente.
 - Un commit exitoso publica exactamente un snapshot visual final. Preview, no-op, stale state, fallo y rollback publican cero eventos.
 
-Estado de M34.2.1b: `implemented`; pendiente de validacion manual en Unity.
+Estado de M34.2.1b: `validated` por confirmacion manual del usuario.
 
 ## Universal Visual Rig M35.0
 
@@ -56,4 +56,11 @@ Estado de M34.2.1b: `implemented`; pendiente de validacion manual en Unity.
 - Visuales equipados son hijos reemplazables sin gameplay, storage, ownership, colliders ni rigidbodies. `WorldItemVisualResolver` intenta perfil/provider, luego el sistema world legacy y finalmente el fallback debug existente.
 - La indisponibilidad de partes/sockets es una API visual cerrada y publica invalidacion; no decide que debe hacer gameplay con el equipment afectado.
 
-Estado de M35.0: `implemented`; pendiente de validacion manual en Unity.
+Estado de M35.0: `validated` por confirmacion manual del usuario.
+
+## Serie M35: Lootable Entity Inventory UI V1
+
+- M35.1 Lootable Actor Real Equipment Bootstrap esta `validated`; mantiene Equipment real y bootstrap data-driven del actor saqueable.
+- M35.2 Lootable Entity Inventory UI V1 esta `in progress`. M35.2.1 (Equipment ocupado y contextuales unificados) y M35.2.2 (ventana flotante de storage item-owned) estan `validated`.
+- M35.2.3 Unified Corpse Belongings Surface esta `planned / implementing`: unificara la presentacion sin fusionar los backends de Equipment e inventario raiz.
+- M35.2.4 Persistent Body Review esta `planned`; M35.2.5 Multiple Floating Storage Windows esta `planned / deferred`.

@@ -117,14 +117,20 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 34.2.1: Inventory Interaction Unification & Backpack Access | Unificar interacciones entre personal, mochila, equipment y external storage. | validated | Validado manualmente en Unity por confirmacion del usuario. |
 | Milestone 34.2.1a: Fix Equipment From Item-Owned Storage | Corregir equip/replacement atomico desde item-owned storage. | validated | Validado manualmente en Unity por confirmacion del usuario. |
 | Milestone 34.2.1b: Unified Context Actions for Equipped Items | Reutilizar el menu universal para acciones atomicas desde slots equipados. | validated | Validado manualmente en Unity por confirmacion del usuario. |
-| Milestone 34.2.1c: World Item Quick Actions | Extender el menu contextual de items mundiales con pickup+equip/replacement y pickup+storage derivados del estado real. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
-| Milestone 35.0: Universal Visual Rig & Attachment Framework | Representar equipment confirmado mediante rigs, sockets, capabilities, providers y poses data-driven. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
-| Lootable Entity Inventory UI V1 | Mostrar y transferir pertenencias reales de una entidad saqueable desde Equipment, inventario y contenedores equipados. | implemented | Compilacion estatica completa; pendiente de validacion manual en Unity. |
+| Milestone 34.2.1c: World Item Quick Actions | Extender el menu contextual de items mundiales con pickup+equip/replacement y pickup+storage derivados del estado real. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 35.0: Universal Visual Rig & Attachment Framework | Representar equipment confirmado mediante rigs, sockets, capabilities, providers y poses data-driven. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 35.1: Lootable Actor Real Equipment Bootstrap | Inicializar Equipment real y visuales del NPC saqueable mediante perfiles data-driven. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 35.2: Lootable Entity Inventory UI V1 | Mostrar y transferir pertenencias reales de una entidad saqueable desde Equipment, inventario y contenedores equipados. | in progress | Milestone padre de las fases de rediseño de ventana; validacion final pendiente. |
+| Milestone 35.2.1: Inventory Window Redesign Phase A | Mostrar Equipment ocupado y unificar acciones contextuales existentes. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 35.2.2: Inventory Window Redesign Phase B | Abrir una ventana flotante para inspeccionar el storage item-owned real. | validated | Validado manualmente en Unity por confirmacion del usuario. |
+| Milestone 35.2.3: Inventory Window Redesign Phase C1 | Unificar las pertenencias del cadaver sin fusionar Equipment e inventario raiz. | in progress | Implementacion autorizada; validacion manual pendiente. |
+| Milestone 35.2.4: Persistent Body Review | Revisar persistentemente el cuerpo despues de vaciar sus pertenencias. | planned | Posterior a M35.2.3. |
+| Milestone 35.2.5: Multiple Floating Storage Windows | Permitir varias ventanas flotantes de storage con rutas inequivocas. | planned | Diferido. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
 
 ## Milestone Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c, M35.0 y Lootable Entity Inventory UI V1 estan `implemented` y pendientes de validacion manual; Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a, M34.2.1b, M34.2.1c, M35.0, M35.1, M35.2.1 y M35.2.2 estan validados manualmente en Unity. M35.2 permanece `in progress`: M35.2.3 esta en implementacion, M35.2.4 esta planificado y M35.2.5 esta planificado/diferido. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los ultimos milestones cerrados como `validated` son:
 
@@ -150,7 +156,7 @@ Los ultimos milestones cerrados como `validated` son:
 
 ## Proximo Recomendado
 
-Validar M34.2.1c desde items mundiales y validar M35.0 con jugador, NPC humano y Debug Cargo Rig. Confirmar stale-state, transacciones, rollback, una sola actualizacion visual por commit de Equipment y cero actualizaciones de Equipment al guardar en storage. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
+Implementar y validar M35.2.3: presentar Equipment ocupado e inventario raiz del cadaver en una unica superficie, conservando sus backends y la ventana flotante de M35.2.2. M35.2.4 y M35.2.5 permanecen fuera de alcance. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
 
 M34.2 debe reutilizar ownership agregado, `ItemStorage` y referencias por `InstanceId`; no debe adelantar nesting general, pockets arbitrarios, save/load ni UI final.
 

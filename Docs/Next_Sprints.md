@@ -4,29 +4,31 @@ Este documento funciona como backlog ordenado. La fuente principal del roadmap v
 
 ## Proximo Recomendado
 
-### Validar M34.2.1c: World Item Quick Actions
+### M34.2.1c: World Item Quick Actions
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
-- abrir un pickup y confirmar que `Examinar`/`Recoger` permanecen junto a quick actions validas, sin acciones deshabilitadas ni duplicadas;
-- equipar palanca y mochila desde mundo con slots libres; confirmar misma instancia/contenido y exactamente un evento visual por commit;
-- probar Lee-Enfield con ambas manos libres y ocupadas; confirmar una sola accion 2H, replacement atomico, rollback sin espacio y un solo visual;
-- guardar no-stackables y stacks completos en una mochila equipada; confirmar identidad del no-stackable, merge canonico del stack y cero eventos de Equipment;
-- mover actor fuera de alcance o cambiar source/equipment/storage durante los `0.5 s`; confirmar rechazo, world item intacto, cero mutaciones y cero visuales;
-- confirmar que una mochila mundial no puede anidarse y que `Recoger y consumir` no aparece;
-- confirmar Console sin errores rojos. M34.2.1c no debe marcarse `validated` hasta completar estas pruebas. M34.2.1b ya esta `validated` por confirmacion manual del usuario.
+- Validacion manual confirmada por el usuario; no quedan pruebas de cierre pendientes para este milestone.
 
-### Validar M35.0: Universal Visual Rig & Attachment Framework
+### M35.0: Universal Visual Rig & Attachment Framework
 
-Estado: `implemented`; pendiente de validacion manual en Unity. M33.3.1, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan `validated` por confirmacion del usuario.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
-- generar los cuatro prefabs visuales M35 y el Debug Cargo Rig desde `Old Scars/Visuals/M35`;
-- configurar sobre instancias reemplazables del jugador y NPC humano los sockets bajo `spine_02`, `hand_l` y `hand_r`, sin editar el FBX fuente;
-- equipar mochila, palanca izquierda/derecha y rifle 2H; confirmar un visual por `InstanceId` y ausencia de visuales transitorios ante rollback;
-- comprobar que el Debug Cargo resuelve la mochila por `mount_storage -> cargo_mount` usando el mismo synchronizer;
-- ajustar poses locales, copiar sus fragmentos JSON y trasladarlos manualmente a `attachment_poses.json`;
-- verificar world drops mediante profile/provider, ruta legacy y fallback debug;
-- confirmar Data Load 0 errors/0 warnings y Console sin errores rojos. El hover de mochila sigue diferido.
+- Validacion manual confirmada por el usuario; el hover temporizado de mochila sigue diferido fuera de este milestone.
+
+### M35.1: Lootable Actor Real Equipment Bootstrap
+
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
+
+### M35.2: Lootable Entity Inventory UI V1
+
+Estado: `in progress`.
+
+- M35.2.1 Inventory Window Redesign Phase A esta `validated`.
+- M35.2.2 Inventory Window Redesign Phase B esta `validated`.
+- M35.2.3 Unified Corpse Belongings Surface esta `planned / implementing` y es el trabajo actual.
+- M35.2.4 Persistent Body Review esta `planned`.
+- M35.2.5 Multiple Floating Storage Windows esta `planned / deferred`.
 
 ### M33.3.1: Weight-Limited Partial Transfers
 

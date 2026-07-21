@@ -2,7 +2,7 @@
 
 ## Estado Actual
 
-M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a y M34.2.1b estan validados manualmente en Unity. M34.2.1c World Item Quick Actions y M35.0 Universal Visual Rig & Attachment Framework estan `implemented` en el checkout y pendientes de validacion manual en Unity. Lootable Entity Inventory UI V1 esta `implemented` y pendiente de validacion manual en Unity. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
+M33.1, M33.1.1, M33.2, M33.2.1, M33.2.2, M33.3, M33.3.1, M34.1, M34.1.1, M34.1.2, M34.1.3, M34.2, M34.2.1, M34.2.1a, M34.2.1b, M34.2.1c, M35.0, M35.1, M35.2.1 y M35.2.2 estan validados manualmente en Unity. M35.2 Lootable Entity Inventory UI V1 esta `in progress`: M35.2.3 esta en implementacion, M35.2.4 esta planificado y M35.2.5 permanece planificado/diferido. Milestone 32, Milestone 32.2, Milestone 32.4, Milestone 32.4.1 y Grid Inventory Backend v0 mantienen su estado previo `implemented`.
 
 Los bloques listados como `implemented` no estan cerrados como `validated` hasta que Play Mode confirme su flujo completo.
 
@@ -303,7 +303,7 @@ Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 ### M34.2.1c: World Item Quick Actions
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - El menu contextual mundial existente conserva `Examinar` y `Recoger` y agrega acciones rapidas de equip, replacement y storage desde estado real, sin tabla por item ni renderer paralelo.
 - `WorldItemPickup` aporta referencia, `InstanceId`, definicion, cantidad y version de contenido estables. Preview y progreso no cambian tags, renderers, colliders ni fisica; la presentacion se finaliza solo despues del commit total.
@@ -311,11 +311,11 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - Los slot sets se resuelven completos: un rifle 2H ofrece una sola accion y produce un solo `CommitVisualState` despues de equip/replacement exitoso; preview, stale, fallo y rollback producen cero.
 - Guardar en item-owned storage reutiliza transferencia exacta completa y su semantica canonica de stacks. No produce eventos visuales de Equipment y conserva exactamente `InstanceId` para no-stackables.
 - `Recoger y consumir` queda omitido: falta un contrato autoritativo mundo -> consumo que revierta conjuntamente cantidad fuente y cambios de necesidades/salud.
-- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; validacion manual pendiente.
+- Compilacion estatica de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores; validado manualmente en Unity por confirmacion del usuario.
 
 ### M35.0: Universal Visual Rig & Attachment Framework
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - Se agregaron contratos data-driven para capabilities, rig profiles, partes, sockets, visual assets, item visual profiles y attachment poses.
 - Equipment publica snapshots inmutables exclusivamente gameplay mediante un evento central post-commit; no publica en preview, fallo o rollback.
@@ -324,11 +324,11 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - Mochila, palanca y Lee-Enfield tienen perfiles visuales. La mochila reutiliza `Backpack` equipada y `Backpack.001` de mundo mediante una generacion Editor manual; no se duplico el ZIP ni se importo arte nuevo.
 - Debug Cargo usa `mount_storage -> cargo_mount` con la misma fuente/synchronizer universal y sin inventario, ownership ni gameplay.
 - `WorldItemVisualResolver` conserva migracion progresiva: profile/provider, sistema world existente y fallback debug.
-- Compilacion estatica de runtime y Editor: 0 errores; validacion visual y offsets permanecen pendientes de Unity.
+- Compilacion estatica de runtime y Editor: 0 errores; validado manualmente en Unity por confirmacion del usuario.
 
-### Lootable Actor Real Equipment Bootstrap
+### M35.1: Lootable Actor Real Equipment Bootstrap
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 - `ActorProfile` admite `initial_equipment` opcional con `item_id` y `slot_ids` solamente cuando debe desambiguarse una alternativa valida.
 - `debug_npc_capsule_01` crea Equipment real para mochila y palanca; `debug_npc_capsule_rifle_test_01` separa la prueba de mochila y rifle 2H sin conflicto simultaneo de manos.
@@ -336,9 +336,9 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - `Debug NPC Capsule` usa `ActorEquipmentComponent` como fuente de `EntityEquipmentVisualSynchronizer`; su source visual debug fue retirado sin alterar Debug Cargo.
 - No se agregaron UI, transferencias de loot, Equipment funcional de NPC, IA, combate, persistencia ni contenido interno inicial para la mochila.
 
-### Lootable Entity Inventory UI V1
+### M35.2: Lootable Entity Inventory UI V1
 
-Estado: `implemented`; pendiente de validacion manual en Unity.
+Estado: `in progress`; las fases M35.2.1 y M35.2.2 estan validadas; M35.2.3 esta en implementacion.
 
 - `search_body` abre un unico `ItemStorageDebugPanel` con el lado del jugador intacto y una fuente compuesta navegable a la derecha.
 - Las vistas `Equipamiento`, `Inventario` y `Contenedores` leen Equipment, inventario y storages item-owned reales de la entidad, sin copias temporales.
@@ -346,14 +346,14 @@ Estado: `implemented`; pendiente de validacion manual en Unity.
 - `lootable_actor` permanece mientras exista contenido real en cualquiera de las fuentes y se remueve mediante el flujo de tags existente cuando todas quedan vacias.
 - Estado: `implemented`; no `validated` hasta completar la prueba manual en Unity.
 
-### Inventory Window Redesign Phase A — VALIDATED
+### M35.2.1: Inventory Window Redesign Phase A — VALIDATED
 
 Estado: `validated` en Unity.
 
 - `EquipmentDebugListView` ahora ofrece una presentacion explicita de items equipados ocupados: omite slots/grupos vacios y deduplica por `ItemInstance.InstanceId` manteniendo el orden del layout.
 - El inventario principal y la vista Equipment del cadaver reutilizan esa presentacion; los menus contextuales resuelven `Revisar` y `Examinar` desde el owner/equipment real, sin cambiar transacciones ni crear ventanas flotantes.
 
-### Inventory Window Redesign Phase B — VALIDATED
+### M35.2.2: Inventory Window Redesign Phase B — VALIDATED
 
 Estado: `validated` en Unity por confirmacion manual del usuario.
 
@@ -362,6 +362,13 @@ Estado: `validated` en Unity por confirmacion manual del usuario.
 - La ventana mantiene posicion durante la sesion, usa seleccion/scroll propios y comparte menus, drag y transferencias existentes con el inventario personal como counterpart explicito.
 - Equipment, inventario raiz y pestañas del cadaver permanecen activos; la ruta cadaver raiz ↔ ventana se rechaza y tomar la mochila cierra solo la ventana.
 - No se modificaron servicios transaccionales, JSON, escenas ni prefabs. La validacion manual confirmo movimiento por todo el Game View, hitboxes y contextuales alineados, transferencias explicitas, cierres seguros y ausencia de duplicaciones o referencias stale.
+
+### M35.2.3: Inventory Window Redesign Phase C1 — PLANNED / IMPLEMENTING
+
+Estado: `planned / implementing`; unificara las pertenencias del cadaver sin fusionar los backends de Equipment e inventario raiz.
+
+- La superficie usara Equipment ocupado y el inventario raiz reales, con la mochila equipada disponible solamente desde Equipment y mediante la ventana flotante validada en M35.2.2.
+- M35.2.4 Persistent Body Review y M35.2.5 Multiple Floating Storage Windows permanecen fuera de alcance; M35.2.5 sigue diferido.
 
 ## Ultimo Estado Validado
 
@@ -415,7 +422,7 @@ Estado: `validated` en Unity por confirmacion manual del usuario.
 
 ## Proximo Recomendado
 
-Validar M34.2.1c y M35.0 en Unity: probar quick actions sobre items mundiales y luego revisar mochila/palanca/rifle en player y NPC humano junto con el Debug Cargo Rig. M33.3.1, M34.2, M34.2.1, M34.2.1a y M34.2.1b ya estan `validated`; el hover temporizado de mochila sigue diferido.
+Implementar y validar M35.2.3: mostrar Equipment ocupado e inventario raiz del cadaver dentro de una unica superficie, sin alterar ownership, transferencias ni la ventana flotante de M35.2.2. M35.2.4 y M35.2.5 permanecen planificados; el hover temporizado de mochila sigue diferido.
 
 Alcance recomendado:
 
