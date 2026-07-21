@@ -140,6 +140,16 @@ namespace OldScars.Core.Items
             return actions;
         }
 
+        public static IReadOnlyList<InventoryContextAction> ResolveLootableInventory(
+            IGridStorageOwner externalOwner,
+            string instanceId)
+        {
+            var actions = new List<InventoryContextAction>(ResolveExternal(externalOwner, instanceId));
+            if (actions.Count > 0)
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Examinar"));
+            return actions;
+        }
+
         public static IReadOnlyList<InventoryContextAction> ResolveLootableEquipment(
             ActorEquipmentComponent equipment,
             string equipmentSlotId,

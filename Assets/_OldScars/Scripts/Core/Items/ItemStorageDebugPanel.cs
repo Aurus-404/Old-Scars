@@ -9,14 +9,6 @@ namespace OldScars.Core.Items
 {
     public sealed class ItemStorageDebugPanel : MonoBehaviour
     {
-        private enum LootableActorView
-        {
-            Empty,
-            Equipment,
-            Inventory,
-            Containers
-        }
-
         private const float MaxPanelWidth = 1120f;
         private const float MaxPanelHeight = 700f;
         private const float MinimumGridColumnWidth = 220f;
@@ -49,8 +41,6 @@ namespace OldScars.Core.Items
         private float externalColumnWidth;
         private ActorEquipmentComponent actorEquipment;
         private LootableActorInventoryComponent lootableActorSource;
-        private LootableActorView lootableActorView;
-        private Vector2 lootableContainersScroll;
         private Vector2 centerDetailsScrollPosition;
         private Vector2 playerGridScroll;
         private Vector2 externalGridScroll;
@@ -137,9 +127,7 @@ namespace OldScars.Core.Items
             centerDetailsScrollPosition = Vector2.zero;
             playerGridScroll = Vector2.zero;
             externalGridScroll = Vector2.zero;
-            lootableContainersScroll = Vector2.zero;
             lootableEquipmentSelection.ResetTransient();
-            lootableActorView = GetInitialLootableActorView();
             playerGridView.SetVisualCellSize(gridVisualCellSize);
             externalGridView.SetVisualCellSize(gridVisualCellSize);
             playerGridView.Reset();
@@ -160,8 +148,6 @@ namespace OldScars.Core.Items
             isVisible = false;
             storageSource = null;
             lootableActorSource = null;
-            lootableActorView = LootableActorView.Empty;
-            lootableContainersScroll = Vector2.zero;
             lootableEquipmentSelection.ResetTransient();
             targetInventory = null;
             actorEquipment = null;
@@ -334,9 +320,7 @@ namespace OldScars.Core.Items
             IGridStorageOwner externalOwner = GetActiveExternalOwner();
             dragController.SetQuickTransferTarget(floatingOwner, targetInventory);
 
-            bool externalGridVisible = lootableActorSource == null ||
-                                       lootableActorView == LootableActorView.Inventory;
-            if (externalGridVisible && externalOwner != null && !ReferenceEquals(externalOwner, floatingOwner))
+            if (externalOwner != null && !ReferenceEquals(externalOwner, floatingOwner))
             {
                 dragController.SetQuickTransferTarget(targetInventory, externalOwner);
                 dragController.SetQuickTransferTarget(externalOwner, targetInventory);
@@ -364,79 +348,59 @@ namespace OldScars.Core.Items
             GUILayout.EndHorizontal();
         }
 
-        private LootableActorView GetInitialLootableActorView()
-        {
-            if (lootableActorSource == null || !lootableActorSource.HasLootableContent)
-                return LootableActorView.Empty;
-            if (lootableActorSource.HasEquipmentItems)
-                return LootableActorView.Equipment;
-            return LootableActorView.Inventory;
-        }
-
         private void DrawLootableActorColumn(float columnWidth, float bodyHeight)
         {
             GUILayout.BeginVertical(
                 GUI.skin.box,
                 GUILayout.Width(columnWidth),
                 GUILayout.Height(bodyHeight));
+            GUILayout.Label("Pertenencias del cadáver");
             GUILayout.Label(lootableActorSource.GetActorDisplayName(executionContext.Target));
-            DrawLootableActorTabs();
 
-            float contentHeight = Mathf.Max(120f, bodyHeight - 68f);
-            switch (lootableActorView)
-            {
-                case LootableActorView.Equipment:
-                    DrawLootableEquipmentView(columnWidth, contentHeight);
-                    break;
-                case LootableActorView.Inventory:
-                    DrawStorageColumnBody(
-                        storageSource,
-                        externalGridView,
-                        false,
-                        columnWidth,
-                        contentHeight,
-                        "Inventario de la entidad");
-                    break;
-                case LootableActorView.Containers:
-                    DrawLootableContainersView(contentHeight);
-                    break;
-                default:
-                    GUILayout.FlexibleSpace();
-                    GUILayout.Label("No quedan pertenencias reales en esta entidad.");
-                    GUILayout.Label("Inventario, Equipment y contenedores equipados estan vacios.");
-                    GUILayout.FlexibleSpace();
-                    break;
-            }
+            bool hasEquipmentItems = lootableActorSource.HasEquipmentItems;
+            bool hasInventoryItems = storageSource != null && storageSource.GridStorageEntries.Count > 0;
+            if (!hasEquipmentItems && !hasInventoryItems)
+                GUILayout.Label("No quedan pertenencias reales en esta entidad.");
+
+            float contentHeight = Mathf.Max(120f, bodyHeight - 58f);
+            float equipmentHeight = Mathf.Min(246f, Mathf.Max(120f, contentHeight - 110f));
+            float inventoryHeight = Mathf.Max(100f, contentHeight - equipmentHeight - 6f);
+            DrawLootableEquipmentSection(columnWidth, equipmentHeight);
+            GUILayout.Space(6f);
+            DrawLootableInventorySection(columnWidth, inventoryHeight);
             GUILayout.EndVertical();
         }
 
-        private void DrawLootableActorTabs()
+        private void DrawLootableEquipmentSection(float columnWidth, float sectionHeight)
         {
-            GUILayout.BeginHorizontal();
-            DrawLootableActorTab("Equipamiento", LootableActorView.Equipment);
-            DrawLootableActorTab("Inventario", LootableActorView.Inventory);
-            DrawLootableActorTab("Contenedores", LootableActorView.Containers);
-            GUILayout.EndHorizontal();
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Height(sectionHeight));
+            GUILayout.Label("EQUIPADO");
+            if (lootableActorSource.HasEquipmentItems)
+                DrawLootableEquipmentView(columnWidth - 12f, sectionHeight - 24f);
+            else
+                GUILayout.Label("Sin objetos equipados");
+            GUILayout.EndVertical();
         }
 
-        private void DrawLootableActorTab(string label, LootableActorView view)
+        private void DrawLootableInventorySection(float columnWidth, float sectionHeight)
         {
-            Color previous = GUI.backgroundColor;
-            if (lootableActorView == view)
-                GUI.backgroundColor = new Color(0.32f, 0.68f, 0.92f);
-            if (GUILayout.Button(label, GUILayout.Height(26f)))
-                SelectLootableActorView(view);
-            GUI.backgroundColor = previous;
-        }
-
-        private void SelectLootableActorView(LootableActorView view)
-        {
-            dragController.CancelDrag();
-            sessionController?.CloseContextMenu();
-            lootableActorView = view;
-            externalGridView.Reset();
-            externalGridScroll = Vector2.zero;
-            sessionController?.Selection.SelectExternal(null);
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Height(sectionHeight));
+            if (storageSource == null || storageSource.GridStorageEntries.Count == 0)
+            {
+                GUILayout.Label("INVENTARIO");
+                GUILayout.Label("Inventario vacío");
+            }
+            else
+            {
+                DrawStorageColumnBody(
+                    storageSource,
+                    externalGridView,
+                    false,
+                    columnWidth - 12f,
+                    sectionHeight,
+                    "INVENTARIO");
+            }
+            GUILayout.EndVertical();
         }
 
         private void DrawLootableEquipmentView(float columnWidth, float contentHeight)
@@ -481,6 +445,8 @@ namespace OldScars.Core.Items
             }
 
             dragController.CancelDrag();
+            externalGridView.Reset();
+            sessionController.Selection.SelectExternal(null);
             lootableEquipmentSelection.SelectEquipment(click.SlotId, click.InstanceId, false);
             IReadOnlyList<InventoryContextAction> actions =
                 InventoryContextActionResolver.ResolveLootableEquipment(
@@ -503,59 +469,20 @@ namespace OldScars.Core.Items
                     : click.RowRect.position);
         }
 
-        private void DrawLootableContainersView(float contentHeight)
-        {
-            IReadOnlyList<LootableActorOwnedStorage> options =
-                lootableActorSource.GetEquippedOwnedStorages();
-            if (options.Count == 0)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label("La entidad no tiene contenedores equipados.");
-                GUILayout.FlexibleSpace();
-                return;
-            }
-
-            lootableContainersScroll = GUILayout.BeginScrollView(
-                lootableContainersScroll,
-                GUIStyle.none,
-                GUI.skin.verticalScrollbar,
-                GUILayout.Height(contentHeight));
-            for (int index = 0; index < options.Count; index++)
-            {
-                LootableActorOwnedStorage option = options[index];
-                ItemStorageEntry entry = option.ContainerEntry;
-                string itemName = entry != null ? GetItemDisplayName(entry.DefinitionId) : "Contenedor";
-                string slot = option.OccupiedSlots != null && option.OccupiedSlots.Count > 0
-                    ? GetSlotDisplayName(lootableActorSource.Equipment, option.OccupiedSlots[0])
-                    : "sin slot";
-                GUILayout.BeginVertical(GUI.skin.box);
-                GUILayout.Label($"{itemName} - {slot}");
-                GUILayout.Label(
-                    $"Contenido: {option.Storage.GridStorageEntries.Count} entries | " +
-                    $"Grilla: {option.Storage.GridWidth}x{option.Storage.GridHeight}");
-                if (GUILayout.Button("Abrir", GUILayout.Height(24f)))
-                    OpenLootableOwnedStorageWindow(option.Storage.ContainerInstanceId);
-                GUILayout.EndVertical();
-            }
-            GUILayout.EndScrollView();
-        }
-
         private void ReconcileLootableActorView()
         {
             if (lootableActorSource == null)
                 return;
 
             lootableActorSource.RefreshLootableState();
-            if (!lootableActorSource.HasLootableContent)
+            string selectedId = lootableEquipmentSelection.SelectedEquippedInstanceId;
+            if (!string.IsNullOrWhiteSpace(selectedId) &&
+                (lootableActorSource.Equipment == null ||
+                 !lootableActorSource.Equipment.TryGetEntryByInstanceId(selectedId, out _)))
             {
-                lootableActorView = LootableActorView.Empty;
-                return;
+                lootableEquipmentSelection.ClearEquipment();
+                sessionController?.CloseContextMenu();
             }
-
-            if (lootableActorView == LootableActorView.Empty)
-                lootableActorView = GetInitialLootableActorView();
-            if (lootableActorView == LootableActorView.Equipment && !lootableActorSource.HasEquipmentItems)
-                lootableActorView = LootableActorView.Inventory;
         }
 
         private IGridStorageOwner GetActiveExternalOwner()
@@ -779,8 +706,10 @@ namespace OldScars.Core.Items
                 selection.SelectPersonal(playerGridView.SelectedInstanceId);
             }
             else if (ReferenceEquals(dragController.ActiveOwner, GetActiveExternalOwner()) &&
-                     !string.IsNullOrWhiteSpace(externalGridView.SelectedInstanceId))
+                      !string.IsNullOrWhiteSpace(externalGridView.SelectedInstanceId))
             {
+                if (lootableActorSource != null)
+                    lootableEquipmentSelection.ClearEquipment();
                 selection.SelectExternal(externalGridView.SelectedInstanceId);
             }
         }
@@ -832,9 +761,13 @@ namespace OldScars.Core.Items
             }
             else
             {
+                if (lootableActorSource != null)
+                    lootableEquipmentSelection.ClearEquipment();
                 sessionController.Selection.SelectExternalFromContext(instanceId);
                 sourceKind = InventoryContextSourceKind.External;
-                actions = InventoryContextActionResolver.ResolveExternal(owner, instanceId);
+                actions = lootableActorSource != null
+                    ? InventoryContextActionResolver.ResolveLootableInventory(owner, instanceId)
+                    : InventoryContextActionResolver.ResolveExternal(owner, instanceId);
             }
 
             sessionController.OpenContextMenu(
@@ -1052,6 +985,14 @@ namespace OldScars.Core.Items
                         inspectionView.GridView.SelectInstance(entry.Item.InstanceId);
                         return;
                     }
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.External &&
+                        lootableActorSource != null)
+                    {
+                        lootableEquipmentSelection.ClearEquipment();
+                        externalGridView.SelectInstance(entry.Item.InstanceId);
+                        sessionController?.Selection.SelectExternalFromContext(entry.Item.InstanceId);
+                        return;
+                    }
                     if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
                     {
                         if (lootableActorSource != null &&
@@ -1257,7 +1198,9 @@ namespace OldScars.Core.Items
                 {
                     return false;
                 }
-                actions = InventoryContextActionResolver.ResolveExternal(owner, request.InstanceId);
+                actions = lootableActorSource != null
+                    ? InventoryContextActionResolver.ResolveLootableInventory(owner, request.InstanceId)
+                    : InventoryContextActionResolver.ResolveExternal(owner, request.InstanceId);
             }
             else if (request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage)
             {
@@ -1866,6 +1809,7 @@ namespace OldScars.Core.Items
             if (result == null || !result.Success)
                 return;
 
+            sessionController?.CloseContextMenu();
             IGridStorageOwner externalOwner = GetActiveExternalOwner();
             string sourceInstanceId = result.SourceInstanceId;
             if (result.WasLimitedByWeight && result.SourceRemainingQuantity > 0 && tookToPersonal &&
@@ -1979,7 +1923,15 @@ namespace OldScars.Core.Items
             lootableActorSource?.RefreshLootableState();
             ReconcileLootableActorView();
             playerGridView.ReconcileSelection(GetActivePersonalOwner());
+            string selectedExternalId = externalGridView.SelectedInstanceId;
             externalGridView.ReconcileSelection(GetActiveExternalOwner());
+            if (lootableActorSource != null && !string.IsNullOrWhiteSpace(selectedExternalId) &&
+                (GetActiveExternalOwner() == null ||
+                 !GetActiveExternalOwner().TryGetEntryByInstanceId(selectedExternalId, out _, out _)))
+            {
+                sessionController?.Selection.ClearExternalIfMissing(selectedExternalId);
+                sessionController?.CloseContextMenu();
+            }
         }
 
         private static string FormatUnitWeight(double unitWeightKg)

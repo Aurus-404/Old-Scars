@@ -1461,7 +1461,10 @@ Estado: `in progress`; M35.2.1 y M35.2.2 estan validadas y M35.2.3 esta en imple
 
 - M35.2.1 Inventory Window Redesign Phase A (Equipment ocupado y acciones contextuales unificadas) esta `validated`.
 - M35.2.2 Inventory Window Redesign Phase B (ventana flotante de storage item-owned) esta `validated`.
-- M35.2.3 Unified Corpse Belongings Surface esta `planned / implementing`; M35.2.4 Persistent Body Review queda `planned` y M35.2.5 Multiple Floating Storage Windows queda `planned / deferred`.
+- M35.2.3 Unified Corpse Belongings Surface esta `implemented`, pendiente de validacion manual en Unity. Se eliminaron las pestañas tecnicas y se presentaron Equipment ocupado e inventario raiz en una unica superficie, conservando sus backends separados.
+- La mochila equipada conserva `Revisar`, `Tomar` y `Examinar`; `Revisar` reutiliza la ventana flotante de M35.2.2. El inventario raiz del cadaver usa el resolver contextual existente para `Tomar` y `Examinar`, con revalidacion antes de mutar.
+- Compilacion estatica mediante Mono/Roslyn con response files Bee de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores. La validacion manual de flujos, seleccion, scroll y ventana flotante queda pendiente.
+- M35.2.4 Persistent Body Review queda `planned` y M35.2.5 Multiple Floating Storage Windows queda `planned / deferred`.
 
 ## Decisiones De Scope
 
