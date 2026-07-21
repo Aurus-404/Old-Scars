@@ -111,10 +111,7 @@ namespace OldScars.Core.Items
             bool deduplicateInstances,
             bool showHeader)
         {
-            if (presentation == EquipmentDebugListPresentation.OccupiedItemsOnly)
-                GUILayout.BeginVertical(GUILayout.Width(width), GUILayout.Height(height));
-            else
-                GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
             if (showHeader)
                 GUILayout.Label("Equipment");
 

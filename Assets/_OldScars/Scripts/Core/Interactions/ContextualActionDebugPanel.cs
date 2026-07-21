@@ -12,13 +12,19 @@ namespace OldScars.Core.Interactions
     {
         private const string DefaultRequiredContext = "world_interaction";
         private const float PanelWidth = 420f;
-        private const float MinimumPanelHeight = 150f;
-        private const float MaximumPanelHeight = 260f;
-        private const float HeaderHeight = 68f;
+        private const float PanelPadding = 8f;
+        private const float HeaderLineHeight = 20f;
+        private const int HeaderLineCount = 3;
+        private const float HeaderBottomSpacing = 8f;
+        private const float FooterTopSpacing = 8f;
         private const float FooterHeight = 34f;
         private const float ActionRowHeight = 28f;
-        private const float MinimumActionListHeight = 28f;
-        private const float MaximumActionListHeight = 116f;
+        private const float ActionRowSpacing = 4f;
+        private const float EmptyBodyHeight = 20f;
+        private const float MaximumActionBodyHeight = 124f;
+        private const float ScrollbarWidth = 16f;
+        private const float CloseButtonWidth = 120f;
+        private const float CloseButtonHeight = 24f;
 
         private readonly List<ActionDefinition> actions = new List<ActionDefinition>();
         private readonly List<InventoryContextAction> worldQuickActions = new List<InventoryContextAction>();
@@ -149,68 +155,87 @@ namespace OldScars.Core.Interactions
                 return;
 
             guiPosition = ClampGuiPosition(guiPosition);
-
-            GUILayout.BeginArea(GetPanelRect(), GUI.skin.box);
-            GUILayout.Label("Contextual Actions (Debug)");
-            GUILayout.Label($"Target: {SafeText(GetTargetName())}");
-            GUILayout.Label($"Equipado: {SafeText(itemId)}");
-
-            GUILayout.Space(8f);
-
+            Rect panelRect = GetPanelRect();
             int actionCount = actions.Count + worldQuickActions.Count;
-            float actionListHeight = GetActionListHeight(actionCount);
+            ActionPanelLayout layout = CalculateActionPanelLayout(actionCount, panelRect.height);
+
+            GUI.Box(panelRect, GUIContent.none);
+            GUI.BeginGroup(panelRect);
+            float contentWidth = Mathf.Max(1f, panelRect.width - PanelPadding * 2f);
+            float y = PanelPadding;
+            GUI.Label(new Rect(PanelPadding, y, contentWidth, HeaderLineHeight), "Contextual Actions (Debug)");
+            y += HeaderLineHeight;
+            GUI.Label(new Rect(PanelPadding, y, contentWidth, HeaderLineHeight), $"Target: {SafeText(GetTargetName())}");
+            y += HeaderLineHeight;
+            GUI.Label(new Rect(PanelPadding, y, contentWidth, HeaderLineHeight), $"Equipado: {SafeText(itemId)}");
+            y += HeaderLineHeight + HeaderBottomSpacing;
+
+            var bodyRect = new Rect(PanelPadding, y, contentWidth, layout.BodyViewportHeight);
+            DrawActionBody(bodyRect, layout);
+            y = bodyRect.yMax + FooterTopSpacing;
+
+            var footerRect = new Rect(PanelPadding, y, contentWidth, FooterHeight);
+            GUI.Box(footerRect, GUIContent.none);
+            var closeRect = new Rect(
+                footerRect.x + Mathf.Max(0f, (footerRect.width - CloseButtonWidth) * 0.5f),
+                footerRect.y + Mathf.Max(0f, (footerRect.height - CloseButtonHeight) * 0.5f),
+                Mathf.Min(CloseButtonWidth, footerRect.width),
+                CloseButtonHeight);
+            if (GUI.Button(closeRect, "Close"))
+                Hide();
+            GUI.EndGroup();
+        }
+
+        private void DrawActionBody(Rect bodyRect, ActionPanelLayout layout)
+        {
+            int actionCount = actions.Count + worldQuickActions.Count;
             if (actionCount == 0)
             {
-                GUILayout.Label("No hay acciones disponibles");
+                GUI.Label(bodyRect, "No hay acciones disponibles");
+                return;
             }
-            else
+
+            var buttonStyle = new GUIStyle(GUI.skin.button)
             {
-                var buttonStyle = new GUIStyle(GUI.skin.button)
-                {
-                    wordWrap = true
-                };
-                scrollPosition.x = 0f;
-                scrollPosition = GUILayout.BeginScrollView(
-                    scrollPosition,
-                    false,
-                    false,
-                    GUIStyle.none,
-                    GUI.skin.verticalScrollbar,
-                    GUILayout.Height(actionListHeight));
-
-                for (int index = 0; index < actions.Count; index++)
-                {
-                    ActionDefinition action = actions[index];
-                    string label = GetActionLabel(action);
-
-                    if (GUILayout.Button(label, buttonStyle, GUILayout.Height(28f), GUILayout.ExpandWidth(true)))
-                    {
-                        TryStartAction(action);
-                    }
-                }
-
-                for (int index = 0; index < worldQuickActions.Count; index++)
-                {
-                    InventoryContextAction action = worldQuickActions[index];
-                    bool previousEnabled = GUI.enabled;
-                    GUI.enabled = previousEnabled && action.Enabled;
-                    if (GUILayout.Button(action.Label, buttonStyle, GUILayout.Height(28f), GUILayout.ExpandWidth(true)))
-                        TryStartWorldQuickAction(action);
-                    GUI.enabled = previousEnabled;
-                }
-
-                GUILayout.EndScrollView();
-                scrollPosition.x = 0f;
+                wordWrap = true
+            };
+            if (!layout.HasOverflow)
+            {
+                scrollPosition = Vector2.zero;
+                DrawActionButtons(bodyRect, buttonStyle);
+                return;
             }
 
-            GUILayout.BeginHorizontal(GUI.skin.box, GUILayout.Height(34f));
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close", GUILayout.Width(120f), GUILayout.Height(24f)))
-                Hide();
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            float viewWidth = Mathf.Max(1f, bodyRect.width - ScrollbarWidth);
+            var viewRect = new Rect(0f, 0f, viewWidth, layout.BodyContentHeight);
+            scrollPosition.x = 0f;
+            scrollPosition = GUI.BeginScrollView(bodyRect, scrollPosition, viewRect, false, true);
+            DrawActionButtons(viewRect, buttonStyle);
+            GUI.EndScrollView();
+            scrollPosition.x = 0f;
+        }
 
-            GUILayout.EndArea();
+        private void DrawActionButtons(Rect contentRect, GUIStyle buttonStyle)
+        {
+            float y = contentRect.y;
+            for (int index = 0; index < actions.Count; index++)
+            {
+                ActionDefinition action = actions[index];
+                if (GUI.Button(new Rect(contentRect.x, y, contentRect.width, ActionRowHeight), GetActionLabel(action), buttonStyle))
+                    TryStartAction(action);
+                y += ActionRowHeight + ActionRowSpacing;
+            }
+
+            for (int index = 0; index < worldQuickActions.Count; index++)
+            {
+                InventoryContextAction action = worldQuickActions[index];
+                bool previousEnabled = GUI.enabled;
+                GUI.enabled = previousEnabled && action.Enabled;
+                if (GUI.Button(new Rect(contentRect.x, y, contentRect.width, ActionRowHeight), action.Label, buttonStyle))
+                    TryStartWorldQuickAction(action);
+                GUI.enabled = previousEnabled;
+                y += ActionRowHeight + ActionRowSpacing;
+            }
         }
 
         private static string GetActionLabel(ActionDefinition action)
@@ -253,29 +278,53 @@ namespace OldScars.Core.Interactions
 
         private Vector2 GetPanelSize()
         {
+            ActionPanelLayout layout = CalculateActionPanelLayout(
+                actions.Count + worldQuickActions.Count,
+                Mathf.Max(1f, Screen.height));
             return new Vector2(
                 Mathf.Min(PanelWidth, Mathf.Max(0f, Screen.width)),
-                Mathf.Min(GetPanelHeight(), Mathf.Max(0f, Screen.height)));
+                Mathf.Min(layout.PanelHeight, Mathf.Max(0f, Screen.height)));
         }
 
-        private float GetPanelHeight()
+        private static ActionPanelLayout CalculateActionPanelLayout(int actionCount, float availableHeight)
         {
-            int actionCount = actions.Count + worldQuickActions.Count;
-            float bodyHeight = actionCount == 0
-                ? MinimumActionListHeight
-                : GetActionListHeight(actionCount);
-            return Mathf.Clamp(
-                HeaderHeight + bodyHeight + FooterHeight,
-                MinimumPanelHeight,
-                MaximumPanelHeight);
+            float bodyContentHeight = GetActionContentHeight(actionCount);
+            float fixedHeight = PanelPadding * 2f +
+                                HeaderLineHeight * HeaderLineCount +
+                                HeaderBottomSpacing +
+                                FooterTopSpacing +
+                                FooterHeight;
+            float availableBodyHeight = Mathf.Max(1f, availableHeight - fixedHeight);
+            float bodyViewportHeight = Mathf.Min(
+                bodyContentHeight,
+                Mathf.Min(MaximumActionBodyHeight, availableBodyHeight));
+            return new ActionPanelLayout(
+                bodyContentHeight,
+                bodyViewportHeight,
+                Mathf.Min(availableHeight, fixedHeight + bodyViewportHeight));
         }
 
-        private static float GetActionListHeight(int actionCount)
+        private static float GetActionContentHeight(int actionCount)
         {
-            return Mathf.Clamp(
-                Mathf.Max(1, actionCount) * ActionRowHeight,
-                MinimumActionListHeight,
-                MaximumActionListHeight);
+            if (actionCount <= 0)
+                return EmptyBodyHeight;
+
+            return actionCount * ActionRowHeight + Mathf.Max(0, actionCount - 1) * ActionRowSpacing;
+        }
+
+        private readonly struct ActionPanelLayout
+        {
+            internal ActionPanelLayout(float bodyContentHeight, float bodyViewportHeight, float panelHeight)
+            {
+                BodyContentHeight = bodyContentHeight;
+                BodyViewportHeight = bodyViewportHeight;
+                PanelHeight = panelHeight;
+            }
+
+            internal float BodyContentHeight { get; }
+            internal float BodyViewportHeight { get; }
+            internal float PanelHeight { get; }
+            internal bool HasOverflow => BodyContentHeight > BodyViewportHeight;
         }
 
         private string GetTargetName()

@@ -13,6 +13,7 @@ namespace OldScars.Core.Items
         private readonly List<EndpointView> endpoints = new List<EndpointView>(2);
         private readonly List<EquipmentDropTarget> equipmentTargets = new List<EquipmentDropTarget>();
         private readonly List<BlockedTransferRoute> blockedTransferRoutes = new List<BlockedTransferRoute>();
+        private readonly List<ExplicitTransferRoute> explicitTransferRoutes = new List<ExplicitTransferRoute>();
         private readonly Dictionary<IGridStorageOwner, IGridStorageOwner> quickTransferTargets =
             new Dictionary<IGridStorageOwner, IGridStorageOwner>();
         private GridStorageTransferContext transferContext;
@@ -54,6 +55,7 @@ namespace OldScars.Core.Items
             endpoints.Clear();
             equipmentTargets.Clear();
             blockedTransferRoutes.Clear();
+            explicitTransferRoutes.Clear();
             quickTransferTargets.Clear();
             transferContext = context;
         }
@@ -73,6 +75,27 @@ namespace OldScars.Core.Items
             if (first == null || second == null || ReferenceEquals(first, second))
                 return;
             blockedTransferRoutes.Add(new BlockedTransferRoute(first, second, message));
+        }
+
+        public void AllowExplicitTransferRoute(
+            IGridStorageOwner firstViewOwner,
+            IGridStorageOwner secondViewOwner,
+            IGridStorageOwner firstTransferOwner,
+            IGridStorageOwner secondTransferOwner)
+        {
+            if (firstViewOwner == null || secondViewOwner == null ||
+                firstTransferOwner == null || secondTransferOwner == null ||
+                ReferenceEquals(firstViewOwner, secondViewOwner) ||
+                ReferenceEquals(firstTransferOwner, secondTransferOwner))
+            {
+                return;
+            }
+
+            explicitTransferRoutes.Add(new ExplicitTransferRoute(
+                firstViewOwner,
+                secondViewOwner,
+                firstTransferOwner,
+                secondTransferOwner));
         }
 
         public void RegisterEquipmentDropTarget(
@@ -152,6 +175,7 @@ namespace OldScars.Core.Items
             endpoints.Clear();
             equipmentTargets.Clear();
             blockedTransferRoutes.Clear();
+            explicitTransferRoutes.Clear();
             quickTransferTargets.Clear();
             ActiveOwner = null;
             pendingStatusMessage = null;
@@ -350,7 +374,12 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            if (TryGetBlockedTransferMessage(
+            bool hasExplicitTransferRoute = TryResolveExplicitTransferOwners(
+                sourceEndpoint.Owner,
+                destinationEndpoint.Owner,
+                out IGridStorageOwner sourceTransferOwner,
+                out IGridStorageOwner destinationTransferOwner);
+            if (!hasExplicitTransferRoute && TryGetBlockedTransferMessage(
                     sourceEndpoint.Owner,
                     destinationEndpoint.Owner,
                     out candidateRejectionMessage))
@@ -368,9 +397,9 @@ namespace OldScars.Core.Items
             {
                 dropIntent = DropIntent.DirectedMerge;
                 mergePreview = GridStorageTransferService.PreviewMergeIntoTarget(
-                    sourceEndpoint.Owner,
+                    sourceTransferOwner,
                     sourceInstanceId,
-                    destinationEndpoint.Owner,
+                    destinationTransferOwner,
                     destinationInstanceId,
                     transferContext);
                 return;
@@ -378,8 +407,8 @@ namespace OldScars.Core.Items
 
             dropIntent = DropIntent.Placement;
             candidatePreview = GridStorageTransferService.PreviewTransferExact(
-                sourceEndpoint.Owner,
-                destinationEndpoint.Owner,
+                sourceTransferOwner,
+                destinationTransferOwner,
                 sourceInstanceId,
                 candidateX,
                 candidateY,
@@ -424,6 +453,12 @@ namespace OldScars.Core.Items
                 return;
             }
 
+            TryResolveExplicitTransferOwners(
+                sourceEndpoint.Owner,
+                destinationEndpoint.Owner,
+                out IGridStorageOwner sourceTransferOwner,
+                out IGridStorageOwner destinationTransferOwner);
+
             if (dropIntent == DropIntent.DirectedMerge)
             {
                 if (!mergePreview.IsValid)
@@ -435,9 +470,9 @@ namespace OldScars.Core.Items
                 }
 
                 InventoryMutationResult mergeResult = GridStorageTransferService.MergeIntoTarget(
-                    sourceEndpoint.Owner,
+                    sourceTransferOwner,
                     sourceInstanceId,
-                    destinationEndpoint.Owner,
+                    destinationTransferOwner,
                     destinationInstanceId,
                     transferContext);
                 SetStatus(
@@ -474,8 +509,8 @@ namespace OldScars.Core.Items
             }
 
             InventoryMutationResult transferResult = GridStorageTransferService.TransferExact(
-                sourceEndpoint.Owner,
-                destinationEndpoint.Owner,
+                sourceTransferOwner,
+                destinationTransferOwner,
                 sourceInstanceId,
                 candidateX,
                 candidateY,
@@ -593,6 +628,29 @@ namespace OldScars.Core.Items
             }
 
             message = null;
+            return false;
+        }
+
+        private bool TryResolveExplicitTransferOwners(
+            IGridStorageOwner sourceViewOwner,
+            IGridStorageOwner targetViewOwner,
+            out IGridStorageOwner sourceTransferOwner,
+            out IGridStorageOwner targetTransferOwner)
+        {
+            for (int index = 0; index < explicitTransferRoutes.Count; index++)
+            {
+                if (explicitTransferRoutes[index].TryResolve(
+                        sourceViewOwner,
+                        targetViewOwner,
+                        out sourceTransferOwner,
+                        out targetTransferOwner))
+                {
+                    return true;
+                }
+            }
+
+            sourceTransferOwner = sourceViewOwner;
+            targetTransferOwner = targetViewOwner;
             return false;
         }
 
@@ -720,6 +778,53 @@ namespace OldScars.Core.Items
             {
                 return ReferenceEquals(First, source) && ReferenceEquals(Second, target) ||
                        ReferenceEquals(First, target) && ReferenceEquals(Second, source);
+            }
+        }
+
+        private sealed class ExplicitTransferRoute
+        {
+            internal ExplicitTransferRoute(
+                IGridStorageOwner firstViewOwner,
+                IGridStorageOwner secondViewOwner,
+                IGridStorageOwner firstTransferOwner,
+                IGridStorageOwner secondTransferOwner)
+            {
+                FirstViewOwner = firstViewOwner;
+                SecondViewOwner = secondViewOwner;
+                FirstTransferOwner = firstTransferOwner;
+                SecondTransferOwner = secondTransferOwner;
+            }
+
+            private IGridStorageOwner FirstViewOwner { get; }
+            private IGridStorageOwner SecondViewOwner { get; }
+            private IGridStorageOwner FirstTransferOwner { get; }
+            private IGridStorageOwner SecondTransferOwner { get; }
+
+            internal bool TryResolve(
+                IGridStorageOwner sourceViewOwner,
+                IGridStorageOwner targetViewOwner,
+                out IGridStorageOwner sourceTransferOwner,
+                out IGridStorageOwner targetTransferOwner)
+            {
+                if (ReferenceEquals(sourceViewOwner, FirstViewOwner) &&
+                    ReferenceEquals(targetViewOwner, SecondViewOwner))
+                {
+                    sourceTransferOwner = FirstTransferOwner;
+                    targetTransferOwner = SecondTransferOwner;
+                    return true;
+                }
+
+                if (ReferenceEquals(sourceViewOwner, SecondViewOwner) &&
+                    ReferenceEquals(targetViewOwner, FirstViewOwner))
+                {
+                    sourceTransferOwner = SecondTransferOwner;
+                    targetTransferOwner = FirstTransferOwner;
+                    return true;
+                }
+
+                sourceTransferOwner = null;
+                targetTransferOwner = null;
+                return false;
             }
         }
     }

@@ -328,7 +328,15 @@ namespace OldScars.Core.Items
             {
                 dragController.SetQuickTransferTarget(targetInventory, externalOwner);
                 dragController.SetQuickTransferTarget(externalOwner, targetInventory);
-                if (!IsLootableInternalFloatingStorageRoute(resolution, externalOwner, floatingOwner))
+                if (IsLootableInternalFloatingStorageRoute(resolution, externalOwner, floatingOwner))
+                {
+                    dragController.AllowExplicitTransferRoute(
+                        externalOwner,
+                        floatingOwner,
+                        lootableActorSource.Inventory,
+                        floatingOwner);
+                }
+                else
                 {
                     string blockedMessage = lootableActorSource != null
                         ? "No podés mover items directamente entre el inventario del cadáver y la mochila. Usá el inventario personal."
@@ -352,9 +360,13 @@ namespace OldScars.Core.Items
         {
             return lootableActorSource != null &&
                    resolution.SourceKind == FloatingStorageWindowSourceKind.LootableActorEquipment &&
-                   ReferenceEquals(externalOwner, lootableActorSource.Inventory) &&
+                   ReferenceEquals(externalOwner, lootableActorSource) &&
                    ReferenceEquals(floatingOwner, resolution.Storage) &&
-                   ItemOwnedStorageRegistry.Instance.ShareRootOwner(externalOwner, floatingOwner);
+                   resolution.ContainerEntry?.Item?.InstanceId == resolution.Storage?.ContainerInstanceId &&
+                   lootableActorSource.Inventory != null &&
+                   ItemOwnedStorageRegistry.Instance.ShareRootOwner(
+                       lootableActorSource.Inventory,
+                       floatingOwner);
         }
 
         private void DrawHeader()
