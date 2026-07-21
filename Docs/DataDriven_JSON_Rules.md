@@ -7,11 +7,13 @@ C# ejecuta lógica.
 
 Los JSON no deben contener lógica compleja ni scripts embebidos.
 
+El deserializador actual ignora campos desconocidos. Ausencia de error no convierte un campo en contrato: solo usar campos documentados y respaldados por definition, validator y runtime.
+
 ## Paquete Core
 
 Mods/Core representa el contenido base oficial del juego y debe estar estructurado como un mod interno que sirva de ejemplo a modders.
 
-El juego debe cargar Core primero. Los mods externos deben poder agregar o modificar contenido usando la misma estructura.
+El juego carga Core primero. Los mods externos actuales pueden agregar definiciones nuevas usando la misma estructura. No existe todavia politica de override o reemplazo: un ID duplicado dentro de su tipo/registro es error y la segunda definicion se rechaza.
 
 Core JSON define contenido. Save/runtime define el estado concreto de la partida. C# ejecuta lógica.
 
@@ -67,6 +69,8 @@ Ejemplo futuro:
   "condition": 63,
   "owner": "player"
 }
+
+Este fragmento es conceptual, no un schema de save aprobado. M36.1 debe decidir la granularidad de identidad y el tratamiento del `Condition` get-only actual antes de que M37 defina el snapshot. En runtime, un stack usa una `ItemInstance` representativa mas `ItemStorageEntry.Quantity`; las unidades fungibles internas no poseen IDs individuales.
 
 ## Items
 
@@ -242,7 +246,7 @@ Los items equipables usan alternativas completas mediante `slot_sets`:
 - M34.2 v0 permite un solo storage por item y prohibe item-owned storage dentro de otro item-owned storage. No define pockets, multiples compartimentos ni save data.
 - `ActorProfileDefinition.inventory_seed_actor_tag` es un bootstrap debug opcional para aplicar solo `initial_inventory` a un actor sin `ActorProfileComponent`; el tag debe existir, aparecer en `initial_tags`, ser unico entre profiles y tener contenido inicial.
 
-Ejemplo:
+Ejemplo de item-owned storage profile:
 
 ```json
 {
@@ -258,7 +262,44 @@ Ejemplo:
 }
 ```
 
-No usar required_sockets todavía.
+`required_sockets` no forma parte del contrato actual.
+
+### Actor Profiles: inventario y Equipment inicial
+
+`ActorProfileDefinition` puede declarar dos listas independientes:
+
+```json
+{
+  "equipment_layout_id": "human_standard_01",
+  "initial_inventory": [
+    { "item_id": "bandage_01", "quantity": 2 }
+  ],
+  "initial_equipment": [
+    { "item_id": "small_backpack_01", "slot_ids": ["back"] },
+    { "item_id": "rusted_crowbar_01", "slot_ids": ["hand_right"] }
+  ]
+}
+```
+
+Reglas de `initial_inventory`:
+
+- cada `item_id` debe usar snake_case y referenciar un item cargado;
+- `quantity` debe ser mayor que cero;
+- el bootstrap crea instancias runtime reales en el inventario, no una lista paralela de loot;
+- las entradas se aplican individualmente; una entrada fallida no revierte las ya creadas;
+- `inventory_seed_actor_tag` aplica solo esta lista a su ruta debug y no aplica Equipment.
+
+Reglas de `initial_equipment`:
+
+- si la lista tiene entradas, `equipment_layout_id` es obligatorio y debe referenciar un layout cargado;
+- cada `item_id` debe usar snake_case, existir, ser equipable, declarar slots y tener `max_stack = 1`;
+- `slot_ids` debe omitirse o coincidir exactamente con una alternativa completa declarada por `equip.slot_sets`;
+- si `slot_ids` se omite, debe existir exactamente una alternativa compatible y libre;
+- no se permiten slots duplicados, inexistentes ni solapados entre entradas;
+- cada entrada crea una `ItemInstance` real de cantidad uno y la equipa mediante los servicios transaccionales existentes;
+- el lote de Equipment es atomico: ante cualquier fallo restaura el snapshot tomado despues de `initial_inventory`, incluyendo inventario, Equipment, slots, storages item-owned creados y secuencia runtime de IDs;
+- ese rollback no revierte display, tags, health, layout ni `initial_inventory`; el profile completo no es una transaccion;
+- `initial_inventory` e `initial_equipment` son listas independientes; repetir una definicion en ambas crea instancias distintas.
 
 ## Actions
 
@@ -368,19 +409,28 @@ Ejemplo de apertura posterior de storage:
 - Equipment slots siguen siendo autoridad gameplay. Sockets, poses y prefabs son presentacion y no pueden contener storage, ownership, interacciones, arma runtime, colliders ni rigidbodies.
 - Asset keys pueden ser agregadas por mods de datos, pero M35.0 no carga AssetBundles, assemblies ni scripting de mods.
 
-## No incluir todavía
+## Compatibilidad De Municion Vigente
 
-No incluir por ahora:
+- `firearm_profiles/*.json` usa `accepted_ammo_profile_ids` como lista obligatoria de perfiles de municion compatibles.
+- Cada referencia debe usar snake_case, existir en `ammo_profiles/*.json` y no repetirse.
+- La cadena vigente es item con `firearm_profile_id` → firearm profile → `accepted_ammo_profile_ids` → item de municion con `ammo_profile_id`.
+- El prototipo actual exige `magazine_capacity = 1` y no posee estado runtime de cargador; no debe presentarse como contrato final de armas.
+- No usar un campo directo `accepted_ammo` en items o acciones; no es el contrato vigente y no reemplaza `accepted_ammo_profile_ids`.
+
+## Fuera Del Contrato JSON Actual
+
+Los siguientes campos o dominios requieren un milestone que defina schema, validacion, runtime aplicable y analisis explicito de impacto en persistencia antes de agregarse. La persistencia se implementa solamente cuando el dominio introduce estado mutable durable:
 
 - noise
 - sound
 - creates_noise
 - noise_level
-- accepted_ammo
 - protection_profile
 - loot avanzado
 - rarezas
 - loot con pesos o chances
-- entities
-- save data
+- definiciones de spawn/lifecycle para entidades runtime
+- estado de save dentro de JSON de definiciones
 - scripting dentro de JSON
+
+El Roadmap puede autorizar estos contratos en milestones futuros. Hasta entonces no deben aparecer como placeholders ni campos ignorados. El save futuro debe serializar IDs de definicion mas estado de instancia en un formato separado; nunca debe modificar `Mods/Core` ni convertir sus definiciones en estado de partida.

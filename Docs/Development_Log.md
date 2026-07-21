@@ -1555,3 +1555,90 @@ Verificacion documental del checkpoint:
 - Unity, batchmode y compilaciones no ejecutados.
 
 M36.0 no queda `DONE`. Checkpoint B debe completar la implementacion documental y dejar el milestone como `IMPLEMENTED — PENDING DOCUMENT REVIEW`.
+
+### Checkpoint B — Design Baseline, Gates And Production Rules
+
+Estado anterior:
+
+`IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING`
+
+Estado posterior del milestone:
+
+`IMPLEMENTED — PENDING DOCUMENT REVIEW`
+
+Objetivo:
+
+Auditar el GDD Maestro v3.1 contra decisiones recientes, milestones validados, documentos vivos, historial Git y contratos tecnicos reales; separar diseño, estado tecnico, propuestas y decisiones pendientes; y alinear reglas, gates y riesgos sin modificar gameplay.
+
+Documentos del checkpoint:
+
+- `AGENTS.md`;
+- `Docs/Current_Milestone.md`;
+- `Docs/DataDriven_JSON_Rules.md`;
+- `Docs/Development_Log.md`;
+- `Docs/Game_Design_Document.md`;
+- `Docs/Milestone_Template.md`;
+- `Docs/OldScars_Development_Rules.md`;
+- `Docs/Production_Gates_and_Risks.md`;
+- `Docs/Project_Roadmap.md`;
+- `Docs/Technical_Architecture.md`.
+
+Auditoria del GDD:
+
+- El texto y la estructura de `Old_Scars_GDD_Maestro_v3.1.docx`, SHA-256 `919966D0BFCDE1FD77C6D7765EE087B4D04211FBDEAAD06B4AAFCCFEE7308AF4`, fueron leidos y auditados como fuente historica/de diseño.
+- Se contrastaron sus 968 parrafos y 190 tablas con decisiones recientes, Roadmap, Current, Next, Development Log, arquitectura, reglas JSON, gates, codigo e historial cuando correspondia. Las 61 imagenes embebidas fueron inventariadas y se revisaron captions/ledger; no hubo revision visual pagina por pagina.
+- Se corrigieron estados tecnicos objetivamente desactualizados, el roadmap G0–G5, los riesgos duplicados, el contrato actual de mods, el flujo de carga/validacion, la separacion `ItemInstance`/`ItemStorageEntry`/`GridInventoryLayout` y los limites de persistencia.
+- Se separaron foundations/prototipos actuales del diseño final: OnGUI, health escalar, rifle debug, camera actual y condition inicial no se convierten automaticamente en UX, combate, camara o desgaste definitivos.
+- Las propuestas y afirmaciones sin evidencia suficiente quedaron etiquetadas como objetivo, propuesta o decision pendiente; no se completo canon por inferencia.
+- La estacion de bombeo se conserva como `CANDIDATE, NOT NARRATIVE CANON`; la casa abandonada queda como escenario tecnico de integracion.
+- El GDD v3.1 no fue sobrescrito. No se genero un DOCX v3.2 porque no habia PDF independiente ni Word/LibreOffice para verificar con seguridad estilos, tablas, imagenes, pies, numeracion, indices y layout.
+
+Autoridad documental:
+
+- Mauro conserva autoridad creativa y decision final de producto.
+- Las decisiones explicitas recientes y milestones aprobados/validados prevalecen sobre fuentes anteriores.
+- `Project_Roadmap.md` define IDs, estados, dependencias, secuencia y gates.
+- `Technical_Architecture.md`, despues de contraste con codigo, define contratos tecnicos vigentes.
+- `Game_Design_Document.md` contiene el baseline de diseño revisado y mantenible.
+- El repositorio y commits prueban estado tecnico, pero no convierten una implementacion provisional en diseño final.
+- GDD Maestro v3.1 se conserva intacto como fuente historica y de diseño auditada.
+
+Resultado:
+
+- El nuevo baseline Markdown incluye etiquetas de direccion confirmada, design target, technical state, proposal, deferred y pending decision.
+- Su apendice `Reconciliacion y correcciones del GDD Maestro v3.1` registra problema, correccion, evidencia, estado y decision pendiente.
+- Arquitectura y JSON Rules documentan mods aditivos sin overrides, duplicados por tipo/registro, quantity en `ItemStorageEntry`, placement en `GridInventoryLayout`, rig parts/sockets anidados y actor bootstrap real.
+- M36.1 debe congelar identidad durable, granularidad de stacks y tratamiento del `ItemInstance.Condition` get-only antes de M37, sin implementar save, condition mutable, repair ni actor lifecycle.
+- M37 persiste primero jugador y slice actual; no pre-serializa actores, clima, factions, quests, reputacion o proceduralidad hipoteticos.
+- Gates conservan sueño/descanso `MUST`, fatiga `SHOULD`, facciones minimas, variacion procedural secundaria y slice local acotado sin adelantar sistemas generales de quests/facciones.
+- El registro vivo queda en R01–R23 e incorpora derechos de assets, revision de trabajo asistido por IA y claims comerciales ligados a evidencia.
+
+Decisiones pendientes de Mauro:
+
+- genero exacto, combate por turnos/AP o tiempo real, `PENSAR`, camara final y tono;
+- causas del colapso, Vandor/Velgrad, industria persistente, protagonista y semilla del abuelo;
+- campaña, mapa/regiones, facciones modernas, finales y canon de la estacion de bombeo;
+- detalle de daño localizado, armor, penetration, medicina, muerte, incapacidad, save UX y recuperacion;
+- companions, alcance de shelter, vehiculos y profundidad procedural;
+- plataforma/store/modelo comercial, rating, idiomas, dispositivos, resoluciones y accesibilidad;
+- direccion visual/audio, derechos de referencias y alcance de localization;
+- granularidad durable de items fungibles por stack y politica futura de mods/overrides.
+
+Trabajo diferido y limites:
+
+- M36.0 no implementa codigo, JSON gameplay, escenas, prefabs, assets, Packages ni ProjectSettings.
+- Unity, batchmode y compilaciones no aplican a este checkpoint documental.
+- La revision creativa/documental de Mauro sigue pendiente; M36.0 no queda `DONE`.
+- Una futura `v3.2_CANDIDATE` exige copia separada, decisiones resueltas, render PDF completo y revision visual pagina por pagina.
+
+Verificacion documental del checkpoint:
+
+- `git diff --cached --check` sin errores;
+- diff staged limitado a los diez documentos autorizados y lista exacta confirmada;
+- enlaces Markdown relativos resueltos dentro del repositorio;
+- ausencia de rutas locales absolutas en los documentos modificados;
+- estados de M36.0, IDs de riesgos R01-R23 y gates reconciliados entre documentos;
+- SHA-256 de la fuente GDD v3.1 reconfirmado y archivo fuente no sobrescrito;
+- no se modificaron C#, JSON gameplay, escenas, prefabs, assets, Packages o ProjectSettings;
+- Unity, batchmode y compilaciones no ejecutados;
+- no existe PDF independiente y no hubo QA visual pagina por pagina; por eso no se genero una candidata DOCX revisada.

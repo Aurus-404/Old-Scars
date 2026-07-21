@@ -12,9 +12,9 @@ Estado inicial autorizado:
 
 Estado actual:
 
-`IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING`
+`IMPLEMENTED — PENDING DOCUMENT REVIEW`
 
-Estado esperado despues de ambos checkpoints:
+Estado posterior de implementacion:
 
 `IMPLEMENTED — PENDING DOCUMENT REVIEW`
 
@@ -37,15 +37,17 @@ Decisiones aplicadas:
 - M32.4, M32.4.1 y Grid Inventory Backend v0 conservan estado pendiente;
 - `Next_Sprints.md` contiene solamente los tres proximos trabajos reales.
 
-## Checkpoint B Pendiente
+## Checkpoint B Implementado
 
-Debe alinear:
+Resultado:
 
-- el mirror resumido y mantenible del GDD Maestro v3.1, sin competir con su autoridad;
-- arquitectura y reglas JSON vigentes;
-- reglas de desarrollo y template de milestones;
-- gates detallados y registro de riesgos;
-- estado final de M36.0 como `IMPLEMENTED — PENDING DOCUMENT REVIEW`.
+- GDD Maestro v3.1 auditado y conservado intacto como fuente historica/de diseño;
+- [Game_Design_Document.md](Game_Design_Document.md) creado como baseline revisado, resumido, etiquetado y mantenible;
+- propuestas, estado tecnico, diseño objetivo, canon confirmado y decisiones pendientes separados;
+- arquitectura y reglas JSON contrastadas con contratos reales;
+- reglas de desarrollo y template de milestones alineados;
+- gates detallados y registro de riesgos reconciliados;
+- revision creativa y documental de Mauro todavia pendiente.
 
 ## Milestone Funcional Anterior
 
@@ -67,7 +69,7 @@ El scrollbar vertical de EQUIPADO con overflow real permanece como deuda no bloq
 
 ## Secuencia Inmediata
 
-1. Completar M36.0 Checkpoint B.
+1. Revision documental de M36.0 por Mauro.
 2. M36.1 — Foundation Freeze & Persistent Identity Contract.
 3. M37.0 — Save Format & Persistence Core.
 4. M37.1 — Current Slice Persistent Round-Trip.

@@ -1,292 +1,167 @@
 # Old Scars — Development Rules for ChatGPT + Codex
-Version: 0.6
-Purpose: shared compact rule file for ChatGPT and Codex. This file stores specific technical/work rules that should not live in ChatGPT memory. Keep it concise, updated, and versioned in the repo.
 
-Recommended repo path:
-Docs/OldScars_Development_Rules.md
+Version: 0.7
 
-## 0. Source-of-truth policy
+Purpose: reglas tecnicas y de trabajo durables para colaborar sobre Old Scars. La direccion de producto, el estado operativo y la historia tienen autoridades separadas; este archivo no las sustituye.
 
-- ChatGPT memory stores high-level permanent workflows and project direction.
-- This file stores specific, technical, small, or final rules.
-- Repo docs store detailed history and milestone records.
-- GitHub history is the real project history.
+## 0. Politica De Autoridad
 
-When a new specific rule is defined or changed:
-1. ChatGPT should ask Mauro for the latest version of this file if it is not available.
-2. ChatGPT should return an updated version of this file.
-3. ChatGPT should also provide a compact prompt for Codex to apply the same change to the repo copy.
-4. The ChatGPT copy and Codex/repo copy must stay equivalent.
+- Mauro conserva la autoridad creativa y la decision final de producto.
+- Las decisiones explicitas recientes y los milestones aprobados/validados prevalecen sobre fuentes anteriores.
+- [Game_Design_Document.md](Game_Design_Document.md) es el baseline de diseño revisado y mantenible; distingue direccion confirmada, objetivo, estado tecnico, propuesta y decision pendiente.
+- El GDD Maestro v3.1 externo se conserva intacto como fuente historica y de diseño auditada, no como especificacion incuestionable.
+- [Project_Roadmap.md](Project_Roadmap.md) es la autoridad de IDs, estados, dependencias y gates.
+- [Current_Milestone.md](Current_Milestone.md) resume el trabajo activo.
+- [Next_Sprints.md](Next_Sprints.md) contiene solo los proximos trabajos reales.
+- [Development_Log.md](Development_Log.md) es append-only y registra eventos/evidencia sin reescribir snapshots historicos.
+- [Technical_Architecture.md](Technical_Architecture.md) documenta contratos implementados.
+- [DataDriven_JSON_Rules.md](DataDriven_JSON_Rules.md) documenta el schema y la validacion JSON vigentes.
+- Git conserva evidencia historica de cambios; no reemplaza el estado operativo canonico del Roadmap.
 
-## 1. General development rules
+Una contradiccion se resuelve segun su dominio y se registra: el repositorio prueba el estado tecnico, pero no vuelve canon final un prototipo. Las ambiguedades creativas, de producto o de alcance material se elevan a Mauro; no se completan por inferencia ni se sincronizan copias mediante memoria.
 
-- Do not create systems just to create systems.
-- Every new system must have a clear future use or be a bridge toward a future system.
-- Debug/prototype tools should separate reusable foundation from temporary visual/debug presentation.
-- Prefer small validated milestones over large unfinished systems.
-- Plan before code.
-- Do not rewrite validated systems unless there is a strong reason.
-- Audit before deleting.
-- Avoid premature final UI, final art, final animation, final VFX, or final audio.
-- If a proposed change touches forbidden or high-risk systems, stop and explain before implementing.
+## 1. Desarrollo General
 
-## 2. Data-driven / JSON rules
+- No crear sistemas por anticipacion. Todo cambio necesita objetivo, milestone autorizado y resultado verificable.
+- Preferir milestones pequeños e integrados sobre sistemas grandes incompletos.
+- Auditar implementacion, datos, escena, historial y deuda relevante antes de diseñar o borrar.
+- Reutilizar contratos validados; no reescribirlos sin una razon concreta y aprobada.
+- Separar foundation reutilizable de tooling o presentacion debug temporal.
+- Evitar UI, arte, animacion, VFX y audio finales antes de que sus contratos y gates correspondan.
+- Si una solicitud rompe una dependencia dura, un gate o el alcance autorizado, detenerse y explicar el conflicto.
 
-- JSON defines data; C# executes closed logic.
-- Do not turn JSON into free scripting.
-- Definitions live in JSON/mods. Runtime instances live in save/runtime data.
-- Do not save full objects; save definition IDs plus instance state.
-- Data should be loaded once, validated, and accessed through GameDatabase.
-- IDs must be stable, lowercase, readable, and unique.
-- Prefer explicit IDs over implicit names.
-- JSON should reference IDs, not scene objects.
-- Loot tables are separate definitions; items should not declare their spawn sources.
-- Effects must be closed/allowed C# effect types.
-- `max_stack` is the source of simple item stacking in `ItemDefinition`.
-- `max_stack = 1` means non-stackable.
-- `max_stack > 1` allows simple merge in `ItemStorage`.
-- `equippable` is a functional boolean in `ItemDefinition`, not a tag.
-- `equip.equippable` is the current source for slot-aware equipment when an `equip` block exists.
-- Flat `equippable` remains temporary compatibility and must not contradict `equip.equippable`.
-- Equipment slot IDs must be technical IDs cargados desde definiciones data-driven.
-- `equip.slot_sets` is the authoritative schema: each inner array is one complete atomic alternative and every referenced slot must exist.
-- `equip.allowed_slots` and `equip.occupied_slots` remain legacy compatibility only; `right_hand` maps to authoritative `hand_right`.
-- Consumables use the closed `consumable.restore_needs` block.
-- Medical consumables may use the closed `consumable.restore_health.amount` block.
-- Consumable effects are data-driven parameters for closed C# logic, not free JSON scripting.
+## 2. Profundidad Mediante Sistemas Conectados
 
-## 2.1 Item JSON model rules
+Todo sistema jugable nuevo debe:
 
-Item JSON should be treated as a stable data contract for current and future systems, not only as the minimum fields used by the current milestone.
+- consumir estado relevante de al menos otro sistema;
+- modificar una decision o costo jugable observable;
+- emitir feedback comprensible sobre causa y resultado;
+- definir como se valida la integracion y que ocurre al fallar;
+- declarar impacto en datos, UI, persistencia, QA y rendimiento.
 
-Rules:
-- Item JSON may include future-facing data if the field has a clear purpose, stable naming, and can be validated.
-- Do not add arbitrary fields unless ItemDefinition/schema/validator know them or the milestone explicitly approves them.
-- Prefer optional blocks over empty placeholder blocks. If an item does not use a system, omit that block.
-- Current systems may ignore approved future-facing blocks, but they must not break loading or validation.
-- Keep gameplay logic in C# and reusable profiles; JSON should reference IDs and declare data.
-- Avoid duplicating complex combat, crafting, AI, or interaction logic inside each item.
-- Prefer reusable profile references for complex systems, such as weapon_profile_id, instead of per-item one-off logic.
-- Prefer snake_case keys in JSON unless an existing loader/schema already requires otherwise.
-- Use technical slot IDs from the active layout, such as `hand_right`, `hand_left`, `back` or `torso_outer`; avoid human text such as "right hand".
-- For equipment, use `slot_sets`; alternatives belong in separate inner arrays and multi-slot occupancy belongs in the same inner array.
-- Never create `both_hands`: a two-handed item occupies `hand_left` and `hand_right` with one shared `InstanceId`.
-- `back` is a generic equipment slot; item-owned backpack storage is a separate future concern.
-- Visual equipment data belongs in a separate equip_visual block and should be optional until visual equipment is implemented.
-- UI data such as category_sort and icon_id belongs in a display/ui-oriented block, not in tags.
-- max_stack should live in a stacking block long-term. Existing flat max_stack may remain until migration is explicitly approved.
-- consumable data should stay closed and explicit, such as consumable.restore_needs.
-- Economy, physical, combat, visual, display, stacking, equip, and consumable data should stay separated.
+Una barra aislada, simulacion sin decisiones o backend sin consumidor real no satisface esta regla.
 
-Recommended target item shape:
+## 3. Data-Driven Y JSON
 
-```json
-{
-  "id": "rusted_crowbar_01",
-  "schema_version": 1,
+- JSON define contenido y parametros; C# ejecuta logica cerrada.
+- Definitions viven en JSON/mods; instances y estado mutable viven en runtime o save.
+- Los datos se cargan una vez, se validan y se consultan mediante `GameDatabase`.
+- El deserializador actual ignora campos desconocidos; solo los campos documentados y respaldados por definition, validator y runtime forman parte del contrato.
+- IDs son estables y snake_case. Deben ser unicos dentro de su tipo/registro; una reutilizacion textual entre familias no implica identidad compartida.
+- `Mods/Core` carga primero. Mods externos pueden agregar IDs; no hay overrides, manifests ni versionado y los duplicados dentro del mismo tipo/registro se rechazan.
+- Loot tables son definiciones separadas; los items no declaran sus fuentes de spawn.
+- Effects JSON se limitan a tipos C# permitidos; no hay scripting libre.
+- No agregar campos futuros, placeholders o schemas aspiracionales sin loader, validator y milestone aprobados.
+- Estado de save nunca se escribe dentro de definiciones de contenido.
 
-  "display": {
-    "name": "Crowbar",
-    "description": "A heavy metal crowbar. Useful for forcing weak doors, opening sealed containers, and as an improvised weapon.",
-    "category_sort": "tools",
-    "icon_id": "item_crowbar"
-  },
+## 4. Contrato Actual De Items
 
-  "tags": [
-    "item",
-    "tool",
-    "weapon",
-    "crowbar",
-    "metal",
-    "melee_weapon",
-    "can_pry",
-    "can_force_weak_doors",
-    "crafting_component"
-  ],
+- `ItemDefinition.max_stack` plano es la autoridad de stacking actual: uno significa no stackable; mayor que uno permite merge simple.
+- `physical.weight_kg` es obligatorio y no negativo.
+- `inventory.footprint`, `initial_orientation` e `icon_id` forman el bloque espacial/presentacional actual.
+- `equip.equippable` y `equip.slot_sets` son la autoridad slot-aware; los campos planos/legacy solo existen por compatibilidad y no pueden contradecirla.
+- Cada `slot_sets[]` es una alternativa atomica completa. Un item de dos manos usa `hand_left` y `hand_right` dentro del mismo set; nunca `both_hands`.
+- `back` es un slot generico. Item-owned backpack storage ya existe y es un contrato independiente mediante `owned_storage_profile_id`.
+- Los visuales M35 viven en perfiles separados: rig, assets, item visual profiles y attachment poses. No crear un bloque inline `equip_visual`.
+- Condition actual es un valor runtime inicial get-only. M36.1 decide si M37 lo persiste, lo rederiva o lo excluye justificadamente; mutacion, desgaste, repair y disassembly pertenecen a M43.0.
+- No adoptar `schema_version`, un bloque `stacking` u otra forma objetivo sin una migracion expresamente autorizada.
 
-  "stacking": {
-    "max_stack": 1
-  },
+## 5. Inventory, Equipment, Ownership Y Storage
 
-  "equip": {
-    "equippable": true,
-    "slot_sets": [["hand_right"], ["hand_left"]],
-    "equip_group": "handheld_tool"
-  },
+- `ItemStorage` permanece como base comun para inventario, Equipment, containers, cuerpos e item-owned storages.
+- `ItemInstance.InstanceId`, no `DefinitionId` ni un indice, identifica la instancia representativa. Un stack actual usa una instancia mas `ItemStorageEntry.Quantity`; sus unidades fungibles no tienen IDs individuales. M36.1 congela la granularidad durable por categoria.
+- Un item pertenece a exactamente un storage node; `ActorItemOwnershipComponent` valida ownership unico a traves del subtree.
+- Equipment guarda una sola entry por item y sus slots referencian el mismo `InstanceId`.
+- UI, visuales y diagnostics no mutan storage directamente; usan preview/commit/rollback y servicios existentes.
+- Hooks y observers post-commit no extienden la atomicidad del estado: una excepcion se diagnostica y no revierte gameplay ya confirmado.
+- Item-owned storage, ownership y subtree weight estan implementados y validados. El nesting de item-owned storage sigue prohibido en v0.
+- Transfers dentro del mismo root owner no agregan peso; entradas externas respetan la politica de capacidad del actor.
+- Los visuales se publican solo despues de un commit exitoso y no poseen gameplay.
 
-  "equip_visual": {
-    "model_id": "rusted_crowbar_01_model",
-    "rig": "humanoid",
-    "socket": "hand_right",
-    "local_position": { "x": 0.0, "y": 0.0, "z": 0.0 },
-    "local_rotation": { "x": 0.0, "y": 0.0, "z": 0.0 },
-    "local_scale": { "x": 1.0, "y": 1.0, "z": 1.0 }
-  },
+## 6. Actor Profiles Y Bootstrap
 
-  "physical": {
-    "condition_max": 100,
-    "weight_kg": 2.5,
-    "material": "metal"
-  },
+- Inventario y Equipment iniciales se definen por actor profiles, no por listas probabilisticas inventadas ni hardcode por objeto.
+- `initial_inventory` usa `item_id` y `quantity` y crea instancias reales en el storage personal; sus entradas no forman un lote atomico.
+- `initial_equipment` requiere `equipment_layout_id`; cada entrada usa un item equipable de cantidad uno y `slot_ids` opcional que debe representar una alternativa completa.
+- Si se omite `slot_ids`, debe existir una unica alternativa compatible libre.
+- El lote `initial_equipment` es atomico y valida ownership; un fallo restaura el snapshot tomado despues de `initial_inventory`, pero no revierte el resto del profile.
+- `inventory_seed_actor_tag` es una ruta debug limitada a `initial_inventory`; no aplica el profile completo.
+- Actores muertos saqueables exponen sus storages reales; no se convierten en containers estaticos paralelos.
+- `ActorHealthComponent` es una base escalar debug. Daño localizado, heridas y medicina no se infieren de su existencia.
 
-  "economy": {
-    "base_buy_value": 45,
-    "base_sell_value": 20
-  },
+## 7. Interaccion, Estado Y Feedback
 
-  "combat": {
-    "weapon_profile_id": "improvised_blunt_01"
-  }
-}
-```
+- `InteractionSystem` permanece desacoplado de UI, inventario, loot, pickup y detalles de `MonoBehaviour`.
+- Disponibilidad proviene de `ActionAvailabilityEvaluator` y `ActionAvailabilityResult`; panels y diagnostics no duplican esa logica.
+- Menus ejecutables muestran acciones disponibles. Acciones bloqueadas pertenecen a diagnostics.
+- `WorldObjectTags` posee estado runtime por tags. `WorldObjectStateView` lo presenta, pero no muta tags ni decide gameplay.
+- `GameplayFeedbackLog` registra hechos ocurridos; `ActionAvailabilityDiagnostics` explica disponibilidad. No mezclar ambos contratos.
+- Evitar scripts por objeto cuando un componente o regla data-driven cerrada resuelve el caso.
 
-Migration rule:
-- This target shape should guide future data work, but do not migrate every item or loader at once unless the current milestone explicitly includes that migration.
-- During transition, keep backwards compatibility for validated fields such as display_name, description, max_stack, equippable, consumable, physical, economy, and combat if they already exist in the repo.
+## 8. UI, Escena Y Presentacion
 
-## 3. Naming rules
+- Los panels `OnGUI` actuales son debug, no UI final ni fundamento para expansion indefinida.
+- `InventoryUISessionController` conserva sesion, input, menu, modal y drag; los panels no crean otra autoridad.
+- Helpers visuales pueden modificar hijos visuales, nunca deshabilitar el root de gameplay ni controlar estado.
+- Mantener `SampleScene` y sus POIs estables salvo que el milestone autorice cambios concretos.
+- Usar placeholders para validar comportamiento y evitar perseguir arte final antes de tiempo.
+- Eventos/callbacks locales con ownership claro son validos. No introducir un bus global o una arquitectura universal sin necesidad y milestone aprobados.
 
-- Use clear English technical IDs.
-- Prefer snake_case for data IDs.
-- Avoid overly descriptive item IDs if state/condition belongs elsewhere.
-- Examples:
-  - Good: rusted_crowbar_01, scrap_metal_01, force_door, search_container.
-  - Avoid: super_old_destroyed_oxidized_crowbar_that_opens_doors.
-- Runtime/debug GameObject names may be human-readable, but IDs must remain stable.
-- Display names are for UI/readability; IDs are for data references.
+## 9. Limites De M36.1 Y M37
 
-## 4. Tags and state rules
+- M36.1 es un freeze corto: clasifica contratos, define identidad durable, invariantes, boundaries de hidratacion, test seams y baseline.
+- M36.1 decide la granularidad durable de stacks y el tratamiento del `ItemInstance.Condition` get-only para M37.
+- M36.1 no implementa save I/O, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.
+- M37.0 define formato, version, checksum/integridad, escritura atomica, recovery y migrations para estado real existente.
+- M37.1 prueba el round-trip del slice actual: jugador, items, grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags.
+- M37 no pre-serializa clima, facciones, actores futuros, economia regional o proceduralidad hipotetica.
 
-- Tags are system-facing context/state markers.
-- Tags should enable decisions, consequences, actions, filtering, or interactions.
-- Avoid adding tags that do not affect anything.
-- Runtime tags represent current mutable state.
-- Initial tags represent starting/default state.
-- Visual systems may read tags but must not own gameplay logic.
-- State-changing systems must be the ones that record state changes.
-- Do not duplicate state-change reports from observers.
-- Actor health state is represented through runtime tags such as `alive_actor`, `damaged_actor`, `low_health_actor`, `dead_actor`, and `lootable_actor`.
-- Visual health state should be read from tags by WorldObjectStateView; health code must not paint renderers directly.
+## 10. Estados Y Validacion
 
-## 5. Interaction/action rules
+- `IMPLEMENTED` significa alcance completado y evidencia estatica registrada; no equivale a prueba manual.
+- `PENDING UNITY VALIDATION` identifica implementacion que requiere validacion manual en Unity.
+- `VALIDATED` exige la prueba de aceptacion definida y evidencia explicita.
+- `DONE` exige cierre funcional/documental y coherencia entre las fuentes correspondientes.
+- Para un milestone documental, Unity puede ser `NOT APPLICABLE`; la revision documental requerida sigue siendo obligatoria antes de `DONE`.
+- Separar siempre compilacion runtime, compilacion Editor, pruebas automatizadas, prueba manual, Console y revision documental.
+- No afirmar validacion que no se ejecuto. Registrar deuda, limites y pruebas pendientes.
 
-- InteractionSystem must remain decoupled from UI, inventory, loot, pickup, and MonoBehaviour details.
-- Action availability must come from ActionAvailabilityEvaluator and ActionAvailabilityResult.
-- Diagnostic tools may expose evaluation results but must not duplicate availability logic.
-- Menus should show executable/available actions only.
-- Blocked actions may appear in diagnostics, not as executable actions.
-- Contextual options should emerge from tags, stats, equipment, items, knowledge, state, distance, and context.
-- Do not hardcode one-off object behavior when a generic rule/component is enough.
+## 11. Documentacion Y Git
 
-## 6. Feedback/debug tools rules
+Actualizar solamente las fuentes afectadas:
 
-- GameplayFeedbackLog records structured gameplay facts that happened.
-- Consuming an item should record structured feedback such as `ItemUsed`.
-- ActionAvailabilityDiagnostics explains why actions are currently available or blocked.
-- These systems must stay separate.
-- Debug panels only display/read data; they do not decide gameplay.
-- Debug panels should be hidden by default when they clutter the scene.
-- Current hotkeys:
-  - I = InventoryDebugPanel.
-  - F7 = Gameplay Feedback Log.
-  - F8 = Action Availability Diagnostics.
-- A missing debug panel/log must not break gameplay.
-- ActorNeedsDebugPanel and ItemStorageDebugPanel are debug tools, not final UI.
-- ItemStorageDebugPanel should remain reusable for storages such as crates, corpses, backpacks, or traders.
+- Roadmap cuando cambia un ID, estado, dependencia o gate.
+- Current cuando cambia el snapshot activo.
+- Development Log agregando un evento, nunca reescribiendo historia.
+- Next cuando cambia la cola inmediata.
+- Technical Architecture o JSON Rules solo cuando cambia un contrato.
+- GDD mirror solo cuando cambia o se reconcilia la fuente de diseño.
+- Gates/Risks cuando cambia un criterio, evidencia o riesgo.
 
-## 7. Unity scene/component rules
+Antes de commit:
 
-- Scene roots holding gameplay components should not be disabled by visual helper components.
-- Visual helper components may activate/deactivate child visual objects.
-- Runtime visual state should reflect gameplay tags, not control them.
-- Keep SampleScene changes minimal and purposeful.
-- Avoid reorganizing the POI unless the milestone requires it.
-- Use placeholders when validating behavior; do not chase final art.
-- Prefer generic components over object-specific scripts.
-- ItemStorage should remain the common base for inventories and containers.
-- World containers may have internal storage before the content is accessible.
-- Object state controls whether storage can be accessed; it does not determine whether storage exists.
+- revisar `git status --short`, diff, stat y lista exacta de archivos;
+- ejecutar `git diff --check`;
+- verificar enlaces relativos y ausencia de rutas locales absolutas;
+- comprobar IDs, estados, referencias y scope autorizado;
+- distinguir validaciones ejecutadas de las no aplicables.
 
-## 8. WorldObjectStateView rules
+El commit debe tener titulo y cuerpo con milestone, objetivo, alcance, decisiones, verificacion, deuda y estado posterior. Tras el commit, inspeccionar el cuerpo real y confirmar el resultado del push cuando corresponda.
 
-- WorldObjectStateView reads WorldObjectTags runtime tags and applies visual rules.
-- It must not modify tags.
-- It must not decide gameplay.
-- It must not change action availability.
-- It must not replace InteractionSystem, ActionAvailabilityEvaluator, or feedback/diagnostics systems.
-- It should use simple visual operations first:
-  1. SetActive on child GameObjects.
-  2. Local rotation on child Transforms.
-- It should apply initial visual state on start/on enable.
-- It may detect tag changes by polling/signature comparison for small debug POIs.
-- It should not spam warnings every frame.
-- Rules should be complete for the object: activate needed visuals and deactivate conflicting variants.
+## 12. Trabajo Prematuro
 
-## 9. Actor inventory / NPC loot profile rules
+La presencia de un dominio en el Roadmap no autoriza adelantarlo. No introducir sin milestone activo:
 
-- Actor inventory should separate Storage from Equipped conceptually.
-- `ItemStorage` remains the common runtime base for actor storage, containers, corpse loot, and future backpacks/pockets.
-- Actor ownership aggregates personal inventory and linear equipment storage; an `ItemInstance` must belong to exactly one storage node.
-- Equipment slots are references to the single entry in equipment storage; multi-slot items must not duplicate storage, details or weight.
-- Do not use storage indices as the durable source of equipped state when an instance id is available.
-- With `ActorEquipmentComponent`, `hand_right` is authoritative and legacy `right_hand` delegates to it; without the component, the legacy field remains a temporary scene fallback.
-- Inventory/equipment UI must not be the only guard: actor inventory code must internally reject invalid equipment.
-- NPC/actor starting inventory should be defined through data profiles/templates, not hardcoded per scene object when avoidable.
-- JSON may define actor inventory candidates by storage/slot, such as right_hand candidates and base_storage contents.
-- Candidate lists should reference existing item definition IDs and use simple weights/probabilities/quantities.
-- Runtime spawning picks from those candidates and creates ItemInstances; the JSON profile is not the live inventory after spawn.
-- Save data must store the picked runtime inventory/instances, not reroll the profile.
-- Equipped item candidates must respect equip data and validated slot rules.
-- Lootable dead actors should expose their actor inventory/storages; they should not be converted into generic static containers unless explicitly approved for a limited debug shortcut.
-- Reuse ItemStorage for actor storage, corpse loot, containers, and future backpacks/pockets.
-- Item-owned storage, backpack contents, nesting and subtree weight are deferred to M34.2 and must not be inferred from the generic `back` slot.
-- Keep the first NPC loot profile minimal and validated before adding many NPC archetypes.
-- ActorHealthComponent is the current small runtime health base for actors; it should stay generic for Player and NPC debug actors.
-- Player at 0 health is not real death yet: no game over, no movement/action blocking, and no `lootable_actor` unless a future milestone explicitly changes that.
-- DebugActorInventorySeeder is a scene debug seeder, not an NPC profile/spawn/loot-table system.
+- save, actor lifecycle, combate, IA, facciones o proceduralidad;
+- UI final, journal/quests o framework global de eventos;
+- condition/repair/crafting, audio/ruido o sistemas de produccion completos;
+- refactors amplios de foundations validadas;
+- schemas, perfiles o abstracciones universales sin consumidor actual.
 
-## 10. Documentation and Git rules
+## 13. Protocolo De Actualizacion
 
-- After a milestone is validated, update:
-  - Docs/Project_Roadmap.md
-  - Docs/Current_Milestone.md
-  - Docs/Development_Log.md
-  - Docs/Next_Sprints.md
-- After docs are updated, review changes in GitHub Desktop.
-- Commit with a clear milestone message.
-- Push to GitHub before starting the next milestone.
-- Do not mark a milestone validated until it has been tested in Unity.
-
-## 11. Codex prompt rules
-
-- Prompts to Codex should be compact and not waste context/tokens.
-- Include only the critical objective, restrictions, files/systems if necessary, and validation checklist.
-- Use detailed prompts only for delicate/high-risk architecture.
-- Prefer: objective + hard restrictions + expected output + validation.
-- If Codex might touch forbidden systems, explicitly say to stop and explain first.
-
-## 12. Things not to introduce prematurely
-
-Do not introduce these unless explicitly approved for a milestone:
-- Combat system.
-- IA/NPC/faction systems.
-- Save system.
-- Final inventory UI.
-- Final UI framework.
-- Journal/quest log.
-- EventBus/listeners/subscriptions/callbacks.
-- Scripting in JSON.
-- Visual profiles in JSON.
-- Animation/VFX/audio systems.
-- Large refactors of validated systems.
-- Object-specific visual scripts when a generic component works.
-
-## 13. Update protocol for this file
-
-When updating this file:
-- Keep it compact.
-- Add rules only if they are likely to matter again.
-- Avoid adding one-time implementation notes.
-- Prefer short bullets.
-- Update version only for meaningful structural changes.
-- If a rule becomes obsolete, replace it instead of accumulating contradictions.
+- Mantener este archivo compacto y estructural.
+- Agregar solo reglas con probabilidad real de reutilizacion.
+- Reemplazar reglas obsoletas en vez de acumular contradicciones.
+- Subir la version solamente ante cambios estructurales.

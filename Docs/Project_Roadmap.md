@@ -4,7 +4,7 @@
 
 Este archivo es la autoridad canonica para:
 
-- IDs y nombres oficiales de milestones;
+- IDs reservados y aliases historicos;
 - estado actual de cada milestone;
 - dependencias y orden de ejecucion;
 - horizontes de produccion;
@@ -12,14 +12,14 @@ Este archivo es la autoridad canonica para:
 
 `Current_Milestone.md` resume este estado, `Next_Sprints.md` deriva la cola inmediata y `Development_Log.md` conserva la cronologia append-only. Ninguno de esos documentos puede reasignar IDs ni contradecir el estado publicado aqui.
 
-El GDD mantiene la autoridad de producto y diseño. `Technical_Architecture.md` mantiene la autoridad sobre contratos tecnicos implementados. Este roadmap no sustituye ninguno de esos dos documentos.
+Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 externo se conserva como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) mantiene la autoridad sobre contratos tecnicos vigentes despues de contrastarlos con el codigo real. Este roadmap no sustituye esas fuentes ni convierte implementaciones en diseño final.
 
 ## Estado De Produccion
 
 | Campo | Estado canonico |
 | --- | --- |
 | Milestone activo | M36.0 — Old Scars Strategic Production Roadmap Rebaseline |
-| Estado M36.0 | `IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING` |
+| Estado M36.0 | `IMPLEMENTED — PENDING DOCUMENT REVIEW` |
 | Ultimo milestone funcional cerrado | M35.2 — Lootable Entity Inventory UI V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
@@ -69,7 +69,7 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 
 ### IDs Historicos Detectados En Git
 
-| ID historico | Nombre/evidencia Git | Estado canonico | Disposicion |
+| ID historico | Nombre/evidencia Git | Estado o relacion canonica | Disposicion |
 | --- | --- | --- | --- |
 | M28 | Add ground item drop pickup and restore container visuals — commit `7fb2671030d34fd69f79f7960adeddc65e6caf71` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | Se conserva el asunto historico del commit y el ID queda reservado. |
 | M29 | Lee-Enfield firearm prototype — commit `6c4d6ec` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | ID historico reservado. |
@@ -118,7 +118,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 
 | Horizonte | Milestone | Tipo | Estado | Dependencias | Resultado / gate |
 | --- | --- | --- | --- | --- | --- |
-| AHORA | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING` | M35.2 cerrado | Autoridad, diseño, gates y reglas alineados; despues queda `IMPLEMENTED — PENDING DOCUMENT REVIEW`. |
+| AHORA | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `IMPLEMENTED — PENDING DOCUMENT REVIEW` | M35.2 cerrado | Checkpoints A y B implementados; Mauro debe revisar jerarquia, baseline de diseño, gates, riesgos y decisiones pendientes. |
 | AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `PLANNED` | M36.0 revisado | Contratos e identidad durable acordados; gate `Foundation Freeze`. Debe ser corto. |
 | SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente. |
 | SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`. |
@@ -126,25 +126,25 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
 | DESPUES | M39.0 — Localized Health & Medicine V1 | Jugable | `PLANNED` | M38.1 | Regiones, heridas, sangrado, dolor y tratamientos. |
 | DESPUES | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED` | M39.0 | Damage contract, melee/firearms, ammo y reload. |
-| DESPUES | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED` | M40.0; condition para integracion final | Cobertura y penetracion explicables; gate `Combat Ready`. |
+| DESPUES | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. |
 | DESPUES | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `PLANNED` | M38.0 | Navegacion, percepcion y diagnostico. |
 | DESPUES | M41.1 — Human Encounter AI V1 | Jugable | `PLANNED` | M40.0, M41.0 | Evitar, alertarse, huir y luchar; gate `AI Ready`. |
 | DESPUES | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED` | M38.1 | Clima, forecast, exposicion y proteccion. |
-| DESPUES | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED` | M42.0 | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready`. |
+| DESPUES | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED` | M42.0; M41.0 para animales moviles | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready`. |
 | DESPUES | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad. |
 | DESPUES | M43.1 — Bounded Crafting & Workstations V1 | Jugable | `PLANNED` | M43.0 | Recetas cerradas y estaciones limitadas. |
-| DESPUES | M44.0 — Skills & Long-Term Progression V1 | Jugable | `PLANNED` | M39–M43 | Competencias que habilitan opciones, sin grind. |
-| DESPUES | M44.1 — Shelter & Recovery Progression V1 | Jugable | `PLANNED` | M38.1, M39, M42, M43 | Refugio funcional y recuperacion; gate `Survival Systems Ready`. |
-| DESPUES | M45.0 — Content Tools & World Sectorization | Herramientas/arquitectura | `PLANNED` | M37.1 y contratos estables | Sectores, validators, catalogos e inspector; gate `Content Pipeline Ready`. |
-| DESPUES | M45.1 — Old Scars Vertical Slice Candidate: La estacion de bombeo | Contenido/jugable | `PLANNED — CANDIDATE, NOT NARRATIVE CANON` | Gates anteriores | Loop preparacion–expedicion–retorno persistente; gate `Vertical Slice Approved`. |
-| FUTURO | M46.0 — Settlements, Trade & Patrimonial Value | Jugable/contenido | `PLANNED` | Vertical Slice Approved | Asentamientos y economia material acotada. |
+| DESPUES | M44.0 — Skills & Long-Term Progression V1 | Jugable | `PLANNED` | M39.0, M40.1, M41.1, M42.1, M43.1 | Competencias que habilitan opciones, sin grind. |
+| DESPUES | M44.1 — Shelter & Recovery Progression V1 | Jugable | `PLANNED` | M38.1, M39.0, M42.1, M43.1, M44.0 | Refugio funcional y recuperacion; gate `Survival Systems Ready`. |
+| DESPUES | M45.0 — Content Tools & World Sectorization | Herramientas/arquitectura | `PLANNED` | M37.1 | Sectores, validators, catalogos e inspector sobre contratos estabilizados; gate `Content Pipeline Ready`. |
+| DESPUES | M45.1 — Old Scars Vertical Slice Candidate: La estacion de bombeo | Contenido/jugable | `PLANNED — CANDIDATE, NOT NARRATIVE CANON` | M36.1, M37.1, M40.1, M41.1, M42.1, M43.1, M44.1, M45.0 | Loop preparacion–expedicion–retorno persistente con barra audiovisual acotada; gate `Vertical Slice Approved`. |
+| FUTURO | M46.0 — Settlements, Trade & Patrimonial Value | Jugable/contenido | `PLANNED` | M45.1 | Asentamientos y economia material acotada. |
 | FUTURO | M46.1 — Faction Identity, Disposition & Memory V1 | Jugable | `PLANNED` | M41.1, M46.0 | MUST limitado a identidad, disposicion y memoria minima; no guerra estrategica. |
 | FUTURO | M47.0 — Controlled Secondary World Variation V1 | Arquitectura/herramientas | `PLANNED` | M45.0, M46.1 | MUST limitado a variacion secundaria controlada, determinista y persistente. |
 | FUTURO | M47.1 — Narrative, Events & Objectives V1 | Contenido/jugable | `PLANNED` | M46.1, M47.0 | Eventos y objetivos autorales acotados. |
-| FUTURO | M48.0 — Production UI/UX & Accessibility | Produccion | `PLANNED` | Contratos jugables estables | UI de produccion sin reescribir backends. |
-| FUTURO | M48.1 — Art, Animation & Audio Production Pipeline | Produccion/herramientas | `PLANNED` | Vertical slice y contratos visuales | Pipeline repetible con budgets. |
-| FUTURO | M49.0 — Content Production & Optimization | Contenido/produccion | `PLANNED` | M47–M48 | Contenido a escala sin sistemas nuevos. |
-| FUTURO | M50.0 — Modding & Data Compatibility V1 | Arquitectura/produccion | `PLANNED` | M37, M45, M49 | Manifests, versiones, dependencias, overrides y compatibilidad; gate `Production Ready`. |
+| FUTURO | M48.0 — Production UI/UX & Accessibility | Produccion | `PLANNED` | M45.1, M47.1 | UI de produccion sin reescribir backends. |
+| FUTURO | M48.1 — Art, Animation & Audio Production Pipeline | Produccion/herramientas | `PLANNED` | M45.1 | Pipeline repetible con budgets. |
+| FUTURO | M49.0 — Content Production & Optimization | Contenido/produccion | `PLANNED` | M47.1, M48.0, M48.1 | Contenido a escala sin sistemas nuevos. |
+| FUTURO | M50.0 — Modding & Data Compatibility V1 | Arquitectura/produccion | `PLANNED` | M37.1, M45.0, M49.0 | Manifests, versiones, dependencias, overrides y compatibilidad; gate `Production Ready`. |
 | FUTURO | M51.0 — Alpha | Produccion | `PLANNED` | Production Ready | Feature complete y recorrido de inicio a fin; gate `Alpha`. |
 | POSTERIOR AL ALPHA | M52.0 — Content Complete | Contenido/produccion | `PLANNED` | Alpha | Contenido de lanzamiento integrado; gate `Content Complete`. |
 | POSTERIOR AL ALPHA | M53.0 — Beta | Produccion | `PLANNED` | Content Complete | Feature/content lock, estabilidad y balance; gate `Beta`. |
@@ -153,7 +153,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 
 ## Gates Canonicos
 
-Este archivo es autoridad sobre los nombres y la ubicacion de los gates. Sus criterios detallados pertenecen a `Docs/Production_Gates_and_Risks.md` cuando ese documento sea implementado en Checkpoint B.
+Este archivo es autoridad sobre los nombres y la ubicacion de los gates. Sus criterios detallados se desarrollan en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 
 | Gate | Cierre previsto |
 | --- | --- |
@@ -181,9 +181,9 @@ Ramas que deben converger antes de la vertical slice candidata:
 
 - M38.1 → M39.0 → M40.0 → M40.1;
 - M38.0 → M41.0 y M40.0 → M41.1;
-- M38.1 → M42.0 → M42.1;
+- M38.1 → M42.0 → M42.1; animales moviles requieren tambien M41.0;
 - M37.1 → M43.0 → M43.1;
-- M38.1/M39/M42/M43 → M44.1;
+- M38.1, M39.0, M42.1, M43.1 y M44.0 → M44.1;
 - M37.1 → M45.0;
 - M40.1, M41.1, M42.1, M43.1, M44.1 y M45.0 → M45.1.
 
@@ -205,7 +205,7 @@ Reconciliar autoridad documental, ledger historico, estados, dependencias, gates
 
 ### M36.0 — Checkpoint B
 
-Alinear el mirror resumido del GDD Maestro, arquitectura, JSON rules, reglas de desarrollo, template, gates y riesgos. El mirror no reemplaza ni compite con el GDD Maestro v3.1.
+Alinear el baseline de diseño revisado, arquitectura, JSON rules, reglas de desarrollo, template, gates y riesgos. El GDD Maestro v3.1 se conserva intacto como fuente historica auditada; las decisiones ambiguas no se resuelven por inferencia.
 
 ### M36.1 — Limite Obligatorio
 
@@ -217,6 +217,11 @@ M36.1 debe ser corto. Puede definir y probar contratos de identidad persistente,
 - actor lifecycle;
 - gameplay nuevo;
 - UI final.
+
+Tambien debe decidir:
+
+- como representa M37 el campo runtime `ItemInstance.Condition` ya existente —persistirlo, rederivarlo o excluirlo justificadamente— sin implementar condition mutable, desgaste ni reparacion antes de M43.0;
+- que categorias conservan identidad durable por objeto y cuales usan la semantica actual de una instancia representativa mas cantidad fungible por stack.
 
 ### M37 — Limite Obligatorio
 

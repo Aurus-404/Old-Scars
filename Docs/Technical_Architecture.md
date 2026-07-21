@@ -1,66 +1,94 @@
 # Old Scars - Technical Architecture
 
-## Data y runtime
+## Alcance Y Autoridad
 
-- JSON contiene definiciones moddables; `GameDataLoader` las carga una vez, `GameDatabase` las registra por ID y `DataValidator` rechaza contratos/referencias invalidos.
-- El Debug Player sin `ActorProfileComponent` puede recibir `initial_inventory` desde el unico actor profile cuyo `inventory_seed_actor_tag` coincide con sus tags; esta ruta no aplica health, display ni tags del profile.
-- `ItemDefinition` describe un tipo. `ItemInstance` posee identidad y estado runtime; nunca se usa `DefinitionId` como identidad de ownership.
-- `ItemStorage` sigue siendo la autoridad de entries, cantidades y stacks. `GridStorageRuntime` + `GridInventoryBackend` agregan layout, placements y transacciones espaciales.
+Este documento describe contratos tecnicos implementados en el slice actual. No asigna IDs, estados, dependencias ni gates; esa autoridad pertenece a [Project_Roadmap.md](Project_Roadmap.md). Una capacidad futura mencionada aqui es un limite de integracion, no una implementacion existente.
 
-## Ownership del actor y equipment
+## Datos, Mods Y Runtime
 
-- `ActorItemOwnershipComponent` agrega inventario personal, equipment storage y contenido item-owned para validar ownership unico.
-- `ActorEquipmentComponent` guarda una sola entry por item equipado; los slots solo referencian su `InstanceId`.
-- `back` es un slot generico. Equipar una mochila no crea ni copia storage y no cambia el peso si el owner raiz sigue siendo el actor.
+- JSON contiene definiciones moddables; `GameDataLoader` las carga una vez, `GameDatabase` las registra por ID y `DataValidator` rechaza los contratos o referencias que valida explicitamente.
+- `Mods/Core` se carga primero. Los directorios externos se cargan despues en orden alfabetico y pueden agregar IDs nuevos.
+- No existe todavia politica de override, manifest, dependencia o version de mod. Un ID duplicado dentro de su tipo/registro produce error y la segunda definicion se rechaza.
+- El deserializador actual ignora campos desconocidos. Eso no los incorpora al contrato: un campo no documentado puede quedar silenciosamente sin consumidor hasta que loader, validator y runtime lo implementen.
+- Las definiciones no contienen estado de partida. Los objetos colocados en escena y las instancias runtime consumen definiciones por ID.
+- `ItemDefinition` describe un tipo; `ItemInstance` conserva identidad y estado de una instancia representativa. La cantidad del stack pertenece a `ItemStorageEntry`, no a `ItemInstance`.
 
-## Item-owned storage M34.2
+## Identidad Actual Y Limite De Persistencia
 
-- `ItemDefinition.owned_storage_profile_id` referencia `ItemStorageProfileDefinition`.
-- Cada `ItemInstance` con perfil crea como maximo un `ItemOwnedStorageRuntime` propio, con `ItemStorage`, `GridStorageRuntime`, dimensiones, versiones y `ContainerInstanceId`.
-- `ItemOwnedStorageRegistry` implementa resolucion por `InstanceId`, direct owner y owner raiz con deteccion de ciclos. Ownership cambia despues de commit; un rollback no lo modifica.
-- `ItemOwnedStorageRuntime` implementa `IGridStorageOwner` y reutiliza `GridStorageTransferService`; no existe backend especial de mochila.
-- Nesting item-owned queda prohibido en M34.2 v0 mediante un guard transaccional generico basado en capacidad de poseer storage.
+- `ItemInstance.InstanceId` es la identidad autoritativa dentro de una sesion. Ownership, placements, Equipment, visuales y storages item-owned la usan en lugar de `DefinitionId` o indices.
+- Un stack actual contiene una `ItemInstance` representativa y `ItemStorageEntry.Quantity`; las unidades fungibles internas no poseen IDs individuales. Split crea una instancia hermana con ID nuevo y merge conserva una representante. M36.1 debe decidir que categorias requieren identidad por objeto durable y cuales conservan semantica fungible por stack.
+- Los IDs actuales se generan en memoria como una secuencia de proceso. No existe contrato de ID durable, reserva entre partidas ni rehidratacion con un ID previo.
+- `ItemInstance.Condition` existe como valor inicial get-only derivado de `physical.condition_max`; no hay mutacion, desgaste ni reparacion. M36.1 debe decidir si M37 lo persiste, lo rederiva o lo excluye justificadamente del snapshot, sin adelantar el sistema mutable de M43.0.
+- No hay save envelope, version de formato, checksum, escritura atomica, recovery, migrations ni pruebas round-trip.
+- Actores, puertas, containers, cuerpos y world items dependen de objetos/componentes de escena; todavia no poseen un lifecycle persistente comun.
+- M36.1 debe congelar estos contratos y definir identidad durable antes de que M37 escriba datos.
 
-## Peso
+## Inventory, Grid, Ownership Y Equipment
 
-- `ActorCarryWeightComponent` sigue siendo la unica autoridad de capacidad.
-- `ItemWeightResolver` suma el peso de la entry y su contenido item-owned exactamente una vez, con proteccion contra ciclos y duplicados.
-- Transfers con el mismo owner raiz tienen delta cero. Entradas externas a un item-owned storage del actor usan la misma politica `Exact` o `ClampIncomingToActorHardLimit` de M33.3.1.
+- `ItemStorage` es la autoridad de entries, cantidades y stacks. `GridStorageRuntime` y `GridInventoryBackend` agregan layout, placements y transacciones espaciales sin crear otra lista de items.
+- `ActorItemOwnershipComponent` agrega inventario personal, equipment storage y contenido item-owned para exigir ownership unico.
+- `ActorEquipmentComponent` guarda una sola entry por item equipado; los slots referencian su `InstanceId`. Un item multi-slot no duplica storage, detalle ni peso.
+- `back` es un slot generico. Equipar una mochila no crea ni copia su storage y no cambia el peso si el owner raiz sigue siendo el actor.
+- Preview, commit, stale checks, guards y rollback viven en servicios transaccionales existentes; UI y visuales no mutan storages directamente.
+- Un commit exitoso publica un unico snapshot visual final. Preview, no-op, fallo y rollback no publican estado visual confirmado.
+- Hooks y observers posteriores al commit son notificaciones best-effort, no parte del rollback transaccional: una excepcion se diagnostica, pero no revierte gameplay ya confirmado.
 
-## UI debug
+## Item-Owned Storage Y Peso
 
-- `InventoryUISessionController` conserva autoridad unica sobre sesion, input, modal y drag.
-- `PersonalStorageNavigator` solo selecciona owners accesibles; no posee datos ni placements.
-- `InventoryGridDebugView` separa dimensiones logicas de tamano visual de celda. Los paneles OnGUI dibujan scroll y ejecutan mutaciones exclusivamente mediante APIs cerradas.
+- `ItemDefinition.owned_storage_profile_id` referencia un `ItemStorageProfileDefinition`.
+- Cada `ItemInstance` con perfil crea como maximo un `ItemOwnedStorageRuntime` propio, con `ItemStorage`, grid, versiones y `ContainerInstanceId`.
+- `ItemOwnedStorageRegistry` resuelve por `InstanceId`, direct owner y root owner, y detecta ciclos. Ownership cambia solamente despues de commit.
+- `ItemOwnedStorageRuntime` implementa `IGridStorageOwner` y reutiliza `GridStorageTransferService`; no existe un backend especial de mochila.
+- Nesting de item-owned storage permanece prohibido en el contrato v0 mediante un guard transaccional generico.
+- `ActorCarryWeightComponent` es la autoridad de capacidad. `ItemWeightResolver` suma cada entry y su subtree item-owned exactamente una vez, con proteccion contra ciclos y duplicados.
+- Transfers dentro del mismo root owner tienen delta cero. Entradas externas usan las politicas de peso existentes del actor.
 
-Estado de M34.2, M34.2.1 y M34.2.1a: `validated` por confirmacion manual del usuario.
+## Actor Profiles Y Bootstrap Inicial
 
-## Context actions desde Equipment M34.2.1b
+- `ActorProfileComponent` espera a que `GameDataManager` este listo y aplica display, tags iniciales, health escalar, equipment layout, inventario inicial, Equipment inicial y visual rig profile.
+- `initial_inventory` crea instancias reales en el inventario del actor. Sus entradas se aplican una por una: un fallo registra warning y no revierte entradas anteriores. El selector debug `inventory_seed_actor_tag` puede aplicar solamente ese inventario a un actor sin `ActorProfileComponent`; no aplica display, health, Equipment ni visual rig.
+- `initial_equipment` requiere `equipment_layout_id` y crea instancias reales de cantidad uno. Cada entrada puede seleccionar una alternativa completa mediante `slot_ids`; si se omite, debe quedar una unica alternativa libre.
+- `EquipmentTransactionService.TryEquipInitialItems` captura inventario, Equipment, slots y secuencia de IDs justo antes del lote `initial_equipment`. Un error restaura esos snapshots, desliga storages creados y no deja Equipment parcial.
+- El bootstrap valida ownership unico antes de publicar el snapshot visual confirmado.
+- El profile completo no es una transaccion: un rollback de `initial_equipment` conserva display, tags, health, layout e `initial_inventory` ya aplicados.
 
-- `InventoryContextMenuRequest` representa Equipment mediante `InstanceId`, slot clicado y snapshot read-only de todos los slots ocupados; los paneles revalidan ese contexto antes de ejecutar.
-- `InventoryContextActionResolver` sigue siendo la unica tabla de acciones. Omite el slot actual, no-op e incompatibilidades y resuelve relocation, replacement, unequip, storage transfer, drop y `ReviewOwnedStorage` por contratos existentes.
-- `EquipmentTransactionService` mantiene la instancia dentro de equipment durante una recolocacion. Si hay replacement, desplaza las instancias ocupantes a placements reservados del inventario personal dentro del mismo snapshot/rollback.
-- Sacar una instancia equipada hacia item-owned, external o world storage usa preview y commit cerrado, conserva ownership por `InstanceId`, ejecuta guards/peso/hooks y libera todos sus slots atomicamente.
-- Un commit exitoso publica exactamente un snapshot visual final. Preview, no-op, stale state, fallo y rollback publican cero eventos.
+## Interaccion Y Estado Del Mundo
 
-Estado de M34.2.1b: `validated` por confirmacion manual del usuario.
+- `InteractionSystem`, `ActionAvailabilityEvaluator` y effects C# cerrados mantienen la logica separada de panels y objetos concretos.
+- `WorldObjectTags` conserva estado runtime por tags; `WorldObjectStateView` lo presenta sin decidir acciones ni mutarlo.
+- Containers, corpses y world items reutilizan `ItemStorage`, grid, ownership y servicios de transfer. No se convierten en un backend paralelo por su presentacion.
+- Doors usan tags canonicos de estado y un controlador visual pequeño; no existe todavia persistencia de sus transiciones.
 
-## Universal Visual Rig M35.0
+## Visual Rig Y Attachments
 
-- Equipment conserva autoridad exclusiva sobre storage, ownership, slots e `InstanceId`. El visual consume `EquipmentVisualStateSnapshot`, una copia read-only que contiene solamente revision confirmada, versiones, layout e items equipados con sus slots.
-- `ActorEquipmentComponent.CommitVisualState` es el unico punto de publicacion de `VisualStateCommitted`. Los servicios lo invocan una vez despues de equip, unequip, replacement, equip/replacement desde item-owned storage o migracion legacy exitosa; preview, fallo y rollback no publican.
-- `EntityEquipmentVisualSynchronizer` combina el snapshot con `EntityVisualRigRuntime` y perfiles del `GameDatabase`. No hace polling permanente y mantiene como maximo un visual por `InstanceId`, incluso para equipment multi-slot.
-- `VisualRigProfileDefinition` describe partes, sockets, mappings y familia; capabilities resuelven compatibilidad estructural sin asumir Player, humano, bipedo o cantidad de manos.
-- `IVisualAssetProvider` separa asset keys data-driven de `Resources`; M35.0 implementa solamente el provider `builtin` y deja AssetBundles/Mod Kit fuera de alcance.
-- `AttachmentPoseDefinition` conserva offsets por visual + rig/familia + socket. La resolucion usa exacto, familia, base e identidad; los offsets no viven en el synchronizer.
-- Visuales equipados son hijos reemplazables sin gameplay, storage, ownership, colliders ni rigidbodies. `WorldItemVisualResolver` intenta perfil/provider, luego el sistema world legacy y finalmente el fallback debug existente.
-- La indisponibilidad de partes/sockets es una API visual cerrada y publica invalidacion; no decide que debe hacer gameplay con el equipment afectado.
+- Equipment conserva autoridad exclusiva sobre storage, ownership, slots e `InstanceId`. El visual consume `EquipmentVisualStateSnapshot`, una copia read-only de una revision confirmada.
+- `EntityEquipmentVisualSynchronizer` combina ese snapshot con `EntityVisualRigRuntime` y perfiles del `GameDatabase`; mantiene como maximo un visual por `InstanceId`.
+- Parts y sockets son miembros declarados dentro de `VisualRigProfileDefinition`. Capabilities, visual assets, item visual profiles y attachment poses pertenecen a familias de definicion separadas. Offsets y compatibilidad no se hardcodean en el synchronizer.
+- `IVisualAssetProvider` separa asset keys data-driven de la carga. El slice actual implementa solamente el provider `builtin`; AssetBundles y Mod Kit no forman parte del contrato actual.
+- Visuales equipados son presentacion reemplazable: no contienen gameplay, storage, ownership, colliders ni rigidbodies.
 
-Estado de M35.0: `validated` por confirmacion manual del usuario.
+## UI Y Superficie Funcional Actual
 
-## Serie M35: Lootable Entity Inventory UI V1
+- `InventoryUISessionController` conserva autoridad unica sobre sesion, input, modales, menu contextual y drag.
+- `PersonalStorageNavigator` selecciona owners accesibles; no posee datos ni placements.
+- Los panels actuales usan `OnGUI` y son UI debug, no framework ni UI de produccion.
+- La superficie funcional de M35.2 termina despues de Unified Corpse Belongings Surface: Equipment e inventario raiz se presentan juntos sin fusionar sus backends.
+- Universal Corpse Item Actions, revisita de cuerpos vacios y multiples ventanas flotantes no son contratos actuales; quedaron reclassified/deferred en el Roadmap.
 
-- M35.1 Lootable Actor Real Equipment Bootstrap esta `validated`; mantiene Equipment real y bootstrap data-driven del actor saqueable.
-- M35.2 Lootable Entity Inventory UI V1 esta `in progress`. M35.2.1 (Equipment ocupado y contextuales unificados) y M35.2.2 (ventana flotante de storage item-owned) estan `validated`.
-- M35.2.3 Unified Corpse Belongings Surface esta `planned / implementing`: unificara la presentacion sin fusionar los backends de Equipment e inventario raiz.
-- M35.2.4 Persistent Body Review esta `planned`; M35.2.5 Multiple Floating Storage Windows esta `planned / deferred`.
+## Limites Tecnicos Del Slice
+
+- Actor needs avanza con `Time.deltaTime`; no existe world clock persistente ni offline progression.
+- Health es un valor escalar con tags derivados; no existe daño localizado, heridas, sangrado, dolor, armadura ni penetracion integrados.
+- `FirearmDebugController` es un prototipo debug de arma de fuego, no el contrato final de combate.
+- No existe actor runtime registry, spawn/lifecycle durable, IA, navegacion de NPCs, clima, ecologia, facciones, sectorizacion ni proceduralidad runtime.
+- La UI es debug OnGUI y no debe expandirse como si fuera la UI final.
+- Los mods son aditivos y sin overrides/versiones; el soporte de compatibilidad de produccion pertenece a un milestone posterior.
+
+## Frontera M36.1 / M37
+
+- M36.1 es un freeze corto: cataloga contratos estables/provisionales, define identidad durable, invariantes, boundaries de hidratacion y test seams.
+- M36.1 resuelve explicitamente el tratamiento de `ItemInstance.Condition` en el snapshot de M37 sin implementar condition mutable.
+- M36.1 congela la granularidad de identidad para items no stackeables y unidades fungibles de un stack antes de diseñar su round-trip.
+- M36.1 no implementa save/load, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.
+- M37 persiste primero el slice real: jugador, items, inventory/grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags existentes.
+- M37 no pre-serializa actores futuros, clima, facciones, economia regional o mundo procedural hipotetico.
