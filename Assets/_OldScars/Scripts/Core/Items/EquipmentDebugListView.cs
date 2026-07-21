@@ -40,7 +40,8 @@ namespace OldScars.Core.Items
                 onRowClick,
                 onRowDrawn,
                 EquipmentDebugListPresentation.FullLayout,
-                false);
+                false,
+                true);
         }
 
         public void Draw(
@@ -60,7 +61,8 @@ namespace OldScars.Core.Items
                 onRowClick,
                 onRowDrawn,
                 EquipmentDebugListPresentation.FullLayout,
-                deduplicateInstances);
+                deduplicateInstances,
+                true);
         }
 
         public void Draw(
@@ -70,7 +72,8 @@ namespace OldScars.Core.Items
             float height,
             Action<EquipmentDebugRowClick> onRowClick,
             Action<string, Rect> onRowDrawn,
-            EquipmentDebugListPresentation presentation)
+            EquipmentDebugListPresentation presentation,
+            bool showHeader = true)
         {
             DrawInternal(
                 equipment,
@@ -80,7 +83,38 @@ namespace OldScars.Core.Items
                 onRowClick,
                 onRowDrawn,
                 presentation,
-                presentation == EquipmentDebugListPresentation.OccupiedItemsOnly);
+                presentation == EquipmentDebugListPresentation.OccupiedItemsOnly,
+                showHeader);
+        }
+
+        public float GetOccupiedItemsPreferredHeight(ActorEquipmentComponent equipment, float maximumHeight)
+        {
+            EquipmentLayoutDefinition layout = equipment?.GetActiveLayout();
+            if (layout == null)
+                return 0f;
+
+            BuildOrder(layout);
+            int groups = 0;
+            int rows = 0;
+            var seen = new HashSet<string>();
+            for (int groupIndex = 0; groupIndex < orderedGroups.Count; groupIndex++)
+            {
+                bool groupHasItem = false;
+                for (int slotIndex = 0; slotIndex < orderedSlots.Count; slotIndex++)
+                {
+                    EquipmentLayoutSlotDefinition slot = orderedSlots[slotIndex];
+                    ItemInstance item = equipment.GetEquippedStorageEntry(slot.slot_id)?.Item;
+                    if (slot.group_id == orderedGroups[groupIndex].id && item != null && seen.Add(item.InstanceId))
+                    {
+                        rows++;
+                        groupHasItem = true;
+                    }
+                }
+                if (groupHasItem)
+                    groups++;
+            }
+
+            return Mathf.Min(maximumHeight, 8f + groups * GroupHeight + rows * RowHeight + 8f);
         }
 
         private void DrawInternal(
@@ -91,10 +125,12 @@ namespace OldScars.Core.Items
             Action<EquipmentDebugRowClick> onRowClick,
             Action<string, Rect> onRowDrawn,
             EquipmentDebugListPresentation presentation,
-            bool deduplicateInstances)
+            bool deduplicateInstances,
+            bool showHeader)
         {
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
-            GUILayout.Label("Equipment");
+            if (showHeader)
+                GUILayout.Label("Equipment");
 
             if (equipment == null)
             {
@@ -122,7 +158,7 @@ namespace OldScars.Core.Items
                 GUIStyle.none,
                 GUI.skin.verticalScrollbar,
                 GUILayout.Width(width - 10f),
-                GUILayout.Height(height - 34f));
+                GUILayout.Height(height - (showHeader ? 34f : 10f)));
             scrollPosition.x = 0f;
             selection.EquipmentScrollPosition = scrollPosition;
 

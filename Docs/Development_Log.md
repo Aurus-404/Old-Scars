@@ -1466,6 +1466,8 @@ Estado: `in progress`; M35.2.1 y M35.2.2 estan validadas y M35.2.3 esta en imple
 - Compilacion estatica mediante Mono/Roslyn con response files Bee de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores. La validacion manual de flujos, seleccion, scroll y ventana flotante queda pendiente.
 - M35.2.4 Persistent Body Review queda `planned` y M35.2.5 Multiple Floating Storage Windows queda `planned / deferred`.
 
+- M35.2.3 Validation Correction Pass 1 compacta Equipment, elimina controles Legacy y scroll horizontal visible; las acciones cross-actor se difieren a M35.2.3.1, pendiente de auditoria arquitectonica y validacion manual.
+
 ## Decisiones De Scope
 
 - No hay inventario final.

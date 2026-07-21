@@ -363,14 +363,18 @@ Estado: `validated` en Unity por confirmacion manual del usuario.
 - Equipment, inventario raiz y pestañas del cadaver permanecen activos; la ruta cadaver raiz ↔ ventana se rechaza y tomar la mochila cierra solo la ventana.
 - No se modificaron servicios transaccionales, JSON, escenas ni prefabs. La validacion manual confirmo movimiento por todo el Game View, hitboxes y contextuales alineados, transferencias explicitas, cierres seguros y ausencia de duplicaciones o referencias stale.
 
-### M35.2.3: Inventory Window Redesign Phase C1 — IMPLEMENTED, PENDING UNITY VALIDATION
+### M35.2.3: Inventory Window Redesign Phase C1 — IN PROGRESS
 
-Estado: `implemented`; pendiente de validacion manual en Unity. M35.2 permanece `in progress` hasta esa validacion.
+Estado: `in progress`; Validation Correction Pass 1. Visual correction checkpoint published; revalidacion manual pendiente.
 
 - Se eliminaron las pestañas tecnicas de Equipment, inventario y contenedores: la columna derecha presenta una unica superficie de pertenencias con Equipment ocupado e inventario raiz reales, sin fusionar sus backends.
 - La mochila equipada se conserva como item de Equipment; `Revisar` reutiliza la ventana flotante validada en M35.2.2 y el inventario raiz mantiene sus transferencias y sus contextuales `Tomar`/`Examinar`.
 - Compilacion estatica mediante Mono/Roslyn y los response files Bee de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores. La validacion manual de UI permanece pendiente.
 - M35.2.4 Persistent Body Review y M35.2.5 Multiple Floating Storage Windows permanecen fuera de alcance; M35.2.5 sigue diferido.
+
+### M35.2.3.1: Universal Corpse Item Actions — PLANNED, PENDING ARCHITECTURAL AUDIT
+
+- Diferido: equipar/reemplazar directamente desde cadaver, mover a mochila personal y soltar al mundo requieren una transaccion atomica entre dos actores, con rollback y revalidacion.
 
 ## Ultimo Estado Validado
 

@@ -363,7 +363,10 @@ namespace OldScars.Core.Items
                 GUILayout.Label("No quedan pertenencias reales en esta entidad.");
 
             float contentHeight = Mathf.Max(120f, bodyHeight - 58f);
-            float equipmentHeight = Mathf.Min(246f, Mathf.Max(120f, contentHeight - 110f));
+            float equipmentHeight = lootableActorSource.HasEquipmentItems
+                ? equipmentListView.GetOccupiedItemsPreferredHeight(lootableActorSource.Equipment, 180f) + 64f
+                : 44f;
+            equipmentHeight = Mathf.Min(equipmentHeight, Mathf.Max(44f, contentHeight - 110f));
             float inventoryHeight = Mathf.Max(100f, contentHeight - equipmentHeight - 6f);
             DrawLootableEquipmentSection(columnWidth, equipmentHeight);
             GUILayout.Space(6f);
@@ -406,7 +409,7 @@ namespace OldScars.Core.Items
         private void DrawLootableEquipmentView(float columnWidth, float contentHeight)
         {
             ActorEquipmentComponent equipment = lootableActorSource.Equipment;
-            float listHeight = Mathf.Max(180f, contentHeight - 92f);
+            float listHeight = Mathf.Max(54f, contentHeight - 62f);
             equipmentListView.Draw(
                 equipment,
                 lootableEquipmentSelection,
@@ -414,7 +417,8 @@ namespace OldScars.Core.Items
                 listHeight,
                 HandleLootableEquipmentRowClick,
                 null,
-                EquipmentDebugListPresentation.OccupiedItemsOnly);
+                EquipmentDebugListPresentation.OccupiedItemsOnly,
+                false);
 
             string selectedId = lootableEquipmentSelection.SelectedEquippedInstanceId;
             if (equipment == null || string.IsNullOrWhiteSpace(selectedId) ||
@@ -531,15 +535,7 @@ namespace OldScars.Core.Items
             if (isPlayer)
                 DrawPersonalStorageSelector();
 
-            bool showLegacy = isPlayer ? showPlayerLegacyList : showExternalLegacyList;
-            if (GUILayout.Button(showLegacy ? "Visual Grid" : "Legacy List", GUILayout.Height(24f)))
-            {
-                showLegacy = !showLegacy;
-                if (isPlayer)
-                    showPlayerLegacyList = showLegacy;
-                else
-                    showExternalLegacyList = showLegacy;
-            }
+            bool showLegacy = false;
 
             if (owner.GridInitializationState == GridStorageInitializationState.LinearFallback)
             {
@@ -637,26 +633,18 @@ namespace OldScars.Core.Items
                 viewportHeight,
                 GUILayout.Width(viewportWidth),
                 GUILayout.Height(viewportHeight));
+            float contentWidth = view.GetRequiredWidth(owner.GridWidth);
+            float contentHeight = view.GetRequiredHeight(owner.GridHeight);
             Rect clipRect = new Rect(
                 areaRect.x,
                 areaRect.y,
                 Mathf.Max(1f, areaRect.width - ScrollbarSize),
-                Mathf.Max(1f, areaRect.height - ScrollbarSize));
-
-            float contentWidth = view.GetRequiredWidth(owner.GridWidth);
-            float contentHeight = view.GetRequiredHeight(owner.GridHeight);
+                Mathf.Max(1f, areaRect.height));
             Vector2 scroll = isPlayer ? playerGridScroll : externalGridScroll;
-            float maxX = Mathf.Max(0f, contentWidth - clipRect.width);
             float maxY = Mathf.Max(0f, contentHeight - clipRect.height);
-            scroll.x = Mathf.Clamp(scroll.x, 0f, maxX);
+            scroll.x = 0f;
             scroll.y = Mathf.Clamp(scroll.y, 0f, maxY);
 
-            scroll.x = GUI.HorizontalScrollbar(
-                new Rect(areaRect.x, clipRect.yMax, clipRect.width, ScrollbarSize),
-                scroll.x,
-                clipRect.width,
-                0f,
-                Mathf.Max(clipRect.width, contentWidth));
             scroll.y = GUI.VerticalScrollbar(
                 new Rect(clipRect.xMax, areaRect.y, ScrollbarSize, clipRect.height),
                 scroll.y,

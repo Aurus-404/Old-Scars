@@ -280,11 +280,9 @@ namespace OldScars.Core.Items
                     ? $"Grid: {owner.GridWidth}x{owner.GridHeight} | cell {gridVisualCellSize:0}px"
                     : "Grid inactive",
                 GUILayout.ExpandWidth(true));
-            if (GUILayout.Button(showLegacyList ? "Grid" : "Legacy", GUILayout.Width(76f), GUILayout.Height(24f)))
-                showLegacyList = !showLegacyList;
             GUILayout.EndHorizontal();
 
-            if (owner == null || showLegacyList || !owner.UsesGridLayout)
+            if (owner == null || !owner.UsesGridLayout)
             {
                 DrawLegacyStorage(owner, bodyHeight - 98f);
             }
@@ -671,23 +669,16 @@ namespace OldScars.Core.Items
                 viewportHeight,
                 GUILayout.Width(viewportWidth),
                 GUILayout.Height(viewportHeight));
+            float contentWidth = gridView.GetRequiredWidth(owner.GridWidth);
+            float contentHeight = gridView.GetRequiredHeight(owner.GridHeight);
             Rect clipRect = new Rect(
                 areaRect.x,
                 areaRect.y,
                 Mathf.Max(1f, areaRect.width - ScrollbarSize),
-                Mathf.Max(1f, areaRect.height - ScrollbarSize));
-            float contentWidth = gridView.GetRequiredWidth(owner.GridWidth);
-            float contentHeight = gridView.GetRequiredHeight(owner.GridHeight);
-            float maxX = Mathf.Max(0f, contentWidth - clipRect.width);
+                Mathf.Max(1f, areaRect.height));
             float maxY = Mathf.Max(0f, contentHeight - clipRect.height);
-            gridScrollPosition.x = Mathf.Clamp(gridScrollPosition.x, 0f, maxX);
+            gridScrollPosition.x = 0f;
             gridScrollPosition.y = Mathf.Clamp(gridScrollPosition.y, 0f, maxY);
-            gridScrollPosition.x = GUI.HorizontalScrollbar(
-                new Rect(areaRect.x, clipRect.yMax, clipRect.width, ScrollbarSize),
-                gridScrollPosition.x,
-                clipRect.width,
-                0f,
-                Mathf.Max(clipRect.width, contentWidth));
             gridScrollPosition.y = GUI.VerticalScrollbar(
                 new Rect(clipRect.xMax, areaRect.y, ScrollbarSize, clipRect.height),
                 gridScrollPosition.y,
