@@ -1447,7 +1447,7 @@ Estado: `validated`; validado manualmente en Unity por confirmacion del usuario.
 
 ### M35.2: Lootable Entity Inventory UI V1
 
-Estado: `in progress`; M35.2.1 y M35.2.2 estan validadas y M35.2.3 esta en implementacion.
+Estado: `in progress`; M35.2.1, M35.2.2 y M35.2.3 estan validadas. M35.2.3.1, M35.2.4 y M35.2.5 permanecen como trabajos futuros.
 
 - `LootableActorInventoryComponent` representa inventario, Equipment y storages directos de items equipados como pertenencias reales del actor.
 - `ItemStorageDebugPanel` conserva el lado del jugador y agrega en el mismo panel derecho las vistas `Equipamiento`, `Inventario` y `Contenedores`.
@@ -1469,7 +1469,15 @@ Estado: `in progress`; M35.2.1 y M35.2.2 estan validadas y M35.2.3 esta en imple
 - M35.2.3 Validation Correction Pass 1 compacta Equipment, elimina controles Legacy y scroll horizontal visible; las acciones cross-actor se difieren a M35.2.3.1, pendiente de auditoria arquitectonica y validacion manual.
 - M35.2.3 Validation Correction Pass 2 amplía la altura mínima de Equipment, elimina la ayuda redundante y reserva el footer de ContextualActionDebugPanel; M35.2.3.1 permanece diferido y la revalidación manual sigue pendiente.
 - M35.2.3 Validation Correction Pass 3 dimensiona el panel contextual por contenido, reserva el footer de resultado, alinea EQUIPADO/INVENTARIO y habilita scrollbar de Equipment solo por overflow. El drag explícito cadáver raíz ↔ mochila equipada del mismo cadáver reutiliza `GridStorageTransferService` tras revalidar binding, `InstanceId`, actor y owner raíz; Shift/doble clic siguen yendo entre cadáver y jugador. M35.2.3.1 y M35.2.5 permanecen fuera de alcance y la revalidación manual sigue pendiente.
-- M35.2.3 Validation Correction Pass 4 — Final Stabilization usa cinco capturas reales de la revalidación fallida como evidencia: reemplaza el layout contextual ambiguo por header/body/footer explícitos sin scroll para una a tres acciones, restaura el body oscuro de Equipment con overflow real y corrige el routing explícito cadáver raíz ↔ mochila mediante el endpoint canónico del `InventoryComponent`. No modifica quick-transfer ni servicios transaccionales; el pulido visual adicional se detiene aquí, M35.2.3.1/M35.2.4/M35.2.5 siguen fuera de alcance y la revalidación final manual permanece pendiente.
+- M35.2.3 Validation Correction Pass 4 — Final Stabilization usa cinco capturas reales de la revalidación fallida como evidencia: reemplaza el layout contextual ambiguo por header/body/footer explícitos sin scroll para una a tres acciones, restaura el body oscuro de Equipment con overflow real y corrige el routing explícito cadáver raíz ↔ mochila mediante el endpoint canónico del `InventoryComponent`. No modifica quick-transfer ni servicios transaccionales; el pulido visual adicional se detiene aquí, M35.2.3.1/M35.2.4/M35.2.5 siguen fuera de alcance. La revalidación manual final confirmó el cierre.
+
+## Cierre M35.2.3
+
+- Commit funcional validado: `27bf438637b621141ca553a39579349a12ff8700`.
+- La validacion manual confirmo panel contextual y de resultado completos, EQUIPADO e INVENTARIO coherentes, rifle y mochila deduplicados, drag cadaver raiz hacia mochila equipada, ausencia del rechazo contradictorio, Data Load 0/0 y muerte/revision del cadaver sin excepciones relacionadas.
+- Contratos confirmados: ownership unico, `InstanceId`, cantidades, placements, peso, no-nesting, rollback, quick-transfer existente y una sola ventana flotante.
+- Deuda no bloqueante: el scrollbar vertical de EQUIPADO no fue probado con overflow real; el contenido actual entra completo sin clipping. La comprobacion o mejora queda diferida hasta contar con una cantidad realista de Equipment o un rework posterior de UI; no bloquea la validacion.
+- Antes de iniciar otro sistema funcional se realizara una auditoria y rebaseline del roadmap de Old Scars.
 
 ## Decisiones De Scope
 

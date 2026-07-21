@@ -123,7 +123,7 @@ Milestone 23, Milestone 23.0.1, Milestone 23.0.2, Milestone 23.0.3, Milestone 23
 | Milestone 35.2: Lootable Entity Inventory UI V1 | Mostrar y transferir pertenencias reales de una entidad saqueable desde Equipment, inventario y contenedores equipados. | in progress | Milestone padre de las fases de rediseño de ventana; validacion final pendiente. |
 | Milestone 35.2.1: Inventory Window Redesign Phase A | Mostrar Equipment ocupado y unificar acciones contextuales existentes. | validated | Validado manualmente en Unity por confirmacion del usuario. |
 | Milestone 35.2.2: Inventory Window Redesign Phase B | Abrir una ventana flotante para inspeccionar el storage item-owned real. | validated | Validado manualmente en Unity por confirmacion del usuario. |
-| Milestone 35.2.3: Inventory Window Redesign Phase C1 | Unificar las pertenencias del cadaver sin fusionar Equipment e inventario raiz. | in progress | Implementacion autorizada; validacion manual pendiente. |
+| Milestone 35.2.3: Inventory Window Redesign Phase C1 | Unificar las pertenencias del cadaver sin fusionar Equipment e inventario raiz. | validated | Validado manualmente en Unity tras Validation Correction Pass 4; commit funcional `27bf438637b621141ca553a39579349a12ff8700`. |
 | Milestone 35.2.4: Persistent Body Review | Revisar persistentemente el cuerpo despues de vaciar sus pertenencias. | planned | Posterior a M35.2.3. |
 | Milestone 35.2.5: Multiple Floating Storage Windows | Permitir varias ventanas flotantes de storage con rutas inequivocas. | planned | Diferido. |
 | Milestone 28: Container State / Naming Cleanup v0 | Limpiar naming y deuda de estados legacy de contenedores sin cambiar el comportamiento validado. | planned | Proximo recomendado; alcance todavia no implementado. |
@@ -156,7 +156,7 @@ Los ultimos milestones cerrados como `validated` son:
 
 ## Proximo Recomendado
 
-Implementar y validar M35.2.3: presentar Equipment ocupado e inventario raiz del cadaver en una unica superficie, conservando sus backends y la ventana flotante de M35.2.2. M35.2.4 y M35.2.5 permanecen fuera de alcance. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
+Antes de iniciar otro sistema funcional se realizara una auditoria y rebaseline del roadmap de Old Scars. M35.2.3 queda cerrado como `validated`; M35.2.3.1, M35.2.4 y M35.2.5 permanecen fuera de alcance. Los pendientes M32/M32.2/M32.4/M32.4.1 y Grid Inventory Backend v0 conservan su cola de validacion.
 
 M34.2 debe reutilizar ownership agregado, `ItemStorage` y referencias por `InstanceId`; no debe adelantar nesting general, pockets arbitrarios, save/load ni UI final.
 

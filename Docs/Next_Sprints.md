@@ -26,9 +26,11 @@ Estado: `in progress`.
 
 - M35.2.1 Inventory Window Redesign Phase A esta `validated`.
 - M35.2.2 Inventory Window Redesign Phase B esta `validated`.
-- M35.2.3 Unified Corpse Belongings Surface esta `planned / implementing` y es el trabajo actual.
+- M35.2.3 Unified Corpse Belongings Surface esta `validated` tras Validation Correction Pass 4 y el commit funcional `27bf438637b621141ca553a39579349a12ff8700`.
 - M35.2.4 Persistent Body Review esta `planned`.
 - M35.2.5 Multiple Floating Storage Windows esta `planned / deferred`.
+
+Antes de iniciar otro sistema funcional se realizara una auditoria y rebaseline del roadmap de Old Scars. Deuda no bloqueante de M35.2.3: el scrollbar vertical de EQUIPADO queda pendiente de probar con overflow real; el contenido actual entra completo sin clipping.
 
 ### M33.3.1: Weight-Limited Partial Transfers
 

@@ -363,9 +363,9 @@ Estado: `validated` en Unity por confirmacion manual del usuario.
 - Equipment, inventario raiz y pestañas del cadaver permanecen activos; la ruta cadaver raiz ↔ ventana se rechaza y tomar la mochila cierra solo la ventana.
 - No se modificaron servicios transaccionales, JSON, escenas ni prefabs. La validacion manual confirmo movimiento por todo el Game View, hitboxes y contextuales alineados, transferencias explicitas, cierres seguros y ausencia de duplicaciones o referencias stale.
 
-### M35.2.3: Inventory Window Redesign Phase C1 — IMPLEMENTED, PENDING FINAL UNITY REVALIDATION
+### M35.2.3: Inventory Window Redesign Phase C1 — VALIDATED
 
-Estado: `implemented`; Validation Correction Pass 4 — Final Stabilization. La revalidacion anterior fallo y la revalidacion final manual permanece pendiente.
+Estado: `validated`; Validation Correction Pass 4 — Final Stabilization. Commit funcional validado: `27bf438637b621141ca553a39579349a12ff8700`.
 
 - Se eliminaron las pestañas tecnicas de Equipment, inventario y contenedores: la columna derecha presenta una unica superficie de pertenencias con Equipment ocupado e inventario raiz reales, sin fusionar sus backends.
 - La mochila equipada se conserva como item de Equipment; `Revisar` reutiliza la ventana flotante validada en M35.2.2 y el inventario raiz mantiene sus transferencias y sus contextuales `Tomar`/`Examinar`.
@@ -374,7 +374,8 @@ Estado: `implemented`; Validation Correction Pass 4 — Final Stabilization. La 
 - `EQUIPADO` e `INVENTARIO` conservan secciones y backends separados, pero Equipment recupera un body oscuro delimitado con margenes consistentes. Su overflow se calcula sobre grupos y filas visibles deduplicadas y el scrollbar queda dentro del body solo cuando hace falta.
 - El drag explicito entre inventario raiz y mochila equipada del mismo cadaver mapea el proxy visual del cadaver a su `InventoryComponent` canonico para preview y commit. Binding, `InstanceId`, mochila equipada, acceso y owner raiz se revalidan; Shift/doble clic siguen ruteando entre cadaver y jugador.
 - Este pase se cierra al corregir los tres defectos mostrados en las capturas; cualquier pulido puramente estetico posterior queda como deuda y no amplia M35.2.3. M35.2.3.1, M35.2.4 y M35.2.5 permanecen fuera de alcance.
-- Compilacion estatica mediante Mono/Roslyn y los response files Bee de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores. La validacion manual de UI permanece pendiente.
+- La validacion manual confirmo paneles completos, routing interno cadaver raiz hacia mochila equipada, contratos de ownership/InstanceId/cantidades/placements/peso/no-nesting/rollback y ausencia de referencias stale. Runtime: Data Load con 0 errors y 0 warnings, muerte completa a `dead_actor`/`lootable_actor`, `search_body`, `Revisar cuerpo` y sin excepciones nuevas relacionadas.
+- Deuda no bloqueante: el scrollbar vertical de EQUIPADO no fue probado con overflow real; el contenido actual entra completo sin clipping. Su comprobacion o mejora queda diferida hasta contar con una cantidad realista de Equipment o un rework posterior de UI.
 - M35.2.4 Persistent Body Review y M35.2.5 Multiple Floating Storage Windows permanecen fuera de alcance; M35.2.5 sigue diferido.
 
 ### M35.2.3.1: Universal Corpse Item Actions — PLANNED, PENDING ARCHITECTURAL AUDIT
@@ -433,7 +434,7 @@ Estado: `implemented`; Validation Correction Pass 4 — Final Stabilization. La 
 
 ## Proximo Recomendado
 
-Implementar y validar M35.2.3: mostrar Equipment ocupado e inventario raiz del cadaver dentro de una unica superficie, sin alterar ownership, transferencias ni la ventana flotante de M35.2.2. M35.2.4 y M35.2.5 permanecen planificados; el hover temporizado de mochila sigue diferido.
+Antes de iniciar otro sistema funcional se realizara una auditoria y rebaseline del roadmap de Old Scars. M35.2.3 queda validado; M35.2.3.1, M35.2.4 y M35.2.5 permanecen planificados/fuera de alcance.
 
 Alcance recomendado:
 
