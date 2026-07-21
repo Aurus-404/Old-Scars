@@ -89,32 +89,15 @@ namespace OldScars.Core.Items
 
         public float GetOccupiedItemsPreferredHeight(ActorEquipmentComponent equipment, float maximumHeight)
         {
-            EquipmentLayoutDefinition layout = equipment?.GetActiveLayout();
-            if (layout == null)
-                return 0f;
+            return Mathf.Min(maximumHeight, GetOccupiedItemsContentHeight(equipment));
+        }
 
-            BuildOrder(layout);
-            int groups = 0;
-            int rows = 0;
-            var seen = new HashSet<string>();
-            for (int groupIndex = 0; groupIndex < orderedGroups.Count; groupIndex++)
-            {
-                bool groupHasItem = false;
-                for (int slotIndex = 0; slotIndex < orderedSlots.Count; slotIndex++)
-                {
-                    EquipmentLayoutSlotDefinition slot = orderedSlots[slotIndex];
-                    ItemInstance item = equipment.GetEquippedStorageEntry(slot.slot_id)?.Item;
-                    if (slot.group_id == orderedGroups[groupIndex].id && item != null && seen.Add(item.InstanceId))
-                    {
-                        rows++;
-                        groupHasItem = true;
-                    }
-                }
-                if (groupHasItem)
-                    groups++;
-            }
-
-            return Mathf.Min(maximumHeight, 8f + groups * GroupHeight + rows * RowHeight + 8f);
+        public float GetOccupiedItemsContentHeight(ActorEquipmentComponent equipment)
+        {
+            return GetContentHeight(
+                equipment,
+                EquipmentDebugListPresentation.OccupiedItemsOnly,
+                true);
         }
 
         private void DrawInternal(
@@ -128,7 +111,10 @@ namespace OldScars.Core.Items
             bool deduplicateInstances,
             bool showHeader)
         {
-            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
+            if (presentation == EquipmentDebugListPresentation.OccupiedItemsOnly)
+                GUILayout.BeginVertical(GUILayout.Width(width), GUILayout.Height(height));
+            else
+                GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(width), GUILayout.Height(height));
             if (showHeader)
                 GUILayout.Label("Equipment");
 
@@ -151,14 +137,18 @@ namespace OldScars.Core.Items
             if (selection.TryConsumeEquipmentAutoScroll(out string autoScrollSlotId))
                 selection.EquipmentScrollPosition = new Vector2(0f, GetSlotOffset(autoScrollSlotId));
 
+            float viewportHeight = Mathf.Max(1f, height - (showHeader ? 34f : 10f));
+            bool needsVerticalScroll = GetContentHeight(equipment, presentation, deduplicateInstances) > viewportHeight;
             Vector2 scrollPosition = selection.EquipmentScrollPosition;
             scrollPosition.x = 0f;
             scrollPosition = GUILayout.BeginScrollView(
                 scrollPosition,
+                false,
+                needsVerticalScroll,
                 GUIStyle.none,
                 GUI.skin.verticalScrollbar,
                 GUILayout.Width(width - 10f),
-                GUILayout.Height(height - (showHeader ? 34f : 10f)));
+                GUILayout.Height(viewportHeight));
             scrollPosition.x = 0f;
             selection.EquipmentScrollPosition = scrollPosition;
 
@@ -199,6 +189,48 @@ namespace OldScars.Core.Items
 
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
+        }
+
+        private float GetContentHeight(
+            ActorEquipmentComponent equipment,
+            EquipmentDebugListPresentation presentation,
+            bool deduplicateInstances)
+        {
+            EquipmentLayoutDefinition layout = equipment?.GetActiveLayout();
+            if (layout == null)
+                return 0f;
+
+            BuildOrder(layout);
+            bool occupiedItemsOnly = presentation == EquipmentDebugListPresentation.OccupiedItemsOnly;
+            float contentHeight = 16f;
+            var drawnInstanceIds = deduplicateInstances ? new HashSet<string>() : null;
+            for (int groupIndex = 0; groupIndex < orderedGroups.Count; groupIndex++)
+            {
+                EquipmentLayoutGroupDefinition group = orderedGroups[groupIndex];
+                if (occupiedItemsOnly && !HasFirstOccupiedItemInGroup(equipment, group.id))
+                    continue;
+
+                contentHeight += GroupHeight;
+                for (int slotIndex = 0; slotIndex < orderedSlots.Count; slotIndex++)
+                {
+                    EquipmentLayoutSlotDefinition slot = orderedSlots[slotIndex];
+                    if (slot.group_id != group.id)
+                        continue;
+
+                    ItemStorageEntry entry = equipment.GetEquippedStorageEntry(slot.slot_id);
+                    if (occupiedItemsOnly && entry?.Item == null)
+                        continue;
+                    if (drawnInstanceIds != null && entry?.Item != null &&
+                        !drawnInstanceIds.Add(entry.Item.InstanceId))
+                    {
+                        continue;
+                    }
+
+                    contentHeight += RowHeight;
+                }
+            }
+
+            return contentHeight;
         }
 
         private bool HasFirstOccupiedItemInGroup(ActorEquipmentComponent equipment, string groupId)

@@ -365,10 +365,13 @@ Estado: `validated` en Unity por confirmacion manual del usuario.
 
 ### M35.2.3: Inventory Window Redesign Phase C1 — IMPLEMENTED, PENDING UNITY REVALIDATION
 
-Estado: `implemented`; Validation Correction Pass 2. Equipment ampliado por contenido, ayuda redundante eliminada y footer contextual corregido; revalidacion manual pendiente.
+Estado: `implemented`; Validation Correction Pass 3. Revalidacion manual pendiente.
 
 - Se eliminaron las pestañas tecnicas de Equipment, inventario y contenedores: la columna derecha presenta una unica superficie de pertenencias con Equipment ocupado e inventario raiz reales, sin fusionar sus backends.
 - La mochila equipada se conserva como item de Equipment; `Revisar` reutiliza la ventana flotante validada en M35.2.2 y el inventario raiz mantiene sus transferencias y sus contextuales `Tomar`/`Examinar`.
+- El panel contextual dimensiona su altura por la cantidad de acciones, con scroll vertical solo al superar su altura maxima y `Close` fijo fuera del body. El panel de resultado reserva su footer y alinea `Close` dentro del limite inferior.
+- `EQUIPADO` e `INVENTARIO` comparten la misma seccion exterior de pertenencias; Equipment elimina el background intermedio, calcula el overflow de filas/grupos reales y muestra scrollbar vertical solo cuando el viewport no alcanza.
+- El drag explicito entre inventario raiz y mochila equipada del mismo cadaver queda habilitado solo mientras la vinculacion revalida el mismo `InstanceId`, storage, actor lootable y owner raiz. Shift/doble clic siguen ruteando entre cadaver y jugador; M35.2.3.1 y M35.2.5 permanecen fuera de alcance.
 - Compilacion estatica mediante Mono/Roslyn y los response files Bee de `Assembly-CSharp` y `Assembly-CSharp-Editor`: 0 errores. La validacion manual de UI permanece pendiente.
 - M35.2.4 Persistent Body Review y M35.2.5 Multiple Floating Storage Windows permanecen fuera de alcance; M35.2.5 sigue diferido.
 

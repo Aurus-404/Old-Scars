@@ -7,6 +7,8 @@ namespace OldScars.Core.Interactions
     {
         private const float PanelWidth = 420f;
         private const float PanelHeight = 220f;
+        private const float FooterHeight = 34f;
+        private const float HeaderAndSpacingHeight = 34f;
 
         private bool isVisible;
         private string title;
@@ -60,14 +62,17 @@ namespace OldScars.Core.Interactions
             GUILayout.Label(title);
             GUILayout.Space(8f);
 
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(130f));
+            float bodyHeight = Mathf.Max(40f, GetPanelRect().height - HeaderAndSpacingHeight - FooterHeight);
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(bodyHeight));
             GUILayout.Label(body);
             GUILayout.EndScrollView();
 
-            GUILayout.Space(8f);
-
-            if (GUILayout.Button("Close", GUILayout.Height(24f)))
+            GUILayout.BeginHorizontal(GUILayout.Height(FooterHeight));
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Close", GUILayout.Width(120f), GUILayout.Height(24f)))
                 Hide();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
         }

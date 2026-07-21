@@ -18,8 +18,12 @@ namespace OldScars.Core.Items
         private const float ColumnGap = 8f;
         private const float PanelHorizontalPadding = 24f;
         private const float BodyVerticalReserve = 42f;
-        private const float MinimumEquipmentViewportHeight = 300f;
-        private const float MaximumEquipmentViewportHeight = 330f;
+        private const float MinimumEquipmentViewportHeight = 64f;
+        private const float MaximumEquipmentViewportHeight = 260f;
+        private const float EquipmentHeaderHeight = 24f;
+        private const float EquipmentSelectionHeight = 62f;
+        private const float EquipmentScrollPadding = 10f;
+        private const float MinimumInventorySectionHeight = 100f;
         private const float CenterDetailsHeight = 72f;
         private const float ScrollbarSize = 16f;
 
@@ -324,18 +328,33 @@ namespace OldScars.Core.Items
             {
                 dragController.SetQuickTransferTarget(targetInventory, externalOwner);
                 dragController.SetQuickTransferTarget(externalOwner, targetInventory);
-                string blockedMessage = lootableActorSource != null
-                    ? "No podés mover items directamente entre el inventario del cadáver y la mochila. Usá el inventario personal."
-                    : "No podés mover items directamente entre el storage externo y la mochila. Usá el inventario personal.";
-                dragController.BlockTransferRoute(
-                    externalOwner,
-                    floatingOwner,
-                    blockedMessage);
+                if (!IsLootableInternalFloatingStorageRoute(resolution, externalOwner, floatingOwner))
+                {
+                    string blockedMessage = lootableActorSource != null
+                        ? "No podés mover items directamente entre el inventario del cadáver y la mochila. Usá el inventario personal."
+                        : "No podés mover items directamente entre el storage externo y la mochila. Usá el inventario personal.";
+                    dragController.BlockTransferRoute(
+                        externalOwner,
+                        floatingOwner,
+                        blockedMessage);
+                }
             }
             else
             {
                 dragController.SetQuickTransferTarget(targetInventory, floatingOwner);
             }
+        }
+
+        private bool IsLootableInternalFloatingStorageRoute(
+            FloatingStorageWindowResolution resolution,
+            IGridStorageOwner externalOwner,
+            IGridStorageOwner floatingOwner)
+        {
+            return lootableActorSource != null &&
+                   resolution.SourceKind == FloatingStorageWindowSourceKind.LootableActorEquipment &&
+                   ReferenceEquals(externalOwner, lootableActorSource.Inventory) &&
+                   ReferenceEquals(floatingOwner, resolution.Storage) &&
+                   ItemOwnedStorageRegistry.Instance.ShareRootOwner(externalOwner, floatingOwner);
         }
 
         private void DrawHeader()
@@ -363,11 +382,18 @@ namespace OldScars.Core.Items
                 GUILayout.Label("No quedan pertenencias reales en esta entidad.");
 
             float contentHeight = Mathf.Max(120f, bodyHeight - 58f);
-            float equipmentHeight = lootableActorSource.HasEquipmentItems
-                ? Mathf.Max(200f, equipmentListView.GetOccupiedItemsPreferredHeight(lootableActorSource.Equipment, 196f) + 64f)
-                : 44f;
-            equipmentHeight = Mathf.Min(equipmentHeight, Mathf.Max(44f, contentHeight - 110f));
-            float inventoryHeight = Mathf.Max(100f, contentHeight - equipmentHeight - 6f);
+            float equipmentHeight = 44f;
+            if (lootableActorSource.HasEquipmentItems)
+            {
+                float viewportHeight = Mathf.Clamp(
+                    equipmentListView.GetOccupiedItemsContentHeight(lootableActorSource.Equipment),
+                    MinimumEquipmentViewportHeight,
+                    MaximumEquipmentViewportHeight);
+                equipmentHeight = EquipmentHeaderHeight + viewportHeight + EquipmentScrollPadding + EquipmentSelectionHeight;
+            }
+
+            equipmentHeight = Mathf.Min(equipmentHeight, Mathf.Max(44f, contentHeight - MinimumInventorySectionHeight));
+            float inventoryHeight = Mathf.Max(MinimumInventorySectionHeight, contentHeight - equipmentHeight - 6f);
             DrawLootableEquipmentSection(columnWidth, equipmentHeight);
             GUILayout.Space(6f);
             DrawLootableInventorySection(columnWidth, inventoryHeight);
@@ -379,7 +405,7 @@ namespace OldScars.Core.Items
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.Height(sectionHeight));
             GUILayout.Label("EQUIPADO");
             if (lootableActorSource.HasEquipmentItems)
-                DrawLootableEquipmentView(columnWidth - 12f, sectionHeight - 24f);
+                DrawLootableEquipmentView(columnWidth - 12f, sectionHeight - EquipmentHeaderHeight);
             else
                 GUILayout.Label("Sin objetos equipados");
             GUILayout.EndVertical();
@@ -409,11 +435,11 @@ namespace OldScars.Core.Items
         private void DrawLootableEquipmentView(float columnWidth, float contentHeight)
         {
             ActorEquipmentComponent equipment = lootableActorSource.Equipment;
-            float listHeight = Mathf.Max(54f, contentHeight - 62f);
+            float listHeight = Mathf.Max(MinimumEquipmentViewportHeight, contentHeight - EquipmentSelectionHeight);
             equipmentListView.Draw(
                 equipment,
                 lootableEquipmentSelection,
-                columnWidth - 12f,
+                columnWidth,
                 listHeight,
                 HandleLootableEquipmentRowClick,
                 null,

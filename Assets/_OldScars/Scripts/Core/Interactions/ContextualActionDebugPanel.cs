@@ -12,7 +12,13 @@ namespace OldScars.Core.Interactions
     {
         private const string DefaultRequiredContext = "world_interaction";
         private const float PanelWidth = 420f;
-        private const float PanelHeight = 260f;
+        private const float MinimumPanelHeight = 150f;
+        private const float MaximumPanelHeight = 260f;
+        private const float HeaderHeight = 68f;
+        private const float FooterHeight = 34f;
+        private const float ActionRowHeight = 28f;
+        private const float MinimumActionListHeight = 28f;
+        private const float MaximumActionListHeight = 116f;
 
         private readonly List<ActionDefinition> actions = new List<ActionDefinition>();
         private readonly List<InventoryContextAction> worldQuickActions = new List<InventoryContextAction>();
@@ -151,7 +157,9 @@ namespace OldScars.Core.Interactions
 
             GUILayout.Space(8f);
 
-            if (actions.Count == 0 && worldQuickActions.Count == 0)
+            int actionCount = actions.Count + worldQuickActions.Count;
+            float actionListHeight = GetActionListHeight(actionCount);
+            if (actionCount == 0)
             {
                 GUILayout.Label("No hay acciones disponibles");
             }
@@ -168,7 +176,7 @@ namespace OldScars.Core.Interactions
                     false,
                     GUIStyle.none,
                     GUI.skin.verticalScrollbar,
-                    GUILayout.Height(116f));
+                    GUILayout.Height(actionListHeight));
 
                 for (int index = 0; index < actions.Count; index++)
                 {
@@ -225,7 +233,7 @@ namespace OldScars.Core.Interactions
             return new Vector2(mousePosition.x, Screen.height - mousePosition.y);
         }
 
-        private static Vector2 ClampGuiPosition(Vector2 position)
+        private Vector2 ClampGuiPosition(Vector2 position)
         {
             Vector2 panelSize = GetPanelSize();
             float maxX = Mathf.Max(0f, Screen.width - panelSize.x);
@@ -243,11 +251,31 @@ namespace OldScars.Core.Interactions
             return new Rect(clampedPosition.x, clampedPosition.y, panelSize.x, panelSize.y);
         }
 
-        private static Vector2 GetPanelSize()
+        private Vector2 GetPanelSize()
         {
             return new Vector2(
                 Mathf.Min(PanelWidth, Mathf.Max(0f, Screen.width)),
-                Mathf.Min(PanelHeight, Mathf.Max(0f, Screen.height)));
+                Mathf.Min(GetPanelHeight(), Mathf.Max(0f, Screen.height)));
+        }
+
+        private float GetPanelHeight()
+        {
+            int actionCount = actions.Count + worldQuickActions.Count;
+            float bodyHeight = actionCount == 0
+                ? MinimumActionListHeight
+                : GetActionListHeight(actionCount);
+            return Mathf.Clamp(
+                HeaderHeight + bodyHeight + FooterHeight,
+                MinimumPanelHeight,
+                MaximumPanelHeight);
+        }
+
+        private static float GetActionListHeight(int actionCount)
+        {
+            return Mathf.Clamp(
+                Mathf.Max(1, actionCount) * ActionRowHeight,
+                MinimumActionListHeight,
+                MaximumActionListHeight);
         }
 
         private string GetTargetName()

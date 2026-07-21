@@ -1468,6 +1468,7 @@ Estado: `in progress`; M35.2.1 y M35.2.2 estan validadas y M35.2.3 esta en imple
 
 - M35.2.3 Validation Correction Pass 1 compacta Equipment, elimina controles Legacy y scroll horizontal visible; las acciones cross-actor se difieren a M35.2.3.1, pendiente de auditoria arquitectonica y validacion manual.
 - M35.2.3 Validation Correction Pass 2 amplía la altura mínima de Equipment, elimina la ayuda redundante y reserva el footer de ContextualActionDebugPanel; M35.2.3.1 permanece diferido y la revalidación manual sigue pendiente.
+- M35.2.3 Validation Correction Pass 3 dimensiona el panel contextual por contenido, reserva el footer de resultado, alinea EQUIPADO/INVENTARIO y habilita scrollbar de Equipment solo por overflow. El drag explícito cadáver raíz ↔ mochila equipada del mismo cadáver reutiliza `GridStorageTransferService` tras revalidar binding, `InstanceId`, actor y owner raíz; Shift/doble clic siguen yendo entre cadáver y jugador. M35.2.3.1 y M35.2.5 permanecen fuera de alcance y la revalidación manual sigue pendiente.
 
 ## Decisiones De Scope
 
