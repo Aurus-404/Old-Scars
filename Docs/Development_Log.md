@@ -1494,3 +1494,64 @@ Estado: `in progress`; M35.2.1, M35.2.2 y M35.2.3 estan validadas. M35.2.3.1, M3
 - Los tags legacy `lootable_container` y `looted_container` se mantienen temporalmente por compatibilidad.
 - Los titulos debug de storage necesitan una limpieza de naming futura.
 - Los sistemas actuales son prototipos debug para probar flujo data-driven.
+
+## M36.0 — Old Scars Strategic Production Roadmap Rebaseline
+
+### Checkpoint A — Milestone Ledger And Roadmap Authority
+
+Estado anterior:
+
+`PLAN REVIEWED — AUTHORIZED WITH CORRECTIONS`
+
+Estado posterior del milestone:
+
+`IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING`
+
+Objetivo:
+
+Reconciliar la autoridad documental, la numeracion historica, los aliases, los estados canonicos, las dependencias, los gates y la cola inmediata antes de alinear diseño y reglas de produccion en Checkpoint B.
+
+Documentos del checkpoint:
+
+- `Docs/Project_Roadmap.md`;
+- `Docs/Current_Milestone.md`;
+- `Docs/Development_Log.md`;
+- `Docs/Next_Sprints.md`.
+
+Decisiones aplicadas:
+
+- `Project_Roadmap.md` pasa a ser la unica autoridad de IDs, estados, dependencias y gates.
+- `Current_Milestone.md` se reduce a un snapshot operativo breve.
+- `Development_Log.md` conserva su historia append-only; esta entrada reconcilia estados anteriores sin reescribirlos.
+- `Next_Sprints.md` elimina milestones ya cerrados y conserva solo M36.1, M37.0 y M37.1 como proximos trabajos reales.
+- M36.0 queda reservado como `Old Scars Strategic Production Roadmap Rebaseline`.
+- Los IDs y commits historicos no se renombran.
+- La colision de M28 queda explicita: el ID historico pertenece a `Add ground item drop pickup and restore container visuals` y el cleanup de containers pasa a `ID TBD`.
+- M32.3 se conserva como alias historico del commit de house containers; el milestone vivo continua como M32.
+- M35.2.3 usa `Unified Corpse Belongings Surface` como nombre canonico y `Inventory Window Redesign Phase C1` como alias.
+- M35.2 queda `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3`.
+- M35.2.1, M35.2.2 y M35.2.3 conservan `VALIDATED`.
+- M35.2.3.1, M35.2.4 y M35.2.5 quedan `DEFERRED — RECLASSIFIED` con triggers explicitos.
+- M32 y M32.2 quedan reconciliados como `VALIDATED` desde la confirmacion manual ya registrada en este log.
+- M32.4, M32.4.1 y Grid Inventory Backend v0 no se elevan sin evidencia de cierre adicional.
+- La secuencia inmediata queda M36.1 → M37.0 → M37.1.
+- M36.1 se limita a freeze, identidad, invariantes, test seams y baseline; no implementa save, condition, repair ni actor lifecycle.
+- M37 persiste primero el slice actual y no diseña serializacion para sistemas hipoteticos.
+
+Trabajo diferido:
+
+- Checkpoint B de M36.0: mirror resumido del GDD Maestro v3.1, arquitectura, reglas JSON, reglas de desarrollo, template, gates y riesgos.
+- La serie M35.2 no se reactiva durante M36/M37.
+- El cleanup de containers no recibe un nuevo ID hasta ser priorizado.
+
+Verificacion documental del checkpoint:
+
+- `git diff --check` sin errores;
+- diff limitado a los cuatro documentos autorizados;
+- links Markdown relativos al repositorio;
+- ausencia de rutas locales absolutas;
+- IDs y estados canonicos reconciliados entre Roadmap, Current y la secuencia de Next;
+- no se modificaron C#, JSON gameplay, escenas, prefabs, assets, Packages o ProjectSettings;
+- Unity, batchmode y compilaciones no ejecutados.
+
+M36.0 no queda `DONE`. Checkpoint B debe completar la implementacion documental y dejar el milestone como `IMPLEMENTED — PENDING DOCUMENT REVIEW`.
