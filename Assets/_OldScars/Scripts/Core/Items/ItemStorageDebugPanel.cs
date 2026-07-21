@@ -364,7 +364,7 @@ namespace OldScars.Core.Items
 
             float contentHeight = Mathf.Max(120f, bodyHeight - 58f);
             float equipmentHeight = lootableActorSource.HasEquipmentItems
-                ? equipmentListView.GetOccupiedItemsPreferredHeight(lootableActorSource.Equipment, 180f) + 64f
+                ? Mathf.Max(200f, equipmentListView.GetOccupiedItemsPreferredHeight(lootableActorSource.Equipment, 196f) + 64f)
                 : 44f;
             equipmentHeight = Mathf.Min(equipmentHeight, Mathf.Max(44f, contentHeight - 110f));
             float inventoryHeight = Mathf.Max(100f, contentHeight - equipmentHeight - 6f);
@@ -425,7 +425,6 @@ namespace OldScars.Core.Items
                 !equipment.TryGetEntryByInstanceId(selectedId, out ItemStorageEntry entry) ||
                 entry?.Item == null)
             {
-                GUILayout.Label("Selecciona un item equipado; clic derecho para tomarlo.");
                 return;
             }
 

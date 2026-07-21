@@ -168,7 +168,7 @@ namespace OldScars.Core.Interactions
                     false,
                     GUIStyle.none,
                     GUI.skin.verticalScrollbar,
-                    GUILayout.Height(150f));
+                    GUILayout.Height(116f));
 
                 for (int index = 0; index < actions.Count; index++)
                 {
@@ -195,10 +195,12 @@ namespace OldScars.Core.Interactions
                 scrollPosition.x = 0f;
             }
 
-            GUILayout.Space(8f);
-
-            if (GUILayout.Button("Close", GUILayout.Height(24f)))
+            GUILayout.BeginHorizontal(GUI.skin.box, GUILayout.Height(34f));
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Close", GUILayout.Width(120f), GUILayout.Height(24f)))
                 Hide();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
         }

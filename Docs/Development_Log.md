@@ -1467,6 +1467,7 @@ Estado: `in progress`; M35.2.1 y M35.2.2 estan validadas y M35.2.3 esta en imple
 - M35.2.4 Persistent Body Review queda `planned` y M35.2.5 Multiple Floating Storage Windows queda `planned / deferred`.
 
 - M35.2.3 Validation Correction Pass 1 compacta Equipment, elimina controles Legacy y scroll horizontal visible; las acciones cross-actor se difieren a M35.2.3.1, pendiente de auditoria arquitectonica y validacion manual.
+- M35.2.3 Validation Correction Pass 2 amplía la altura mínima de Equipment, elimina la ayuda redundante y reserva el footer de ContextualActionDebugPanel; M35.2.3.1 permanece diferido y la revalidación manual sigue pendiente.
 
 ## Decisiones De Scope
 
