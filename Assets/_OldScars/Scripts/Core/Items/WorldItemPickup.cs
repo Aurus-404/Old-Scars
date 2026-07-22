@@ -103,6 +103,9 @@ namespace OldScars.Core.Items
             if (!result.Success || result.AffectedQuantity < 1)
                 return 0;
 
+            if (storage.GetEntryByInstanceId(sourceInstanceId) != null)
+                ItemOwnedStorageRegistry.Instance.UnbindItem(sourceInstanceId);
+
             ItemStorageEntry entry = storage.GetEntry(0);
             itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
             sourceInitialized = true;

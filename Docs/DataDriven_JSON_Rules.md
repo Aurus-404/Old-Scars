@@ -70,7 +70,7 @@ Ejemplo futuro:
   "owner": "player"
 }
 
-Este fragmento es conceptual, no un schema de save aprobado. M36.1 debe decidir la granularidad de identidad y el tratamiento del `Condition` get-only actual antes de que M37 defina el snapshot. En runtime, un stack usa una `ItemInstance` representativa mas `ItemStorageEntry.Quantity`; las unidades fungibles internas no poseen IDs individuales.
+Este fragmento es conceptual, no un schema de save aprobado. `Condition` pertenece al estado de la `ItemInstance` representativa, permanece get-only y debe coincidir para que dos stacks sean compatibles. Un stack usa una `ItemInstance` mas `ItemStorageEntry.Quantity`; sus unidades fungibles internas no poseen IDs individuales. Checkpoint A no agrega campos JSON ni define el schema de save de M37.
 
 ## Items
 

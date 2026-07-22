@@ -73,15 +73,38 @@ namespace OldScars.Core.Items
             if (storage == null || string.IsNullOrWhiteSpace(storage.ContainerInstanceId))
                 throw new ArgumentException("Item-owned storage requires a container InstanceId.", nameof(storage));
 
-            storagesByContainerInstanceId[storage.ContainerInstanceId] = storage;
+            if (storagesByContainerInstanceId.ContainsKey(storage.ContainerInstanceId))
+                throw new InvalidOperationException($"Item-owned storage '{storage.ContainerInstanceId}' is already registered.");
+
+            storagesByContainerInstanceId.Add(storage.ContainerInstanceId, storage);
+        }
+
+        internal bool UnregisterStorage(string containerInstanceId, ItemOwnedStorageRuntime expectedStorage)
+        {
+            if (string.IsNullOrWhiteSpace(containerInstanceId) || expectedStorage == null)
+                throw new ArgumentException("Item-owned storage unregister requires an id and expected runtime.");
+            if (!storagesByContainerInstanceId.TryGetValue(containerInstanceId, out ItemOwnedStorageRuntime registered))
+                return false;
+            if (!ReferenceEquals(registered, expectedStorage))
+                throw new InvalidOperationException($"Item-owned storage '{containerInstanceId}' does not match the expected runtime.");
+
+            return storagesByContainerInstanceId.Remove(containerInstanceId);
         }
 
         internal void BindItem(ItemInstance item, object directOwner)
         {
             if (item == null || string.IsNullOrWhiteSpace(item.InstanceId) || directOwner == null)
-                return;
+                throw new ArgumentException("Item ownership binding requires an item and direct owner.");
 
-            directOwnersByInstanceId[item.InstanceId] = directOwner;
+            if (directOwnersByInstanceId.TryGetValue(item.InstanceId, out object registeredOwner))
+            {
+                if (ReferenceEquals(registeredOwner, directOwner))
+                    return;
+
+                throw new InvalidOperationException($"Item instance '{item.InstanceId}' is already bound to a different owner.");
+            }
+
+            directOwnersByInstanceId.Add(item.InstanceId, directOwner);
         }
 
         internal void BindEntries(IReadOnlyList<ItemStorageEntry> entries, object directOwner)
@@ -92,7 +115,8 @@ namespace OldScars.Core.Items
             for (int index = 0; index < entries.Count; index++)
             {
                 ItemInstance item = entries[index] != null ? entries[index].Item : null;
-                BindItem(item, directOwner);
+                if (item != null)
+                    BindItem(item, directOwner);
             }
         }
 
@@ -101,6 +125,25 @@ namespace OldScars.Core.Items
             if (!string.IsNullOrWhiteSpace(instanceId))
                 directOwnersByInstanceId.Remove(instanceId);
         }
+
+        internal void RemoveRuntimeStateForInstance(string instanceId)
+        {
+            if (string.IsNullOrWhiteSpace(instanceId))
+                return;
+
+            directOwnersByInstanceId.Remove(instanceId);
+            if (storagesByContainerInstanceId.TryGetValue(instanceId, out ItemOwnedStorageRuntime storage))
+                UnregisterStorage(instanceId, storage);
+        }
+
+        internal void ResetRuntimeSession()
+        {
+            directOwnersByInstanceId.Clear();
+            storagesByContainerInstanceId.Clear();
+        }
+
+        internal int RegisteredStorageCount => storagesByContainerInstanceId.Count;
+        internal int BoundItemCount => directOwnersByInstanceId.Count;
 
         internal object ResolveRootOwner(IGridStorageOwner owner)
         {
@@ -125,18 +168,43 @@ namespace OldScars.Core.Items
             IGridStorageOwner target,
             GridStorageTransferReceipt receipt)
         {
+            string sourceInstanceId = receipt.SourceInstanceId;
+            if (receipt.SourceWasRemoved && !string.IsNullOrWhiteSpace(sourceInstanceId))
+                directOwnersByInstanceId.Remove(sourceInstanceId);
+
             if (source != null)
                 BindEntries(source.GridStorageEntries, source);
             if (target != null)
                 BindEntries(target.GridStorageEntries, target);
 
-            string sourceInstanceId = receipt.SourceInstanceId;
-            if (!receipt.SourceWasRemoved || string.IsNullOrWhiteSpace(sourceInstanceId))
+            if (receipt.SourceWasRemoved && !string.IsNullOrWhiteSpace(sourceInstanceId) &&
+                !ContainsInstance(source, sourceInstanceId) && !ContainsInstance(target, sourceInstanceId))
+            {
+                directOwnersByInstanceId.Remove(sourceInstanceId);
+            }
+        }
+
+        internal void ReconcileRestoredOwners(IGridStorageOwner first, IGridStorageOwner second)
+        {
+            UnbindEntries(first != null ? first.GridStorageEntries : null);
+            UnbindEntries(second != null ? second.GridStorageEntries : null);
+            if (first != null)
+                BindEntries(first.GridStorageEntries, first);
+            if (second != null)
+                BindEntries(second.GridStorageEntries, second);
+        }
+
+        private void UnbindEntries(IReadOnlyList<ItemStorageEntry> entries)
+        {
+            if (entries == null)
                 return;
 
-            bool stillExists = ContainsInstance(source, sourceInstanceId) || ContainsInstance(target, sourceInstanceId);
-            if (!stillExists)
-                directOwnersByInstanceId.Remove(sourceInstanceId);
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemInstance item = entries[index] != null ? entries[index].Item : null;
+                if (item != null)
+                    directOwnersByInstanceId.Remove(item.InstanceId);
+            }
         }
 
         private static bool ContainsInstance(IGridStorageOwner owner, string instanceId)

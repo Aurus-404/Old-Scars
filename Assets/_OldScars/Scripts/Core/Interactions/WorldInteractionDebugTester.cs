@@ -632,8 +632,7 @@ namespace OldScars.Core.Interactions
         {
             sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
             destinationEndpoint.TransferBackend.RestoreBackendState(destinationSnapshot);
-            ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
-            ItemOwnedStorageRegistry.Instance.BindEntries(destination.GridStorageEntries, destination);
+            ItemOwnedStorageRegistry.Instance.ReconcileRestoredOwners(source, destination);
         }
 
         private void ShowAvailabilityDiagnostics(ActionAvailabilityDiagnosticReport report)

@@ -143,7 +143,7 @@ namespace OldScars.Core.Items
                 return null;
             }
 
-            ItemOwnedStorageRegistry.Instance.BindItem(storedItem, this);
+            BindRuntimeOwnership();
 
             Debug.Log(
                 "[InventoryComponent] Added runtime item instance." +
@@ -266,7 +266,10 @@ namespace OldScars.Core.Items
                 return 0;
             }
 
-            return source.TransferAllTo(storage);
+            int transferred = source.TransferAllTo(storage);
+            if (transferred > 0)
+                BindRuntimeOwnership();
+            return transferred;
         }
 
         public int TransferItemFrom(ItemStorage source, int sourceIndex, int quantity)

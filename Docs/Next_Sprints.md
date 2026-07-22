@@ -6,14 +6,14 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ### 1. M36.1 — Foundation Freeze & Persistent Identity Contract
 
-Estado: `PLANNED — PENDING AUTHORIZATION`.
+Estado: `IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING`.
 
-M36.1 es el proximo milestone planificado, pero todavia no esta iniciado y requiere autorizacion independiente.
+M36.1 es el trabajo actual. Checkpoint A congelo identidad durable y stacks de items; Checkpoint B no esta iniciado.
 
 Objetivo:
 
 - congelar contratos actuales que M37 debe poder persistir;
-- definir identidad durable para items, actores y objetos mundiales actuales;
+- completar en Checkpoint B la identidad authored de actores y objetos mundiales actuales;
 - documentar invariantes de ownership y referencias;
 - crear seams de prueba y un baseline proporcional.
 
@@ -24,7 +24,7 @@ Fuera de alcance:
 - actor lifecycle;
 - gameplay o UI final.
 
-Salida: gate `Foundation Freeze`.
+Salida pendiente: revisar el gate `Foundation Freeze` despues de Checkpoint B; Checkpoint A por si solo no lo aprueba.
 
 ### 2. M37.0 — Save Format & Persistence Core
 

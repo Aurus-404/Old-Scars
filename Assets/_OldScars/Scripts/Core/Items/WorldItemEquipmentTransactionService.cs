@@ -128,6 +128,7 @@ namespace OldScars.Core.Items
                 equipment.AssignSlots(preview.InstanceId, preview.SlotIds);
                 ValidateOwnership(equipment);
                 equipment.PersonalInventory.ClearLegacyRightHandForEquipmentAuthority();
+                ItemOwnedStorageRegistry.Instance.UnbindItem(preview.InstanceId);
                 equipment.RebindActorOwnedItems();
             }
             catch (Exception exception)
@@ -296,6 +297,7 @@ namespace OldScars.Core.Items
                 equipment.AssignSlots(plan.SourceInstanceId, plan.RequestedSlotSet);
                 ValidateOwnership(equipment);
                 personal.ClearLegacyRightHandForEquipmentAuthority();
+                ItemOwnedStorageRegistry.Instance.UnbindItem(plan.SourceInstanceId);
                 equipment.RebindActorOwnedItems();
             }
             catch (Exception exception)

@@ -1,92 +1,218 @@
-using OldScars.Core.Data.Definitions;
-using OldScars.Core.Data;
 using System;
+using OldScars.Core.Data;
+using OldScars.Core.Data.Definitions;
 
 namespace OldScars.Core.Items
 {
     /// <summary>
-    /// Runtime-only item instance used by debug gameplay.
-    ///
-    /// Definitions live in JSON. Instances live in runtime now, and may later
-    /// be owned by save data. This class does not implement inventory,
-    /// equipment, stacks, root ownership, location, or durability logic. M34.2
-    /// allows the instance to own one spatial storage without making it the
-    /// authority for where the instance itself is located.
+    /// Runtime representative of one durable item identity. Stack quantity lives in ItemStorageEntry.
+    /// The public constructor and CreateNew both create a new runtime item; M37 must use Rehydrate.
     /// </summary>
     public sealed class ItemInstance
     {
-        private static int nextInstanceNumber = 1;
-
         public string InstanceId { get; }
         public string DefinitionId { get; }
         public int Condition { get; }
         public int MaxStack { get; }
         public string OwnedStorageProfileId { get; }
-        public ItemOwnedStorageRuntime OwnedStorage { get; }
+        public ItemOwnedStorageRuntime OwnedStorage { get; private set; }
         public bool HasOwnedStorage => OwnedStorage != null;
 
+        /// <summary>
+        /// Compatibility path for a new runtime item. Loaded items must use Rehydrate.
+        /// </summary>
         public ItemInstance(ItemDefinition definition)
+            : this(PrepareNew(definition), ResolveOwnedStorageProfile)
         {
-            InstanceId = CreateRuntimeInstanceId();
-            DefinitionId = definition != null ? definition.id : null;
-            Condition = GetInitialCondition(definition);
-            MaxStack = GetMaxStack(definition);
-            OwnedStorageProfileId = definition != null ? definition.owned_storage_profile_id : null;
-            OwnedStorage = CreateOwnedStorage(OwnedStorageProfileId);
         }
 
-        private ItemInstance(string definitionId, int condition, int maxStack, string ownedStorageProfileId)
+        private ItemInstance(NewItemState state, Func<string, ItemStorageProfileDefinition> profileResolver)
+            : this(state.InstanceId, state.DefinitionId, state.Condition, state.MaxStack, state.OwnedStorageProfileId)
         {
-            InstanceId = CreateRuntimeInstanceId();
+            ItemOwnedStorageRuntime storage = null;
+            bool storageRegistered = false;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(OwnedStorageProfileId))
+                {
+                    ItemStorageProfileDefinition profile = profileResolver?.Invoke(OwnedStorageProfileId);
+                    if (profile == null)
+                        throw new InvalidOperationException($"Item-owned storage profile '{OwnedStorageProfileId}' was not found.");
+
+                    storage = new ItemOwnedStorageRuntime(this, profile);
+                    ItemOwnedStorageRegistry.Instance.RegisterStorage(storage);
+                    storageRegistered = true;
+                    OwnedStorage = storage;
+                }
+            }
+            catch
+            {
+                if (storageRegistered)
+                    ItemOwnedStorageRegistry.Instance.UnregisterStorage(InstanceId, storage);
+                ItemOwnedStorageRegistry.Instance.UnbindItem(InstanceId);
+                ItemInstanceIdRegistry.Instance.ReleaseFailedReservation(InstanceId);
+                throw;
+            }
+        }
+
+        private ItemInstance(
+            string instanceId,
+            string definitionId,
+            int condition,
+            int maxStack,
+            string ownedStorageProfileId)
+        {
+            InstanceId = instanceId;
             DefinitionId = definitionId;
-            Condition = Math.Max(1, condition);
-            MaxStack = Math.Max(1, maxStack);
+            Condition = condition;
+            MaxStack = maxStack;
             OwnedStorageProfileId = ownedStorageProfileId;
-            OwnedStorage = CreateOwnedStorage(OwnedStorageProfileId);
+        }
+
+        public static ItemInstance CreateNew(ItemDefinition definition)
+        {
+            return new ItemInstance(definition);
+        }
+
+        internal static ItemInstance CreateNew(
+            ItemDefinition definition,
+            Func<string, ItemStorageProfileDefinition> profileResolver)
+        {
+            return new ItemInstance(PrepareNew(definition), profileResolver);
+        }
+
+        /// <summary>
+        /// Reserves and restores an existing durable identity without creating storage or ownership.
+        /// M37 will attach and hydrate item-owned storage explicitly after restoring its content.
+        /// </summary>
+        public static ItemInstance Rehydrate(ItemDefinition definition, string instanceId, int condition)
+        {
+            ValidateDefinition(definition);
+            if (!ItemInstanceIdRegistry.IsValidFormat(instanceId))
+                throw new ArgumentException($"Item instance id '{instanceId}' does not match the durable item ID format.", nameof(instanceId));
+
+            ItemInstanceIdRegistry.Instance.ReserveExact(instanceId);
+            try
+            {
+                ValidateCondition(definition, condition);
+                return new ItemInstance(
+                    instanceId,
+                    definition.id,
+                    condition,
+                    Math.Max(1, definition.max_stack),
+                    definition.owned_storage_profile_id);
+            }
+            catch
+            {
+                ItemInstanceIdRegistry.Instance.ReleaseFailedReservation(instanceId);
+                throw;
+            }
         }
 
         public ItemInstance CreateStackSibling()
         {
-            return new ItemInstance(DefinitionId, Condition, MaxStack, OwnedStorageProfileId);
+            if (HasOwnedStorage || !string.IsNullOrWhiteSpace(OwnedStorageProfileId) || MaxStack <= 1)
+                throw new InvalidOperationException($"Item instance '{InstanceId}' cannot create a stack sibling.");
+
+            string siblingId = ItemInstanceIdRegistry.Instance.ReserveNewId();
+            try
+            {
+                return new ItemInstance(siblingId, DefinitionId, Condition, MaxStack, null);
+            }
+            catch
+            {
+                ItemInstanceIdRegistry.Instance.ReleaseFailedReservation(siblingId);
+                throw;
+            }
         }
 
-        internal static int CaptureIdSequence()
+        public static bool CanStackWith(ItemInstance first, ItemInstance second)
         {
-            return nextInstanceNumber;
+            return first != null && second != null &&
+                   first.MaxStack > 1 && first.MaxStack == second.MaxStack &&
+                   first.DefinitionId == second.DefinitionId &&
+                   first.Condition == second.Condition &&
+                   !first.HasOwnedStorage && !second.HasOwnedStorage &&
+                   string.IsNullOrWhiteSpace(first.OwnedStorageProfileId) &&
+                   string.IsNullOrWhiteSpace(second.OwnedStorageProfileId);
         }
 
-        internal static void RestoreIdSequence(int nextNumber)
+        internal void AttachOwnedStorage(ItemStorageProfileDefinition profile)
         {
-            nextInstanceNumber = Math.Max(1, nextNumber);
+            if (OwnedStorage != null)
+                throw new InvalidOperationException($"Item instance '{InstanceId}' already has item-owned storage.");
+            if (profile == null || string.IsNullOrWhiteSpace(OwnedStorageProfileId) || profile.id != OwnedStorageProfileId)
+                throw new InvalidOperationException($"Item-owned storage profile does not match item instance '{InstanceId}'.");
+
+            var storage = new ItemOwnedStorageRuntime(this, profile);
+            ItemOwnedStorageRegistry.Instance.RegisterStorage(storage);
+            OwnedStorage = storage;
         }
 
-        private static string CreateRuntimeInstanceId()
+        private static NewItemState PrepareNew(ItemDefinition definition)
         {
-            string instanceId = $"item_instance_{nextInstanceNumber:0000}";
-            nextInstanceNumber++;
-            return instanceId;
+            ValidateDefinition(definition);
+            string instanceId = ItemInstanceIdRegistry.Instance.ReserveNewId();
+            return new NewItemState(
+                instanceId,
+                definition.id,
+                definition.physical.condition_max,
+                Math.Max(1, definition.max_stack),
+                definition.owned_storage_profile_id);
         }
 
-        private static int GetInitialCondition(ItemDefinition definition)
+        private static void ValidateDefinition(ItemDefinition definition)
         {
-            if (definition == null || definition.physical == null || definition.physical.condition_max <= 0)
-                return 1;
-
-            return definition.physical.condition_max;
+            if (definition == null)
+                throw new ArgumentNullException(nameof(definition));
+            if (string.IsNullOrWhiteSpace(definition.id))
+                throw new ArgumentException("Item definition requires an id.", nameof(definition));
+            if (definition.physical == null || definition.physical.condition_max < 1)
+                throw new ArgumentException($"Item definition '{definition.id}' requires condition_max >= 1.", nameof(definition));
+            if (!string.IsNullOrWhiteSpace(definition.owned_storage_profile_id) && Math.Max(1, definition.max_stack) > 1)
+                throw new ArgumentException($"Item definition '{definition.id}' cannot stack while owning storage.", nameof(definition));
         }
 
-        private static int GetMaxStack(ItemDefinition definition)
+        private static void ValidateCondition(ItemDefinition definition, int condition)
         {
-            return definition != null ? Math.Max(1, definition.max_stack) : 1;
+            if (condition < 1 || condition > definition.physical.condition_max)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(condition),
+                    condition,
+                    $"Condition for '{definition.id}' must be between 1 and {definition.physical.condition_max}.");
+            }
         }
 
-        private ItemOwnedStorageRuntime CreateOwnedStorage(string profileId)
+        private static ItemStorageProfileDefinition ResolveOwnedStorageProfile(string profileId)
         {
-            if (string.IsNullOrWhiteSpace(profileId) || GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
-                return null;
+            if (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
+                throw new InvalidOperationException($"Cannot resolve item-owned storage profile '{profileId}' before game data is ready.");
 
-            ItemStorageProfileDefinition profile = GameDataManager.Instance.Database?.GetItemStorageProfile(profileId);
-            return profile != null ? new ItemOwnedStorageRuntime(this, profile) : null;
+            return GameDataManager.Instance.Database?.GetItemStorageProfile(profileId);
+        }
+
+        private readonly struct NewItemState
+        {
+            internal NewItemState(
+                string instanceId,
+                string definitionId,
+                int condition,
+                int maxStack,
+                string ownedStorageProfileId)
+            {
+                InstanceId = instanceId;
+                DefinitionId = definitionId;
+                Condition = condition;
+                MaxStack = maxStack;
+                OwnedStorageProfileId = ownedStorageProfileId;
+            }
+
+            internal string InstanceId { get; }
+            internal string DefinitionId { get; }
+            internal int Condition { get; }
+            internal int MaxStack { get; }
+            internal string OwnedStorageProfileId { get; }
         }
     }
 }

@@ -13,15 +13,19 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Las definiciones no contienen estado de partida. Los objetos colocados en escena y las instancias runtime consumen definiciones por ID.
 - `ItemDefinition` describe un tipo; `ItemInstance` conserva identidad y estado de una instancia representativa. La cantidad del stack pertenece a `ItemStorageEntry`, no a `ItemInstance`.
 
-## Identidad Actual Y Limite De Persistencia
+## Identidad Durable De Items Y Limite De Persistencia
 
-- `ItemInstance.InstanceId` es la identidad autoritativa dentro de una sesion. Ownership, placements, Equipment, visuales y storages item-owned la usan en lugar de `DefinitionId` o indices.
-- Un stack actual contiene una `ItemInstance` representativa y `ItemStorageEntry.Quantity`; las unidades fungibles internas no poseen IDs individuales. Split crea una instancia hermana con ID nuevo y merge conserva una representante. M36.1 debe decidir que categorias requieren identidad por objeto durable y cuales conservan semantica fungible por stack.
-- Los IDs actuales se generan en memoria como una secuencia de proceso. No existe contrato de ID durable, reserva entre partidas ni rehidratacion con un ID previo.
-- `ItemInstance.Condition` existe como valor inicial get-only derivado de `physical.condition_max`; no hay mutacion, desgaste ni reparacion. M36.1 debe decidir si M37 lo persiste, lo rederiva o lo excluye justificadamente del snapshot, sin adelantar el sistema mutable de M43.0.
+- `ItemInstance.InstanceId` es un `string` get-only autoritativo. Los IDs nuevos usan `item_<GUID N lowercase>`; son opacos para consumidores y no codifican comportamiento.
+- `ItemInstance.CreateNew` valida la definicion, reserva un ID nuevo, usa `condition_max` y registra explicitamente item-owned storage. El constructor publico legacy conserva exactamente esa semantica de new runtime item.
+- `ItemInstance.Rehydrate` valida y reserva exactamente el ID y el `Condition` recibidos, rechaza duplicados y devuelve un item detached; M37 debe usar esta ruta y no el constructor publico.
+- `ItemInstanceIdRegistry` mantiene solamente un `HashSet` de IDs activos. Un reset en `SubsystemRegistration` limpia de forma coordinada identidad, storages y ownership runtime; no existen tombstones persistentes, high-water ni historial de retirados.
+- Un stack contiene una `ItemInstance` representativa y `ItemStorageEntry.Quantity`; las unidades fungibles internas no poseen IDs individuales. `CanStackWith` exige `DefinitionId`, `Condition`, `MaxStack` y ausencia de owned storage compatibles.
+- Split conserva el ID fuente y crea un sibling durable. Merge conserva el ID destino; si consume completamente la fuente, la retira solo despues de validar storage/layout y confirmar la transaccion. Transfer, drop y equip/unequip preservan identidad.
+- Los scopes de reserva ambient/nested estan limitados al hilo de sesion, exigen LIFO y transfieren reservas al scope padre. El contexto localizado es necesario porque constructors y split reservan IDs dentro de servicios transaccionales ya existentes; evita cambiar sus contratos publicos. Rollback restaura storage/layout/Equipment y luego libera solamente IDs nuevos con sus registros/bindings.
+- `ItemInstance.Condition` permanece get-only. Es estado de instancia representativo, participa en stacking y debe rehidratarse exactamente en M37; no hay mutacion, desgaste ni reparacion.
 - No hay save envelope, version de formato, checksum, escritura atomica, recovery, migrations ni pruebas round-trip.
 - Actores, puertas, containers, cuerpos y world items dependen de objetos/componentes de escena; todavia no poseen un lifecycle persistente comun.
-- M36.1 debe congelar estos contratos y definir identidad durable antes de que M37 escriba datos.
+- Checkpoint B debe completar la identidad authored y evidencia restante del slice antes de revisar `Foundation Freeze`.
 
 ## Inventory, Grid, Ownership Y Equipment
 
@@ -36,8 +40,8 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Item-Owned Storage Y Peso
 
 - `ItemDefinition.owned_storage_profile_id` referencia un `ItemStorageProfileDefinition`.
-- Cada `ItemInstance` con perfil crea como maximo un `ItemOwnedStorageRuntime` propio, con `ItemStorage`, grid, versiones y `ContainerInstanceId`.
-- `ItemOwnedStorageRegistry` resuelve por `InstanceId`, direct owner y root owner, y detecta ciclos. Ownership cambia solamente despues de commit.
+- Cada `ItemInstance` nuevo con perfil crea como maximo un `ItemOwnedStorageRuntime` propio, con `ItemStorage`, grid, versiones y `ContainerInstanceId` exactamente igual al ID del item. Rehydrate no lo adjunta automaticamente.
+- El constructor de `ItemOwnedStorageRuntime` no registra por side effect. `ItemOwnedStorageRegistry` registra de forma explicita, rechaza duplicados, resuelve por `InstanceId`, direct owner y root owner, y detecta ciclos. Repetir el mismo binding es idempotente; cambiar owner exige una transicion explicita despues del commit.
 - `ItemOwnedStorageRuntime` implementa `IGridStorageOwner` y reutiliza `GridStorageTransferService`; no existe un backend especial de mochila.
 - Nesting de item-owned storage permanece prohibido en el contrato v0 mediante un guard transaccional generico.
 - `ActorCarryWeightComponent` es la autoridad de capacidad. `ItemWeightResolver` suma cada entry y su subtree item-owned exactamente una vez, con proteccion contra ciclos y duplicados.
@@ -48,7 +52,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `ActorProfileComponent` espera a que `GameDataManager` este listo y aplica display, tags iniciales, health escalar, equipment layout, inventario inicial, Equipment inicial y visual rig profile.
 - `initial_inventory` crea instancias reales en el inventario del actor. Sus entradas se aplican una por una: un fallo registra warning y no revierte entradas anteriores. El selector debug `inventory_seed_actor_tag` puede aplicar solamente ese inventario a un actor sin `ActorProfileComponent`; no aplica display, health, Equipment ni visual rig.
 - `initial_equipment` requiere `equipment_layout_id` y crea instancias reales de cantidad uno. Cada entrada puede seleccionar una alternativa completa mediante `slot_ids`; si se omite, debe quedar una unica alternativa libre.
-- `EquipmentTransactionService.TryEquipInitialItems` captura inventario, Equipment, slots y secuencia de IDs justo antes del lote `initial_equipment`. Un error restaura esos snapshots, desliga storages creados y no deja Equipment parcial.
+- `EquipmentTransactionService.TryEquipInitialItems` captura inventario, Equipment y slots y abre un scope de reservas justo antes del lote `initial_equipment`. Un error restaura esos snapshots, limpia IDs/storages nuevos y no deja Equipment parcial.
 - El bootstrap valida ownership unico antes de publicar el snapshot visual confirmado.
 - El profile completo no es una transaccion: un rollback de `initial_equipment` conserva display, tags, health, layout e `initial_inventory` ya aplicados.
 
@@ -86,9 +90,9 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Frontera M36.1 / M37
 
-- M36.1 es un freeze corto: cataloga contratos estables/provisionales, define identidad durable, invariantes, boundaries de hidratacion y test seams.
-- M36.1 resuelve explicitamente el tratamiento de `ItemInstance.Condition` en el snapshot de M37 sin implementar condition mutable.
-- M36.1 congela la granularidad de identidad para items no stackeables y unidades fungibles de un stack antes de diseñar su round-trip.
+- M36.1 Checkpoint A implementa identidad durable de items, invariantes, boundary de rehidratacion y diagnostico determinista; Checkpoint B permanece pendiente.
+- M37 debe persistir y rehidratar el `Condition` get-only exacto, sin implementar condition mutable.
+- Items no stackeables y stacks visibles poseen identidad durable; las unidades fungibles internas conservan cantidad sin identidad individual.
 - M36.1 no implementa save/load, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.
 - M37 persiste primero el slice real: jugador, items, inventory/grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags existentes.
 - M37 no pre-serializa actores futuros, clima, facciones, economia regional o mundo procedural hipotetico.

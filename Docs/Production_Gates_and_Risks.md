@@ -78,6 +78,8 @@ Debe validar:
 
 Evidencia: matriz de identidad y ownership, contratos documentados, pruebas de invariantes y lista explicita de decisiones congeladas.
 
+Evidencia parcial de Checkpoint A: identidad durable de items, `CreateNew`/`Rehydrate`, unicidad activa, item-owned storage, stacking por `Condition`, split/merge, retiro post-commit, rollback de reservas y ownership estricto compilaron en Runtime/Editor y su diagnostico dedicado dio `PASS`. Esta evidencia no aprueba el gate: faltan Checkpoint B, evidencia authored del slice y validacion manual correspondiente. R03 permanece `MITIGATING` y los riesgos de identidad de actores/objetos mundiales siguen pendientes para Checkpoint B.
+
 Deuda aceptable: save/load, condition, repair/disassembly, actor lifecycle y gameplay nuevo.
 
 Bloquea: IDs regenerables o ambiguos, ownership sin autoridad, mutaciones que eluden servicios existentes o cualquier contrato que M37 deba inferir.

@@ -25,11 +25,11 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Proximo milestone planificado | M36.1 — Foundation Freeze & Persistent Identity Contract |
-| Estado M36.1 | `PLANNED — PENDING AUTHORIZATION` |
+| Milestone activo | M36.1 — Foundation Freeze & Persistent Identity Contract |
+| Estado M36.1 | `IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING` |
 | Siguientes | M37.0 — Save Format & Persistence Core; M37.1 — Current Slice Persistent Round-Trip |
 
-Mauro completo y aprobo la revision documental final de M36.0. El milestone queda `DONE — DOCUMENTATION REVIEWED`; Unity validation fue `NOT APPLICABLE`. M36.1 permanece planificado, no iniciado y pendiente de autorizacion independiente.
+Mauro completo y aprobo la revision documental final de M36.0. M36.1 esta activo: Checkpoint A implementa identidad durable y contratos de stack para items; Checkpoint B permanece pendiente. El gate `Foundation Freeze` no esta aprobado y M37 no comenzo.
 
 ## Estados Canonicos
 
@@ -120,7 +120,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | Horizonte | Milestone | Tipo | Estado | Dependencias | Resultado / gate |
 | --- | --- | --- | --- | --- | --- |
 | CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
-| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `PLANNED — PENDING AUTHORIZATION` | M36.0 revisado | Contratos e identidad durable acordados; gate `Foundation Freeze`. Debe ser corto y no esta iniciado. |
+| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING` | M36.0 revisado | Checkpoint A congela identidad y stacks de items; Checkpoint B debe aportar identidad authored del slice y evidencia restante antes de revisar `Foundation Freeze`. |
 | SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente. |
 | SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`. |
 | SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED` | M37.1 | IDs, spawn, lifecycle, muerte y cuerpos persistibles. |
@@ -216,9 +216,11 @@ Corregir clasificaciones de diseño revisadas por Mauro, formalizar el workflow 
 
 Mauro aprobo la jerarquia documental, el GDD Markdown como baseline revisado, el roadmap M36–M55, los trece gates, R01–R23, el workflow de Codex/Git y las clasificaciones corregidas. M36.0 queda `DONE — DOCUMENTATION REVIEWED`; las decisiones creativas etiquetadas siguen abiertas y M36.1 requiere autorizacion independiente.
 
-### M36.1 — Limite Obligatorio
+### M36.1 — Checkpoint A Implementado / Limite Obligatorio
 
-M36.1 debe ser corto. Puede definir y probar contratos de identidad persistente, invariantes, seams de test y un baseline, pero no implementa:
+Checkpoint A implementa IDs `item_<GUID N lowercase>` opacos e inmutables, rutas separadas `CreateNew`/`Rehydrate`, unicidad de IDs activos, ownership estricto, item-owned storage explicito y reglas de stack/split/merge/rollback consumibles por M37. Un stack conserva una `ItemInstance` representativa y cantidad fungible; `Condition` get-only forma parte del estado de instancia y de la compatibilidad de stack.
+
+Checkpoint B no esta iniciado. Debe aportar identidad authored del slice actual y la evidencia restante del gate. M36.1 debe seguir siendo corto y no implementa:
 
 - save/load;
 - condition;
@@ -227,10 +229,11 @@ M36.1 debe ser corto. Puede definir y probar contratos de identidad persistente,
 - gameplay nuevo;
 - UI final.
 
-Tambien debe decidir:
+Decisiones congeladas para M37:
 
-- como representa M37 el campo runtime `ItemInstance.Condition` ya existente —persistirlo, rederivarlo o excluirlo justificadamente— sin implementar condition mutable, desgaste ni reparacion antes de M43.0;
-- que categorias conservan identidad durable por objeto y cuales usan la semantica actual de una instancia representativa mas cantidad fungible por stack.
+- M37 debe rehidratar el `InstanceId` exacto y el `Condition` exacto validado; no debe crear otro ID durante carga;
+- items no stackeables y cada stack visible conservan identidad durable; las unidades fungibles internas de un stack no poseen IDs individuales;
+- el gate `Foundation Freeze` permanece abierto hasta completar y revisar Checkpoint B.
 
 ### M37 — Limite Obligatorio
 

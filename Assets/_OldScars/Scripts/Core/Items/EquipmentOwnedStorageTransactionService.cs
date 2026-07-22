@@ -110,7 +110,8 @@ namespace OldScars.Core.Items
             GridInventoryBackend.BackendStateSnapshot sourceSnapshot = sourceEndpoint.TransferBackend.CaptureBackendState();
             GridInventoryBackend.BackendStateSnapshot equipmentSnapshot = equipment.Backend.CaptureBackendState();
             ActorEquipmentComponent.EquipmentStateSnapshot slotsSnapshot = equipment.CaptureEquipmentState();
-            int idSnapshot = ItemInstance.CaptureIdSequence();
+            using ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                ItemInstanceIdRegistry.Instance.BeginReservationScope();
             try
             {
                 ItemInstance item = sourceEndpoint.TransferBackend.Storage.GetEntryByInstanceId(preview.InstanceId)?.Item;
@@ -124,10 +125,12 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(ownershipError ?? "Falló la validación de ownership.");
 
                 equipment.PersonalInventory.ClearLegacyRightHandForEquipmentAuthority();
+                ItemOwnedStorageRegistry.Instance.UnbindItem(preview.InstanceId);
                 ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
                 equipment.RebindActorOwnedItems();
                 equipment.RecordEquipped(item);
                 equipment.CommitVisualState(EquipmentVisualCommitKind.EquipFromItemOwnedStorage);
+                identityScope.Commit();
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item equipped.", preview.InstanceId, preview.SlotIds);
             }
             catch (Exception exception)
@@ -135,7 +138,6 @@ namespace OldScars.Core.Items
                 sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
                 equipment.Backend.RestoreBackendState(equipmentSnapshot);
                 equipment.RestoreEquipmentState(slotsSnapshot);
-                ItemInstance.RestoreIdSequence(idSnapshot);
                 ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
                 equipment.RebindActorOwnedItems();
                 return EquipmentMutationResult.Rejected($"Equip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
@@ -231,7 +233,8 @@ namespace OldScars.Core.Items
             GridInventoryBackend.BackendStateSnapshot personalSnapshot = personal.InternalGridBackend.CaptureBackendState();
             GridInventoryBackend.BackendStateSnapshot equipmentSnapshot = equipment.Backend.CaptureBackendState();
             ActorEquipmentComponent.EquipmentStateSnapshot slotsSnapshot = equipment.CaptureEquipmentState();
-            int idSnapshot = ItemInstance.CaptureIdSequence();
+            using ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                ItemInstanceIdRegistry.Instance.BeginReservationScope();
             var displacedItems = new ItemInstance[plan.DisplacedItems.Length];
             try
             {
@@ -261,12 +264,14 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(ownershipError ?? "Falló la validación de ownership.");
 
                 personal.ClearLegacyRightHandForEquipmentAuthority();
+                ItemOwnedStorageRegistry.Instance.UnbindItem(plan.SourceInstanceId);
                 ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
                 equipment.RebindActorOwnedItems();
                 for (int index = 0; index < displacedItems.Length; index++)
                     equipment.RecordUnequipped(displacedItems[index]);
                 equipment.RecordEquipped(sourceItem);
                 equipment.CommitVisualState(EquipmentVisualCommitKind.ReplacementFromItemOwnedStorage);
+                identityScope.Commit();
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Equipment replaced.", plan.SourceInstanceId, plan.RequestedSlotSet);
             }
             catch (Exception exception)
@@ -275,7 +280,6 @@ namespace OldScars.Core.Items
                 personal.InternalGridBackend.RestoreBackendState(personalSnapshot);
                 equipment.Backend.RestoreBackendState(equipmentSnapshot);
                 equipment.RestoreEquipmentState(slotsSnapshot);
-                ItemInstance.RestoreIdSequence(idSnapshot);
                 ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
                 equipment.RebindActorOwnedItems();
                 return EquipmentMutationResult.Rejected($"Equipment replacement rolled back: {exception.Message}", plan.SourceInstanceId, EquipmentFailureCode.StorageMutationFailed);

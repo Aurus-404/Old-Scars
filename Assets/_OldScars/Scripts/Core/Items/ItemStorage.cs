@@ -87,13 +87,13 @@ namespace OldScars.Core.Items
             return entry;
         }
 
-        internal bool TryAddQuantityToEntry(string instanceId, int quantity)
+        internal bool TryAddQuantityToEntry(string instanceId, ItemInstance sourceItem, int quantity)
         {
             if (quantity < 1)
                 return false;
 
             ItemStorageEntry entry = GetEntryByInstanceId(instanceId);
-            if (entry == null || entry.AvailableStackSpace < quantity)
+            if (entry == null || !ItemInstance.CanStackWith(entry.Item, sourceItem) || entry.AvailableStackSpace < quantity)
                 return false;
 
             entry.AddQuantity(quantity);
@@ -199,16 +199,38 @@ namespace OldScars.Core.Items
             if (ReferenceEquals(target, this))
                 return 0;
 
-            int transferredQuantity = 0;
-            for (int index = 0; index < entries.Count; index++)
+            StateSnapshot sourceSnapshot = CaptureState();
+            StateSnapshot targetSnapshot = target.CaptureState();
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
             {
-                ItemStorageEntry entry = entries[index];
-                target.AddItem(entry.Item, entry.Quantity);
-                transferredQuantity += entry.Quantity;
-            }
+                try
+                {
+                    int transferredQuantity = 0;
+                    while (entries.Count > 0)
+                    {
+                        ItemStorageEntry entry = entries[0];
+                        string sourceInstanceId = entry.Item.InstanceId;
+                        int quantity = entry.Quantity;
+                        int transferred = TransferTo(target, 0, quantity);
+                        if (transferred != quantity)
+                            throw new InvalidOperationException("Batch transfer did not preserve quantity.");
 
-            Clear();
-            return transferredQuantity;
+                        if (target.GetEntryByInstanceId(sourceInstanceId) == null)
+                            ItemInstanceIdRegistry.Instance.RetireAfterCommit(sourceInstanceId);
+                        transferredQuantity += transferred;
+                    }
+
+                    identityScope.Commit();
+                    return transferredQuantity;
+                }
+                catch
+                {
+                    RestoreState(sourceSnapshot);
+                    target.RestoreState(targetSnapshot);
+                    throw;
+                }
+            }
         }
 
         public int TransferTo(ItemStorage target, int index, int quantity)
@@ -249,7 +271,7 @@ namespace OldScars.Core.Items
             for (int index = 0; index < entries.Count; index++)
             {
                 ItemStorageEntry entry = entries[index];
-                if (entry == null || entry.DefinitionId != item.DefinitionId)
+                if (entry == null || !ItemInstance.CanStackWith(entry.Item, item))
                     continue;
 
                 totalCapacity += entry.AvailableStackSpace;
@@ -266,7 +288,7 @@ namespace OldScars.Core.Items
             for (int index = 0; index < entries.Count && remainingQuantity > 0; index++)
             {
                 ItemStorageEntry entry = entries[index];
-                if (entry == null || entry.DefinitionId != item.DefinitionId || entry.MaxStack <= 1 || entry.AvailableStackSpace <= 0)
+                if (entry == null || !ItemInstance.CanStackWith(entry.Item, item) || entry.AvailableStackSpace <= 0)
                     continue;
 
                 int acceptedQuantity = entry.AddQuantityUpTo(remainingQuantity);

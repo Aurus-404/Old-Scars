@@ -1747,3 +1747,75 @@ Contratos y límites preservados:
 - Unity, batchmode, compilaciones y tests de gameplay no se ejecutaron porque la validación Unity no aplica a este cierre documental.
 - M36.1 es el siguiente milestone planificado, permanece `PLANNED — PENDING AUTHORIZATION`, no fue iniciado y requiere autorización independiente.
 - M37 permanece bloqueado por Foundation Freeze.
+
+### M36.1 — Checkpoint A: Durable Item Identity and Stack Contracts
+
+Version:
+
+`Checkpoint A — Durable Item Identity and Stack Contracts`
+
+Estado inicial:
+
+`PLANNED — REVISED ARCHITECTURE PLAN READY FOR IMPLEMENTATION AUTHORIZATION`
+
+Estado posterior:
+
+`IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING`
+
+Objetivo y decisiones implementadas:
+
+- `ItemInstance.InstanceId` permanece `string` get-only, ahora con formato durable `item_<GUID N lowercase>` y semantica opaca para consumidores.
+- `CreateNew` y el constructor publico legacy representan new runtime item; `Rehydrate` reserva el ID y `Condition` exactos de un item cargado y lo devuelve detached.
+- `ItemInstanceIdRegistry` conserva solamente IDs activos y se reinicia en `SubsystemRegistration` junto con `ItemOwnedStorageRegistry`.
+- El constructor de `ItemOwnedStorageRuntime` deja de registrarse por side effect; registros y bindings duplicados se rechazan, mientras el mismo ID/owner es idempotente.
+- `CanStackWith` centraliza compatibilidad por `DefinitionId`, `Condition`, `MaxStack` y ausencia de owned storage.
+- Split conserva el ID fuente y crea un sibling; merge conserva el destino y retira una fuente totalmente consumida despues del commit.
+- Los reservation scopes ambient/nested, limitados al hilo de sesion y LIFO, transfieren reservas al padre; este contexto localizado captura IDs creados por constructors/split profundos sin cambiar contratos publicos. Rollback restaura storage/layout/Equipment y libera solamente IDs nuevos.
+- Los call sites terminales de `Remove` corresponden a uso/consumo. Transfer, drop, equip y unequip conservan identidad.
+- Ownership se reconcilia para todas las entries afectadas sin rediseñar `InventoryMutationResult`.
+
+Archivos de implementacion:
+
+- `Assets/_OldScars/Scripts/Core/Items/ItemInstance.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/ItemInstanceIdRegistry.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/ItemOwnedStorageRuntime.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/ItemOwnedStorageRegistry.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/ItemStorage.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/InventoryComponent.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/Grid/GridInventoryBackend.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/EquipmentTransactionService.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/EquipmentOwnedStorageTransactionService.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/M36ItemIdentityDiagnostics.cs`;
+- `Assets/_OldScars/Editor/M36PersistentIdentityTools.cs`.
+
+Call sites adicionales localizados:
+
+- `WorldItemPickup`, `WorldItemEquipmentTransactionService` y `WorldInteractionDebugTester` necesitaban transiciones explicitas de owner/rollback porque el binding estricto ya no puede sobrescribir silenciosamente un owner anterior.
+- Esos cambios no agregan gameplay ni backends: sólo preservan la identidad existente durante drop, world-to-equipment y restauracion de snapshots.
+
+Contratos preservados:
+
+- `DefinitionId` sigue identificando definiciones JSON; `InstanceId` identifica instancias runtime.
+- `ItemStorageEntry` conserva una `ItemInstance` representativa y `Quantity`; no hay IDs individuales por unidad fungible.
+- Equipment, placements, visuals e item-owned storage siguen referenciando `InstanceId`.
+- El storage propio usa exactamente el ID del item propietario y no recibe un segundo ID.
+- JSON gameplay, `SampleScene`, prefabs, Packages y ProjectSettings permanecen intactos.
+- No se implementan save/load, authored scene IDs, actor lifecycle, condition mutable, repair ni Checkpoint B.
+
+Compilacion y diagnostico:
+
+- Unity 6.4.6f1 compilo `Assembly-CSharp` y `Assembly-CSharp-Editor` sin errores.
+- Persisten seis warnings preexistentes fuera del alcance: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
+- `Old Scars > Diagnostics > M36.1 > Run Checkpoint A Item Identity` (`Ctrl+Shift+I`) ejecuto el diagnostico determinista con resultado `PASS`.
+- El diagnostico comprobo CreateNew unico/formato, Rehydrate exacto/duplicado, cleanup de creacion fallida y scope nested, split, merge, rechazo por `Condition`, owned storage, registro/binding estricto y reset coordinado.
+- El cleanup final confirmo cero IDs activos, storages registrados y owners registrados por el diagnostico.
+- Un smoke de Play Mode, sin guardar ni modificar `SampleScene`, completo bootstrap con `[OldScars/Data] Load OK — 0 errors, 0 warnings` y sin excepciones relacionadas con M36.1.
+- Al salir del smoke, `RelayService` emitio un `TaskCanceledException` de infraestructura Unity; no afecto datos, gameplay, compilacion ni el resultado del diagnostico.
+
+Validacion, deuda y trabajo siguiente:
+
+- Se revisaron estaticamente los flujos existentes de add/remove, pickup/drop, split, transfer, directed merge, Equipment, item-owned storage y ownership.
+- La validacion manual final del slice por Mauro permanece pendiente y no se declara completada.
+- No hay NUnit mientras Core permanezca en `Assembly-CSharp`; el constructor publico legacy permanece como ruta compatible de new item.
+- Checkpoint B debe agregar identidad authored y evidencia de Foundation Freeze; el gate permanece abierto, R03 sigue `MITIGATING` y M37 no comenzo.
+- Trabajo siguiente autorizado por separado: `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`.

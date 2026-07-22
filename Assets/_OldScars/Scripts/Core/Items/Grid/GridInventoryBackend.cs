@@ -308,12 +308,48 @@ namespace OldScars.Core.Items
 
         public InventoryMutationResult Add(ItemDefinition definition, int quantity)
         {
-            InventoryTransactionPlan plan = BuildAddPlan(definition, quantity, out InventoryMutationResult rejection);
-            return plan != null ? CommitAdd(plan) : rejection;
+            if (definition == null)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.ItemDefinitionNotFound,
+                    "Item definition was not found.",
+                    quantity);
+            }
+
+            if (quantity < 1)
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    "Quantity must be >= 1.",
+                    quantity);
+            }
+
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
+            {
+                try
+                {
+                    ItemInstance item = ItemInstance.CreateNew(definition);
+                    InventoryTransactionPlan plan = BuildAddPlan(definition, item, quantity, out InventoryMutationResult rejection);
+                    if (plan == null)
+                        return rejection;
+
+                    InventoryMutationResult result = CommitAdd(plan, item);
+                    if (result.Success)
+                        identityScope.Commit();
+                    return result;
+                }
+                catch (Exception exception)
+                {
+                    return InventoryMutationResult.RolledBack(exception.Message, quantity, null, false);
+                }
+            }
         }
 
         public InventoryMutationResult Remove(string instanceId, int quantity)
         {
+            // This is the terminal consumption/destruction path. Ownership changes
+            // must use the transfer APIs, which preserve the source identity.
             InventoryTransactionPlan plan = BuildRemovePlan(instanceId, quantity, out InventoryMutationResult rejection);
             return plan != null ? CommitRemove(plan) : rejection;
         }
@@ -571,7 +607,11 @@ namespace OldScars.Core.Items
             return plan != null ? CommitDirectedMerge(plan) : rejection;
         }
 
-        private InventoryTransactionPlan BuildAddPlan(ItemDefinition definition, int quantity, out InventoryMutationResult rejection)
+        private InventoryTransactionPlan BuildAddPlan(
+            ItemDefinition definition,
+            ItemInstance item,
+            int quantity,
+            out InventoryMutationResult rejection)
         {
             rejection = null;
             if (definition == null)
@@ -604,7 +644,7 @@ namespace OldScars.Core.Items
                 ExpectedTargetLayoutVersion = layout != null ? layout.Version : 0
             };
 
-            CalculateDestinationChanges(storage, definition.id, Math.Max(1, definition.max_stack), quantity, out int mergeQuantity, out int newEntryCount);
+            CalculateDestinationChanges(storage, item, quantity, out int mergeQuantity, out int newEntryCount);
             plan.MergeQuantity = mergeQuantity;
             plan.NewEntryCount = newEntryCount;
 
@@ -684,22 +724,24 @@ namespace OldScars.Core.Items
             };
         }
 
-        private InventoryMutationResult CommitAdd(InventoryTransactionPlan plan)
+        private InventoryMutationResult CommitAdd(InventoryTransactionPlan plan, ItemInstance item)
         {
             ItemStorage.StateSnapshot storageSnapshot = storage.CaptureState();
             GridInventoryLayout.StateSnapshot layoutSnapshot = layout != null ? layout.CaptureState() : default;
-            int idSequenceSnapshot = ItemInstance.CaptureIdSequence();
             var previousIds = CollectInstanceIds(storage);
 
             try
             {
                 EnsurePlanVersions(plan);
-                ItemStorageEntry changedEntry = storage.AddItem(new ItemInstance(plan.Definition), plan.Quantity);
+                ItemStorageEntry changedEntry = storage.AddItem(item, plan.Quantity);
                 List<ItemStorageEntry> createdEntries = CollectNewEntries(storage, previousIds);
                 GridPlacement[] addedPlacements = ApplyReservations(layout, plan.ReservedPlacements, createdEntries);
 
                 if (layout != null && !ValidateLayoutMatchesStorage(storage, layout))
                     throw new InvalidOperationException("Grid/storage invariant failed after add.");
+
+                if (storage.GetEntryByInstanceId(item.InstanceId) == null)
+                    ItemInstanceIdRegistry.Instance.RetireAfterCommit(item.InstanceId);
 
                 return InventoryMutationResult.Succeeded(
                     plan.RequestedQuantity,
@@ -718,7 +760,6 @@ namespace OldScars.Core.Items
                 storage.RestoreState(storageSnapshot);
                 if (layout != null)
                     layout.RestoreState(layoutSnapshot);
-                ItemInstance.RestoreIdSequence(idSequenceSnapshot);
 
                 return InventoryMutationResult.RolledBack(ex.Message, plan.RequestedQuantity, null, plan.UsedFallbackFootprint);
             }
@@ -729,48 +770,56 @@ namespace OldScars.Core.Items
             ItemStorage.StateSnapshot storageSnapshot = storage.CaptureState();
             GridInventoryLayout.StateSnapshot layoutSnapshot = layout != null ? layout.CaptureState() : default;
 
-            try
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
             {
-                EnsurePlanVersions(plan);
-                int sourceIndex = storage.GetEntryIndexByInstanceId(plan.SourceInstanceId);
-                if (sourceIndex < 0 || !storage.RemoveAt(sourceIndex, plan.Quantity))
-                    throw new InvalidOperationException("Source item changed before remove commit.");
-
-                string[] removedPlacementIds = null;
-                string[] removedInstanceIds = null;
-                if (plan.SourceEntryWillBeRemoved)
+                try
                 {
-                    removedInstanceIds = new[] { plan.SourceInstanceId };
-                    if (layout != null)
+                    EnsurePlanVersions(plan);
+                    int sourceIndex = storage.GetEntryIndexByInstanceId(plan.SourceInstanceId);
+                    if (sourceIndex < 0 || !storage.RemoveAt(sourceIndex, plan.Quantity))
+                        throw new InvalidOperationException("Source item changed before remove commit.");
+
+                    string[] removedPlacementIds = null;
+                    string[] removedInstanceIds = null;
+                    if (plan.SourceEntryWillBeRemoved)
                     {
-                        if (!layout.RemovePlacement(plan.SourceInstanceId))
-                            throw new InvalidOperationException("Expected source grid placement could not be removed.");
-                        removedPlacementIds = new[] { plan.SourceInstanceId };
+                        removedInstanceIds = new[] { plan.SourceInstanceId };
+                        if (layout != null)
+                        {
+                            if (!layout.RemovePlacement(plan.SourceInstanceId))
+                                throw new InvalidOperationException("Expected source grid placement could not be removed.");
+                            removedPlacementIds = new[] { plan.SourceInstanceId };
+                        }
                     }
+
+                    if (layout != null && !ValidateLayoutMatchesStorage(storage, layout))
+                        throw new InvalidOperationException("Grid/storage invariant failed after remove.");
+                    if (plan.SourceEntryWillBeRemoved)
+                        ItemInstanceIdRegistry.Instance.RetireAfterCommit(plan.SourceInstanceId);
+
+                    InventoryMutationResult result = InventoryMutationResult.Succeeded(
+                        plan.RequestedQuantity,
+                        plan.Quantity,
+                        plan.SourceInstanceId,
+                        null,
+                        0,
+                        null,
+                        removedInstanceIds,
+                        null,
+                        removedPlacementIds,
+                        false);
+                    identityScope.Commit();
+                    return result;
                 }
+                catch (Exception ex)
+                {
+                    storage.RestoreState(storageSnapshot);
+                    if (layout != null)
+                        layout.RestoreState(layoutSnapshot);
 
-                if (layout != null && !ValidateLayoutMatchesStorage(storage, layout))
-                    throw new InvalidOperationException("Grid/storage invariant failed after remove.");
-
-                return InventoryMutationResult.Succeeded(
-                    plan.RequestedQuantity,
-                    plan.Quantity,
-                    plan.SourceInstanceId,
-                    null,
-                    0,
-                    null,
-                    removedInstanceIds,
-                    null,
-                    removedPlacementIds,
-                    false);
-            }
-            catch (Exception ex)
-            {
-                storage.RestoreState(storageSnapshot);
-                if (layout != null)
-                    layout.RestoreState(layoutSnapshot);
-
-                return InventoryMutationResult.RolledBack(ex.Message, plan.RequestedQuantity, plan.SourceInstanceId, false);
+                    return InventoryMutationResult.RolledBack(ex.Message, plan.RequestedQuantity, plan.SourceInstanceId, false);
+                }
             }
         }
 
@@ -801,91 +850,100 @@ namespace OldScars.Core.Items
             ItemStorage.StateSnapshot targetSnapshot = targetStorage.CaptureState();
             GridInventoryLayout.StateSnapshot sourceLayoutSnapshot = sourceLayout != null ? sourceLayout.CaptureState() : default;
             GridInventoryLayout.StateSnapshot targetLayoutSnapshot = targetLayout != null ? targetLayout.CaptureState() : default;
-            int idSequenceSnapshot = ItemInstance.CaptureIdSequence();
             var targetPreviousIds = CollectInstanceIds(targetStorage);
             int combinedQuantityBefore = sourceStorage.TotalQuantity + targetStorage.TotalQuantity;
 
-            try
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
             {
-                EnsurePlanVersions(plan);
-                int sourceIndex = sourceStorage.GetEntryIndexByInstanceId(sourceInstanceId);
-                if (sourceIndex < 0)
-                    throw new InvalidOperationException("Source item changed before transfer commit.");
-
-                int transferredQuantity;
-                if (plan.UsesExactTargetPlacement)
+                try
                 {
-                    ItemStorageEntry sourceEntry = sourceStorage.GetEntry(sourceIndex);
-                    if (sourceEntry == null || sourceEntry.Item == null || sourceEntry.Quantity != plan.Quantity)
-                        throw new InvalidOperationException("Exact transfer source stack changed before commit.");
+                    EnsurePlanVersions(plan);
+                    int sourceIndex = sourceStorage.GetEntryIndexByInstanceId(sourceInstanceId);
+                    if (sourceIndex < 0)
+                        throw new InvalidOperationException("Source item changed before transfer commit.");
+                    ItemStorageEntry originalSourceEntry = sourceStorage.GetEntry(sourceIndex);
+                    ItemInstance sourceItem = originalSourceEntry != null ? originalSourceEntry.Item : null;
+                    if (sourceItem == null)
+                        throw new InvalidOperationException("Source item changed before transfer commit.");
 
-                    ItemInstance transferredItem = sourceEntry.Item;
-                    if (!sourceStorage.RemoveAt(sourceIndex, plan.Quantity))
-                        throw new InvalidOperationException("Exact transfer could not remove the source stack.");
-
-                    targetStorage.AddItemAsSeparateEntry(transferredItem, plan.Quantity);
-                    transferredQuantity = plan.Quantity;
-                }
-                else
-                {
-                    transferredQuantity = sourceStorage.TransferTo(targetStorage, sourceIndex, plan.Quantity);
-                    if (transferredQuantity != plan.Quantity)
+                    int transferredQuantity;
+                    if (plan.UsesExactTargetPlacement)
                     {
-                        throw new InvalidOperationException(
-                            $"Transfer committed x{transferredQuantity}, expected x{plan.Quantity}.");
+                        if (originalSourceEntry.Quantity != plan.Quantity)
+                            throw new InvalidOperationException("Exact transfer source stack changed before commit.");
+
+                        if (!sourceStorage.RemoveAt(sourceIndex, plan.Quantity))
+                            throw new InvalidOperationException("Exact transfer could not remove the source stack.");
+
+                        targetStorage.AddItemAsSeparateEntry(sourceItem, plan.Quantity);
+                        transferredQuantity = plan.Quantity;
                     }
+                    else
+                    {
+                        transferredQuantity = sourceStorage.TransferTo(targetStorage, sourceIndex, plan.Quantity);
+                        if (transferredQuantity != plan.Quantity)
+                        {
+                            throw new InvalidOperationException(
+                                $"Transfer committed x{transferredQuantity}, expected x{plan.Quantity}.");
+                        }
+                    }
+
+                    List<ItemStorageEntry> createdEntries = CollectNewEntries(targetStorage, targetPreviousIds);
+                    GridPlacement[] addedPlacements = ApplyReservations(targetLayout, plan.ReservedPlacements, createdEntries);
+
+                    string[] removedInstanceIds = null;
+                    string[] removedPlacementIds = null;
+                    if (plan.SourceEntryWillBeRemoved)
+                    {
+                        removedInstanceIds = new[] { sourceInstanceId };
+                        if (sourceLayout != null)
+                        {
+                            if (!sourceLayout.RemovePlacement(sourceInstanceId))
+                                throw new InvalidOperationException("Expected source grid placement could not be removed.");
+                            removedPlacementIds = new[] { sourceInstanceId };
+                        }
+                    }
+
+                    if (sourceStorage.TotalQuantity + targetStorage.TotalQuantity != combinedQuantityBefore)
+                        throw new InvalidOperationException("Transfer quantity conservation failed.");
+                    if (sourceLayout != null && !ValidateLayoutMatchesStorage(sourceStorage, sourceLayout))
+                        throw new InvalidOperationException("Source grid/storage invariant failed after transfer.");
+                    if (targetLayout != null && !ValidateLayoutMatchesStorage(targetStorage, targetLayout))
+                        throw new InvalidOperationException("Target grid/storage invariant failed after transfer.");
+
+                    string destinationInstanceId = createdEntries.Count > 0
+                        ? createdEntries[0].Item.InstanceId
+                        : FindFirstCompatibleInstanceId(targetStorage, sourceItem);
+
+                    if (plan.SourceEntryWillBeRemoved && targetStorage.GetEntryByInstanceId(sourceInstanceId) == null)
+                        ItemInstanceIdRegistry.Instance.RetireAfterCommit(sourceInstanceId);
+
+                    InventoryMutationResult result = InventoryMutationResult.Succeeded(
+                        requestedQuantity,
+                        transferredQuantity,
+                        sourceInstanceId,
+                        destinationInstanceId,
+                        plan.MergeQuantity,
+                        GetInstanceIds(createdEntries),
+                        removedInstanceIds,
+                        addedPlacements,
+                        removedPlacementIds,
+                        plan.UsedFallbackFootprint);
+                    identityScope.Commit();
+                    return result;
                 }
-
-                List<ItemStorageEntry> createdEntries = CollectNewEntries(targetStorage, targetPreviousIds);
-                GridPlacement[] addedPlacements = ApplyReservations(targetLayout, plan.ReservedPlacements, createdEntries);
-
-                string[] removedInstanceIds = null;
-                string[] removedPlacementIds = null;
-                if (plan.SourceEntryWillBeRemoved)
+                catch (Exception ex)
                 {
-                    removedInstanceIds = new[] { sourceInstanceId };
+                    sourceStorage.RestoreState(sourceSnapshot);
+                    targetStorage.RestoreState(targetSnapshot);
                     if (sourceLayout != null)
-                    {
-                        if (!sourceLayout.RemovePlacement(sourceInstanceId))
-                            throw new InvalidOperationException("Expected source grid placement could not be removed.");
-                        removedPlacementIds = new[] { sourceInstanceId };
-                    }
+                        sourceLayout.RestoreState(sourceLayoutSnapshot);
+                    if (targetLayout != null)
+                        targetLayout.RestoreState(targetLayoutSnapshot);
+
+                    return InventoryMutationResult.RolledBack(ex.Message, requestedQuantity, sourceInstanceId, plan.UsedFallbackFootprint);
                 }
-
-                if (sourceStorage.TotalQuantity + targetStorage.TotalQuantity != combinedQuantityBefore)
-                    throw new InvalidOperationException("Transfer quantity conservation failed.");
-                if (sourceLayout != null && !ValidateLayoutMatchesStorage(sourceStorage, sourceLayout))
-                    throw new InvalidOperationException("Source grid/storage invariant failed after transfer.");
-                if (targetLayout != null && !ValidateLayoutMatchesStorage(targetStorage, targetLayout))
-                    throw new InvalidOperationException("Target grid/storage invariant failed after transfer.");
-
-                string destinationInstanceId = createdEntries.Count > 0
-                    ? createdEntries[0].Item.InstanceId
-                    : FindFirstInstanceIdByDefinition(targetStorage, plan.Definition.id);
-
-                return InventoryMutationResult.Succeeded(
-                    requestedQuantity,
-                    transferredQuantity,
-                    sourceInstanceId,
-                    destinationInstanceId,
-                    plan.MergeQuantity,
-                    GetInstanceIds(createdEntries),
-                    removedInstanceIds,
-                    addedPlacements,
-                    removedPlacementIds,
-                    plan.UsedFallbackFootprint);
-            }
-            catch (Exception ex)
-            {
-                sourceStorage.RestoreState(sourceSnapshot);
-                targetStorage.RestoreState(targetSnapshot);
-                if (sourceLayout != null)
-                    sourceLayout.RestoreState(sourceLayoutSnapshot);
-                if (targetLayout != null)
-                    targetLayout.RestoreState(targetLayoutSnapshot);
-                ItemInstance.RestoreIdSequence(idSequenceSnapshot);
-
-                return InventoryMutationResult.RolledBack(ex.Message, requestedQuantity, sourceInstanceId, plan.UsedFallbackFootprint);
             }
         }
 
@@ -1002,13 +1060,7 @@ namespace OldScars.Core.Items
             }
             else
             {
-                CalculateDestinationChanges(
-                    targetStorage,
-                    sourceEntry.DefinitionId,
-                    sourceEntry.MaxStack,
-                    transferQuantity,
-                    out int mergeQuantity,
-                    out int newEntryCount);
+                CalculateDestinationChanges(targetStorage, sourceEntry.Item, transferQuantity, out int mergeQuantity, out int newEntryCount);
                 plan.MergeQuantity = mergeQuantity;
                 plan.NewEntryCount = newEntryCount;
             }
@@ -1124,7 +1176,7 @@ namespace OldScars.Core.Items
                 return null;
             }
 
-            if (sourceEntry.DefinitionId != destinationEntry.DefinitionId)
+            if (!ItemInstance.CanStackWith(sourceEntry.Item, destinationEntry.Item))
             {
                 rejection = InventoryMutationResult.Rejected(
                     InventoryMutationResult.MutationFailure.IncompatibleStack,
@@ -1211,111 +1263,123 @@ namespace OldScars.Core.Items
             ItemStorage.StateSnapshot targetSnapshot = targetStorage.CaptureState();
             GridInventoryLayout.StateSnapshot sourceLayoutSnapshot = sourceLayout != null ? sourceLayout.CaptureState() : default;
             GridInventoryLayout.StateSnapshot targetLayoutSnapshot = targetLayout != null ? targetLayout.CaptureState() : default;
-            int idSequenceSnapshot = ItemInstance.CaptureIdSequence();
             int combinedQuantityBefore = sourceStorage.TotalQuantity + targetStorage.TotalQuantity;
 
-            try
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
             {
-                EnsurePlanVersions(plan);
-
-                ItemStorageEntry sourceEntry = sourceStorage.GetEntryByInstanceId(plan.SourceInstanceId);
-                ItemStorageEntry destinationEntry = targetStorage.GetEntryByInstanceId(plan.DestinationInstanceId);
-                if (sourceEntry == null || sourceEntry.Item == null)
-                    throw new InvalidOperationException("Directed merge source no longer exists.");
-                if (destinationEntry == null || destinationEntry.Item == null)
-                    throw new InvalidOperationException("Directed merge destination no longer exists.");
-                if (sourceEntry.Item.InstanceId == destinationEntry.Item.InstanceId ||
-                    sourceEntry.DefinitionId != destinationEntry.DefinitionId)
+                try
                 {
-                    throw new InvalidOperationException("Directed merge endpoints are no longer compatible.");
-                }
+                    EnsurePlanVersions(plan);
 
-                ItemDefinition sourceDefinition = plan.SourceDefinitionResolver?.Invoke(sourceEntry.DefinitionId);
-                ItemDefinition destinationDefinition = plan.TargetDefinitionResolver?.Invoke(destinationEntry.DefinitionId);
-                if (sourceDefinition == null || destinationDefinition == null)
-                    throw new InvalidOperationException("Directed merge definition is no longer available.");
-
-                if (sourceLayout != null && !sourceLayout.TryGetPlacement(plan.SourceInstanceId, out _))
-                    throw new InvalidOperationException("Directed merge source placement no longer exists.");
-                if (targetLayout != null && !targetLayout.TryGetPlacement(plan.DestinationInstanceId, out _))
-                    throw new InvalidOperationException("Directed merge destination placement no longer exists.");
-
-                int destinationCapacity = Math.Max(1, destinationDefinition.max_stack) - destinationEntry.Quantity;
-                if (destinationCapacity <= 0)
-                    throw new InvalidOperationException("Directed merge destination stack is full.");
-
-                int transferQuantity = Math.Min(sourceEntry.Quantity, destinationCapacity);
-                bool removesSource = transferQuantity >= sourceEntry.Quantity;
-                int sourceIndex = sourceStorage.GetEntryIndexByInstanceId(plan.SourceInstanceId);
-                if (sourceIndex < 0 || !targetStorage.TryAddQuantityToEntry(plan.DestinationInstanceId, transferQuantity))
-                    throw new InvalidOperationException("Directed merge quantities changed before commit.");
-                if (!sourceStorage.RemoveAt(sourceIndex, transferQuantity))
-                    throw new InvalidOperationException("Directed merge could not update the source quantity.");
-
-                string[] removedInstanceIds = null;
-                string[] removedPlacementIds = null;
-                if (removesSource)
-                {
-                    removedInstanceIds = new[] { plan.SourceInstanceId };
-                    if (sourceLayout != null)
+                    ItemStorageEntry sourceEntry = sourceStorage.GetEntryByInstanceId(plan.SourceInstanceId);
+                    ItemStorageEntry destinationEntry = targetStorage.GetEntryByInstanceId(plan.DestinationInstanceId);
+                    if (sourceEntry == null || sourceEntry.Item == null)
+                        throw new InvalidOperationException("Directed merge source no longer exists.");
+                    if (destinationEntry == null || destinationEntry.Item == null)
+                        throw new InvalidOperationException("Directed merge destination no longer exists.");
+                    if (sourceEntry.Item.InstanceId == destinationEntry.Item.InstanceId ||
+                        !ItemInstance.CanStackWith(sourceEntry.Item, destinationEntry.Item))
                     {
-                        if (!sourceLayout.RemovePlacement(plan.SourceInstanceId))
-                            throw new InvalidOperationException("Directed merge could not remove the consumed source placement.");
-                        removedPlacementIds = new[] { plan.SourceInstanceId };
+                        throw new InvalidOperationException("Directed merge endpoints are no longer compatible.");
                     }
+
+                    ItemDefinition sourceDefinition = plan.SourceDefinitionResolver?.Invoke(sourceEntry.DefinitionId);
+                    ItemDefinition destinationDefinition = plan.TargetDefinitionResolver?.Invoke(destinationEntry.DefinitionId);
+                    if (sourceDefinition == null || destinationDefinition == null)
+                        throw new InvalidOperationException("Directed merge definition is no longer available.");
+
+                    if (sourceLayout != null && !sourceLayout.TryGetPlacement(plan.SourceInstanceId, out _))
+                        throw new InvalidOperationException("Directed merge source placement no longer exists.");
+                    if (targetLayout != null && !targetLayout.TryGetPlacement(plan.DestinationInstanceId, out _))
+                        throw new InvalidOperationException("Directed merge destination placement no longer exists.");
+
+                    int destinationCapacity = Math.Max(1, destinationDefinition.max_stack) - destinationEntry.Quantity;
+                    if (destinationCapacity <= 0)
+                        throw new InvalidOperationException("Directed merge destination stack is full.");
+
+                    int transferQuantity = Math.Min(sourceEntry.Quantity, destinationCapacity);
+                    bool removesSource = transferQuantity >= sourceEntry.Quantity;
+                    int sourceIndex = sourceStorage.GetEntryIndexByInstanceId(plan.SourceInstanceId);
+                    if (sourceIndex < 0 || !targetStorage.TryAddQuantityToEntry(plan.DestinationInstanceId, sourceEntry.Item, transferQuantity))
+                        throw new InvalidOperationException("Directed merge quantities changed before commit.");
+                    if (!sourceStorage.RemoveAt(sourceIndex, transferQuantity))
+                        throw new InvalidOperationException("Directed merge could not update the source quantity.");
+
+                    string[] removedInstanceIds = null;
+                    string[] removedPlacementIds = null;
+                    if (removesSource)
+                    {
+                        removedInstanceIds = new[] { plan.SourceInstanceId };
+                        if (sourceLayout != null)
+                        {
+                            if (!sourceLayout.RemovePlacement(plan.SourceInstanceId))
+                                throw new InvalidOperationException("Directed merge could not remove the consumed source placement.");
+                            removedPlacementIds = new[] { plan.SourceInstanceId };
+                        }
+                    }
+
+                    if (sourceStorage.TotalQuantity + targetStorage.TotalQuantity != combinedQuantityBefore)
+                        throw new InvalidOperationException("Directed merge quantity conservation failed.");
+                    if (sourceLayout != null && !ValidateLayoutMatchesStorage(sourceStorage, sourceLayout))
+                        throw new InvalidOperationException("Source grid/storage invariant failed after directed merge.");
+                    if (targetLayout != null && !ValidateLayoutMatchesStorage(targetStorage, targetLayout))
+                        throw new InvalidOperationException("Target grid/storage invariant failed after directed merge.");
+
+                    if (removesSource)
+                        ItemInstanceIdRegistry.Instance.RetireAfterCommit(plan.SourceInstanceId);
+
+                    InventoryMutationResult result = InventoryMutationResult.Succeeded(
+                        plan.RequestedQuantity,
+                        transferQuantity,
+                        plan.SourceInstanceId,
+                        plan.DestinationInstanceId,
+                        transferQuantity,
+                        null,
+                        removedInstanceIds,
+                        null,
+                        removedPlacementIds,
+                        false);
+                    identityScope.Commit();
+                    return result;
                 }
+                catch (Exception ex)
+                {
+                    sourceStorage.RestoreState(sourceSnapshot);
+                    targetStorage.RestoreState(targetSnapshot);
+                    if (sourceLayout != null)
+                        sourceLayout.RestoreState(sourceLayoutSnapshot);
+                    if (targetLayout != null)
+                        targetLayout.RestoreState(targetLayoutSnapshot);
 
-                if (sourceStorage.TotalQuantity + targetStorage.TotalQuantity != combinedQuantityBefore)
-                    throw new InvalidOperationException("Directed merge quantity conservation failed.");
-                if (sourceLayout != null && !ValidateLayoutMatchesStorage(sourceStorage, sourceLayout))
-                    throw new InvalidOperationException("Source grid/storage invariant failed after directed merge.");
-                if (targetLayout != null && !ValidateLayoutMatchesStorage(targetStorage, targetLayout))
-                    throw new InvalidOperationException("Target grid/storage invariant failed after directed merge.");
-
-                return InventoryMutationResult.Succeeded(
-                    plan.RequestedQuantity,
-                    transferQuantity,
-                    plan.SourceInstanceId,
-                    plan.DestinationInstanceId,
-                    transferQuantity,
-                    null,
-                    removedInstanceIds,
-                    null,
-                    removedPlacementIds,
-                    false);
-            }
-            catch (Exception ex)
-            {
-                sourceStorage.RestoreState(sourceSnapshot);
-                targetStorage.RestoreState(targetSnapshot);
-                if (sourceLayout != null)
-                    sourceLayout.RestoreState(sourceLayoutSnapshot);
-                if (targetLayout != null)
-                    targetLayout.RestoreState(targetLayoutSnapshot);
-                ItemInstance.RestoreIdSequence(idSequenceSnapshot);
-
-                return InventoryMutationResult.RolledBack(
-                    ex.Message,
-                    plan.RequestedQuantity,
-                    plan.SourceInstanceId,
-                    false);
+                    return InventoryMutationResult.RolledBack(
+                        ex.Message,
+                        plan.RequestedQuantity,
+                        plan.SourceInstanceId,
+                        false);
+                }
             }
         }
 
-        private static void CalculateDestinationChanges(ItemStorage target, string definitionId, int maxStack, int quantity, out int mergeQuantity, out int newEntryCount)
+        private static void CalculateDestinationChanges(
+            ItemStorage target,
+            ItemInstance item,
+            int quantity,
+            out int mergeQuantity,
+            out int newEntryCount)
         {
             int availableMerge = 0;
             IReadOnlyList<ItemStorageEntry> entries = target.Entries;
             for (int index = 0; index < entries.Count; index++)
             {
                 ItemStorageEntry entry = entries[index];
-                if (entry != null && entry.DefinitionId == definitionId)
+                if (entry != null && ItemInstance.CanStackWith(entry.Item, item))
                     availableMerge += entry.AvailableStackSpace;
             }
 
             mergeQuantity = Math.Min(quantity, availableMerge);
             int remaining = quantity - mergeQuantity;
-            int safeMaxStack = Math.Max(1, maxStack);
+            int safeMaxStack = item != null ? Math.Max(1, item.MaxStack) : 1;
             newEntryCount = remaining > 0 ? (remaining + safeMaxStack - 1) / safeMaxStack : 0;
         }
 
@@ -1416,13 +1480,13 @@ namespace OldScars.Core.Items
             return result;
         }
 
-        private static string FindFirstInstanceIdByDefinition(ItemStorage itemStorage, string definitionId)
+        private static string FindFirstCompatibleInstanceId(ItemStorage itemStorage, ItemInstance item)
         {
             IReadOnlyList<ItemStorageEntry> entries = itemStorage.Entries;
             for (int index = 0; index < entries.Count; index++)
             {
                 ItemStorageEntry entry = entries[index];
-                if (entry != null && entry.Item != null && entry.DefinitionId == definitionId)
+                if (entry != null && ItemInstance.CanStackWith(entry.Item, item))
                     return entry.Item.InstanceId;
             }
 

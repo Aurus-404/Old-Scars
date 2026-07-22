@@ -28,8 +28,6 @@ namespace OldScars.Core.Items
                 profile.width,
                 profile.height,
                 true);
-
-            ItemOwnedStorageRegistry.Instance.RegisterStorage(this);
         }
 
         public string ContainerInstanceId => containerItem.InstanceId;
