@@ -385,14 +385,14 @@ namespace OldScars.Core.Actors
             RecordFeedback(GameplayFeedbackEntryType.ItemEquipped, "Equipaste", item);
         }
 
-        internal void RebindActorOwnedItems()
+        internal void ValidateActorOwnedItems()
         {
             ResolveReferences();
             if (inventoryComponent == null)
                 return;
 
-            ItemOwnedStorageRegistry.Instance.BindEntries(inventoryComponent.Entries, inventoryComponent);
-            ItemOwnedStorageRegistry.Instance.BindEntries(equipmentStorage.Entries, inventoryComponent);
+            ItemOwnedStorageRegistry.Instance.ValidateEntries(inventoryComponent.Entries, inventoryComponent);
+            ItemOwnedStorageRegistry.Instance.ValidateEntries(equipmentStorage.Entries, inventoryComponent);
         }
 
         internal void RecordUnequipped(ItemInstance item)

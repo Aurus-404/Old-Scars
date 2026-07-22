@@ -79,37 +79,50 @@ namespace OldScars.Core.Items
             if (sourceInventory == null || !storage.IsEmpty || quantity < 1)
                 return 0;
 
-            int transferredQuantity = sourceInventory.TransferItemTo(storage, sourceIndex, quantity);
-            if (transferredQuantity <= 0)
+            ItemStorageEntry sourceEntry = sourceInventory.GetEntry(sourceIndex);
+            string sourceInstanceId = sourceEntry?.Item?.InstanceId;
+            if (string.IsNullOrWhiteSpace(sourceInstanceId))
+                return 0;
+
+            InventoryMutationResult result = GridStorageTransferService.TransferQuantityAuto(
+                sourceInventory,
+                this,
+                sourceInstanceId,
+                quantity,
+                true,
+                GridStorageTransferQuantityPolicy.Exact,
+                default);
+            if (!result.Success || result.AffectedQuantity < 1)
                 return 0;
 
             ItemStorageEntry entry = storage.GetEntry(0);
             itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
             sourceInitialized = true;
-            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             destroyAfterPickup = true;
-            return transferredQuantity;
+            return result.AffectedQuantity;
         }
 
         public int ReceiveDroppedItem(IGridStorageOwner sourceOwner, string sourceInstanceId, int quantity)
         {
-            if (sourceOwner == null || !(sourceOwner is IGridStorageTransferEndpoint endpoint) ||
-                !storage.IsEmpty || quantity < 1)
+            if (sourceOwner == null || !storage.IsEmpty || quantity < 1)
             {
                 return 0;
             }
 
-            InventoryMutationResult result = endpoint.TransferBackend.TransferTo(storage, sourceInstanceId, quantity);
+            InventoryMutationResult result = GridStorageTransferService.TransferQuantityAuto(
+                sourceOwner,
+                this,
+                sourceInstanceId,
+                quantity,
+                true,
+                GridStorageTransferQuantityPolicy.Exact,
+                default);
             if (!result.Success || result.AffectedQuantity < 1)
                 return 0;
-
-            if (storage.GetEntryByInstanceId(sourceInstanceId) != null)
-                ItemOwnedStorageRegistry.Instance.UnbindItem(sourceInstanceId);
 
             ItemStorageEntry entry = storage.GetEntry(0);
             itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
             sourceInitialized = true;
-            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             destroyAfterPickup = true;
             return result.AffectedQuantity;
         }
@@ -133,7 +146,6 @@ namespace OldScars.Core.Items
             ItemStorageEntry entry = storage.GetEntry(0);
             itemDefinitionId = entry != null ? entry.DefinitionId : itemDefinitionId;
             sourceInitialized = true;
-            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
             destroyAfterPickup = true;
             return entry != null ? entry.Quantity : 0;
         }
@@ -233,7 +245,14 @@ namespace OldScars.Core.Items
             if (item == null || pickupQuantity < 1)
                 return DebugActionExecutionResult.Info("Recoger", $"No se pudo recoger '{SafeText(itemDefinitionId)}'.");
 
-            InventoryMutationResult transferResult = inventory.TransferItemFromWithResult(storage, 0, pickupQuantity);
+            InventoryMutationResult transferResult = GridStorageTransferService.TransferQuantityAuto(
+                this,
+                inventory,
+                item.InstanceId,
+                pickupQuantity,
+                true,
+                GridStorageTransferQuantityPolicy.Exact,
+                default);
             if (!transferResult.Success)
             {
                 string failureMessage = transferResult.Failure == InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded

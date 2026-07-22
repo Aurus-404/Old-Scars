@@ -8,7 +8,7 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 Version actual:
 
-`Checkpoint A — Correction Pass 1`
+`Checkpoint A — Correction Pass 2: Committed Ownership Transitions`
 
 Estado inicial:
 
@@ -16,9 +16,9 @@ Estado inicial:
 
 Estado actual:
 
-`IN PROGRESS — CHECKPOINT A CORRECTED;`
+`IN PROGRESS — CHECKPOINT A CORRECTION PASS 2 IMPLEMENTED;`
 
-`MANUAL VALIDATION PENDING;`
+`MANUAL REVALIDATION PENDING;`
 
 `CHECKPOINT B NOT STARTED`
 
@@ -36,18 +36,23 @@ Objetivo: reemplazar la identidad temporal de `ItemInstance` por IDs durables y 
 - split conserva la fuente y crea un sibling; merge conserva el destino y retira la fuente consumida despues del commit; un merge total por `Add` no deja el ID candidato activo.
 - un `Remove` terminal rechaza de forma atomica un item-owned storage no vacio con `OwnedStorageNotEmpty`; despues de vaciarlo, retira owner, storage e identidades.
 - los scopes de reserva nested transfieren IDs al padre y liberan solamente identidades nuevas durante rollback; transfer, drop y equip/unequip preservan identidad.
-- ownership se reconcilia para todas las entries afectadas; `InventoryMutationResult` expone el fallo localizado `OwnedStorageNotEmpty`.
+- `BindItem` y `BindEntries` continúan estrictos; las transiciones legítimas usan un handoff explícito que exige el owner fuente esperado, acepta idempotencia sólo en el target correcto y rechaza un tercer owner.
+- los transfers confirmados reconcilian source y target en dos fases usando el resultado final de storage: full move transfiere el ID, split registra el sibling, full merge conserva el destino y retira la fuente consumida, y rollback reconstruye los bindings restaurados.
+- `WorldItemPickup.PickUp` transfiere mediante `GridStorageTransferService` y finaliza tags, colliders, renderers y feedback únicamente después del commit de storage y ownership.
+- Equipment usa una regla única de direct owner: inventario personal y Equipment del actor conservan el `InventoryComponent` canónico; las rutas world/item-owned transfieren ownership explícitamente y restauran storage, slots y owner ante fallo.
+- las superficies proxy de actor resuelven al inventario canónico; ownership se valida para todas las entries afectadas y `InventoryMutationResult` conserva el fallo localizado `OwnedStorageNotEmpty`.
 - las creaciones directas restantes son acotadas: `WorldItemPickup` exige storage vacio antes de bindear entries y `DebugInventory` conserva cada instancia en su lista.
 
 ## Evidencia Y Validacion
 
-- Runtime y Editor compilaron sin errores en Unity 6.4.6f1; el refresh final completo una recarga de dominio limpia.
-- Diagnostico `Old Scars > Diagnostics > M36.1 > Run Checkpoint A Item Identity` (`Ctrl+Shift+I`): `PASS`.
-- El diagnostico cubre hydration detached, fallo con rollback, merge total y removal terminal; termina con cero IDs, storages y owners registrados.
-- Un smoke breve de Play Mode cargo los datos con `0 errors, 0 warnings`, salio correctamente y no produjo excepciones relacionadas con M36.1; al salir, el servicio Unity Relay registro un `TaskCanceledException` externo al gameplay.
-- Se revisaron estaticamente add/remove, split, transfer, directed merge, Equipment, owned storage y ownership.
+- Runtime y Editor compilaron sin errores en Unity 6.4.6f1; la recompilacion final sin el runner temporal termino con `Tundra build success` y recarga de dominio.
+- Diagnostico `Old Scars > Diagnostics > M36.1 > Run Checkpoint A Item Identity` (`Ctrl+Shift+I`): `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- El diagnostico cubre source esperado incorrecto, world→inventory, Equipment, container/item-owned storage, full move, split, full merge y rollback de ownership; termina sin estado residual.
+- El smoke real de Play Mode produjo `M36.1 Checkpoint A Real Scene Ownership Smoke: PASS` sobre crowbar, rifle, mochila y crate: pickup, equip/unequip, storage round-trip, drop/re-pick y stack transfer conservaron identidad y una sola representación.
+- Play Mode se cerró correctamente; Console no registró `InvalidOperationException`, `already bound to a different owner` ni errores relacionados con M36.1.
 - Persisten seis warnings preexistentes: cuatro de API obsolete en `BuildingVisibilityManager` y dos campos no usados en `ItemStorageDebugPanel`.
-- La validacion manual del slice por Mauro permanece pendiente; no se afirma validacion funcional final.
+- `SampleScene` permanece intacta con SHA-256 `7EBB6605CBFE564F17CA5CAC7BA46348A1CDE887CC3462086DAE1D2B602A1AFB`.
+- La revalidacion manual del slice por Mauro permanece pendiente; no se afirma validacion funcional final.
 
 ## Checkpoint B
 

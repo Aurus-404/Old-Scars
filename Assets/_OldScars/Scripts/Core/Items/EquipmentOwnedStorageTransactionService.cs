@@ -112,12 +112,20 @@ namespace OldScars.Core.Items
             ActorEquipmentComponent.EquipmentStateSnapshot slotsSnapshot = equipment.CaptureEquipmentState();
             using ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
                 ItemInstanceIdRegistry.Instance.BeginReservationScope();
+            bool ownershipTransferred = false;
             try
             {
+                equipment.ValidateActorOwnedItems();
+                ItemOwnedStorageRegistry.Instance.ValidateBinding(preview.InstanceId, source);
                 ItemInstance item = sourceEndpoint.TransferBackend.Storage.GetEntryByInstanceId(preview.InstanceId)?.Item;
                 InventoryMutationResult transfer = sourceEndpoint.TransferBackend.TransferTo(equipment.Backend, preview.InstanceId, 1);
                 if (!transfer.Success)
                     throw new InvalidOperationException(transfer.Message ?? "Falló la transferencia a equipment.");
+                if (transfer.DestinationInstanceId != preview.InstanceId ||
+                    equipment.Backend.Storage.GetEntryByInstanceId(preview.InstanceId)?.Item == null)
+                {
+                    throw new InvalidOperationException("La transferencia a equipment no preservó el InstanceId.");
+                }
 
                 equipment.AssignSlots(preview.InstanceId, preview.SlotIds);
                 string ownershipError = null;
@@ -125,9 +133,13 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(ownershipError ?? "Falló la validación de ownership.");
 
                 equipment.PersonalInventory.ClearLegacyRightHandForEquipmentAuthority();
-                ItemOwnedStorageRegistry.Instance.UnbindItem(preview.InstanceId);
-                ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
-                equipment.RebindActorOwnedItems();
+                ItemOwnedStorageRegistry.Instance.TransferBinding(
+                    preview.InstanceId,
+                    source,
+                    equipment.PersonalInventory);
+                ownershipTransferred = true;
+                ItemOwnedStorageRegistry.Instance.ValidateEntries(source.GridStorageEntries, source);
+                equipment.ValidateActorOwnedItems();
                 equipment.RecordEquipped(item);
                 equipment.CommitVisualState(EquipmentVisualCommitKind.EquipFromItemOwnedStorage);
                 identityScope.Commit();
@@ -138,8 +150,13 @@ namespace OldScars.Core.Items
                 sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
                 equipment.Backend.RestoreBackendState(equipmentSnapshot);
                 equipment.RestoreEquipmentState(slotsSnapshot);
-                ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
-                equipment.RebindActorOwnedItems();
+                if (ownershipTransferred)
+                {
+                    ItemOwnedStorageRegistry.Instance.TransferBinding(
+                        preview.InstanceId,
+                        equipment.PersonalInventory,
+                        source);
+                }
                 return EquipmentMutationResult.Rejected($"Equip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
         }
@@ -236,12 +253,20 @@ namespace OldScars.Core.Items
             using ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
                 ItemInstanceIdRegistry.Instance.BeginReservationScope();
             var displacedItems = new ItemInstance[plan.DisplacedItems.Length];
+            bool ownershipTransferred = false;
             try
             {
+                equipment.ValidateActorOwnedItems();
+                ItemOwnedStorageRegistry.Instance.ValidateBinding(plan.SourceInstanceId, source);
                 ItemInstance sourceItem = sourceEndpoint.TransferBackend.Storage.GetEntryByInstanceId(plan.SourceInstanceId)?.Item;
                 InventoryMutationResult sourceTransfer = sourceEndpoint.TransferBackend.TransferTo(equipment.Backend, plan.SourceInstanceId, 1);
                 if (!sourceTransfer.Success)
                     throw new InvalidOperationException(sourceTransfer.Message ?? "Falló la transferencia a equipment.");
+                if (sourceTransfer.DestinationInstanceId != plan.SourceInstanceId ||
+                    equipment.Backend.Storage.GetEntryByInstanceId(plan.SourceInstanceId)?.Item == null)
+                {
+                    throw new InvalidOperationException("La transferencia a equipment no preservó el InstanceId.");
+                }
 
                 for (int index = 0; index < plan.DisplacedItems.Length; index++)
                 {
@@ -264,9 +289,13 @@ namespace OldScars.Core.Items
                     throw new InvalidOperationException(ownershipError ?? "Falló la validación de ownership.");
 
                 personal.ClearLegacyRightHandForEquipmentAuthority();
-                ItemOwnedStorageRegistry.Instance.UnbindItem(plan.SourceInstanceId);
-                ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
-                equipment.RebindActorOwnedItems();
+                ItemOwnedStorageRegistry.Instance.TransferBinding(
+                    plan.SourceInstanceId,
+                    source,
+                    personal);
+                ownershipTransferred = true;
+                ItemOwnedStorageRegistry.Instance.ValidateEntries(source.GridStorageEntries, source);
+                equipment.ValidateActorOwnedItems();
                 for (int index = 0; index < displacedItems.Length; index++)
                     equipment.RecordUnequipped(displacedItems[index]);
                 equipment.RecordEquipped(sourceItem);
@@ -280,8 +309,13 @@ namespace OldScars.Core.Items
                 personal.InternalGridBackend.RestoreBackendState(personalSnapshot);
                 equipment.Backend.RestoreBackendState(equipmentSnapshot);
                 equipment.RestoreEquipmentState(slotsSnapshot);
-                ItemOwnedStorageRegistry.Instance.BindEntries(source.GridStorageEntries, source);
-                equipment.RebindActorOwnedItems();
+                if (ownershipTransferred)
+                {
+                    ItemOwnedStorageRegistry.Instance.TransferBinding(
+                        plan.SourceInstanceId,
+                        personal,
+                        source);
+                }
                 return EquipmentMutationResult.Rejected($"Equipment replacement rolled back: {exception.Message}", plan.SourceInstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
         }

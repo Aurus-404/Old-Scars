@@ -25,7 +25,8 @@ namespace OldScars.Core.Actors
         public IReadOnlyList<string> OccupiedSlots { get; }
     }
 
-    public sealed class LootableActorInventoryComponent : MonoBehaviour, IItemStorageDebugSource, IGridStorageTransferEndpoint
+    public sealed class LootableActorInventoryComponent : MonoBehaviour, IItemStorageDebugSource,
+        IGridStorageTransferEndpoint, IGridStorageDirectOwnerProvider
     {
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private ActorEquipmentComponent equipment;
@@ -104,6 +105,8 @@ namespace OldScars.Core.Actors
                     : null;
             }
         }
+
+        object IGridStorageDirectOwnerProvider.DirectItemOwner => Inventory;
 
         private static readonly ItemStorageEntry[] EmptyEntries = new ItemStorageEntry[0];
 

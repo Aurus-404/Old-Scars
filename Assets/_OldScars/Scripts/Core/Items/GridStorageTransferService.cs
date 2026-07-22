@@ -379,23 +379,57 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
-            InventoryMutationResult result = sourceEndpoint.TransferBackend.MergeIntoTarget(
-                destinationEndpoint.TransferBackend,
-                sourceInstanceId,
-                destinationInstanceId);
-
-            if (result.Success)
+            GridInventoryBackend.BackendStateSnapshot sourceSnapshot = sourceEndpoint.TransferBackend.CaptureBackendState();
+            GridInventoryBackend.BackendStateSnapshot destinationSnapshot = destinationEndpoint.TransferBackend.CaptureBackendState();
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
             {
-                NotifyCommitted(
-                    source,
-                    destination,
-                    sourceEndpoint,
-                    destinationEndpoint,
-                    new GridStorageTransferReceipt(definitionId, result),
-                    context);
-            }
+                InventoryMutationResult result = null;
+                bool ownershipReconciled = false;
+                try
+                {
+                    result = sourceEndpoint.TransferBackend.MergeIntoTarget(
+                        destinationEndpoint.TransferBackend,
+                        sourceInstanceId,
+                        destinationInstanceId);
+                    if (!result.Success)
+                        return result;
 
-            return result;
+                    var receipt = new GridStorageTransferReceipt(definitionId, result);
+                    if (!ItemOwnedStorageRegistry.Instance.TryReconcileCommittedTransfer(source, destination, receipt, out string ownershipError))
+                    {
+                        sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
+                        destinationEndpoint.TransferBackend.RestoreBackendState(destinationSnapshot);
+                        return InventoryMutationResult.RolledBack(
+                            $"Ownership reconciliation failed: {ownershipError}",
+                            result.RequestedQuantity,
+                            sourceInstanceId,
+                            result.UsedFallbackFootprint);
+                    }
+
+                    ownershipReconciled = true;
+                    identityScope.Commit();
+                    NotifyCommitted(sourceEndpoint, destinationEndpoint, receipt, context);
+                    return result;
+                }
+                catch (Exception exception)
+                {
+                    string rollbackError = RestoreUnexpectedCommitFailure(
+                        source,
+                        destination,
+                        sourceEndpoint,
+                        destinationEndpoint,
+                        sourceSnapshot,
+                        destinationSnapshot,
+                        ownershipReconciled,
+                        exception);
+                    return InventoryMutationResult.RolledBack(
+                        rollbackError,
+                        result != null ? result.RequestedQuantity : currentPreview.TransferQuantity,
+                        sourceInstanceId,
+                        result != null && result.UsedFallbackFootprint);
+                }
+            }
         }
 
         public static GridPlacementValidationResult PreviewTransferExact(
@@ -522,17 +556,59 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
-            InventoryMutationResult result = sourceEndpoint.TransferBackend.TransferToExact(
-                targetEndpoint.TransferBackend,
-                sourceInstanceId,
-                targetX,
-                targetY,
-                isRotated);
+            GridInventoryBackend.BackendStateSnapshot sourceSnapshot = sourceEndpoint.TransferBackend.CaptureBackendState();
+            GridInventoryBackend.BackendStateSnapshot targetSnapshot = targetEndpoint.TransferBackend.CaptureBackendState();
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
+            {
+                InventoryMutationResult result = null;
+                bool ownershipReconciled = false;
+                try
+                {
+                    result = sourceEndpoint.TransferBackend.TransferToExact(
+                        targetEndpoint.TransferBackend,
+                        sourceInstanceId,
+                        targetX,
+                        targetY,
+                        isRotated);
+                    if (!result.Success)
+                        return result;
 
-            if (result.Success)
-                NotifyCommitted(source, target, sourceEndpoint, targetEndpoint, new GridStorageTransferReceipt(definitionId, result), context);
+                    var receipt = new GridStorageTransferReceipt(definitionId, result);
+                    if (!ItemOwnedStorageRegistry.Instance.TryReconcileCommittedTransfer(source, target, receipt, out string ownershipError))
+                    {
+                        sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
+                        targetEndpoint.TransferBackend.RestoreBackendState(targetSnapshot);
+                        return InventoryMutationResult.RolledBack(
+                            $"Ownership reconciliation failed: {ownershipError}",
+                            result.RequestedQuantity,
+                            sourceInstanceId,
+                            result.UsedFallbackFootprint);
+                    }
 
-            return result;
+                    ownershipReconciled = true;
+                    identityScope.Commit();
+                    NotifyCommitted(sourceEndpoint, targetEndpoint, receipt, context);
+                    return result;
+                }
+                catch (Exception exception)
+                {
+                    string rollbackError = RestoreUnexpectedCommitFailure(
+                        source,
+                        target,
+                        sourceEndpoint,
+                        targetEndpoint,
+                        sourceSnapshot,
+                        targetSnapshot,
+                        ownershipReconciled,
+                        exception);
+                    return InventoryMutationResult.RolledBack(
+                        rollbackError,
+                        result != null ? result.RequestedQuantity : sourceEntry.Quantity,
+                        sourceInstanceId,
+                        result != null && result.UsedFallbackFootprint);
+                }
+            }
         }
 
         public static InventoryMutationResult TransferStackAuto(
@@ -809,30 +885,93 @@ namespace OldScars.Core.Items
                     .WithTransferMetadata(quantity, preview.SourceQuantity, false, preview.WeightLimitQuantity);
             }
 
-            InventoryMutationResult result = sourceEndpoint.TransferBackend.TransferTo(
-                targetEndpoint.TransferBackend,
-                sourceInstanceId,
-                preview.EffectiveQuantity);
-
-            int sourceRemainingQuantity = result.Success
-                ? Math.Max(0, preview.SourceQuantity - result.AffectedQuantity)
-                : preview.SourceQuantity;
-            result = result.WithTransferMetadata(
-                quantity,
-                sourceRemainingQuantity,
-                preview.WasLimitedByWeight,
-                preview.WeightLimitQuantity);
-
-            if (requireExactQuantity && result.Success && result.AffectedQuantity != preview.EffectiveQuantity)
+            GridInventoryBackend.BackendStateSnapshot sourceSnapshot = sourceEndpoint.TransferBackend.CaptureBackendState();
+            GridInventoryBackend.BackendStateSnapshot targetSnapshot = targetEndpoint.TransferBackend.CaptureBackendState();
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
             {
-                Debug.LogError(
-                    $"[GridStorageTransferService] Backend returned partial success x{result.AffectedQuantity}, expected x{preview.EffectiveQuantity}.");
+                InventoryMutationResult result = null;
+                bool ownershipReconciled = false;
+                try
+                {
+                    result = sourceEndpoint.TransferBackend.TransferTo(
+                        targetEndpoint.TransferBackend,
+                        sourceInstanceId,
+                        preview.EffectiveQuantity);
+
+                    int sourceRemainingQuantity = result.Success
+                        ? Math.Max(0, preview.SourceQuantity - result.AffectedQuantity)
+                        : preview.SourceQuantity;
+                    result = result.WithTransferMetadata(
+                        quantity,
+                        sourceRemainingQuantity,
+                        preview.WasLimitedByWeight,
+                        preview.WeightLimitQuantity);
+
+                    if (!result.Success)
+                        return result;
+
+                    if (requireExactQuantity && result.AffectedQuantity != preview.EffectiveQuantity)
+                    {
+                        sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
+                        targetEndpoint.TransferBackend.RestoreBackendState(targetSnapshot);
+                        return InventoryMutationResult.RolledBack(
+                                $"Backend returned partial success x{result.AffectedQuantity}, expected x{preview.EffectiveQuantity}.",
+                                quantity,
+                                sourceInstanceId,
+                                result.UsedFallbackFootprint)
+                            .WithTransferMetadata(
+                                quantity,
+                                preview.SourceQuantity,
+                                preview.WasLimitedByWeight,
+                                preview.WeightLimitQuantity);
+                    }
+
+                    var receipt = new GridStorageTransferReceipt(preview.DefinitionId, result);
+                    if (!ItemOwnedStorageRegistry.Instance.TryReconcileCommittedTransfer(source, target, receipt, out string ownershipError))
+                    {
+                        sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
+                        targetEndpoint.TransferBackend.RestoreBackendState(targetSnapshot);
+                        return InventoryMutationResult.RolledBack(
+                                $"Ownership reconciliation failed: {ownershipError}",
+                                quantity,
+                                sourceInstanceId,
+                                result.UsedFallbackFootprint)
+                            .WithTransferMetadata(
+                                quantity,
+                                preview.SourceQuantity,
+                                preview.WasLimitedByWeight,
+                                preview.WeightLimitQuantity);
+                    }
+
+                    ownershipReconciled = true;
+                    identityScope.Commit();
+                    NotifyCommitted(sourceEndpoint, targetEndpoint, receipt, context);
+                    return result;
+                }
+                catch (Exception exception)
+                {
+                    string rollbackError = RestoreUnexpectedCommitFailure(
+                        source,
+                        target,
+                        sourceEndpoint,
+                        targetEndpoint,
+                        sourceSnapshot,
+                        targetSnapshot,
+                        ownershipReconciled,
+                        exception);
+                    return InventoryMutationResult.RolledBack(
+                            rollbackError,
+                            quantity,
+                            sourceInstanceId,
+                            result != null && result.UsedFallbackFootprint)
+                        .WithTransferMetadata(
+                            quantity,
+                            preview.SourceQuantity,
+                            preview.WasLimitedByWeight,
+                            preview.WeightLimitQuantity);
+                }
             }
-
-            if (result.Success)
-                NotifyCommitted(source, target, sourceEndpoint, targetEndpoint, new GridStorageTransferReceipt(preview.DefinitionId, result), context);
-
-            return result;
         }
 
         private static bool TryResolveEndpoints(
@@ -914,15 +1053,39 @@ namespace OldScars.Core.Items
                   $"({acceptance.ProjectedWeightKg:0.00} / {acceptance.HardLimitKg:0.00} kg).";
         }
 
-        private static void NotifyCommitted(
+        private static string RestoreUnexpectedCommitFailure(
             IGridStorageOwner sourceOwner,
             IGridStorageOwner targetOwner,
+            IGridStorageTransferEndpoint source,
+            IGridStorageTransferEndpoint target,
+            GridInventoryBackend.BackendStateSnapshot sourceSnapshot,
+            GridInventoryBackend.BackendStateSnapshot targetSnapshot,
+            bool ownershipReconciled,
+            Exception exception)
+        {
+            string rollbackError = null;
+            try
+            {
+                source.TransferBackend.RestoreBackendState(sourceSnapshot);
+                target.TransferBackend.RestoreBackendState(targetSnapshot);
+                if (ownershipReconciled)
+                    ItemOwnedStorageRegistry.Instance.ReconcileRestoredOwners(sourceOwner, targetOwner);
+            }
+            catch (Exception rollbackException)
+            {
+                rollbackError =
+                    $" Ownership rollback also failed: {rollbackException.GetType().Name}: {rollbackException.Message}";
+            }
+
+            return $"Committed transfer rolled back after {exception.GetType().Name}: {exception.Message}.{rollbackError}";
+        }
+
+        private static void NotifyCommitted(
             IGridStorageTransferEndpoint source,
             IGridStorageTransferEndpoint target,
             GridStorageTransferReceipt receipt,
             GridStorageTransferContext context)
         {
-            ItemOwnedStorageRegistry.Instance.ReconcileCommittedTransfer(sourceOwner, targetOwner, receipt);
             TryNotify(() => source.OnTransferCommittedOut(receipt, context), "source out");
             TryNotify(() => target.OnTransferCommittedIn(receipt, context), "target in");
         }

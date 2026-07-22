@@ -3,6 +3,11 @@ using System.Collections.Generic;
 
 namespace OldScars.Core.Items
 {
+    internal interface IGridStorageDirectOwnerProvider
+    {
+        object DirectItemOwner { get; }
+    }
+
     /// <summary>
     /// Runtime-session identity and ownership index for item-owned storages.
     /// Identity is always an ItemInstance.InstanceId; DefinitionId is never used.
@@ -120,6 +125,70 @@ namespace OldScars.Core.Items
             }
         }
 
+        internal bool TryGetDirectOwner(string instanceId, out object directOwner)
+        {
+            directOwner = null;
+            return !string.IsNullOrWhiteSpace(instanceId) &&
+                   directOwnersByInstanceId.TryGetValue(instanceId, out directOwner) &&
+                   directOwner != null;
+        }
+
+        internal void ValidateBinding(string instanceId, object expectedOwner)
+        {
+            if (string.IsNullOrWhiteSpace(instanceId) || expectedOwner == null)
+                throw new ArgumentException("Item ownership validation requires an InstanceId and expected owner.");
+
+            if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
+                throw new InvalidOperationException($"Item instance '{instanceId}' has no registered direct owner.");
+            if (!ReferenceEquals(registeredOwner, expectedOwner))
+                throw new InvalidOperationException($"Item instance '{instanceId}' is bound to a different owner than expected.");
+        }
+
+        internal void ValidateEntries(IReadOnlyList<ItemStorageEntry> entries, object expectedOwner)
+        {
+            if (entries == null || expectedOwner == null)
+                return;
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemInstance item = entries[index]?.Item;
+                if (item != null)
+                    ValidateBinding(item.InstanceId, expectedOwner);
+            }
+        }
+
+        internal void TransferBinding(string instanceId, object expectedSource, object target)
+        {
+            if (string.IsNullOrWhiteSpace(instanceId) || expectedSource == null || target == null)
+                throw new ArgumentException("Item ownership transition requires an InstanceId, expected source and target.");
+            if (ReferenceEquals(expectedSource, target))
+            {
+                ValidateBinding(instanceId, target);
+                return;
+            }
+
+            if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
+                throw new InvalidOperationException($"Item instance '{instanceId}' has no registered direct owner to transfer.");
+            if (ReferenceEquals(registeredOwner, target))
+                return;
+            if (!ReferenceEquals(registeredOwner, expectedSource))
+                throw new InvalidOperationException($"Item instance '{instanceId}' cannot transfer from an unexpected owner.");
+
+            directOwnersByInstanceId[instanceId] = target;
+        }
+
+        internal void RemoveBinding(string instanceId, object expectedOwner)
+        {
+            if (string.IsNullOrWhiteSpace(instanceId) || expectedOwner == null)
+                throw new ArgumentException("Item ownership cleanup requires an InstanceId and expected owner.");
+            if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
+                return;
+            if (!ReferenceEquals(registeredOwner, expectedOwner))
+                throw new InvalidOperationException($"Item instance '{instanceId}' cannot be unbound from an unexpected owner.");
+
+            directOwnersByInstanceId.Remove(instanceId);
+        }
+
         internal void UnbindItem(string instanceId)
         {
             if (!string.IsNullOrWhiteSpace(instanceId))
@@ -147,12 +216,24 @@ namespace OldScars.Core.Items
 
         internal object ResolveRootOwner(IGridStorageOwner owner)
         {
-            if (owner is ItemOwnedStorageRuntime itemStorage &&
+            object directOwner = ResolveDirectOwner(owner);
+            if (directOwner is ItemOwnedStorageRuntime itemStorage &&
                 TryResolveRootOwner(itemStorage.ContainerInstanceId, out object rootOwner, out _))
             {
                 return rootOwner;
             }
 
+            return directOwner;
+        }
+
+        internal object ResolveDirectOwner(IGridStorageOwner owner)
+        {
+            if (owner is IGridStorageDirectOwnerProvider provider)
+            {
+                object directOwner = provider.DirectItemOwner;
+                if (directOwner != null)
+                    return directOwner;
+            }
             return owner;
         }
 
@@ -163,54 +244,300 @@ namespace OldScars.Core.Items
             return firstRoot != null && ReferenceEquals(firstRoot, secondRoot);
         }
 
-        internal void ReconcileCommittedTransfer(
+        internal bool TryReconcileCommittedTransfer(
             IGridStorageOwner source,
             IGridStorageOwner target,
-            GridStorageTransferReceipt receipt)
+            GridStorageTransferReceipt receipt,
+            out string error)
         {
-            string sourceInstanceId = receipt.SourceInstanceId;
-            if (receipt.SourceWasRemoved && !string.IsNullOrWhiteSpace(sourceInstanceId))
-                directOwnersByInstanceId.Remove(sourceInstanceId);
-
-            if (source != null)
-                BindEntries(source.GridStorageEntries, source);
-            if (target != null)
-                BindEntries(target.GridStorageEntries, target);
-
-            if (receipt.SourceWasRemoved && !string.IsNullOrWhiteSpace(sourceInstanceId) &&
-                !ContainsInstance(source, sourceInstanceId) && !ContainsInstance(target, sourceInstanceId))
+            error = null;
+            object sourceDirectOwner = ResolveDirectOwner(source);
+            object targetDirectOwner = ResolveDirectOwner(target);
+            if (source == null || target == null || ReferenceEquals(source, target) ||
+                sourceDirectOwner == null || targetDirectOwner == null ||
+                ReferenceEquals(sourceDirectOwner, targetDirectOwner) ||
+                receipt.Result == null || !receipt.Result.Success || string.IsNullOrWhiteSpace(receipt.SourceInstanceId))
             {
-                directOwnersByInstanceId.Remove(sourceInstanceId);
+                error = "Committed ownership reconciliation requires a successful transfer between distinct owners.";
+                return false;
             }
+
+            if (!TryCollectFinalInstanceIds(source, out HashSet<string> sourceIds, out error) ||
+                !TryCollectFinalInstanceIds(target, out HashSet<string> targetIds, out error))
+            {
+                return false;
+            }
+
+            foreach (string instanceId in sourceIds)
+            {
+                if (targetIds.Contains(instanceId))
+                {
+                    error = $"Item instance '{instanceId}' exists in both committed transfer owners.";
+                    return false;
+                }
+            }
+
+            if (!TryCollectReceiptIds(receipt.Result.CreatedInstanceIds, "created", out HashSet<string> createdIds, out error) ||
+                !TryCollectReceiptIds(receipt.Result.RemovedInstanceIds, "removed", out HashSet<string> removedIds, out error))
+            {
+                return false;
+            }
+
+            string sourceInstanceId = receipt.SourceInstanceId;
+            bool sourceStillPresent = sourceIds.Contains(sourceInstanceId);
+            bool sourceMovedToTarget = targetIds.Contains(sourceInstanceId);
+            if (receipt.SourceWasRemoved == sourceStillPresent)
+            {
+                error = $"Committed transfer receipt disagrees with final source state for '{sourceInstanceId}'.";
+                return false;
+            }
+            if (receipt.SourceWasRemoved != removedIds.Contains(sourceInstanceId))
+            {
+                error = $"Committed transfer receipt has inconsistent removal metadata for '{sourceInstanceId}'.";
+                return false;
+            }
+            if (!string.IsNullOrWhiteSpace(receipt.DestinationInstanceId) &&
+                !targetIds.Contains(receipt.DestinationInstanceId))
+            {
+                error = $"Committed transfer destination '{receipt.DestinationInstanceId}' is missing from the target.";
+                return false;
+            }
+
+            foreach (string createdId in createdIds)
+            {
+                if (!targetIds.Contains(createdId))
+                {
+                    error = $"Committed transfer created instance '{createdId}' is missing from the target.";
+                    return false;
+                }
+            }
+
+            foreach (string removedId in removedIds)
+            {
+                if (sourceIds.Contains(removedId) || (targetIds.Contains(removedId) && removedId != sourceInstanceId))
+                {
+                    error = $"Committed transfer removed instance '{removedId}' remains in an unexpected final storage.";
+                    return false;
+                }
+            }
+
+            var bindToTarget = new HashSet<string>(StringComparer.Ordinal);
+            var transferToTarget = new HashSet<string>(StringComparer.Ordinal);
+            var removeFromSource = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (string instanceId in sourceIds)
+            {
+                if (!HasExpectedOwner(instanceId, sourceDirectOwner, out error))
+                    return false;
+            }
+
+            if (sourceMovedToTarget)
+            {
+                if (!CanTransferOwner(sourceInstanceId, sourceDirectOwner, targetDirectOwner, out bool needsTransfer, out error))
+                    return false;
+                if (needsTransfer)
+                    transferToTarget.Add(sourceInstanceId);
+            }
+            else if (!sourceStillPresent)
+            {
+                if (!CanRemoveOwner(sourceInstanceId, sourceDirectOwner, out bool needsRemoval, out error))
+                    return false;
+                if (needsRemoval)
+                    removeFromSource.Add(sourceInstanceId);
+            }
+
+            foreach (string instanceId in targetIds)
+            {
+                if (instanceId == sourceInstanceId)
+                    continue;
+
+                if (directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) && registeredOwner != null)
+                {
+                    if (!ReferenceEquals(registeredOwner, targetDirectOwner))
+                    {
+                        error = $"Committed target instance '{instanceId}' is bound to an unexpected owner.";
+                        return false;
+                    }
+                    continue;
+                }
+
+                if (!createdIds.Contains(instanceId))
+                {
+                    error = $"Committed target instance '{instanceId}' has no registered direct owner.";
+                    return false;
+                }
+
+                bindToTarget.Add(instanceId);
+            }
+
+            foreach (string removedId in removedIds)
+            {
+                if (removedId == sourceInstanceId || targetIds.Contains(removedId))
+                    continue;
+                if (!CanRemoveOwner(removedId, sourceDirectOwner, out bool needsRemoval, out error))
+                    return false;
+                if (needsRemoval)
+                    removeFromSource.Add(removedId);
+            }
+
+            foreach (string instanceId in transferToTarget)
+                directOwnersByInstanceId[instanceId] = targetDirectOwner;
+            foreach (string instanceId in bindToTarget)
+                directOwnersByInstanceId.Add(instanceId, targetDirectOwner);
+            foreach (string instanceId in removeFromSource)
+                directOwnersByInstanceId.Remove(instanceId);
+
+            return true;
+        }
+
+        private bool HasExpectedOwner(string instanceId, object expectedOwner, out string error)
+        {
+            error = null;
+            if (directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) &&
+                registeredOwner != null && ReferenceEquals(registeredOwner, expectedOwner))
+            {
+                return true;
+            }
+
+            error = $"Item instance '{instanceId}' is not bound to its expected committed owner.";
+            return false;
+        }
+
+        private bool CanTransferOwner(
+            string instanceId,
+            object expectedSource,
+            object target,
+            out bool needsTransfer,
+            out string error)
+        {
+            needsTransfer = false;
+            error = null;
+            if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
+            {
+                error = $"Item instance '{instanceId}' has no registered direct owner to transfer.";
+                return false;
+            }
+            if (ReferenceEquals(registeredOwner, target))
+                return true;
+            if (!ReferenceEquals(registeredOwner, expectedSource))
+            {
+                error = $"Item instance '{instanceId}' cannot transfer from an unexpected owner.";
+                return false;
+            }
+
+            needsTransfer = true;
+            return true;
+        }
+
+        private bool CanRemoveOwner(string instanceId, object expectedOwner, out bool needsRemoval, out string error)
+        {
+            needsRemoval = false;
+            error = null;
+            if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
+            {
+                error = $"Item instance '{instanceId}' has no registered direct owner to retire.";
+                return false;
+            }
+            if (!ReferenceEquals(registeredOwner, expectedOwner))
+            {
+                error = $"Item instance '{instanceId}' cannot be retired from an unexpected owner.";
+                return false;
+            }
+
+            needsRemoval = true;
+            return true;
+        }
+
+        private static bool TryCollectFinalInstanceIds(
+            IGridStorageOwner owner,
+            out HashSet<string> instanceIds,
+            out string error)
+        {
+            instanceIds = new HashSet<string>(StringComparer.Ordinal);
+            error = null;
+            IReadOnlyList<ItemStorageEntry> entries = owner?.GridStorageEntries;
+            if (entries == null)
+                return true;
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemInstance item = entries[index]?.Item;
+                if (item == null)
+                    continue;
+                if (string.IsNullOrWhiteSpace(item.InstanceId) || !instanceIds.Add(item.InstanceId))
+                {
+                    error = $"Committed owner contains an invalid or duplicate InstanceId at entry {index}.";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TryCollectReceiptIds(
+            IReadOnlyList<string> values,
+            string label,
+            out HashSet<string> instanceIds,
+            out string error)
+        {
+            instanceIds = new HashSet<string>(StringComparer.Ordinal);
+            error = null;
+            if (values == null)
+                return true;
+
+            for (int index = 0; index < values.Count; index++)
+            {
+                string instanceId = values[index];
+                if (string.IsNullOrWhiteSpace(instanceId) || !instanceIds.Add(instanceId))
+                {
+                    error = $"Committed transfer contains an invalid or duplicate {label} InstanceId.";
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         internal void ReconcileRestoredOwners(IGridStorageOwner first, IGridStorageOwner second)
         {
-            UnbindEntries(first != null ? first.GridStorageEntries : null);
-            UnbindEntries(second != null ? second.GridStorageEntries : null);
-            if (first != null)
-                BindEntries(first.GridStorageEntries, first);
-            if (second != null)
-                BindEntries(second.GridStorageEntries, second);
-        }
-
-        private void UnbindEntries(IReadOnlyList<ItemStorageEntry> entries)
-        {
-            if (entries == null)
-                return;
-
-            for (int index = 0; index < entries.Count; index++)
+            object firstDirectOwner = ResolveDirectOwner(first);
+            object secondDirectOwner = ResolveDirectOwner(second);
+            if (first == null || second == null || ReferenceEquals(first, second) ||
+                firstDirectOwner == null || secondDirectOwner == null ||
+                ReferenceEquals(firstDirectOwner, secondDirectOwner))
+                throw new ArgumentException("Ownership rollback requires two distinct restored owners.");
+            if (!TryCollectFinalInstanceIds(first, out HashSet<string> firstIds, out string error) ||
+                !TryCollectFinalInstanceIds(second, out HashSet<string> secondIds, out error))
             {
-                ItemInstance item = entries[index] != null ? entries[index].Item : null;
-                if (item != null)
-                    directOwnersByInstanceId.Remove(item.InstanceId);
+                throw new InvalidOperationException(error);
             }
+
+            foreach (string instanceId in firstIds)
+            {
+                if (secondIds.Contains(instanceId))
+                    throw new InvalidOperationException($"Restored item instance '{instanceId}' exists in both owners.");
+                ValidateRestoredOwner(instanceId, firstDirectOwner, secondDirectOwner);
+            }
+            foreach (string instanceId in secondIds)
+                ValidateRestoredOwner(instanceId, firstDirectOwner, secondDirectOwner);
+
+            foreach (string instanceId in firstIds)
+                directOwnersByInstanceId[instanceId] = firstDirectOwner;
+            foreach (string instanceId in secondIds)
+                directOwnersByInstanceId[instanceId] = secondDirectOwner;
         }
 
-        private static bool ContainsInstance(IGridStorageOwner owner, string instanceId)
+        private void ValidateRestoredOwner(string instanceId, object first, object second)
         {
-            return owner != null && owner.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry) &&
-                   entry != null && entry.Item != null;
+            if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
+            {
+                if (!ItemInstanceIdRegistry.Instance.IsActive(instanceId))
+                    throw new InvalidOperationException($"Restored item instance '{instanceId}' is not active.");
+                return;
+            }
+            if (!ReferenceEquals(registeredOwner, first) && !ReferenceEquals(registeredOwner, second))
+                throw new InvalidOperationException($"Restored item instance '{instanceId}' is bound to an unexpected third owner.");
         }
+
     }
 }

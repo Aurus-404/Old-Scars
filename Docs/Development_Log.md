@@ -1877,3 +1877,69 @@ Limites y trabajo siguiente:
 - `SampleScene`, prefabs, JSON, Packages, ProjectSettings y asmdefs permanecen intactos; no se implemento save/load ni se inicio Checkpoint B.
 - `Foundation Freeze` permanece abierto, R03 sigue `MITIGATING` y M37 no comenzo.
 - La validacion manual final por Mauro permanece pendiente; el siguiente trabajo es esa validacion, no Checkpoint B.
+
+### M36.1 — Checkpoint A Correction Pass 2: Committed Ownership Transitions
+
+Version:
+
+`Checkpoint A — Correction Pass 2`
+
+Estado anterior:
+
+`IN PROGRESS — CHECKPOINT A CORRECTED;`
+
+`MANUAL VALIDATION FAILED — OWNERSHIP TRANSITION REGRESSION;`
+
+`CHECKPOINT B NOT STARTED`
+
+Estado posterior:
+
+`IN PROGRESS — CHECKPOINT A CORRECTION PASS 2 IMPLEMENTED;`
+
+`MANUAL REVALIDATION PENDING;`
+
+`CHECKPOINT B NOT STARTED`
+
+Validacion manual fallida y causa raiz:
+
+- Mauro reprodujo que recoger un item lo agregaba al inventario pero dejaba la representacion mundial; equipar desde inventario fallaba; equipar desde el suelo podia funcionar; y transfers entre inventario, containers e item-owned storage mutaban antes de arrojar una excepcion.
+- La excepcion repetida fue `InvalidOperationException: Item instance 'item_...' is already bound to a different owner.` en rutas que incluian `WorldItemPickup.PickUp`, `GridStorageTransferService.NotifyCommitted`, `ItemOwnedStorageRegistry.BindItem`/`BindEntries`/`ReconcileCommittedTransfer`, `ActorEquipmentComponent.RebindActorOwnedItems` y `EquipmentTransactionService.Equip`.
+- La causa raiz era temporalmente posterior al commit de storage: el backend confirmaba la mutacion y luego la reconciliacion intentaba registrar nuevamente la entry sin retirar o transferir el binding anterior. El `BindItem` estricto rechazaba correctamente el owner stale, pero el fallo impedia finalizar la presentacion mundial y podia dejar el mismo `InstanceId` representado en dos superficies.
+
+Correccion implementada:
+
+- `ItemOwnedStorageRegistry` separa registro inicial, transferencia comprometida y reconstruccion de rollback. `TransferBinding` exige `InstanceId`, source esperado y target; es idempotente sólo cuando ya apunta al target correcto, rechaza terceros y permite retirar explicitamente identidades consumidas.
+- La reconciliacion de transfers valida source y target antes de mutar bindings, usa `SourceInstanceId`, `DestinationInstanceId`, `SourceWasRemoved`, `RemovedInstanceIds` y el contenido final, y cubre full move, split, merge y cleanup sin overwrite ciego.
+- `GridStorageTransferService` mantiene el scope de identidad alrededor de la mutacion backend, reconcilia ownership antes de notificar hooks y, ante un fallo posterior al commit, restaura snapshots y owners.
+- `WorldItemPickup.PickUp` usa el owner mundial como source real y el inventario como target; sólo ejecuta `FinalizeCommittedPickup` despues del commit completo. Un fallo conserva storage, tags y presentacion mundial.
+- Equipment conserva el `InventoryComponent` como direct owner canonico para inventario personal↔Equipment y transfiere explicitamente ownership en las rutas world/item-owned; storage, slots, direct owner y root owner se restauran en rollback.
+- `LootableActorInventoryComponent` expone el inventario canonico como direct owner para que las superficies proxy no creen ownership paralelo.
+- Los diagnosticos agregan expected-source incorrecto, world→inventory, Equipment ida/vuelta, container→inventory→item-owned storage→inventory, merge/split entre owners y rollback forzado.
+
+Archivos de implementacion corregidos:
+
+- `Assets/_OldScars/Scripts/Core/Actors/ActorEquipmentComponent.cs`;
+- `Assets/_OldScars/Scripts/Core/Actors/LootableActorInventoryComponent.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/EquipmentOwnedStorageTransactionService.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/EquipmentTransactionService.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/GridStorageTransferService.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/ItemOwnedStorageRegistry.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/M36ItemIdentityDiagnostics.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/WorldItemEquipmentTransactionService.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/WorldItemPickup.cs`.
+
+Compilacion, diagnostico y smoke real:
+
+- Unity 6.4.6f1 recompilo `Assembly-CSharp` y `Assembly-CSharp-Editor` sin errores; la compilacion final, ya sin el runner temporal, termino con `Tundra build success` y recarga de dominio.
+- `Old Scars > Diagnostics > M36.1 > Run Checkpoint A Item Identity` produjo `M36.1 Checkpoint A Item Identity Diagnostics: PASS` sin estado residual.
+- El smoke focalizado uso objetos reales de `SampleScene` y produjo `M36.1 Checkpoint A Real Scene Ownership Smoke: PASS`: crowbar world→inventory→Equipment→inventory→small backpack→inventory→world→inventory; Lee-Enfield world→inventory→ambas manos→inventory; y stack `ammo_303_british_01` x20 desde `Misc Debug Crate` al inventario.
+- Cada etapa confirmo el mismo `InstanceId`, direct/root owner esperado, una sola representacion y validacion unica del actor; pickup deshabilito colliders/renderers y finalizo tags solamente despues del commit.
+- Play Mode se cerro correctamente. Console no mostro `InvalidOperationException`, `already bound to a different owner` ni errores de M36.1.
+- Persisten seis warnings C# preexistentes fuera del alcance: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`. Mensajes de Relay/licensing de infraestructura Unity se separaron del resultado funcional.
+- `SampleScene` no fue guardada ni modificada; su SHA-256 antes y despues del smoke fue `7EBB6605CBFE564F17CA5CAC7BA46348A1CDE887CC3462086DAE1D2B602A1AFB`.
+
+Limites y trabajo siguiente:
+
+- No se modificaron prefabs, JSON, Packages, ProjectSettings, GDD ni asmdefs; no se implementaron save/load, identidad authored, Checkpoint B o M37.
+- `Foundation Freeze` permanece abierto, R03 sigue `MITIGATING` y Checkpoint B permanece `NOT STARTED`.
+- La revalidacion manual de Checkpoint A por Mauro sigue pendiente; ése es el trabajo siguiente.
