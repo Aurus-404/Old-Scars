@@ -700,6 +700,16 @@ namespace OldScars.Core.Items
 
             int removedQuantity = Math.Min(quantity, entry.Quantity);
             bool removesEntry = removedQuantity >= entry.Quantity;
+            if (removesEntry && entry.Item.OwnedStorage != null && !entry.Item.OwnedStorage.IsEmpty)
+            {
+                rejection = InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.OwnedStorageNotEmpty,
+                    $"Cannot terminally remove item instance '{instanceId}' while its item-owned storage contains items. Empty it first.",
+                    quantity,
+                    instanceId);
+                return null;
+            }
+
             if (layout != null && removesEntry && !layout.TryGetPlacement(instanceId, out _))
             {
                 rejection = InventoryMutationResult.Rejected(

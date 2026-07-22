@@ -33,6 +33,8 @@ namespace OldScars.Core.Items
         private const string ReleasedFailureId = "item_22222222222222222222222222222222";
         private const string ConditionAId = "item_33333333333333333333333333333333";
         private const string ConditionBId = "item_44444444444444444444444444444444";
+        private const string OwnedRehydratedId = "item_55555555555555555555555555555555";
+        private const string FailedOwnedHydrationId = "item_66666666666666666666666666666666";
 
         public static M36ItemIdentityDiagnosticReport Run()
         {
@@ -131,6 +133,21 @@ namespace OldScars.Core.Items
                     "Compatible full merge must preserve the target and retire the consumed source.",
                     failures);
 
+                var repeatedAddStorage = new ItemStorage();
+                var repeatedAddBackend = new GridInventoryBackend(repeatedAddStorage, definitionResolver);
+                InventoryMutationResult repeatedAddFirst = repeatedAddBackend.Add(stackDefinition, 9);
+                string repeatedAddTargetId = repeatedAddFirst.DestinationInstanceId;
+                int activeBeforeRepeatedAddMerge = ItemInstanceIdRegistry.Instance.ActiveCount;
+                InventoryMutationResult repeatedAddSecond = repeatedAddBackend.Add(stackDefinition, 1);
+                Check(
+                    repeatedAddFirst.Success && repeatedAddSecond.Success &&
+                    repeatedAddStorage.EntryCount == 1 &&
+                    repeatedAddStorage.GetEntryByInstanceId(repeatedAddTargetId)?.Quantity == 10 &&
+                    repeatedAddSecond.DestinationInstanceId == repeatedAddTargetId &&
+                    ItemInstanceIdRegistry.Instance.ActiveCount == activeBeforeRepeatedAddMerge,
+                    "Repeated backend Add full-merge must preserve quantity without leaving a candidate ID active.",
+                    failures);
+
                 ItemInstance conditionA = ItemInstance.Rehydrate(stackDefinition, ConditionAId, 10);
                 ItemInstance conditionB = ItemInstance.Rehydrate(stackDefinition, ConditionBId, 9);
                 var conditionSourceStorage = new ItemStorage();
@@ -168,6 +185,118 @@ namespace OldScars.Core.Items
                     "Binding the same item to the same owner must be idempotent.", failures);
                 Check(Throws(() => ItemOwnedStorageRegistry.Instance.BindItem(ownedItem, new object())),
                     "Binding the same item to another owner must be rejected.", failures);
+
+                Func<string, ItemDefinition> ownedContentResolver = id =>
+                    id == stackDefinition.id ? stackDefinition :
+                    id == ownedDefinition.id ? ownedDefinition : null;
+                ItemInstance detachedOwnedItem = ItemInstance.Rehydrate(ownedDefinition, OwnedRehydratedId, 82);
+                Check(
+                    detachedOwnedItem.OwnedStorage == null &&
+                    !ItemOwnedStorageRegistry.Instance.TryResolveOwnedStorage(OwnedRehydratedId, out _),
+                    "Rehydrate must leave item-owned storage detached and unpublished.",
+                    failures);
+
+                detachedOwnedItem.AttachOwnedStorageUnregistered(storageProfile, ownedContentResolver);
+                InventoryMutationResult hydratedContentAdd = detachedOwnedItem.OwnedStorage.Backend.Add(stackDefinition, 1);
+                string hydratedContentId = hydratedContentAdd.DestinationInstanceId;
+                Check(
+                    hydratedContentAdd.Success &&
+                    detachedOwnedItem.OwnedStorage.GridInitializationState == GridStorageInitializationState.Pending &&
+                    !ItemOwnedStorageRegistry.Instance.TryResolveOwnedStorage(OwnedRehydratedId, out _),
+                    "Detached hydration must allow content population without publishing the storage.",
+                    failures);
+
+                bool hydratedLayoutValid = detachedOwnedItem.OwnedStorage.CompleteInitialContentLoad(out string hydrationError);
+                Check(
+                    hydratedLayoutValid && string.IsNullOrWhiteSpace(hydrationError) &&
+                    detachedOwnedItem.OwnedStorage.GridInitializationState == GridStorageInitializationState.Active &&
+                    !ItemOwnedStorageRegistry.Instance.TryResolveOwnedStorage(OwnedRehydratedId, out _),
+                    "Detached hydration must validate layout before explicit registration.",
+                    failures);
+
+                detachedOwnedItem.RegisterAttachedOwnedStorage();
+                Check(
+                    ItemOwnedStorageRegistry.Instance.TryResolveOwnedStorage(
+                        OwnedRehydratedId,
+                        out ItemOwnedStorageRuntime hydratedResolvedStorage) &&
+                    ReferenceEquals(hydratedResolvedStorage, detachedOwnedItem.OwnedStorage),
+                    "A validated detached item-owned storage must publish only through explicit registration.",
+                    failures);
+
+                var terminalParentStorage = new ItemStorage();
+                terminalParentStorage.AddItemAsSeparateEntry(detachedOwnedItem, 1);
+                var terminalParentBackend = new GridInventoryBackend(terminalParentStorage, ownedContentResolver);
+                object terminalOwner = new object();
+                ItemOwnedStorageRegistry.Instance.BindItem(detachedOwnedItem, terminalOwner);
+                ItemOwnedStorageRegistry.Instance.BindEntries(
+                    detachedOwnedItem.OwnedStorage.GridStorageEntries,
+                    detachedOwnedItem.OwnedStorage);
+
+                int activeBeforeRejectedRemove = ItemInstanceIdRegistry.Instance.ActiveCount;
+                int storagesBeforeRejectedRemove = ItemOwnedStorageRegistry.Instance.RegisteredStorageCount;
+                int ownersBeforeRejectedRemove = ItemOwnedStorageRegistry.Instance.BoundItemCount;
+                int parentVersionBeforeRejectedRemove = terminalParentStorage.Version;
+                int contentVersionBeforeRejectedRemove = detachedOwnedItem.OwnedStorage.ContentVersion;
+                InventoryMutationResult rejectedOwnedRemove = terminalParentBackend.Remove(OwnedRehydratedId, 1);
+                Check(
+                    !rejectedOwnedRemove.Success &&
+                    rejectedOwnedRemove.Failure == InventoryMutationResult.MutationFailure.OwnedStorageNotEmpty &&
+                    !string.IsNullOrWhiteSpace(rejectedOwnedRemove.Message) &&
+                    terminalParentStorage.GetEntryByInstanceId(OwnedRehydratedId)?.Quantity == 1 &&
+                    detachedOwnedItem.OwnedStorage.GridStorageEntries.Count == 1 &&
+                    ItemInstanceIdRegistry.Instance.IsActive(OwnedRehydratedId) &&
+                    ItemInstanceIdRegistry.Instance.IsActive(hydratedContentId) &&
+                    ItemInstanceIdRegistry.Instance.ActiveCount == activeBeforeRejectedRemove &&
+                    ItemOwnedStorageRegistry.Instance.RegisteredStorageCount == storagesBeforeRejectedRemove &&
+                    ItemOwnedStorageRegistry.Instance.BoundItemCount == ownersBeforeRejectedRemove &&
+                    terminalParentStorage.Version == parentVersionBeforeRejectedRemove &&
+                    detachedOwnedItem.OwnedStorage.ContentVersion == contentVersionBeforeRejectedRemove,
+                    "Terminal remove must reject a non-empty item-owned storage without mutating identities, owners or storage.",
+                    failures);
+
+                InventoryMutationResult emptyOwnedStorage = detachedOwnedItem.OwnedStorage.Backend.Remove(hydratedContentId, 1);
+                InventoryMutationResult removeEmptiedOwner = terminalParentBackend.Remove(OwnedRehydratedId, 1);
+                Check(
+                    emptyOwnedStorage.Success && removeEmptiedOwner.Success &&
+                    terminalParentStorage.IsEmpty && detachedOwnedItem.OwnedStorage.IsEmpty &&
+                    !ItemInstanceIdRegistry.Instance.IsActive(hydratedContentId) &&
+                    !ItemInstanceIdRegistry.Instance.IsActive(OwnedRehydratedId) &&
+                    !ItemOwnedStorageRegistry.Instance.TryResolveOwnedStorage(OwnedRehydratedId, out _) &&
+                    ItemInstanceIdRegistry.Instance.ActiveCount == activeBeforeRejectedRemove - 2 &&
+                    ItemOwnedStorageRegistry.Instance.RegisteredStorageCount == storagesBeforeRejectedRemove - 1 &&
+                    ItemOwnedStorageRegistry.Instance.BoundItemCount == ownersBeforeRejectedRemove - 2,
+                    "Terminal remove must succeed after the item-owned storage is emptied and retire its runtime state.",
+                    failures);
+
+                int activeBeforeFailedOwnedHydration = ItemInstanceIdRegistry.Instance.ActiveCount;
+                int storagesBeforeFailedOwnedHydration = ItemOwnedStorageRegistry.Instance.RegisteredStorageCount;
+                int ownersBeforeFailedOwnedHydration = ItemOwnedStorageRegistry.Instance.BoundItemCount;
+                using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope failedHydrationScope =
+                       ItemInstanceIdRegistry.Instance.BeginReservationScope())
+                {
+                    ItemInstance failedHydration = ItemInstance.Rehydrate(
+                        ownedDefinition,
+                        FailedOwnedHydrationId,
+                        91);
+                    failedHydration.AttachOwnedStorageUnregistered(storageProfile, ownedContentResolver);
+                    InventoryMutationResult oversizedContent = failedHydration.OwnedStorage.Backend.Add(stackDefinition, 50);
+                    bool invalidLayoutRejected =
+                        !failedHydration.OwnedStorage.CompleteInitialContentLoad(out _) &&
+                        Throws(failedHydration.RegisterAttachedOwnedStorage);
+                    failedHydration.DetachUnregisteredOwnedStorage();
+                    Check(
+                        oversizedContent.Success && invalidLayoutRejected && failedHydration.OwnedStorage == null,
+                        "Failed detached hydration must reject publication and allow attachment cleanup.",
+                        failures);
+                }
+
+                Check(
+                    !ItemInstanceIdRegistry.Instance.IsActive(FailedOwnedHydrationId) &&
+                    ItemInstanceIdRegistry.Instance.ActiveCount == activeBeforeFailedOwnedHydration &&
+                    ItemOwnedStorageRegistry.Instance.RegisteredStorageCount == storagesBeforeFailedOwnedHydration &&
+                    ItemOwnedStorageRegistry.Instance.BoundItemCount == ownersBeforeFailedOwnedHydration,
+                    "Failed detached hydration must roll back every reserved ID without partial registry state.",
+                    failures);
 
                 string resetProbeId = ownedItem.InstanceId;
                 Check(ItemInstanceIdRegistry.Instance.ActiveCount > 0 &&

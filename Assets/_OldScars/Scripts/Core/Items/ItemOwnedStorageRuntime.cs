@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
@@ -18,16 +19,25 @@ namespace OldScars.Core.Items
         private readonly GridStorageRuntime gridRuntime;
 
         internal ItemOwnedStorageRuntime(ItemInstance containerItem, ItemStorageProfileDefinition profile)
+            : this(containerItem, profile, null, true)
+        {
+        }
+
+        internal ItemOwnedStorageRuntime(
+            ItemInstance containerItem,
+            ItemStorageProfileDefinition profile,
+            Func<string, ItemDefinition> definitionResolver,
+            bool initializeLayoutImmediately)
         {
             this.containerItem = containerItem;
             this.profile = profile;
             gridRuntime = new GridStorageRuntime(
                 storage,
-                ResolveDefinition,
+                definitionResolver ?? ResolveDefinition,
                 true,
                 profile.width,
                 profile.height,
-                true);
+                initializeLayoutImmediately);
         }
 
         public string ContainerInstanceId => containerItem.InstanceId;
@@ -46,6 +56,14 @@ namespace OldScars.Core.Items
         public bool HasCarryWeightLimit => ResolveCarryWeightOwner() != null;
 
         GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => gridRuntime.Backend;
+
+        internal GridInventoryBackend Backend => gridRuntime.Backend;
+        internal bool IsEmpty => storage.IsEmpty;
+
+        internal bool CompleteInitialContentLoad(out string error)
+        {
+            return gridRuntime.CompleteInitialContentLoad(out error);
+        }
 
         public bool TryGetEntryByInstanceId(string instanceId, out int index, out ItemStorageEntry entry)
         {

@@ -28,7 +28,8 @@ namespace OldScars.Core.Items
             StackFull,
             CarryWeightLimitExceeded,
             StalePlan,
-            CommitFailed
+            CommitFailed,
+            OwnedStorageNotEmpty
         }
 
         public MutationStatus Status { get; }

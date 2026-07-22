@@ -1819,3 +1819,61 @@ Validacion, deuda y trabajo siguiente:
 - No hay NUnit mientras Core permanezca en `Assembly-CSharp`; el constructor publico legacy permanece como ruta compatible de new item.
 - Checkpoint B debe agregar identidad authored y evidencia de Foundation Freeze; el gate permanece abierto, R03 sigue `MITIGATING` y M37 no comenzo.
 - Trabajo siguiente autorizado por separado: `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`.
+
+### M36.1 — Checkpoint A Correction Pass 1
+
+Version:
+
+`Checkpoint A — Correction Pass 1`
+
+Estado anterior:
+
+`IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING`
+
+Estado posterior:
+
+`IN PROGRESS — CHECKPOINT A CORRECTED;`
+
+`MANUAL VALIDATION PENDING;`
+
+`CHECKPOINT B NOT STARTED`
+
+Base y objetivo:
+
+- Base auditada: `51aec69301ed3277f61fb9b796cd57f0678578ee`, alineada con `origin/dev` al iniciar.
+- Pase correctivo localizado sobre Checkpoint A; no rehace la implementacion ni inicia Checkpoint B.
+- Cierra los huecos de hydration detached, bootstrap directo de containers, cleanup de IDs candidatos durante merges totales y removal terminal de owners con storage propio no vacio.
+
+Correcciones implementadas:
+
+- `ItemInstance` separa attachment, validacion y registro de item-owned storage; `CreateNew` conserva su comportamiento funcional y `Rehydrate` permanece detached.
+- `ItemOwnedStorageRuntime` admite resolver de definiciones y layout inicial pendiente, expone su backend interno para bootstrap y exige completar la carga inicial antes de publicar.
+- `ContainerLootComponent` puebla mediante `GridInventoryBackend.Add`, verifica cantidades, bindea owners y revierte snapshot y reservas nuevas ante un fallo del lote.
+- Un merge total repetido por `Add` conserva el destino sin dejar activo el ID candidato consumido.
+- Un `Remove` terminal rechaza antes de mutar un item-owned storage no vacio mediante `OwnedStorageNotEmpty`; despues de vaciarlo, el retiro y cleanup existentes completan correctamente.
+- El diagnostico cubre hydration detached exitosa, fallo con rollback, merge total, rechazo atomico y retiro posterior al vaciado, con cleanup final de registries.
+- La auditoria de creacion directa conserva `WorldItemPickup` porque crea solamente sobre storage vacio y bindea de inmediato, y `DebugInventory` porque representa cada instancia directamente; los demas flujos mueven identidades existentes o usan el backend transaccional.
+
+Archivos de implementacion corregidos:
+
+- `Assets/_OldScars/Scripts/Core/Interactions/ContainerLootComponent.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/Grid/GridInventoryBackend.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/Grid/InventoryMutationResult.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/ItemInstance.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/ItemOwnedStorageRuntime.cs`;
+- `Assets/_OldScars/Scripts/Core/Items/M36ItemIdentityDiagnostics.cs`.
+
+Compilacion, diagnostico y smoke:
+
+- Unity 6.4.6f1 recompilo Runtime y Editor sin errores; la compilacion de los seis scripts termino con `Tundra build success` y el refresh final completo una recarga de dominio limpia.
+- Persisten seis warnings C# preexistentes fuera del alcance: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
+- `Old Scars > Diagnostics > M36.1 > Run Checkpoint A Item Identity` produjo `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- El diagnostico termino con cero IDs activos, storages registrados y owners registrados.
+- El smoke breve entro en Play Mode, cargo `[OldScars/Data] Load OK — 0 errors, 0 warnings`, salio correctamente y no dejo errores o excepciones relacionados con M36.1 en Console.
+- Se separo un `RelayService` `TaskCanceledException` externo y preexistente, junto con mensajes de paquetes/licensing de Unity; no afectaron compilacion, datos, gameplay ni diagnostico.
+
+Limites y trabajo siguiente:
+
+- `SampleScene`, prefabs, JSON, Packages, ProjectSettings y asmdefs permanecen intactos; no se implemento save/load ni se inicio Checkpoint B.
+- `Foundation Freeze` permanece abierto, R03 sigue `MITIGATING` y M37 no comenzo.
+- La validacion manual final por Mauro permanece pendiente; el siguiente trabajo es esa validacion, no Checkpoint B.

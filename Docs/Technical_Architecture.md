@@ -17,10 +17,11 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 - `ItemInstance.InstanceId` es un `string` get-only autoritativo. Los IDs nuevos usan `item_<GUID N lowercase>`; son opacos para consumidores y no codifican comportamiento.
 - `ItemInstance.CreateNew` valida la definicion, reserva un ID nuevo, usa `condition_max` y registra explicitamente item-owned storage. El constructor publico legacy conserva exactamente esa semantica de new runtime item.
-- `ItemInstance.Rehydrate` valida y reserva exactamente el ID y el `Condition` recibidos, rechaza duplicados y devuelve un item detached; M37 debe usar esta ruta y no el constructor publico.
+- `ItemInstance.Rehydrate` valida y reserva exactamente el ID y el `Condition` recibidos, rechaza duplicados y devuelve un item detached. En una futura hidratacion con storage propio, el caller puede adjuntarlo sin publicar, poblar su contenido con layout pendiente, completar la validacion inicial y recien entonces registrarlo de forma explicita. M37 debe usar esta ruta y no el constructor publico.
 - `ItemInstanceIdRegistry` mantiene solamente un `HashSet` de IDs activos. Un reset en `SubsystemRegistration` limpia de forma coordinada identidad, storages y ownership runtime; no existen tombstones persistentes, high-water ni historial de retirados.
 - Un stack contiene una `ItemInstance` representativa y `ItemStorageEntry.Quantity`; las unidades fungibles internas no poseen IDs individuales. `CanStackWith` exige `DefinitionId`, `Condition`, `MaxStack` y ausencia de owned storage compatibles.
 - Split conserva el ID fuente y crea un sibling durable. Merge conserva el ID destino; si consume completamente la fuente, la retira solo despues de validar storage/layout y confirmar la transaccion. Transfer, drop y equip/unequip preservan identidad.
+- Un `GridInventoryBackend.Remove` que retiraria la entry completa rechaza antes de mutar si su item-owned storage no esta vacio; devuelve `OwnedStorageNotEmpty`. Una vez vacio, el retiro terminal libera bindings, storage e identidad mediante el contrato existente.
 - Los scopes de reserva ambient/nested estan limitados al hilo de sesion, exigen LIFO y transfieren reservas al scope padre. El contexto localizado es necesario porque constructors y split reservan IDs dentro de servicios transaccionales ya existentes; evita cambiar sus contratos publicos. Rollback restaura storage/layout/Equipment y luego libera solamente IDs nuevos con sus registros/bindings.
 - `ItemInstance.Condition` permanece get-only. Es estado de instancia representativo, participa en stacking y debe rehidratarse exactamente en M37; no hay mutacion, desgaste ni reparacion.
 - No hay save envelope, version de formato, checksum, escritura atomica, recovery, migrations ni pruebas round-trip.
@@ -40,9 +41,10 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Item-Owned Storage Y Peso
 
 - `ItemDefinition.owned_storage_profile_id` referencia un `ItemStorageProfileDefinition`.
-- Cada `ItemInstance` nuevo con perfil crea como maximo un `ItemOwnedStorageRuntime` propio, con `ItemStorage`, grid, versiones y `ContainerInstanceId` exactamente igual al ID del item. Rehydrate no lo adjunta automaticamente.
-- El constructor de `ItemOwnedStorageRuntime` no registra por side effect. `ItemOwnedStorageRegistry` registra de forma explicita, rechaza duplicados, resuelve por `InstanceId`, direct owner y root owner, y detecta ciclos. Repetir el mismo binding es idempotente; cambiar owner exige una transicion explicita despues del commit.
+- Cada `ItemInstance` nuevo con perfil crea como maximo un `ItemOwnedStorageRuntime` propio, con `ItemStorage`, grid, versiones y `ContainerInstanceId` exactamente igual al ID del item. `CreateNew` completa layout y registro; `Rehydrate` permanece detached y no adjunta ni publica storage automaticamente.
+- El constructor de `ItemOwnedStorageRuntime` no registra por side effect. El attachment detached admite un resolver de definiciones y layout inicial pendiente; `CompleteInitialContentLoad` debe validar el layout antes del registro. `ItemOwnedStorageRegistry` registra de forma explicita, rechaza duplicados, resuelve por `InstanceId`, direct owner y root owner, y detecta ciclos. Repetir el mismo binding es idempotente; cambiar owner exige una transicion explicita despues del commit.
 - `ItemOwnedStorageRuntime` implementa `IGridStorageOwner` y reutiliza `GridStorageTransferService`; no existe un backend especial de mochila.
+- `ContainerLootComponent` puebla contenido inicial mediante `GridInventoryBackend.Add`, verifica cada cantidad afectada, bindea los owners resultantes y restaura el snapshot y las reservas nuevas si falla el lote.
 - Nesting de item-owned storage permanece prohibido en el contrato v0 mediante un guard transaccional generico.
 - `ActorCarryWeightComponent` es la autoridad de capacidad. `ItemWeightResolver` suma cada entry y su subtree item-owned exactamente una vez, con proteccion contra ciclos y duplicados.
 - Transfers dentro del mismo root owner tienen delta cero. Entradas externas usan las politicas de peso existentes del actor.
@@ -90,7 +92,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Frontera M36.1 / M37
 
-- M36.1 Checkpoint A implementa identidad durable de items, invariantes, boundary de rehidratacion y diagnostico determinista; Checkpoint B permanece pendiente.
+- M36.1 Checkpoint A corregido implementa identidad durable de items, invariantes, hydration detached, cleanup terminal y diagnostico determinista. La validacion manual permanece pendiente y Checkpoint B no esta iniciado.
 - M37 debe persistir y rehidratar el `Condition` get-only exacto, sin implementar condition mutable.
 - Items no stackeables y stacks visibles poseen identidad durable; las unidades fungibles internas conservan cantidad sin identidad individual.
 - M36.1 no implementa save/load, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.

@@ -18,6 +18,8 @@ namespace OldScars.Core.Items
         public ItemOwnedStorageRuntime OwnedStorage { get; private set; }
         public bool HasOwnedStorage => OwnedStorage != null;
 
+        private bool ownedStorageRegistered;
+
         /// <summary>
         /// Compatibility path for a new runtime item. Loaded items must use Rehydrate.
         /// </summary>
@@ -29,8 +31,6 @@ namespace OldScars.Core.Items
         private ItemInstance(NewItemState state, Func<string, ItemStorageProfileDefinition> profileResolver)
             : this(state.InstanceId, state.DefinitionId, state.Condition, state.MaxStack, state.OwnedStorageProfileId)
         {
-            ItemOwnedStorageRuntime storage = null;
-            bool storageRegistered = false;
             try
             {
                 if (!string.IsNullOrWhiteSpace(OwnedStorageProfileId))
@@ -39,16 +39,13 @@ namespace OldScars.Core.Items
                     if (profile == null)
                         throw new InvalidOperationException($"Item-owned storage profile '{OwnedStorageProfileId}' was not found.");
 
-                    storage = new ItemOwnedStorageRuntime(this, profile);
-                    ItemOwnedStorageRegistry.Instance.RegisterStorage(storage);
-                    storageRegistered = true;
-                    OwnedStorage = storage;
+                    AttachOwnedStorageUnregistered(profile, null, true);
+                    RegisterAttachedOwnedStorage();
                 }
             }
             catch
             {
-                if (storageRegistered)
-                    ItemOwnedStorageRegistry.Instance.UnregisterStorage(InstanceId, storage);
+                CleanupOwnedStorageAfterFailure();
                 ItemOwnedStorageRegistry.Instance.UnbindItem(InstanceId);
                 ItemInstanceIdRegistry.Instance.ReleaseFailedReservation(InstanceId);
                 throw;
@@ -137,16 +134,67 @@ namespace OldScars.Core.Items
                    string.IsNullOrWhiteSpace(second.OwnedStorageProfileId);
         }
 
-        internal void AttachOwnedStorage(ItemStorageProfileDefinition profile)
+        internal void AttachOwnedStorageUnregistered(ItemStorageProfileDefinition profile)
+        {
+            AttachOwnedStorageUnregistered(profile, null, false);
+        }
+
+        internal void AttachOwnedStorageUnregistered(
+            ItemStorageProfileDefinition profile,
+            Func<string, ItemDefinition> definitionResolver)
+        {
+            AttachOwnedStorageUnregistered(profile, definitionResolver, false);
+        }
+
+        internal void RegisterAttachedOwnedStorage()
+        {
+            if (OwnedStorage == null)
+                throw new InvalidOperationException($"Item instance '{InstanceId}' has no item-owned storage to register.");
+            if (ownedStorageRegistered)
+                throw new InvalidOperationException($"Item-owned storage '{InstanceId}' is already registered by its item.");
+            if (OwnedStorage.GridInitializationState != GridStorageInitializationState.Active)
+            {
+                throw new InvalidOperationException(
+                    $"Item-owned storage '{InstanceId}' must complete layout validation before registration.");
+            }
+
+            ItemOwnedStorageRegistry.Instance.RegisterStorage(OwnedStorage);
+            ownedStorageRegistered = true;
+        }
+
+        internal void DetachUnregisteredOwnedStorage()
+        {
+            if (ownedStorageRegistered)
+                throw new InvalidOperationException($"Registered item-owned storage '{InstanceId}' cannot be detached.");
+
+            OwnedStorage = null;
+        }
+
+        private void AttachOwnedStorageUnregistered(
+            ItemStorageProfileDefinition profile,
+            Func<string, ItemDefinition> definitionResolver,
+            bool initializeLayoutImmediately)
         {
             if (OwnedStorage != null)
                 throw new InvalidOperationException($"Item instance '{InstanceId}' already has item-owned storage.");
             if (profile == null || string.IsNullOrWhiteSpace(OwnedStorageProfileId) || profile.id != OwnedStorageProfileId)
                 throw new InvalidOperationException($"Item-owned storage profile does not match item instance '{InstanceId}'.");
 
-            var storage = new ItemOwnedStorageRuntime(this, profile);
-            ItemOwnedStorageRegistry.Instance.RegisterStorage(storage);
-            OwnedStorage = storage;
+            OwnedStorage = new ItemOwnedStorageRuntime(
+                this,
+                profile,
+                definitionResolver,
+                initializeLayoutImmediately);
+            ownedStorageRegistered = false;
+        }
+
+        private void CleanupOwnedStorageAfterFailure()
+        {
+            if (OwnedStorage != null && ownedStorageRegistered)
+                ItemOwnedStorageRegistry.Instance.UnregisterStorage(InstanceId, OwnedStorage);
+
+            OwnedStorage = null;
+            ownedStorageRegistered = false;
         }
 
         private static NewItemState PrepareNew(ItemDefinition definition)

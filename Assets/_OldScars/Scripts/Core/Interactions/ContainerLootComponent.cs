@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
@@ -431,7 +432,12 @@ namespace OldScars.Core.Interactions
                 return false;
             }
 
-            PopulateStorage(lootTable, database);
+            if (!TryPopulateStorage(lootTable, database, out string populationError))
+            {
+                error = $"no se pudo poblar el storage: {populationError}";
+                return false;
+            }
+
             storageInitialized = true;
 
             if (!GetGridRuntime().TryInitializeLayout(out string gridError))
@@ -636,16 +642,42 @@ namespace OldScars.Core.Interactions
             return false;
         }
 
-        private void PopulateStorage(LootTableDefinition lootTable, GameDatabase database)
+        private bool TryPopulateStorage(LootTableDefinition lootTable, GameDatabase database, out string error)
         {
+            error = null;
             if (lootTable.entries == null)
-                return;
+                return true;
 
-            for (int entryIndex = 0; entryIndex < lootTable.entries.Length; entryIndex++)
+            ItemStorage.StateSnapshot storageSnapshot = storage.CaptureState();
+            using (ItemInstanceIdRegistry.ItemInstanceIdReservationScope identityScope =
+                   ItemInstanceIdRegistry.Instance.BeginReservationScope())
             {
-                LootTableEntryDefinition entry = lootTable.entries[entryIndex];
-                ItemDefinition definition = database.GetItem(entry.item_id);
-                storage.AddItem(new ItemInstance(definition), entry.count);
+                try
+                {
+                    GridInventoryBackend backend = GetGridRuntime().Backend;
+                    for (int entryIndex = 0; entryIndex < lootTable.entries.Length; entryIndex++)
+                    {
+                        LootTableEntryDefinition entry = lootTable.entries[entryIndex];
+                        ItemDefinition definition = database.GetItem(entry.item_id);
+                        InventoryMutationResult result = backend.Add(definition, entry.count);
+                        if (!result.Success || result.AffectedQuantity != entry.count)
+                        {
+                            throw new InvalidOperationException(
+                                $"entry[{entryIndex}] '{entry.item_id}' x{entry.count} failed: " +
+                                (result.Message ?? result.Failure.ToString()));
+                        }
+                    }
+
+                    ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
+                    identityScope.Commit();
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    storage.RestoreState(storageSnapshot);
+                    error = exception.Message;
+                    return false;
+                }
             }
         }
 
