@@ -1,6 +1,6 @@
 # Old Scars — Development Rules for ChatGPT + Codex
 
-Version: 0.7
+Version: 0.8
 
 Purpose: reglas tecnicas y de trabajo durables para colaborar sobre Old Scars. La direccion de producto, el estado operativo y la historia tienen autoridades separadas; este archivo no las sustituye.
 
@@ -23,12 +23,67 @@ Una contradiccion se resuelve segun su dominio y se registra: el repositorio pru
 ## 1. Desarrollo General
 
 - No crear sistemas por anticipacion. Todo cambio necesita objetivo, milestone autorizado y resultado verificable.
-- Preferir milestones pequeños e integrados sobre sistemas grandes incompletos.
+- Preferir milestones suficientemente pequeños para ser revisables, pero suficientemente completos para entregar una unidad funcional util.
+- No crear un milestone por clase, archivo, boton o ajuste menor. Agrupar cambios que comparten sistema, contratos, archivos, validacion y resultado jugable; separar tareas cuando mezclan sistemas independientes, riesgos distintos o decisiones abiertas.
+- Evitar tanto la microfragmentacion como los milestones gigantes. Una unidad funcional completa no significa un sistema universal.
 - Auditar implementacion, datos, escena, historial y deuda relevante antes de diseñar o borrar.
 - Reutilizar contratos validados; no reescribirlos sin una razon concreta y aprobada.
 - Separar foundation reutilizable de tooling o presentacion debug temporal.
 - Evitar UI, arte, animacion, VFX y audio finales antes de que sus contratos y gates correspondan.
 - Si una solicitud rompe una dependencia dura, un gate o el alcance autorizado, detenerse y explicar el conflicto.
+
+### 1.1 Encargo Y Configuracion De Codex
+
+Todo prompt debe declarar como nucleo minimo, con profundidad proporcional al riesgo:
+
+- milestone con ID y nombre oficial, y milestone padre cuando exista;
+- objetivo, estado inicial y estado esperado;
+- relacion con milestones anterior y siguiente;
+- alcance incluido y fuera de alcance;
+- archivos o dominios autorizados y prohibidos;
+- validacion requerida y documentacion afectada;
+- estrategia Git.
+
+Tambien debe indicar la configuracion recomendada de Codex:
+
+- modelo: `GPT-5.6 Sol`, `Terra` o `Luna`;
+- esfuerzo: `Mínimo`, `Bajo`, `Medio`, `Alto`, `Muy alta` o `Ultra`;
+- velocidad: `Estándar` o `Rápida`;
+- modo: `Plan` u `Objetivo`.
+
+Reglas de seleccion:
+
+- Luna para trabajo pequeño, mecanico y localizado;
+- Terra para trabajo cotidiano, balanceado y de alcance acotado;
+- Sol para arquitectura, transacciones, ownership, rollback, persistencia, ambiguedad o riesgo alto;
+- Plan para auditorias, arquitectura, ambiguedad o alcance todavia abierto;
+- Objetivo cuando objetivo, alcance y aceptacion ya estan definidos;
+- no cambiar de modelo durante una tarea sin motivo explicito.
+
+No se exige un prompt enorme para trabajo trivial. Una correccion localizada puede usar la variante compacta de [Milestone_Template.md](Milestone_Template.md); arquitectura, persistencia y cambios de alto riesgo requieren la extension condicional aplicable.
+
+### 1.2 Evidencia Visual
+
+Cuando una tarea involucra layout, UI, arte, modelos, texturas, escenas, colliders visibles, animaciones, camara, clipping, alineacion u otro defecto visual, el prompt debe adjuntar capturas cuando esten disponibles.
+
+Codex debe:
+
+1. abrir e inspeccionar todas las imagenes;
+2. describir brevemente que muestra cada una;
+3. relacionar el defecto con codigo, layout, escena o asset;
+4. evitar una correccion basada solo en indicaciones abstractas;
+5. no afirmar que el problema visual se resolvio porque compilo;
+6. solicitar validacion visual posterior.
+
+Los cambios puramente internos sin superficie visual no requieren capturas.
+
+### 1.3 Uso De Subagentes
+
+- Usarlos cuando la escala o independencia lo justifique: auditoria grande, investigacion paralela, arquitectura, QA, documentacion extensa o areas independientes.
+- No usarlos por defecto para ajustes pequeños.
+- Un agente principal integra, revisa contradicciones y toma la decision final.
+- Normalmente un solo implementador modifica archivos o sistemas acoplados; varios agentes no los editan simultaneamente.
+- Los subagentes pueden analizar areas independientes en paralelo, pero sus conclusiones no sustituyen la revision del agente principal.
 
 ## 2. Profundidad Mediante Sistemas Conectados
 
@@ -147,7 +202,19 @@ Antes de commit:
 - comprobar IDs, estados, referencias y scope autorizado;
 - distinguir validaciones ejecutadas de las no aplicables.
 
-El commit debe tener titulo y cuerpo con milestone, objetivo, alcance, decisiones, verificacion, deuda y estado posterior. Tras el commit, inspeccionar el cuerpo real y confirmar el resultado del push cuando corresponda.
+Todo trabajo mutante autorizado que supera las verificaciones aplicables debe terminar con:
+
+1. commit;
+2. cuerpo descriptivo del commit;
+3. inspeccion de `git log -1 --format=full`;
+4. push a `origin/dev`;
+5. confirmacion de arbol limpio y sincronizado.
+
+Excepciones: tarea explicita de solo lectura, auditoria sin cambios, fallo de compilacion/verificacion, bloqueo de alcance, cambios locales ajenos o instruccion explicita de Mauro de no publicar. Fuera de esas excepciones no usar formulaciones ambiguas como "hacer push cuando corresponda".
+
+El titulo del commit incluye milestone, accion y descripcion breve. El cuerpo incluye milestone completo, padre, version/correction pass, objetivo, estado anterior/posterior, cambios, contratos preservados, verificaciones, validacion manual, deuda y trabajo diferido. Si el cuerpo inspeccionado esta vacio, corregir el commit local antes de publicar.
+
+No usar amend despues de publicar, force push ni rebase sin autorizacion explicita.
 
 ## 12. Trabajo Prematuro
 

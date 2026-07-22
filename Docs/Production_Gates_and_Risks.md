@@ -70,6 +70,10 @@ Debe validar:
 - decision explicita sobre persistir, rederivar o excluir justificadamente el `ItemInstance.Condition` get-only actual, sin implementar condition mutable;
 - granularidad de identidad congelada para items particulares y unidades fungibles dentro de stacks;
 - contratos que M37 puede consumir sin implementar save/load;
+- ausencia de abstracciones nuevas sin consumidor real;
+- evidencia de que M37 puede consumir los contratos congelados;
+- ausencia de save/load implementado preventivamente dentro de M36.1;
+- ausencia de generalizaciones para sistemas hipoteticos;
 - seams de prueba y baseline del slice actual.
 
 Evidencia: matriz de identidad y ownership, contratos documentados, pruebas de invariantes y lista explicita de decisiones congeladas.
@@ -276,7 +280,7 @@ M55.0 ejecuta Launch despues de Release Candidate; no agrega un gate canonico nu
 
 | Gate | Debe cerrar | Debe revisar |
 | --- | --- | --- |
-| Foundation Freeze | R03 | R01, R05, R14, R16, R17, R18, R19, R20, R22 |
+| Foundation Freeze | Ninguno especifico del registro actual | R01, R03, R05, R14, R16, R17, R18, R19, R20, R22 |
 | Persistence Ready | R05, R14, R19 | R01, R09, R16, R17, R18, R20, R22 |
 | Combat Ready | Ninguno especifico del registro actual | R01, R10, R11, R15, R16, R17, R18, R22 |
 | AI Ready | R06 | R01, R10, R11, R15, R16, R17, R22 |
@@ -298,7 +302,7 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | R01 | `MITIGATING` | Mauro | Alcance excesivo | Alta | Alta | El milestone crece durante implementacion. | Fijar fuera de alcance y gate antes de codigo. | Riesgo estructural; revisar cada gate. |
 | R02 | `OPEN` | Mauro | Desarrollo individual | Alta | Alta | Tooling y validacion se vuelven cuellos de botella. | Reducir amplitud y automatizar tareas repetibles. | Revisar Content Pipeline y Production Ready; aceptacion requiere decision explicita. |
-| R03 | `MITIGATING` | Mauro | Sobreingenieria | Media | Alta | Aparecen abstracciones sin consumidor actual. | Exigir necesidad actual y contrato minimo. | Cerrar en Foundation Freeze. |
+| R03 | `MITIGATING` | Mauro | Sobreingenieria | Media | Alta | Aparecen abstracciones sin consumidor actual. | Exigir necesidad actual, contrato minimo y consumidor demostrado. | Riesgo estructural permanente; revisar en cada milestone arquitectonico y cada gate, especialmente M36.1, M37, M41, M45 y M50. Foundation Freeze revisa su mitigacion local, no lo cierra globalmente. |
 | R04 | `MITIGATING` | Mauro | Deuda OnGUI | Alta | Media | UI debug condiciona backends nuevos. | Congelar ampliaciones y reemplazar en M48.0. | Cerrar en Production Ready; aceptacion de deuda requiere decision explicita. |
 | R05 | `MITIGATING` | Mauro | Persistencia introducida tarde | Media | Alta | Sistemas nuevos carecen de identidad durable. | M36.1 corto y M37 inmediato. | Cerrar en Persistence Ready; revalidar en releases. |
 | R06 | `OPEN` | Mauro | IA demasiado compleja | Media | Alta | Multiples capas antes de un encuentro funcional. | Limitar M41.1 a avoid/alert/flee/fight. | Cerrar en AI Ready. |

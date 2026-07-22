@@ -6,17 +6,21 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ### M36.0 — Old Scars Strategic Production Roadmap Rebaseline
 
-Estado inicial autorizado:
+Version actual:
 
-`PLAN REVIEWED — AUTHORIZED WITH CORRECTIONS`
+`Documentation Review Correction Pass 1`
+
+Estado inicial del pass:
+
+`IMPLEMENTED — PENDING DOCUMENT REVIEW`
 
 Estado actual:
 
-`IMPLEMENTED — PENDING DOCUMENT REVIEW`
+`IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW`
 
 Estado posterior de implementacion:
 
-`IMPLEMENTED — PENDING DOCUMENT REVIEW`
+`IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW`
 
 M36.0 es documental y no requiere Unity. No debe marcarse `DONE` antes de la revision explicita de Mauro.
 
@@ -49,6 +53,20 @@ Resultado:
 - gates detallados y registro de riesgos reconciliados;
 - revision creativa y documental de Mauro todavia pendiente.
 
+## Documentation Review Correction Pass 1
+
+Resultado:
+
+- se elimino la implicacion de una mecanica de ruido confirmada;
+- PSX/low-poly y legibilidad retro quedaron confirmados como direccion visual general, con art bible y especificacion de produccion pendientes;
+- la existencia y los nombres Vandor/Velgrad quedaron confirmados sin completar su lore;
+- prompts, configuracion Codex, evidencia visual, subagentes, granularidad de milestones, commit y push quedaron formalizados de manera proporcional al riesgo;
+- [Milestone_Template.md](Milestone_Template.md) quedo dividido en nucleo obligatorio y extension condicional;
+- R03 permanece `MITIGATING` como riesgo estructural permanente y Foundation Freeze revisa su mitigacion local sin cerrarlo globalmente;
+- M29 conserva `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED`: existe evidencia de implementacion, pero falta prueba manual explicita o confirmacion de Mauro en el historial auditado;
+- el alcance real de Checkpoint B queda registrado desde Git como 10 archivos, 1.345 adiciones y 497 eliminaciones;
+- la revision documental final de Mauro sigue pendiente y M36.1 no esta iniciado.
+
 ## Milestone Funcional Anterior
 
 ### M35.2 — Lootable Entity Inventory UI V1
@@ -69,7 +87,7 @@ El scrollbar vertical de EQUIPADO con overflow real permanece como deuda no bloq
 
 ## Secuencia Inmediata
 
-1. Revision documental de M36.0 por Mauro.
+1. Revision documental final de M36.0 por Mauro.
 2. M36.1 — Foundation Freeze & Persistent Identity Contract.
 3. M37.0 — Save Format & Persistence Core.
 4. M37.1 — Current Slice Persistent Round-Trip.

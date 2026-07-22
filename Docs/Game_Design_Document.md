@@ -1,7 +1,7 @@
 # Old Scars - Documento de Diseño del Juego
 
 - Versión: línea base de repositorio 1.0
-- Estado: `DRAFT — PENDING MAURO REVIEW`
+- Estado: `DRAFT — PENDING FINAL MAURO REVIEW`
 - Derivado de: `Old_Scars_GDD_Maestro_v3.1.docx` (17 de julio de 2026)
 - SHA-256 de la fuente: `919966D0BFCDE1FD77C6D7765EE087B4D04211FBDEAAD06B4AAFCCFEE7308AF4`
 
@@ -56,6 +56,7 @@ Los siguientes principios de alto nivel provienen de dirección reciente explíc
 | --- | --- | --- |
 | Old Scars es un juego de supervivencia, pero no una plantilla genérica de supervivencia. | `CONFIRMED — RECENT DECISION` | Las features deben sostener la identidad específica descrita abajo en lugar de copiar convenciones del género. |
 | El mundo es industrial, destruido, escaso y peligroso. | `CONFIRMED — RECENT DECISION` | Los lugares, recursos y amenazas deben comunicar función material y deterioro. La historia detallada permanece abierta. |
+| La dirección visual general es PSX, low-poly y de legibilidad retro coherente con Old Scars. | `CONFIRMED — RECENT DECISION` | Esta dirección no aprueba una art bible, referencias, assets, cámara ni especificaciones de producción concretas. |
 | Old Scars no tiene zombis. | `CONFIRMED — RECENT DECISION` | Las amenazas provienen de humanos, facciones, animales, clima, distancia, heridas, armas, máquinas y estructuras deterioradas. |
 | Los objetos conservan identidad física. | `CONFIRMED — RECENT DECISION` | Los items particulares rastreables deben conservar su identidad a través de los flujos soportados. La granularidad de identidad de las unidades fungibles de un stack sigue siendo una decisión explícita de frontera para M36.1. |
 | La supervivencia debe crear decisiones informadas y predecibles en vez de RNG punitivo y opaco. | `CONFIRMED — RECENT DECISION` | Los costos, el peligro, el fallo y la recuperación necesitan causas y alternativas legibles. |
@@ -92,7 +93,7 @@ Esta formulación conserva la dirección más sólida compartida por el brief de
 | --- | --- | --- |
 | Género central | La supervivencia está confirmada. `Tactical RPG`, el posicionamiento immersive sim y la combinación comercial exacta de géneros siguen siendo candidatos. | `PARTIAL CONFIRMATION / PENDING MAURO DECISION` |
 | Modo de juego | v3.1 propone un juego para un jugador. | `PENDING MAURO DECISION` |
-| Presentación | El juego actual es 3D, con una cámara de orientación isométrica e influencias retro/PSX; la cámara del prototipo puede rotar. | `TECHNICAL STATE / FINAL CAMERA PENDING` |
+| Presentación | La dirección visual general PSX/low-poly y de legibilidad retro está confirmada. El juego actual es 3D; la cámara del prototipo tiene orientación isométrica y puede rotar, pero su composición y comportamiento finales siguen abiertos. | `CONFIRMED VISUAL DIRECTION / TECHNICAL STATE / FINAL CAMERA PENDING` |
 | Cadencia de combate | v3.1 propone encuentros por turnos con puntos de acción; el rifle actual es un prototipo técnico debug/en tiempo real y no resuelve el combate final. | `DESIGN TARGET — PENDING MAURO DECISION` |
 | Palabra rectora | v3.1 propone `PENSAR`. | `PENDING MAURO DECISION` |
 | Tono | La escasez industrial y el peligro están confirmados; los límites melancólicos, curiosos, hostiles, adultos y de horror necesitan una decisión tonal consolidada. | `PARTIAL CONFIRMATION / PENDING MAURO DECISION` |
@@ -120,7 +121,7 @@ La siguiente estructura de bucles es un objetivo de diseño mantenible derivado 
 
 | Bucle | Actividad del jugador | Decisiones y riesgo | Foundations requeridas | Soporte actual |
 | --- | --- | --- | --- | --- |
-| Inmediato | Observar, inspeccionar, moverse, interactuar, reorganizarse o retirarse. | Tiempo, posición, herramienta, ruido/riesgo y costo de oportunidad. | Interacción, input, feedback, items. | Existen foundations de interacción contextual e items; el feedback y el input finales no. |
+| Inmediato | Observar, inspeccionar, moverse, interactuar, reorganizarse o retirarse. | Tiempo, posición, herramienta, exposición/riesgo y costo de oportunidad. | Interacción, input, feedback, items. | Existen foundations de interacción contextual e items; el feedback y el input finales no. |
 | Encuentro | Leer una persona, animal, máquina o peligro y elegir evitación, contexto, negociación, fuerza o retirada. | Lesión, munición, exposición, reputación y tiempo. | Actor lifecycle, combate, IA/percepción, ambiente. | Rifle/salud son prototipos; el diseño final de encuentros está ausente. |
 | Expedición | Preparar carga y ruta, abandonar la seguridad, adaptarse, recuperar recursos útiles y regresar. | Capacidad, distancia, suministros, lesiones y prioridades cambiantes. | Persistencia, reloj, supervivencia, estructura del mundo, refugio. | Existe logística de objetos; el bucle completo no. |
 | Refugio y recuperación | Almacenar, tratar, descansar, reparar, planificar y elegir el siguiente compromiso. | Seguridad, tiempo, uso de recursos y profundidad de recuperación. | Sueño/descanso, medicina, condition/repair, refugio. | Planificado entre M38–M44. |
@@ -138,7 +139,7 @@ Esta tabla separa intencionalmente la dirección de diseño de la evidencia téc
 | Inventario, Equipment y peso | La organización física y los trade-offs siguen siendo importantes. | La grilla espacial, el peso, los slots, los sets multi-slot y las rutas transaccionales relevantes están validados; la UI es OnGUI debug. | Preservar los backends; la UI de producción es M48.0. |
 | Ownership y storage perteneciente a items | Una instancia tiene un nodo owner; el storage contenido pertenece al item particular. | Validado en las rutas actuales, sin nesting v0. | Persistir el slice actual en M37; no generalizar nesting antes de tiempo. |
 | Loot, contenedores y cuerpos | El contenido proviene de storages reales; los cuerpos exponen pertenencias reales. | Los flujos actuales de contenedores y M35.2.3 están validados. Reabrir cuerpos vacíos y las acciones universales sobre cadáveres están diferidos. | Reactivar solo a partir de un bucle posterior demostrado. |
-| Interacción y puertas | El contexto, el estado y las herramientas proporcionan varias resoluciones legibles. | Effects C# cerrados y estados de puerta `locked_door`, `closed_door`, `opened_door`; parte del trabajo de visibilidad sigue pendiente de validación. | Las puertas rotas/el ruido requieren contratos futuros autorizados. |
+| Interacción y puertas | El contexto, el estado y las herramientas proporcionan varias resoluciones legibles. | Effects C# cerrados y estados de puerta `locked_door`, `closed_door`, `opened_door`; parte del trabajo de visibilidad sigue pendiente de validación. | Las puertas rotas u otras variantes de interacción requieren contratos futuros autorizados. |
 | Rigs visuales | La presentación reacciona a Equipment confirmado sin ser dueña del gameplay. | M35.0 validado; las parts/sockets del rig están anidadas en perfiles de rig, mientras capabilities/assets/perfiles de item/poses son familias separadas. | El pipeline de arte/animación escala en M48.1. |
 | Bootstrap de actores | Los perfiles crean inventario y Equipment reales sin estado falso paralelo. | M35.1 validado. El inventario inicial se aplica por entry; el lote de Equipment inicial es atómico después del inventario. | El lifecycle durable comienza en M38.0. |
 | Save y persistencia | Preservar la identidad y las consecuencias actuales de forma segura. | No existe save/load ni rehidratación durable. | Contrato de identidad en M36.1; formato/recovery/round-trip del slice actual en M37. |
@@ -178,7 +179,7 @@ Ver [Technical_Architecture.md](Technical_Architecture.md) y [DataDriven_JSON_Ru
 | --- | --- | --- |
 | Mundo industrial devastado | La dirección de setting de alto nivel está confirmada. | `CONFIRMED — RECENT DECISION` |
 | Colapso gradual mediante guerra por recursos y enfermedad | Diseño previo importante; las causas y la secuencia exactas carecen de una decisión reciente trazable. | `PENDING MAURO DECISION` |
-| Vandor y Velgrad | Los nombres y el rol histórico se conservan para revisión; geografía, lenguas, doctrina, colores y herederos modernos no están confirmados aquí. | `PENDING MAURO DECISION` |
+| Vandor y Velgrad | Ambos existen dentro del universo de Old Scars y sus nombres forman parte de la dirección actual. Su historia, cronología, guerra, fronteras, geografía, pueblos, lenguas, culturas, doctrinas, colores, símbolos, tecnología, relación con el colapso y posibles herederos o facciones modernas siguen abiertos. | `CONFIRMED — RECENT DECISION / LORE PENDING` |
 | Industria persistente y máquinas autónomas que siguen órdenes obsoletas | Propuesta de identidad sólida, compatible con la dirección industrial; el canon y la prevalencia exactos siguen abiertos. | `DESIGN TARGET — PENDING MAURO DECISION` |
 | El protagonista comienza siendo nadie | Propuesta de progresión, no contrato fijo del personaje. | `PENDING MAURO DECISION` |
 | Abuelo asesinado por bandidos con cicatrices | Solo una semilla narrativa; puede ser fija, opcional o eliminarse. | `PROPOSAL — PENDING MAURO DECISION` |
@@ -195,7 +196,8 @@ El contenido de lore debe distinguir hecho confirmado, rumor dentro del mundo, v
 
 ### Dirección Visual
 
-- La influencia retro/PSX es un `DESIGN TARGET`, no una art bible operativa terminada.
+- PSX, low-poly y legibilidad retro coherente con Old Scars son `CONFIRMED — RECENT DECISION` como dirección visual general.
+- La art bible exacta, resolución y densidad de texturas, paleta, iluminación, shaders, jitter/deformación, filtros, budgets, pipeline y criterios de consistencia permanecen como `DESIGN TARGET / PENDING MAURO DECISION / FUTURE PRODUCTION SPEC`.
 - El comportamiento final de cámara está `PENDING MAURO DECISION`; la rotación actual es evidencia del prototipo, no diseño final automático.
 - Los roots de gameplay permanecen estables mientras la presentación reemplazable se adjunta mediante contratos validados de rig/socket/pose.
 - Los vehículos y máquinas grandes pueden comunicar escala y función sin prometer que cada uno sea utilizable.
@@ -215,6 +217,7 @@ El contenido de lore debe distinguir hecho confirmado, rumor dentro del mundo, v
 
 - El audio debe comunicar fuente, peligro y función material, pero la lista P0/P1/P2 de v3.1 es una propuesta y no un plan de implementación actual.
 - M45.1 necesita una barra de audio representativa y acotada; M48.1 crea el pipeline escalable.
+- No existe una mecánica jugable de ruido confirmada, ni barra, stat o contrato asociado. Una percepción auditiva interna futura requiere diseño y milestone explícitos.
 - No agregar placeholders JSON de `sound`/`noise` antes de un contrato autorizado.
 - Una estructura preparada para localización es una preocupación futura. Idiomas, fallback, fuentes, expansión de texto y ownership del glosario siguen siendo decisiones de producto pendientes.
 
@@ -246,7 +249,7 @@ La revisión de esta línea base debe aceptar, rechazar o modificar explícitame
 4. cámara final fija o rotatable;
 5. límites tonales completos;
 6. historia exacta del colapso y rol de la enfermedad;
-7. Vandor, Velgrad y sus atributos confirmados;
+7. historia, cronología y atributos todavía abiertos de Vandor y Velgrad, cuya existencia y nombres ya están confirmados;
 8. prevalencia y rol de la industria/las máquinas persistentes;
 9. rol del protagonista y semilla del abuelo/los bandidos con cicatrices;
 10. estructura de campaña, mapa, regiones, facciones modernas y finales;
@@ -257,7 +260,7 @@ La revisión de esta línea base debe aceptar, rechazar o modificar explícitame
 15. vehículos como lenguaje del mundo frente a gameplay central;
 16. cualquier profundidad procedural más allá de la variación secundaria controlada de M47.0;
 17. plataforma, tienda, modelo comercial, clasificación e idiomas;
-18. gramática visual, composición de cámara y reemplazo/licenciamiento de referencias;
+18. art bible y especificación de producción de la dirección PSX/low-poly confirmada, composición de cámara y reemplazo/licenciamiento de referencias;
 19. dispositivos de input, resoluciones objetivo y baseline de accesibilidad;
 20. alcance de audio y localización;
 21. granularidad de identidad de unidades fungibles de stacks frente a objetos rastreables individualmente.
@@ -278,10 +281,10 @@ Hasta su revisión, el texto correspondiente conserva su etiqueta y no puede usa
 | Armadura de §05 | El MVP de armadura requiere condition mutable. | M40.1 expone solo un seam futuro; condition mutable llega en M43.0. | Roadmap M40.1/M43.0 y gate Combat Ready. | `CORRECTED` | Ninguna salvo que cambie la secuencia. |
 | Save de §05 | El primer save cubre ampliamente actores, quests, reputación y tiempo. | M37 cubre solo el slice actual; el actor lifecycle general comienza en M38. | Roadmap, Arquitectura, Next y Persistence Ready. | `CORRECTED` | UX de save y política de muerte/recuperación. |
 | Compañeros/vehículos de §05 | Ambos aparecen planificados dentro de la progresión del producto. | Compañeros no tiene milestone reservado; los vehículos están fuera del plan base sin rebaseline. | Roadmap M36–M55 y trabajo congelado. | `RECLASSIFIED` | Base, posterior o rechazado. |
-| Lore de §06 | Colapso, Vandor/Velgrad y la semilla del protagonista se denominan confirmados. | Conservar cada uno como decisión pendiente separada, excepto el setting industrial de alto nivel confirmado. | Jerarquía de autoridad actual; no hay aprobación externa trazable. | `RECLASSIFIED` | Ledger de lore. |
+| Lore de §06 | Colapso, Vandor/Velgrad y la semilla del protagonista se denominan confirmados como un bloque. | Confirmar únicamente la existencia y los nombres Vandor/Velgrad junto con el setting industrial de alto nivel; mantener historia, cronología, geografía, guerra, culturas, símbolos, tecnología, colapso y herederos como decisiones separadas pendientes. | Decisión reciente de Mauro y jerarquía de autoridad actual. | `PARTIALLY CONFIRMED / RECLASSIFIED` | Ledger de lore detallado. |
 | Regiones/facciones de §06 | El framework puede parecer un mapa/roster aprobado. | Tratar los arquetipos regionales como lentes y las facciones modernas como indefinidas. | Roadmap M45/M46.1. | `RECLASSIFIED` | Mapa, topología y roster. |
 | Cámara de §07 | La cámara fija se presenta como confirmada. | Registrar el prototipo rotatable actual y dejar abierta la cámara final. | Comportamiento de cámara validado en Development Log/código. | `CORRECTED` | Cámara final. |
-| Arte de §07 | Las asociaciones del moodboard y la mini art bible implican autoridad operativa. | Mantener fuera de assets públicos/del repositorio las referencias internas sin licencia; usarlas solo como propuestas. | Ledger de derechos de v3.1; Roadmap M48.1. | `RECLASSIFIED` | Gramática visual y derechos. |
+| Arte de §07 | Las asociaciones del moodboard y la mini art bible mezclan dirección general con especificación operativa y derechos. | Confirmar PSX/low-poly/legibilidad retro como dirección general; mantener art bible exacta, pipeline y referencias concretas como pendientes, y excluir material sin licencia de assets o comunicación pública. | Decisión reciente de Mauro, ledger de derechos de v3.1 y Roadmap M48.1. | `PARTIALLY CONFIRMED / RECLASSIFIED` | Especificación visual de producción y derechos. |
 | UI de §08 | Los menús de save, bindings fijos y resolución parecen casi finales. | Separar harness de M37, baseline de M45.1 y UI de producción de M48.0; los números siguen siendo temporales. | Roadmap y Gates. | `CORRECTED` | Dispositivos, resoluciones y detalles de UX. |
 | §09.3 | El diagrama sitúa la validación antes del registro en la base de datos. | Describir el flujo actual de cargar/registrar y luego validar sin congelarlo como diseño final. | Implementación de `GameDataManager`. | `CORRECTED` | Ninguna. |
 | §09.4, T128 | Quantity se atribuye a Instance y el placement no se separa con claridad. | Quantity pertenece a `ItemStorageEntry`; el placement/la orientación pertenecen a `GridInventoryLayout`; la identidad/el estado pertenecen a `ItemInstance`. | Clases actuales de items y grilla más Arquitectura. | `CORRECTED` | Ninguna. |

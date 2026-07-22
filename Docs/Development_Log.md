@@ -1642,3 +1642,64 @@ Verificacion documental del checkpoint:
 - no se modificaron C#, JSON gameplay, escenas, prefabs, assets, Packages o ProjectSettings;
 - Unity, batchmode y compilaciones no ejecutados;
 - no existe PDF independiente y no hubo QA visual pagina por pagina; por eso no se genero una candidata DOCX revisada.
+
+### Documentation Review Correction Pass 1
+
+Estado anterior:
+
+`IMPLEMENTED — PENDING DOCUMENT REVIEW`
+
+Estado posterior:
+
+`IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW`
+
+Inicio, objetivo y alcance:
+
+- Pase correctivo localizado sobre la revision humana de los Checkpoints A y B; no repite la auditoria integral del GDD ni reescribe el roadmap completo.
+- Corrige clasificaciones concretas de diseño, formaliza workflow proporcional de Codex y Git, ajusta R03 y reconcilia puntualmente M29.
+- Documentos modificados: `AGENTS.md`, `Docs/Current_Milestone.md`, `Docs/Development_Log.md`, `Docs/Game_Design_Document.md`, `Docs/Milestone_Template.md`, `Docs/OldScars_Development_Rules.md`, `Docs/Production_Gates_and_Risks.md` y `Docs/Project_Roadmap.md`.
+- `Docs/Next_Sprints.md`, `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` fueron leidos y no requieren cambios: la cola inmediata y los contratos tecnicos/JSON permanecen iguales.
+
+Correcciones aplicadas:
+
+- El bucle inmediato usa exposicion/riesgo y deja de presuponer una mecanica de ruido. Audio como feedback sigue siendo legitimo; no se agrega barra, stat, schema, tag ni contrato de ruido. Una percepcion auditiva futura necesita diseño y milestone explicitos.
+- PSX, low-poly y legibilidad retro coherente con Old Scars quedan `CONFIRMED — RECENT DECISION` como direccion visual general. Art bible, texturas, paleta, iluminacion, shaders, jitter, filtros, camara, budgets, pipeline y consistencia exacta permanecen pendientes.
+- La existencia y los nombres Vandor/Velgrad quedan confirmados. Historia, cronologia, guerra, fronteras, geografia, pueblos, lenguas, culturas, doctrinas, colores, simbolos, tecnologia, colapso y herederos/facciones modernas permanecen pendientes; los experimentos visuales anteriores no se convierten en canon.
+- AGENTS conserva el resumen operativo; Development Rules contiene la politica durable detallada y Milestone Template la aplica sin duplicar toda la explicacion.
+- Todo prompt declara el nucleo proporcional de milestone/alcance/validacion/Git y la configuracion recomendada de modelo, esfuerzo, velocidad y modo.
+- Todo trabajo mutante autorizado que supera verificaciones termina en commit con cuerpo, inspeccion, push a `origin/dev` y arbol limpio/sincronizado, salvo las excepciones explicitamente documentadas.
+- Se formalizan evidencia visual y capturas, uso justificado de subagentes y milestones revisables que entregan una unidad funcional util sin microfragmentacion.
+- Milestone Template queda dividido en Nivel A obligatorio, Nivel B condicional y variante compacta para trabajo localizado.
+- R03 permanece `MITIGATING` como riesgo estructural permanente. Foundation Freeze comprueba la mitigacion local de M36.1 y la consumibilidad por M37, pero ya no exige cerrarlo globalmente.
+
+Reconciliacion puntual de M29:
+
+- Commit de implementacion auditado: `6c4d6eca7ebf9234db24fbaa0c33f4242e6a965f`, `M29 - Add Lee-Enfield firearm prototype`, del 9 de junio de 2026.
+- El cuerpo del commit describe rifle/ammo data-driven, pickup/drop, aim, raycast, consumo de municion, cooldown y feedback, pero no registra validacion manual ni confirmacion de Mauro.
+- Las versiones historicas auditadas de `Current_Milestone.md` y `Development_Log.md` no contienen una entrada de cierre o prueba manual de M29; la busqueda historica de `M29` en esos documentos aparece recien en Checkpoint A.
+- El commit posterior `b86a616c814b062393794b9f80adc43167fc5050` migra prefabs/visuales de items, pero tampoco documenta una validacion manual de M29.
+- Resultado: M29 conserva `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED`. Para elevarlo falta evidencia explicita del escenario manual ejecutado y su resultado, o una confirmacion trazable de Mauro; la existencia del codigo no alcanza.
+
+Alcance Git real de Checkpoint B:
+
+- Comparacion autoritativa: `eaf2eb98ced4b3b705a68bbce540dd883a157210..9bd5283f0760ae82a845189384ca59d41ee4d624`.
+- Resultado de Git: 10 archivos modificados, 1.345 adiciones y 497 eliminaciones.
+- Archivos: `AGENTS.md`, `Docs/Current_Milestone.md`, `Docs/DataDriven_JSON_Rules.md`, `Docs/Development_Log.md`, `Docs/Game_Design_Document.md`, `Docs/Milestone_Template.md`, `Docs/OldScars_Development_Rules.md`, `Docs/Production_Gates_and_Risks.md`, `Docs/Project_Roadmap.md` y `Docs/Technical_Architecture.md`.
+- El comparativo `--name-status` contiene solamente esos diez documentos; ningun script temporal de auditoria formo parte del repositorio o del commit.
+
+Limites y validacion manual:
+
+- No se modifican codigo, JSON gameplay, escenas, prefabs, assets, imagenes, GDD DOCX v3.1, Packages ni ProjectSettings.
+- Unity validation: `NOT APPLICABLE`; Unity, batchmode y compilaciones no ejecutados.
+- La revision documental final de Mauro queda pendiente. M36.0 no queda `DONE`, M36.1 no se inicia y M37 sigue bloqueado por Foundation Freeze.
+
+Verificacion documental del pass:
+
+- rama inicial `dev`; HEAD y `origin/dev` alineados en `9bd5283f0760ae82a845189384ca59d41ee4d624`; ambos checkpoints publicados y arbol inicial limpio;
+- `git diff --check` sin errores;
+- diff limitado a los ocho documentos autorizados y lista exacta revisada;
+- enlaces Markdown relativos resueltos y ausencia de rutas locales absolutas;
+- estados M29, M35.2, M35.2.3, M36.0, M36.1, M37.0 y M37.1 coherentes con el Roadmap;
+- busquedas cruzadas de ruido/noise, PSX, Vandor, Velgrad, R03, push, modelo, esfuerzo, velocidad y modo revisadas;
+- Checkpoint B recomputado directamente con Git: 10 archivos, 1.345 adiciones y 497 eliminaciones;
+- solo documentacion autorizada; Unity validation `NOT APPLICABLE` y revision documental final de Mauro pendiente.

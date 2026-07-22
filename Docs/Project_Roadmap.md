@@ -19,7 +19,7 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Campo | Estado canonico |
 | --- | --- |
 | Milestone activo | M36.0 — Old Scars Strategic Production Roadmap Rebaseline |
-| Estado M36.0 | `IMPLEMENTED — PENDING DOCUMENT REVIEW` |
+| Estado M36.0 | `IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW` |
 | Ultimo milestone funcional cerrado | M35.2 — Lootable Entity Inventory UI V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
@@ -28,7 +28,7 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Proximo milestone | M36.1 — Foundation Freeze & Persistent Identity Contract |
 | Siguientes | M37.0 — Save Format & Persistence Core; M37.1 — Current Slice Persistent Round-Trip |
 
-M36.0 no puede pasar a `DONE` en sus checkpoints de implementacion. Su estado final de implementacion sera `IMPLEMENTED — PENDING DOCUMENT REVIEW` hasta que Mauro revise y acepte el cambio documental completo.
+M36.0 no puede pasar a `DONE` en sus checkpoints de implementacion. Tras Documentation Review Correction Pass 1 queda `IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW` hasta que Mauro revise y acepte el cambio documental completo.
 
 ## Estados Canonicos
 
@@ -72,7 +72,7 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | ID historico | Nombre/evidencia Git | Estado o relacion canonica | Disposicion |
 | --- | --- | --- | --- |
 | M28 | Add ground item drop pickup and restore container visuals — commit `7fb2671030d34fd69f79f7960adeddc65e6caf71` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | Se conserva el asunto historico del commit y el ID queda reservado. |
-| M29 | Lee-Enfield firearm prototype — commit `6c4d6ec` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | ID historico reservado. |
+| M29 | Lee-Enfield firearm prototype — commit `6c4d6eca7ebf9234db24fbaa0c33f4242e6a965f` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | El commit demuestra implementacion, pero su cuerpo, el Development Log y las versiones historicas de Current no registran una prueba manual explicita ni una confirmacion de Mauro; el ID queda reservado sin elevar estado. |
 | M30 | PSX Style implementation — commit `f756029` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | ID historico reservado. |
 | M30.3 | Usable item prefab migration — commit `b86a616` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | ID historico reservado. |
 | M30.4 | Safe crate editor visuals — commit `6ea3114` | `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED` | ID historico reservado. |
@@ -118,7 +118,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 
 | Horizonte | Milestone | Tipo | Estado | Dependencias | Resultado / gate |
 | --- | --- | --- | --- | --- | --- |
-| AHORA | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `IMPLEMENTED — PENDING DOCUMENT REVIEW` | M35.2 cerrado | Checkpoints A y B implementados; Mauro debe revisar jerarquia, baseline de diseño, gates, riesgos y decisiones pendientes. |
+| AHORA | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 implementados; Mauro debe realizar la revision documental final. |
 | AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `PLANNED` | M36.0 revisado | Contratos e identidad durable acordados; gate `Foundation Freeze`. Debe ser corto. |
 | SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente. |
 | SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`. |
@@ -206,6 +206,10 @@ Reconciliar autoridad documental, ledger historico, estados, dependencias, gates
 ### M36.0 — Checkpoint B
 
 Alinear el baseline de diseño revisado, arquitectura, JSON rules, reglas de desarrollo, template, gates y riesgos. El GDD Maestro v3.1 se conserva intacto como fuente historica auditada; las decisiones ambiguas no se resuelven por inferencia.
+
+### M36.0 — Documentation Review Correction Pass 1
+
+Corregir clasificaciones de diseño revisadas por Mauro, formalizar el workflow proporcional de Codex, commits, publicacion, evidencia visual y subagentes, ajustar la semantica estructural de R03 y reconciliar puntualmente M29 sin iniciar M36.1 ni cambiar contenido jugable.
 
 ### M36.1 — Limite Obligatorio
 

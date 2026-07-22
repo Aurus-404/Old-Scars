@@ -1,19 +1,37 @@
 # Old Scars - Milestone Template
 
-Usar esta plantilla para autorizar, implementar, validar o cerrar milestones. [Project_Roadmap.md](Project_Roadmap.md) conserva la autoridad del ID, estado, dependencias y gate.
+Usar esta plantilla para autorizar, implementar, validar o cerrar milestones. [Project_Roadmap.md](Project_Roadmap.md) conserva la autoridad del ID, estado, dependencias y gate. Completar siempre el Nivel A y agregar solamente los bloques pertinentes del Nivel B.
 
-## Identificacion
+La informacion debe ser proporcional al riesgo. Una correccion localizada no necesita decenas de campos irrelevantes; arquitectura, persistencia, transacciones, ownership, grandes sistemas y milestones de produccion requieren la extension que corresponda.
+
+## Nivel A - Nucleo Obligatorio
+
+### Identificacion Y Configuracion
 
 - Milestone: `MXX.X — Nombre oficial`
+- Version o correction pass:
 - Tipo: `arquitectura | jugable | herramientas | contenido | produccion | gobernanza`
 - Milestone padre: `ID | N/A`
+- Milestone anterior:
+- Milestone siguiente:
 - Responsable de decision:
-- Fecha de inicio:
-- Fecha de cierre: `PENDING`
+- Modelo Codex: `GPT-5.6 Sol | Terra | Luna`
+- Esfuerzo: `Mínimo | Bajo | Medio | Alto | Muy alta | Ultra`
+- Velocidad: `Estándar | Rápida`
+- Modo: `Plan | Objetivo`
+- Motivo de la configuracion:
 
-## Estado
+### Objetivo Y Estados
 
-Estados permitidos:
+Objetivo:
+
+- Problema concreto, decision que habilita y resultado buscado.
+
+- Estado inicial:
+- Estado esperado:
+- Motivo de la transicion:
+
+Estados canonicos:
 
 - `PLANNED`
 - `IN PROGRESS`
@@ -25,99 +43,32 @@ Estados permitidos:
 - `BLOCKED`
 - `REJECTED`
 
-Los calificadores deben aclarar el estado sin crear otra taxonomia. Ejemplos: `IMPLEMENTED — PENDING UNITY VALIDATION`, `IMPLEMENTED — PENDING DOCUMENT REVIEW` y `DEFERRED — RECLASSIFIED`.
+Los calificadores aclaran el estado sin crear otra taxonomia. `VALIDATED` nunca significa solamente que compila y `DONE` exige validacion/cierre aplicable y documentacion coherente.
 
-- Estado anterior:
-- Estado posterior solicitado:
-- Motivo de la transicion:
-
-`VALIDATED` nunca significa solo que compila. `DONE` exige validacion/cierre aplicable y documentacion coherente.
-
-## Objetivo Y Resultado Verificable
-
-Objetivo:
-
-- Describir el problema y la decision que habilita.
-
-Resultado verificable:
-
-- Comportamiento, contrato o artefacto observable que debe existir.
-- Evidencia que permite distinguir exito de una implementacion parcial.
-
-## Dependencias Y Gate
+### Dependencias Esenciales
 
 - Dependencias duras:
 - Dependencias blandas:
-- Trabajo paralelo permitido:
-- Gate de entrada:
-- Gate de salida:
-- Evidencia requerida por el gate:
+- Contratos existentes que deben reutilizarse:
+- Decisiones abiertas que bloquean:
 
-## Alcance
+### Alcance
 
 Incluido:
 
-- Unidad funcional completa 1.
-- Unidad funcional completa 2.
+- Unidad funcional util 1.
+- Unidad funcional util 2.
 
 Fuera de alcance:
 
-- Sistema o variante excluida 1.
-- Sistema o variante excluida 2.
+- Sistema, variante o refactor excluido 1.
+- Sistema, variante o refactor excluido 2.
 
-No objetivos:
+No crear un milestone por clase, archivo, boton o ajuste menor. Agrupar cambios que comparten sistema, contratos, archivos, validacion y resultado; separar sistemas independientes, riesgos distintos o decisiones abiertas.
 
-- Refactors preventivos, UI final o contenido no necesario para el resultado.
+### Archivos Y Dominios
 
-## Sistemas Conectados
-
-Para milestones jugables o sistemicos, completar todos los campos. Para gobernanza, documentacion o tooling sin comportamiento jugable directo, usar `NOT APPLICABLE` con motivo y declarar que contrato o consumidor downstream protege.
-
-- Estado/sistema de entrada:
-- Decision jugable afectada:
-- Estado/sistema de salida:
-- Feedback explicable:
-- Comportamiento ante fallo:
-
-## Impacto Tecnico
-
-### Runtime Y Editor
-
-- Contratos nuevos o modificados:
-- Contratos reutilizados sin cambios:
-- Tooling de Editor:
-- Invariantes y rollback:
-
-### Datos
-
-- Definiciones/IDs/tags afectados:
-- Schema/validator/loader:
-- Compatibilidad y migracion:
-- Contenido requerido:
-
-### UI Y Feedback
-
-- Superficie debug o de produccion:
-- Input, feedback y accesibilidad:
-- Estado vacio/error/stale:
-
-### Persistencia
-
-- Estado durable afectado:
-- Identidad y referencias:
-- Version/migration/round-trip:
-- `NOT APPLICABLE` con motivo, si corresponde.
-
-### QA Y Rendimiento
-
-- Riesgos de regresion:
-- Escenarios limite:
-- Presupuesto o baseline aplicable:
-- Instrumentacion necesaria:
-
-## Archivos
-
-Archivos autorizados:
+Archivos o dominios autorizados:
 
 - `Ruta/Archivo`
 
@@ -125,70 +76,36 @@ Archivos o dominios prohibidos:
 
 - `Ruta/Dominio`
 
-## Plan De Implementacion
+### Resultado Y Aceptacion
 
-1. Paso pequeño y revisable.
-2. Integracion con contratos existentes.
-3. Verificacion proporcional al riesgo.
+Resultado verificable:
 
-## Criterios De Aceptacion
+- Artefacto, contrato o comportamiento observable.
+- Evidencia que distingue exito de implementacion parcial.
 
-- [ ] Objetivo y resultado verificable completos.
-- [ ] Dependencias e invariantes respetadas.
-- [ ] Sistemas conectados y feedback comprobados, o `NOT APPLICABLE` justificado.
-- [ ] Datos/referencias validos.
-- [ ] Fallos, stale state y rollback cubiertos cuando aplican.
+Criterios de aceptacion:
+
+- [ ] Objetivo y unidad funcional completos.
+- [ ] Dependencias y contratos preservados.
 - [ ] Fuera de alcance no implementado.
-- [ ] Deuda y riesgos registrados.
+- [ ] Fallos y estados limite aplicables cubiertos.
+- [ ] Deuda y trabajo siguiente registrados.
 
-## Matriz De Validacion
+### Validacion Aplicable
 
-### Checks Estaticos
-
-- `git diff --check`:
-- Diff/stat/lista exacta:
-- Enlaces/referencias/IDs:
-- Otros:
-
-### Compilacion
-
-- Runtime assembly: `PASS | FAIL | NOT RUN | NOT APPLICABLE`
-- Editor assembly: `PASS | FAIL | NOT RUN | NOT APPLICABLE`
-- Evidencia:
-
-### Pruebas Automatizadas
-
-- EditMode:
-- PlayMode:
-- Unit/integration externas:
-- Evidencia:
-
-### Unity Manual
-
-- Estado: `PASS | FAIL | PENDING | NOT APPLICABLE`
-- Escenario y pasos:
+- Checks estaticos:
+- Compilacion Runtime: `PASS | FAIL | NOT RUN | NOT APPLICABLE`
+- Compilacion Editor: `PASS | FAIL | NOT RUN | NOT APPLICABLE`
+- Pruebas automatizadas:
+- Validacion manual: `PASS | FAIL | PENDING | NOT APPLICABLE`
+- Escenario, pasos y evidencia:
 - Console:
 - Confirmado por:
-- Evidencia:
+- Revision documental: `PASS | FAIL | PENDING | NOT APPLICABLE`
 
-### Revision Documental
+Para trabajo visual, adjuntar capturas disponibles, describirlas y solicitar validacion visual posterior. Una compilacion correcta no demuestra que layout, clipping, camara, animacion o arte esten resueltos.
 
-- Estado: `PASS | FAIL | PENDING | NOT APPLICABLE`
-- Revisor:
-- Decisiones pendientes:
-
-Para milestones exclusivamente documentales puede usarse `UNITY VALIDATION NOT APPLICABLE`. No pueden pasar a `DONE` hasta completar la revision documental exigida.
-
-## Riesgos, Deuda Y Follow-Ups
-
-- Riesgo:
-- Mitigacion:
-- Deuda aceptada:
-- Deuda bloqueante:
-- Trabajo diferido y trigger de retorno:
-- ID reservado o `ID TBD`:
-
-## Documentacion Afectada
+### Documentacion
 
 - Roadmap: `si/no + motivo`
 - Current: `si/no + motivo`
@@ -196,22 +113,122 @@ Para milestones exclusivamente documentales puede usarse `UNITY VALIDATION NOT A
 - Next: `si/no + cambio de cola`
 - Architecture/JSON Rules/GDD/Gates: `si/no + contrato`
 
-## Evidencia Git
+### Git Y Publicacion
 
+- Estrategia Git:
 - Rama:
 - HEAD inicial:
 - Archivos staged exactos:
 - Titulo del commit:
-- Resumen del cuerpo:
-- Hash del commit:
+- Resumen obligatorio del cuerpo:
+- Hash:
 - Cuerpo inspeccionado con `git log -1 --format=full`: `si/no`
-- Push y remoto:
-- Estado final del worktree:
+- Push a `origin/dev`: `PASS | BLOCKED | EXPLICITLY FORBIDDEN`
+- HEAD == origin/dev:
+- Worktree limpio:
 
-## Puerta De Salida
+El cuerpo del commit registra milestone completo, padre, version/correction pass, objetivo, estados, cambios, contratos preservados, verificaciones, validacion manual, deuda y trabajo diferido. No publicar un commit con cuerpo vacio. No usar amend despues de publicar, force push ni rebase sin autorizacion explicita.
 
-- Criterios que deben estar completos:
-- Deuda permitida al salir:
-- Deuda que bloquea salida:
-- Estado final aprobado:
+### Deuda Y Siguiente Trabajo
+
+- Deuda aceptada:
+- Deuda bloqueante:
+- Trabajo diferido y trigger:
 - Proximo milestone autorizado:
+- Estado final propuesto:
+
+## Nivel B - Extension Condicional
+
+Agregar solo los bloques que correspondan al riesgo o arquitectura de la tarea. No rellenar secciones irrelevantes con listas de `NOT APPLICABLE`.
+
+### Sistemas Conectados
+
+- Estado/sistema de entrada:
+- Decision jugable afectada:
+- Estado/sistema de salida:
+- Feedback explicable:
+- Comportamiento ante fallo:
+
+### Datos, Schemas Y Compatibilidad
+
+- Definiciones, IDs y tags:
+- Schema/validator/loader/runtime:
+- Referencias y errores esperados:
+- Compatibilidad y migration:
+- Contenido requerido:
+
+### Persistencia Y Save/Load
+
+- Estado durable:
+- Identidad y referencias:
+- Snapshot/hidratacion:
+- Version, integridad y migration:
+- Escritura atomica y recovery:
+- Round-trip y escenarios de fallo:
+
+### Ownership, Transacciones Y Rollback
+
+- Fuente de verdad y owner:
+- Invariantes:
+- Preview/preflight:
+- Commit:
+- Rollback y snapshots:
+- Hooks post-commit:
+- Stale state y concurrencia:
+
+### UI, Feedback Y Evidencia Visual
+
+- Superficie debug o produccion:
+- Input y autoridad de sesion:
+- Estados vacio/error/stale:
+- Accesibilidad:
+- Capturas de entrada:
+- Validacion visual posterior:
+
+### Rendimiento
+
+- Escenario representativo:
+- Hardware/plataforma objetivo:
+- Baseline:
+- Presupuesto:
+- Instrumentacion y profiling:
+
+### Pruebas Automatizadas Y Tooling
+
+- Unit/EditMode/PlayMode/integration:
+- Fixtures, seams y casos limite:
+- Tooling Editor o pipeline:
+- Reproducibilidad y diagnostics:
+
+### Gates Y Riesgos
+
+- Gate de entrada:
+- Gate de salida:
+- Evidencia requerida:
+- Riesgos revisados:
+- Riesgos que deben cerrar:
+- Mitigacion, responsable y proxima revision:
+
+### Networking
+
+- Autoridad y ownership de red:
+- Replicacion y orden de eventos:
+- Reconciliacion/rollback:
+- Latencia y desconexion:
+- Seguridad:
+
+## Variante Compacta
+
+Para correcciones localizadas, ajustes visuales, documentacion simple, JSON pequeño o bugs acotados, puede resumirse el Nivel A en:
+
+1. milestone/version/configuracion Codex;
+2. objetivo y estados;
+3. incluido/fuera de alcance;
+4. archivos autorizados/prohibidos;
+5. resultado y aceptacion;
+6. validacion aplicable y capturas si hay superficie visual;
+7. documentacion;
+8. commit con cuerpo, push y limpieza;
+9. deuda y siguiente trabajo.
+
+La variante compacta no reduce los contratos ni la evidencia: elimina solamente campos irrelevantes.

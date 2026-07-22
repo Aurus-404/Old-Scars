@@ -77,6 +77,27 @@ Leer, en este orden:
 
 Comparar la propuesta con milestones validados, restricciones actuales, dependencias, gates, deuda conocida y sistemas conectados.
 
+## Prompts Y Configuracion De Codex
+
+Todo prompt de trabajo debe identificar, con detalle proporcional al riesgo: milestone con ID y nombre oficial; milestone padre si existe; objetivo; estado inicial y esperado; relacion con milestones anterior y siguiente; incluido y fuera de alcance; archivos o dominios autorizados; validacion; documentacion afectada; y estrategia Git.
+
+Debe indicar tambien la configuracion recomendada:
+
+- modelo: `GPT-5.6 Sol`, `Terra` o `Luna`;
+- esfuerzo: `Mínimo`, `Bajo`, `Medio`, `Alto`, `Muy alta` o `Ultra`;
+- velocidad: `Estándar` o `Rápida`;
+- modo: `Plan` u `Objetivo`.
+
+Usar Luna para trabajo pequeño, mecanico y localizado; Terra para trabajo cotidiano, balanceado y acotado; Sol para arquitectura, transacciones, ownership, rollback, persistencia, ambiguedad o riesgo alto. Usar Plan para auditoria, arquitectura, ambiguedad o alcance abierto, y Objetivo cuando objetivo, alcance y aceptacion ya estan definidos. No cambiar de modelo durante la tarea sin motivo explicito ni convertir ajustes triviales en prompts enormes. Ver el detalle durable en [OldScars_Development_Rules.md](Docs/OldScars_Development_Rules.md) y aplicarlo mediante [Milestone_Template.md](Docs/Milestone_Template.md).
+
+## Workflow Operativo
+
+- Todo trabajo mutante autorizado que supera sus verificaciones debe terminar con commit con cuerpo descriptivo, inspeccion mediante `git log -1 --format=full`, push a `origin/dev` y confirmacion de arbol limpio/sincronizado.
+- Se exceptuan tareas de solo lectura, auditorias sin cambios, fallos de verificacion, bloqueos de alcance, cambios locales ajenos o una instruccion explicita de Mauro de no publicar. No usar amend despues de publicar, force push ni rebase sin autorizacion.
+- En tareas visuales, adjuntar capturas cuando esten disponibles. Codex debe abrirlas todas, describir brevemente que muestran, relacionar el defecto con codigo/layout/escena/asset y solicitar validacion visual posterior; compilar no demuestra que un defecto visual este resuelto.
+- Usar subagentes cuando una auditoria grande, investigacion paralela, arquitectura, QA, documentacion extensa o areas independientes lo justifiquen. El agente principal integra y decide; normalmente un solo implementador modifica archivos acoplados, y las conclusiones paralelas no sustituyen su revision.
+- Preferir milestones suficientemente pequeños para ser revisables y suficientemente completos para entregar una unidad funcional util. No crear milestones por clase, archivo, boton o ajuste menor; agrupar cambios que comparten sistema, contratos, archivos, validacion y resultado, y separar sistemas independientes o decisiones abiertas.
+
 ## Reglas de implementacion
 
 Antes de modificar archivos:
