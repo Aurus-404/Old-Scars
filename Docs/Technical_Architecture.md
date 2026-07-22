@@ -92,7 +92,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Frontera M36.1 / M37
 
-- M36.1 Checkpoint A corregido implementa identidad durable de items, invariantes, hydration detached, cleanup terminal y diagnostico determinista. La validacion manual permanece pendiente y Checkpoint B no esta iniciado.
+- M36.1 Checkpoint A validado y cerrado implementa identidad durable de items, invariantes, hydration detached, cleanup terminal, transiciones comprometidas de ownership y diagnostico determinista. Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions; Checkpoint B queda listo para autorizacion, pero no esta iniciado.
 - M37 debe persistir y rehidratar el `Condition` get-only exacto, sin implementar condition mutable.
 - Items no stackeables y stacks visibles poseen identidad durable; las unidades fungibles internas conservan cantidad sin identidad individual.
 - M36.1 no implementa save/load, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.

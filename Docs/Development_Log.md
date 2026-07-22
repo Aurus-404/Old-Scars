@@ -1943,3 +1943,41 @@ Limites y trabajo siguiente:
 - No se modificaron prefabs, JSON, Packages, ProjectSettings, GDD ni asmdefs; no se implementaron save/load, identidad authored, Checkpoint B o M37.
 - `Foundation Freeze` permanece abierto, R03 sigue `MITIGATING` y Checkpoint B permanece `NOT STARTED`.
 - La revalidacion manual de Checkpoint A por Mauro sigue pendiente; ése es el trabajo siguiente.
+
+### M36.1 — Checkpoint A Manual Validation Closeout
+
+Fecha: 2026-07-22
+
+Version:
+
+`Checkpoint A — Manual Validation Closeout`
+
+Estado anterior:
+
+`IN PROGRESS — CHECKPOINT A CORRECTION PASS 2 IMPLEMENTED;`
+
+`MANUAL REVALIDATION PENDING;`
+
+`CHECKPOINT B NOT STARTED`
+
+Estado posterior:
+
+`IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED;`
+
+`CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`
+
+Evidencia funcional validada:
+
+- Commit funcional validado: `8ace5209bd3b48f291314e5298485cc4f630ba1f`.
+- Mauro confirmo que el pickup desde el mundo funciona, agrega el item una sola vez y elimina su representacion mundial.
+- Equip desde inventario y equip directo desde el mundo funcionan; equip/unequip preservan la misma identidad.
+- Transfers entre inventario, mochila, containers y cuerpos funcionan sin duplicaciones y preservan ownership e identidad.
+- Drop y re-pickup de una mochila no vacia preservan su contenido; rifle, crowbar y mochila conservan su `InstanceId`.
+- No aparecieron `InvalidOperationException`, `already bound to a different owner` ni errores funcionales relacionados con M36.1.
+- Los errores observados de Unity Relay pertenecen a `com.unity.ai.assistant`; son evidencia externa separada y no pertenecen al runtime de Old Scars.
+
+Cierre y limites:
+
+- Checkpoint A queda validado y cerrado. Este cierre modifica solamente documentacion y no reejecuta Unity ni altera codigo, escenas, prefabs, JSON, Packages, ProjectSettings o el GDD.
+- Checkpoint B no fue iniciado. La siguiente unidad autorizable es `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`.
+- M36.1 permanece `IN PROGRESS`; `Foundation Freeze` continua abierto hasta completar y revisar Checkpoint B, R03 sigue `MITIGATING` y M37 permanece bloqueado.

@@ -6,9 +6,9 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ### 1. M36.1 — Foundation Freeze & Persistent Identity Contract
 
-Estado: `IN PROGRESS — CHECKPOINT A IMPLEMENTED; CHECKPOINT B PENDING`.
+Estado: `IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED; CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`.
 
-M36.1 es el trabajo actual. Checkpoint A congelo identidad durable y stacks de items; Checkpoint B no esta iniciado.
+M36.1 es el trabajo actual. Checkpoint A congelo y valido identidad durable, ownership y stacks de items. La siguiente unidad autorizable es `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`; todavia no fue iniciada.
 
 Objetivo:
 

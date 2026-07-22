@@ -8,7 +8,7 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 Version actual:
 
-`Checkpoint A — Correction Pass 2: Committed Ownership Transitions`
+`Checkpoint A — Manual Validation Closeout`
 
 Estado inicial:
 
@@ -16,11 +16,9 @@ Estado inicial:
 
 Estado actual:
 
-`IN PROGRESS — CHECKPOINT A CORRECTION PASS 2 IMPLEMENTED;`
+`IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED;`
 
-`MANUAL REVALIDATION PENDING;`
-
-`CHECKPOINT B NOT STARTED`
+`CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`
 
 Objetivo: reemplazar la identidad temporal de `ItemInstance` por IDs durables y congelar los contratos minimos de creacion, futura rehidratacion, stacking, split, merge, item-owned storage, ownership y rollback que consumira M37.
 
@@ -52,13 +50,18 @@ Objetivo: reemplazar la identidad temporal de `ItemInstance` por IDs durables y 
 - Play Mode se cerró correctamente; Console no registró `InvalidOperationException`, `already bound to a different owner` ni errores relacionados con M36.1.
 - Persisten seis warnings preexistentes: cuatro de API obsolete en `BuildingVisibilityManager` y dos campos no usados en `ItemStorageDebugPanel`.
 - `SampleScene` permanece intacta con SHA-256 `7EBB6605CBFE564F17CA5CAC7BA46348A1CDE887CC3462086DAE1D2B602A1AFB`.
-- La revalidacion manual del slice por Mauro permanece pendiente; no se afirma validacion funcional final.
+- Mauro confirmo manualmente pickup desde el mundo con desaparicion de la representacion mundial y sin duplicados.
+- Equip desde inventario y equip directo desde el mundo funcionaron; equip/unequip preservaron la misma identidad.
+- Transfers entre inventario, mochila, containers y cuerpos preservaron ownership e identidad sin duplicaciones.
+- Drop y re-pickup de una mochila no vacia preservaron su contenido; rifle, crowbar y mochila conservaron su `InstanceId`.
+- No aparecieron `InvalidOperationException`, `already bound to a different owner` ni errores funcionales relacionados con M36.1.
+- Los errores observados de Unity Relay pertenecen a `com.unity.ai.assistant` y se separan de la validacion del runtime de Old Scars.
 
 ## Checkpoint B
 
-`NOT STARTED`
+`READY FOR IMPLEMENTATION AUTHORIZATION`
 
-Debe completar identidad authored y evidencia del slice para actores/objetos mundiales sin convertir Checkpoint A en save/load. `SampleScene`, prefabs, JSON, Packages y ProjectSettings permanecen intactos.
+Siguiente unidad: `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`. Debe completar identidad authored y evidencia del slice para actores/objetos mundiales sin convertir Checkpoint A en save/load. No fue iniciada por este cierre documental.
 
 ## Estado De Gates Y Secuencia
 

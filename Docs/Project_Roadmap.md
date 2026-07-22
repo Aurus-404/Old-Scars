@@ -26,10 +26,10 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
 | Milestone activo | M36.1 — Foundation Freeze & Persistent Identity Contract |
-| Estado M36.1 | `IN PROGRESS — CHECKPOINT A CORRECTED; MANUAL VALIDATION PENDING; CHECKPOINT B NOT STARTED` |
+| Estado M36.1 | `IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED; CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION` |
 | Siguientes | M37.0 — Save Format & Persistence Core; M37.1 — Current Slice Persistent Round-Trip |
 
-Mauro completo y aprobo la revision documental final de M36.0. M36.1 esta activo: Checkpoint A fue corregido y conserva validacion manual pendiente; Checkpoint B no esta iniciado. El gate `Foundation Freeze` no esta aprobado y M37 no comenzo.
+Mauro completo y aprobo la revision documental final de M36.0. M36.1 esta activo: Checkpoint A fue validado manualmente y cerrado; Checkpoint B queda listo para una autorizacion de implementacion independiente, pero no fue iniciado. El gate `Foundation Freeze` no esta aprobado y M37 no comenzo.
 
 ## Estados Canonicos
 
@@ -120,7 +120,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | Horizonte | Milestone | Tipo | Estado | Dependencias | Resultado / gate |
 | --- | --- | --- | --- | --- | --- |
 | CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
-| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `IN PROGRESS — CHECKPOINT A CORRECTED; MANUAL VALIDATION PENDING; CHECKPOINT B NOT STARTED` | M36.0 revisado | Checkpoint A congela identidad y stacks de items; Checkpoint B debe aportar identidad authored del slice y evidencia restante antes de revisar `Foundation Freeze`. |
+| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED; CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION` | M36.0 revisado | Checkpoint A congela y valida identidad, ownership y stacks de items; Checkpoint B debe aportar identidad authored del slice y evidencia restante antes de revisar `Foundation Freeze`. |
 | SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente. |
 | SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`. |
 | SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED` | M37.1 | IDs, spawn, lifecycle, muerte y cuerpos persistibles. |
@@ -216,13 +216,13 @@ Corregir clasificaciones de diseño revisadas por Mauro, formalizar el workflow 
 
 Mauro aprobo la jerarquia documental, el GDD Markdown como baseline revisado, el roadmap M36–M55, los trece gates, R01–R23, el workflow de Codex/Git y las clasificaciones corregidas. M36.0 queda `DONE — DOCUMENTATION REVIEWED`; las decisiones creativas etiquetadas siguen abiertas y M36.1 requiere autorizacion independiente.
 
-### M36.1 — Checkpoint A Corregido / Limite Obligatorio
+### M36.1 — Checkpoint A Validado Y Cerrado / Limite Obligatorio
 
 Checkpoint A corregido implementa IDs `item_<GUID N lowercase>` opacos e inmutables, rutas separadas `CreateNew`/`Rehydrate`, unicidad de IDs activos, ownership estricto, item-owned storage explicito y reglas de stack/split/merge/rollback consumibles por M37. Un stack conserva una `ItemInstance` representativa y cantidad fungible; `Condition` get-only forma parte del estado de instancia y de la compatibilidad de stack.
 
-Correction Pass 1 agrega attachment detached y registro explicito de item-owned storage, bootstrap transaccional de containers, cleanup de IDs en merges totales y rechazo atomico de removal terminal cuando el storage propio no esta vacio. La validacion automatizada esta verde; la validacion manual de Mauro permanece pendiente.
+Los pases correctivos agregan attachment detached y registro explicito de item-owned storage, bootstrap transaccional de containers, cleanup de IDs en merges totales, rechazo atomico de removal terminal cuando el storage propio no esta vacio y transiciones comprometidas de ownership. La validacion automatizada esta verde y Mauro confirmo manualmente pickup, drop, equip/unequip, equip directo desde el mundo, item-owned storage, mochila no vacia, containers y transfers con cuerpos sin duplicaciones ni ownership exceptions. Checkpoint A queda validado y cerrado.
 
-Checkpoint B no esta iniciado. Debe aportar identidad authored del slice actual y la evidencia restante del gate. M36.1 debe seguir siendo corto y no implementa:
+Checkpoint B queda listo para una autorizacion de implementacion independiente, pero no esta iniciado. Debe aportar identidad authored del slice actual y la evidencia restante del gate. M36.1 debe seguir siendo corto y no implementa:
 
 - save/load;
 - condition;
