@@ -6,7 +6,9 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ### 1. M36.1 — Foundation Freeze & Persistent Identity Contract
 
-Estado: `PLANNED`.
+Estado: `PLANNED — PENDING AUTHORIZATION`.
+
+M36.1 es el proximo milestone planificado, pero todavia no esta iniciado y requiere autorizacion independiente.
 
 Objetivo:
 

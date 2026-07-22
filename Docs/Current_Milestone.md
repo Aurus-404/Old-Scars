@@ -2,27 +2,27 @@
 
 Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, dependencias y gates es [Project_Roadmap.md](Project_Roadmap.md). La cronologia y evidencia permanecen en [Development_Log.md](Development_Log.md).
 
-## Milestone Activo
+## Milestone Cerrado
 
 ### M36.0 — Old Scars Strategic Production Roadmap Rebaseline
 
 Version actual:
 
-`Documentation Review Correction Pass 1`
+`Documentation Review Closeout`
 
 Estado inicial del pass:
 
-`IMPLEMENTED — PENDING DOCUMENT REVIEW`
+`IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW`
 
 Estado actual:
 
-`IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW`
+`DONE — DOCUMENTATION REVIEWED`
 
-Estado posterior de implementacion:
+Estado posterior:
 
-`IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW`
+`DONE — DOCUMENTATION REVIEWED`
 
-M36.0 es documental y no requiere Unity. No debe marcarse `DONE` antes de la revision explicita de Mauro.
+Mauro completo y aprobo la revision documental final. Unity validation fue `NOT APPLICABLE`; las decisiones creativas etiquetadas como pendientes siguen abiertas y no se convierten en canon por este cierre.
 
 ## Checkpoint A
 
@@ -51,7 +51,7 @@ Resultado:
 - arquitectura y reglas JSON contrastadas con contratos reales;
 - reglas de desarrollo y template de milestones alineados;
 - gates detallados y registro de riesgos reconciliados;
-- revision creativa y documental de Mauro todavia pendiente.
+- baseline documental aprobado por Mauro; las decisiones creativas abiertas conservan sus etiquetas.
 
 ## Documentation Review Correction Pass 1
 
@@ -65,7 +65,7 @@ Resultado:
 - R03 permanece `MITIGATING` como riesgo estructural permanente y Foundation Freeze revisa su mitigacion local sin cerrarlo globalmente;
 - M29 conserva `IMPLEMENTED — HISTORICAL COMMIT; VALIDATION NOT RECONCILED`: existe evidencia de implementacion, pero falta prueba manual explicita o confirmacion de Mauro en el historial auditado;
 - el alcance real de Checkpoint B queda registrado desde Git como 10 archivos, 1.345 adiciones y 497 eliminaciones;
-- la revision documental final de Mauro sigue pendiente y M36.1 no esta iniciado.
+- la revision documental final de Mauro fue aprobada; M36.1 no esta iniciado y requiere autorizacion independiente.
 
 ## Milestone Funcional Anterior
 
@@ -85,17 +85,26 @@ Base de cierre:
 
 El scrollbar vertical de EQUIPADO con overflow real permanece como deuda no bloqueante de una futura etapa de UI.
 
-## Secuencia Inmediata
+## Siguiente Milestone Planificado
 
-1. Revision documental final de M36.0 por Mauro.
-2. M36.1 — Foundation Freeze & Persistent Identity Contract.
-3. M37.0 — Save Format & Persistence Core.
-4. M37.1 — Current Slice Persistent Round-Trip.
+### M36.1 — Foundation Freeze & Persistent Identity Contract
+
+Estado:
+
+`PLANNED — PENDING AUTHORIZATION`
+
+M36.1 no comenzo. Requiere autorizacion independiente antes de modificar contratos, codigo o datos.
+
+Secuencia posterior:
+
+1. M36.1 — Foundation Freeze & Persistent Identity Contract.
+2. M37.0 — Save Format & Persistence Core.
+3. M37.1 — Current Slice Persistent Round-Trip.
 
 M36.1 debe ser corto y no implementa save, condition, repair ni actor lifecycle. M37 persiste primero el slice actual y no diseña serializacion para sistemas hipoteticos.
 
 ## Limites Actuales
 
-Durante M36.0 no modificar C#, JSON gameplay, escenas, prefabs, assets, Packages o ProjectSettings; no ejecutar Unity, batchmode ni compilaciones.
+Este closeout no modifica C#, JSON gameplay, escenas, prefabs, assets, Packages o ProjectSettings; Unity, batchmode y compilaciones no aplican.
 
-No reactivar la serie M35.2, ampliar OnGUI ni iniciar sistemas funcionales nuevos antes de cerrar la revision documental.
+No reactivar la serie M35.2, ampliar OnGUI ni iniciar M36.1 u otros sistemas funcionales sin una autorizacion nueva.

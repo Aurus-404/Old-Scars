@@ -1,7 +1,7 @@
 # Old Scars - Documento de Diseño del Juego
 
 - Versión: línea base de repositorio 1.0
-- Estado: `DRAFT — PENDING FINAL MAURO REVIEW`
+- Estado: `APPROVED — REVISED DESIGN BASELINE`
 - Derivado de: `Old_Scars_GDD_Maestro_v3.1.docx` (17 de julio de 2026)
 - SHA-256 de la fuente: `919966D0BFCDE1FD77C6D7765EE087B4D04211FBDEAAD06B4AAFCCFEE7308AF4`
 
@@ -9,7 +9,7 @@
 
 Este archivo es la línea base de diseño revisada, resumida y mantenible en Git para Old Scars. Fue derivado del GDD Maestro v3.1 y reconciliado críticamente contra él, las decisiones recientes, los milestones validados, los documentos vivos del repositorio, el historial de Git y el estado técnico implementado.
 
-El GDD Maestro v3.1 sigue siendo una fuente histórica y de diseño importante. No es una especificación incuestionable, no fue sobrescrito y no prevalece automáticamente sobre decisiones posteriores o evidencia actual. Esta línea base del repositorio tampoco se aprueba a sí misma: Mauro conserva la autoridad creativa y de producto final, y esta versión permanece pendiente de su revisión.
+El GDD Maestro v3.1 sigue siendo una fuente histórica y de diseño importante. No es una especificación incuestionable, no fue sobrescrito y no prevalece automáticamente sobre decisiones posteriores o evidencia actual. Mauro aprobó esta línea base revisada durante `Documentation Review Closeout`; conserva la autoridad creativa y de producto final, y las decisiones etiquetadas como pendientes permanecen abiertas.
 
 La verdad se resuelve en este orden:
 
@@ -239,9 +239,9 @@ La estación de bombeo permanece como:
 
 La casa abandonada sigue siendo un escenario debug/de integración, no un vertical slice competidor.
 
-## Cola Pendiente De Revisión De Mauro
+## Cola De Decisiones Creativas Pendientes De Mauro
 
-La revisión de esta línea base debe aceptar, rechazar o modificar explícitamente:
+La aprobación de esta línea base no resuelve las siguientes decisiones. Mauro debe aceptar, rechazar o modificar explícitamente cada una cuando corresponda:
 
 1. género central exacto y combinación de géneros de mercado;
 2. turnos/AP, tiempo real u otra cadencia de encuentros;
@@ -265,7 +265,7 @@ La revisión de esta línea base debe aceptar, rechazar o modificar explícitame
 20. alcance de audio y localización;
 21. granularidad de identidad de unidades fungibles de stacks frente a objetos rastreables individualmente.
 
-Hasta su revisión, el texto correspondiente conserva su etiqueta y no puede usarse como canon cerrado ni como autorización de milestone.
+Hasta una decisión explícita sobre cada tema, el texto correspondiente conserva su etiqueta y no puede usarse como canon cerrado ni como autorización de milestone.
 
 ## Reconciliación Y Correcciones Del GDD Maestro v3.1
 

@@ -18,17 +18,18 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone activo | M36.0 — Old Scars Strategic Production Roadmap Rebaseline |
-| Estado M36.0 | `IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW` |
+| Milestone cerrado mas reciente | M36.0 — Old Scars Strategic Production Roadmap Rebaseline |
+| Estado M36.0 | `DONE — DOCUMENTATION REVIEWED` |
 | Ultimo milestone funcional cerrado | M35.2 — Lootable Entity Inventory UI V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Proximo milestone | M36.1 — Foundation Freeze & Persistent Identity Contract |
+| Proximo milestone planificado | M36.1 — Foundation Freeze & Persistent Identity Contract |
+| Estado M36.1 | `PLANNED — PENDING AUTHORIZATION` |
 | Siguientes | M37.0 — Save Format & Persistence Core; M37.1 — Current Slice Persistent Round-Trip |
 
-M36.0 no puede pasar a `DONE` en sus checkpoints de implementacion. Tras Documentation Review Correction Pass 1 queda `IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW` hasta que Mauro revise y acepte el cambio documental completo.
+Mauro completo y aprobo la revision documental final de M36.0. El milestone queda `DONE — DOCUMENTATION REVIEWED`; Unity validation fue `NOT APPLICABLE`. M36.1 permanece planificado, no iniciado y pendiente de autorizacion independiente.
 
 ## Estados Canonicos
 
@@ -118,8 +119,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 
 | Horizonte | Milestone | Tipo | Estado | Dependencias | Resultado / gate |
 | --- | --- | --- | --- | --- | --- |
-| AHORA | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 implementados; Mauro debe realizar la revision documental final. |
-| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `PLANNED` | M36.0 revisado | Contratos e identidad durable acordados; gate `Foundation Freeze`. Debe ser corto. |
+| CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
+| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `PLANNED — PENDING AUTHORIZATION` | M36.0 revisado | Contratos e identidad durable acordados; gate `Foundation Freeze`. Debe ser corto y no esta iniciado. |
 | SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente. |
 | SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`. |
 | SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED` | M37.1 | IDs, spawn, lifecycle, muerte y cuerpos persistibles. |
@@ -210,6 +211,10 @@ Alinear el baseline de diseño revisado, arquitectura, JSON rules, reglas de des
 ### M36.0 — Documentation Review Correction Pass 1
 
 Corregir clasificaciones de diseño revisadas por Mauro, formalizar el workflow proporcional de Codex, commits, publicacion, evidencia visual y subagentes, ajustar la semantica estructural de R03 y reconciliar puntualmente M29 sin iniciar M36.1 ni cambiar contenido jugable.
+
+### M36.0 — Documentation Review Closeout
+
+Mauro aprobo la jerarquia documental, el GDD Markdown como baseline revisado, el roadmap M36–M55, los trece gates, R01–R23, el workflow de Codex/Git y las clasificaciones corregidas. M36.0 queda `DONE — DOCUMENTATION REVIEWED`; las decisiones creativas etiquetadas siguen abiertas y M36.1 requiere autorizacion independiente.
 
 ### M36.1 — Limite Obligatorio
 

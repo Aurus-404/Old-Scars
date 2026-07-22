@@ -1703,3 +1703,47 @@ Verificacion documental del pass:
 - busquedas cruzadas de ruido/noise, PSX, Vandor, Velgrad, R03, push, modelo, esfuerzo, velocidad y modo revisadas;
 - Checkpoint B recomputado directamente con Git: 10 archivos, 1.345 adiciones y 497 eliminaciones;
 - solo documentacion autorizada; Unity validation `NOT APPLICABLE` y revision documental final de Mauro pendiente.
+
+### M36.0 — Documentation Review Closeout
+
+Versión:
+
+`Documentation Review Closeout`
+
+Estado anterior:
+
+`IMPLEMENTED — PENDING FINAL DOCUMENT REVIEW`
+
+Estado final:
+
+`DONE — DOCUMENTATION REVIEWED`
+
+`UNITY VALIDATION NOT APPLICABLE`
+
+Aprobación y commits integrados:
+
+- Mauro aprobó la revisión documental final de M36.0.
+- Checkpoint A: `eaf2eb98ced4b3b705a68bbce540dd883a157210`.
+- Checkpoint B: `9bd5283f0760ae82a845189384ca59d41ee4d624`.
+- Documentation Review Correction Pass 1: `428716f7c6a22a53e134459ecbdb2d636f00c9b5`.
+
+Resultado aprobado:
+
+- la jerarquía de autoridad documental;
+- el GDD Markdown como baseline revisado y mantenible;
+- el GDD Maestro v3.1 como fuente histórica auditable e intacta;
+- el roadmap estratégico M36–M55, los trece gates y el registro de riesgos R01–R23;
+- la secuencia M36.1 → M37.0 → M37.1 y el cierre funcional de M35.2 después de M35.2.3;
+- el freeze de ampliaciones OnGUI, la política proporcional de milestones y prompts, la configuración obligatoria de Codex y las reglas de capturas, subagentes, commits y pushes;
+- PSX/low-poly como dirección visual general y la existencia y nombres de Vandor y Velgrad;
+- la ausencia de una mecánica de ruido confirmada, R03 como riesgo estructural permanente y M29 como implementación histórica sin validación reconciliada.
+
+Contratos y límites preservados:
+
+- Mauro conserva autoridad final y el Roadmap conserva autoridad sobre IDs, estados, dependencias y gates.
+- Las decisiones creativas etiquetadas como pendientes permanecen pendientes; este cierre no las convierte en canon.
+- El GDD Maestro v3.1 permanece intacto.
+- No se modificaron C#, JSON gameplay, escenas, prefabs, assets, Packages ni ProjectSettings.
+- Unity, batchmode, compilaciones y tests de gameplay no se ejecutaron porque la validación Unity no aplica a este cierre documental.
+- M36.1 es el siguiente milestone planificado, permanece `PLANNED — PENDING AUTHORIZATION`, no fue iniciado y requiere autorización independiente.
+- M37 permanece bloqueado por Foundation Freeze.
