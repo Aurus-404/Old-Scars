@@ -26,10 +26,10 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
 | Milestone activo | M36.1 — Foundation Freeze & Persistent Identity Contract |
-| Estado M36.1 | `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING; FOUNDATION FREEZE REVIEW BLOCKED` |
+| Estado M36.1 | `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED` |
 | Siguientes | M37.0 — Save Format & Persistence Core; M37.1 — Current Slice Persistent Round-Trip |
 
-Mauro completo y aprobo la revision documental final de M36.0. M36.1 esta activo: Checkpoint A fue validado manualmente y cerrado; Checkpoint B fue implementado y su validacion automatizada de Foundation Identity paso. La validacion manual de Checkpoint B y la revision final de `Foundation Freeze` siguen pendientes; el gate no esta aprobado y M37 no comenzo.
+Mauro completo y aprobo la revision documental final de M36.0. M36.1 esta activo: Checkpoint A fue validado manualmente y cerrado; Checkpoint B fue implementado, su validacion automatizada paso y Mauro confirmo manualmente crowbar/Lee-Enfield authored, pickup, equip directo desde el mundo, inventario y drop sin errores funcionales nuevos. El pase de observabilidad diagnostica quedo completo; la revision final de `Foundation Freeze` sigue pendiente, el gate no esta aprobado y M37 no comenzo.
 
 ## Estados Canonicos
 
@@ -120,7 +120,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | Horizonte | Milestone | Tipo | Estado | Dependencias | Resultado / gate |
 | --- | --- | --- | --- | --- | --- |
 | CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
-| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING; FOUNDATION FREEZE REVIEW BLOCKED` | M36.0 revisado | Checkpoint A congela y valida identidad, ownership y stacks de items; Checkpoint B aporta identidad authored del slice y evidencia automatizada. Falta validacion manual y revision final de `Foundation Freeze`. |
+| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED` | M36.0 revisado | Checkpoint A congela y valida identidad, ownership y stacks de items; Checkpoint B aporta identidad authored validada manualmente. El pase localizado de observabilidad diagnostica failures y reduce ruido de availability; falta la revision final de `Foundation Freeze`. |
 | SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente. |
 | SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`. |
 | SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED` | M37.1 | IDs, spawn, lifecycle, muerte y cuerpos persistibles. |
@@ -224,7 +224,7 @@ Los pases correctivos agregan attachment detached y registro explicito de item-o
 
 Checkpoint B recupera la implementacion local parcial y congela identidad authored para el slice actual. `PersistentSceneObjectId` identifica exactamente 14 roots stateful de `SampleScene`: 3 actores, 3 puertas y 8 contenedores. Los dos world items authored usan `ItemInstance.CreateAuthored` con IDs `item_<32 hex lowercase>` exactos y separados de `DefinitionId`; los drops runtime conservan su instancia existente y no reciben un authored ID nuevo. `Debug Strange Machine` permanece excluida.
 
-Runtime y Editor compilaron en Unity 6.4.6f1. `M36.1 Foundation Identity Validation` paso despues de aplicar la tabla, despues de reabrir la escena y en una reaplicacion idempotente; Checkpoint A volvio a dar `PASS`. La validacion manual de Checkpoint B permanece pendiente. M36.1 debe seguir siendo corto y no implementa:
+Runtime y Editor compilaron en Unity 6.4.6f1. `M36.1 Foundation Identity Validation` paso despues de aplicar la tabla, despues de reabrir la escena y en una reaplicacion idempotente; Checkpoint A volvio a dar `PASS`. Mauro valido manualmente crowbar y Lee-Enfield authored, pickup, equip directo desde el mundo, inventario y drop sin errores funcionales nuevos. M36.1 debe seguir siendo corto y no implementa:
 
 - save/load;
 - condition;
@@ -237,7 +237,7 @@ Decisiones congeladas para M37:
 
 - M37 debe rehidratar el `InstanceId` exacto y el `Condition` exacto validado; no debe crear otro ID durante carga;
 - items no stackeables y cada stack visible conservan identidad durable; las unidades fungibles internas de un stack no poseen IDs individuales;
-- el gate `Foundation Freeze` permanece abierto hasta la validacion manual y revision final de Checkpoint B.
+- el gate `Foundation Freeze` permanece abierto hasta la revision final de Checkpoint B y del pase de observabilidad.
 
 ### M37 — Limite Obligatorio
 

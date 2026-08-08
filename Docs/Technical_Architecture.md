@@ -66,6 +66,13 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Containers, corpses y world items reutilizan `ItemStorage`, grid, ownership y servicios de transfer. No se convierten en un backend paralelo por su presentacion.
 - Doors usan tags canonicos de estado y un controlador visual pequeño; no existe todavia persistencia de sus transiciones.
 
+## Observabilidad Diagnostica
+
+- Los failure boundaries del slice escriben contexto accionable y proporcional en Unity Console / `Editor.log`: operacion, objeto o actor, IDs, owners, storage, resultado y estado de rollback cuando esos datos existen.
+- Los valores ausentes relevantes usan `<NONE>`, `<EMPTY>` o `<UNKNOWN>`. Los commits importantes son breves y correlacionables por `InstanceId`; no se vuelcan inventories completos en operaciones rutinarias.
+- `InteractionSystem` mantiene silenciosas las consultas puras usadas por refresh/revalidation. El detalle de availability se emite solamente por la ruta debug explicita `LogAvailabilityDetails`; los fallos de construccion del contexto siguen visibles.
+- Este contrato no introduce telemetry, analytics, file logger, cache global ni framework universal. Modificar un failure boundary exige revisar tambien la calidad y frecuencia de sus mensajes.
+
 ## Visual Rig Y Attachments
 
 - Equipment conserva autoridad exclusiva sobre storage, ownership, slots e `InstanceId`. El visual consume `EquipmentVisualStateSnapshot`, una copia read-only de una revision confirmada.
@@ -94,7 +101,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Frontera M36.1 / M37
 
 - M36.1 Checkpoint A validado y cerrado implementa identidad durable de items, invariantes, hydration detached, cleanup terminal, transiciones comprometidas de ownership y diagnostico determinista. Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions.
-- Checkpoint B implementa identidad authored para 14 roots stateful y 2 world items, con apply/validator Editor idempotente. Runtime/Editor compilaron, Foundation Identity y Checkpoint A dieron `PASS`; la validacion manual y revision final de `Foundation Freeze` permanecen pendientes.
+- Checkpoint B implementa identidad authored para 14 roots stateful y 2 world items, con apply/validator Editor idempotente. Runtime/Editor compilaron, Foundation Identity y Checkpoint A dieron `PASS`; Mauro valido manualmente los flujos authored principales. La revision final de `Foundation Freeze` permanece pendiente.
 - M37 debe persistir y rehidratar el `Condition` get-only exacto, sin implementar condition mutable.
 - Items no stackeables y stacks visibles poseen identidad durable; las unidades fungibles internas conservan cantidad sin identidad individual.
 - M36.1 no implementa save/load, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.

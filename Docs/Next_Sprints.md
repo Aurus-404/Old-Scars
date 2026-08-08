@@ -6,15 +6,14 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ### 1. M36.1 — Foundation Freeze & Persistent Identity Contract
 
-Estado: `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING; FOUNDATION FREEZE REVIEW BLOCKED`.
+Estado: `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED`.
 
-M36.1 es el trabajo actual. Checkpoint A congelo y valido identidad durable, ownership y stacks de items. Checkpoint B implemento identidad authored para 14 roots stateful y 2 world items; la validacion automatizada paso. El trabajo inmediato restante es la validacion manual de Checkpoint B y la revision final de `Foundation Freeze`.
+M36.1 es el trabajo actual. Checkpoint A congelo y valido identidad durable, ownership y stacks de items. Checkpoint B implemento identidad authored para 14 roots stateful y 2 world items; la validacion automatizada y la validacion manual de los flujos authored pasaron. El pase localizado de observabilidad tambien quedo completo. El trabajo inmediato restante es la revision final de `Foundation Freeze`.
 
 Objetivo:
 
-- revisar manualmente la identidad authored aplicada al slice actual;
-- confirmar que pickup/drop preservan los IDs exactos sin regresiones;
 - revisar la evidencia de Checkpoints A/B contra `Foundation Freeze`;
+- revisar la evidencia del pase de observabilidad y la calidad/frecuencia de sus logs;
 - mantener M37 bloqueado hasta esa decision.
 
 Fuera de alcance:
@@ -24,7 +23,7 @@ Fuera de alcance:
 - actor lifecycle;
 - gameplay o UI final.
 
-Salida pendiente: validacion manual de Checkpoint B y revision final del gate `Foundation Freeze`; la evidencia automatizada por si sola no lo aprueba.
+Salida pendiente: revision final del gate `Foundation Freeze`; ni la evidencia automatizada, la validacion manual ni este pase lo aprueban por separado.
 
 ### 2. M37.0 — Save Format & Persistence Core
 

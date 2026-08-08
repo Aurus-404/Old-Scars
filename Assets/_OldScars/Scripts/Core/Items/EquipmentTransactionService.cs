@@ -230,6 +230,7 @@ namespace OldScars.Core.Items
                 if (commitKind.HasValue)
                     equipment.CommitVisualState(commitKind.Value);
                 identityScope.Commit();
+                UnityEngine.Debug.Log($"[Equipment][COMMIT] Operation: Equip | DefinitionId: {item?.DefinitionId ?? "<UNKNOWN>"} | InstanceId: {preview.InstanceId} | Actor: {equipment.name} | Slots: {(preview.SlotIds != null ? string.Join(", ", preview.SlotIds) : "<NONE>")}");
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item equipped.", preview.InstanceId, preview.SlotIds);
             }
             catch (Exception exception)
@@ -237,6 +238,7 @@ namespace OldScars.Core.Items
                 inventory.InternalGridBackend.RestoreBackendState(personalSnapshot);
                 equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
                 equipment.RestoreEquipmentState(slotSnapshot);
+                UnityEngine.Debug.LogError($"[Equipment][TRANSACTION_FAILED]\n  Operation: Equip\n  Actor: {equipment.name}\n  InstanceId: {preview.InstanceId}\n  Slots: {(preview.SlotIds != null ? string.Join(", ", preview.SlotIds) : "<NONE>")}\n  MutationCommitted: false\n  RollbackAttempted: true\n  RollbackSucceeded: true\n  FailureCode: EquipmentRejected\n  Failure: {exception.Message}");
                 return EquipmentMutationResult.Rejected($"Equip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
         }
@@ -761,6 +763,7 @@ namespace OldScars.Core.Items
                 equipment.RecordUnequipped(item);
                 equipment.CommitVisualState(EquipmentVisualCommitKind.Unequip);
                 identityScope.Commit();
+                UnityEngine.Debug.Log($"[Equipment][COMMIT] Operation: Unequip | DefinitionId: {item?.DefinitionId ?? "<UNKNOWN>"} | InstanceId: {preview.InstanceId} | Actor: {equipment.name} | Slots: {(preview.SlotIds != null ? string.Join(", ", preview.SlotIds) : "<NONE>")}");
                 return new EquipmentMutationResult(true, EquipmentFailureCode.None, "Item unequipped to personal inventory.", preview.InstanceId, preview.SlotIds);
             }
             catch (Exception exception)
@@ -768,6 +771,7 @@ namespace OldScars.Core.Items
                 inventory.InternalGridBackend.RestoreBackendState(personalSnapshot);
                 equipment.Backend.RestoreBackendState(equipmentStorageSnapshot);
                 equipment.RestoreEquipmentState(slotSnapshot);
+                UnityEngine.Debug.LogError($"[Equipment][TRANSACTION_FAILED]\n  Operation: Unequip\n  Actor: {equipment.name}\n  InstanceId: {preview.InstanceId}\n  Slots: {(preview.SlotIds != null ? string.Join(", ", preview.SlotIds) : "<NONE>")}\n  MutationCommitted: false\n  RollbackAttempted: true\n  RollbackSucceeded: true\n  FailureCode: EquipmentRejected\n  Failure: {exception.Message}");
                 return EquipmentMutationResult.Rejected($"Unequip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
         }

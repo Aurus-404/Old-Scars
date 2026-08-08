@@ -400,11 +400,14 @@ namespace OldScars.Core.Items
                     {
                         sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
                         destinationEndpoint.TransferBackend.RestoreBackendState(destinationSnapshot);
-                        return InventoryMutationResult.RolledBack(
+                        InventoryMutationResult rolledBack = InventoryMutationResult.RolledBack(
                             $"Ownership reconciliation failed: {ownershipError}",
                             result.RequestedQuantity,
                             sourceInstanceId,
                             result.UsedFallbackFootprint);
+                        LogTransferFailure("MergeIntoTarget", source, destination, definitionId, sourceInstanceId,
+                            rolledBack, result, true, true, true, "Source and target restored after ownership reconciliation failure.");
+                        return rolledBack;
                     }
 
                     ownershipReconciled = true;
@@ -422,12 +425,17 @@ namespace OldScars.Core.Items
                         sourceSnapshot,
                         destinationSnapshot,
                         ownershipReconciled,
-                        exception);
-                    return InventoryMutationResult.RolledBack(
+                        exception,
+                        out bool rollbackSucceeded);
+                    InventoryMutationResult rolledBack = InventoryMutationResult.RolledBack(
                         rollbackError,
                         result != null ? result.RequestedQuantity : currentPreview.TransferQuantity,
                         sourceInstanceId,
                         result != null && result.UsedFallbackFootprint);
+                    LogTransferFailure("MergeIntoTarget", source, destination, definitionId, sourceInstanceId,
+                        rolledBack, result, true, true, rollbackSucceeded,
+                        rollbackSucceeded ? "Source and target restored." : "Rollback failed; inspect failure details.");
+                    return rolledBack;
                 }
             }
         }
@@ -579,11 +587,14 @@ namespace OldScars.Core.Items
                     {
                         sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
                         targetEndpoint.TransferBackend.RestoreBackendState(targetSnapshot);
-                        return InventoryMutationResult.RolledBack(
+                        InventoryMutationResult rolledBack = InventoryMutationResult.RolledBack(
                             $"Ownership reconciliation failed: {ownershipError}",
                             result.RequestedQuantity,
                             sourceInstanceId,
                             result.UsedFallbackFootprint);
+                        LogTransferFailure("TransferExact", source, target, definitionId, sourceInstanceId,
+                            rolledBack, result, true, true, true, "Source and target restored after ownership reconciliation failure.");
+                        return rolledBack;
                     }
 
                     ownershipReconciled = true;
@@ -601,12 +612,17 @@ namespace OldScars.Core.Items
                         sourceSnapshot,
                         targetSnapshot,
                         ownershipReconciled,
-                        exception);
-                    return InventoryMutationResult.RolledBack(
+                        exception,
+                        out bool rollbackSucceeded);
+                    InventoryMutationResult rolledBack = InventoryMutationResult.RolledBack(
                         rollbackError,
                         result != null ? result.RequestedQuantity : sourceEntry.Quantity,
                         sourceInstanceId,
                         result != null && result.UsedFallbackFootprint);
+                    LogTransferFailure("TransferExact", source, target, definitionId, sourceInstanceId,
+                        rolledBack, result, true, true, rollbackSucceeded,
+                        rollbackSucceeded ? "Source and target restored." : "Rollback failed; inspect failure details.");
+                    return rolledBack;
                 }
             }
         }
@@ -915,7 +931,7 @@ namespace OldScars.Core.Items
                     {
                         sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
                         targetEndpoint.TransferBackend.RestoreBackendState(targetSnapshot);
-                        return InventoryMutationResult.RolledBack(
+                        InventoryMutationResult rolledBack = InventoryMutationResult.RolledBack(
                                 $"Backend returned partial success x{result.AffectedQuantity}, expected x{preview.EffectiveQuantity}.",
                                 quantity,
                                 sourceInstanceId,
@@ -925,6 +941,9 @@ namespace OldScars.Core.Items
                                 preview.SourceQuantity,
                                 preview.WasLimitedByWeight,
                                 preview.WeightLimitQuantity);
+                        LogTransferFailure("TransferQuantityAuto", source, target, preview.DefinitionId, sourceInstanceId,
+                            rolledBack, result, true, true, true, "Source and target restored after partial backend success.");
+                        return rolledBack;
                     }
 
                     var receipt = new GridStorageTransferReceipt(preview.DefinitionId, result);
@@ -932,7 +951,7 @@ namespace OldScars.Core.Items
                     {
                         sourceEndpoint.TransferBackend.RestoreBackendState(sourceSnapshot);
                         targetEndpoint.TransferBackend.RestoreBackendState(targetSnapshot);
-                        return InventoryMutationResult.RolledBack(
+                        InventoryMutationResult rolledBack = InventoryMutationResult.RolledBack(
                                 $"Ownership reconciliation failed: {ownershipError}",
                                 quantity,
                                 sourceInstanceId,
@@ -942,6 +961,9 @@ namespace OldScars.Core.Items
                                 preview.SourceQuantity,
                                 preview.WasLimitedByWeight,
                                 preview.WeightLimitQuantity);
+                        LogTransferFailure("TransferQuantityAuto", source, target, preview.DefinitionId, sourceInstanceId,
+                            rolledBack, result, true, true, true, "Source and target restored after ownership reconciliation failure.");
+                        return rolledBack;
                     }
 
                     ownershipReconciled = true;
@@ -959,8 +981,9 @@ namespace OldScars.Core.Items
                         sourceSnapshot,
                         targetSnapshot,
                         ownershipReconciled,
-                        exception);
-                    return InventoryMutationResult.RolledBack(
+                        exception,
+                        out bool rollbackSucceeded);
+                    InventoryMutationResult rolledBack = InventoryMutationResult.RolledBack(
                             rollbackError,
                             quantity,
                             sourceInstanceId,
@@ -970,6 +993,10 @@ namespace OldScars.Core.Items
                             preview.SourceQuantity,
                             preview.WasLimitedByWeight,
                             preview.WeightLimitQuantity);
+                    LogTransferFailure("TransferQuantityAuto", source, target, preview.DefinitionId, sourceInstanceId,
+                        rolledBack, result, true, true, rollbackSucceeded,
+                        rollbackSucceeded ? "Source and target restored." : "Rollback failed; inspect failure details.");
+                    return rolledBack;
                 }
             }
         }
@@ -1061,15 +1088,18 @@ namespace OldScars.Core.Items
             GridInventoryBackend.BackendStateSnapshot sourceSnapshot,
             GridInventoryBackend.BackendStateSnapshot targetSnapshot,
             bool ownershipReconciled,
-            Exception exception)
+            Exception exception,
+            out bool rollbackSucceeded)
         {
             string rollbackError = null;
+            rollbackSucceeded = false;
             try
             {
                 source.TransferBackend.RestoreBackendState(sourceSnapshot);
                 target.TransferBackend.RestoreBackendState(targetSnapshot);
                 if (ownershipReconciled)
                     ItemOwnedStorageRegistry.Instance.ReconcileRestoredOwners(sourceOwner, targetOwner);
+                rollbackSucceeded = true;
             }
             catch (Exception rollbackException)
             {
@@ -1088,6 +1118,60 @@ namespace OldScars.Core.Items
         {
             TryNotify(() => source.OnTransferCommittedOut(receipt, context), "source out");
             TryNotify(() => target.OnTransferCommittedIn(receipt, context), "target in");
+        }
+
+        private static void LogTransferFailure(
+            string operation,
+            IGridStorageOwner source,
+            IGridStorageOwner target,
+            string definitionId,
+            string instanceId,
+            InventoryMutationResult rollbackResult,
+            InventoryMutationResult attemptedResult,
+            bool commitAttempted,
+            bool rollbackAttempted,
+            bool rollbackSucceeded,
+            string actionTaken)
+        {
+            Debug.LogError(
+                "[GridStorageTransferService][TRANSFER_FAILED]" +
+                $"\n  Operation: {operation}\n  DefinitionId: {DiagnosticText(definitionId)}\n  InstanceId: {DiagnosticText(instanceId)}" +
+                $"\n  SourceOwner: {DescribeOwner(source)}\n  TargetOwner: {DescribeOwner(target)}" +
+                $"\n  SourceStorage: {DiagnosticText(source != null ? source.GridStorageDisplayName : null)}" +
+                $"\n  TargetStorage: {DiagnosticText(target != null ? target.GridStorageDisplayName : null)}" +
+                $"\n  DestinationInstanceId: {DiagnosticText(attemptedResult?.DestinationInstanceId)}" +
+                $"\n  SourceWasRemoved: {WasSourceRemoved(attemptedResult)}" +
+                $"\n  CreatedInstanceIds: {FormatIds(attemptedResult?.CreatedInstanceIds)}" +
+                $"\n  RemovedInstanceIds: {FormatIds(attemptedResult?.RemovedInstanceIds)}" +
+                $"\n  CommitAttempted: {commitAttempted}\n  MutationCommitted: false" +
+                $"\n  RollbackAttempted: {rollbackAttempted}\n  RollbackSucceeded: {rollbackSucceeded}" +
+                $"\n  FailureCode: {(rollbackResult != null ? rollbackResult.Failure.ToString() : "<UNKNOWN>")}" +
+                $"\n  Failure: {DiagnosticText(rollbackResult?.Message)}" +
+                $"\n  ActionTaken: {actionTaken}");
+        }
+
+        private static string DescribeOwner(IGridStorageOwner owner)
+        {
+            if (owner == null)
+                return "<NONE>";
+            if (owner is UnityEngine.Object unityObject)
+                return $"{owner.GetType().Name}({DiagnosticText(unityObject.name)})";
+            return $"{owner.GetType().Name}({DiagnosticText(owner.GridStorageDisplayName)})";
+        }
+
+        private static string DiagnosticText(string value)
+        {
+            return value == null ? "<NONE>" : string.IsNullOrWhiteSpace(value) ? "<EMPTY>" : value;
+        }
+
+        private static bool WasSourceRemoved(InventoryMutationResult result)
+        {
+            return result?.RemovedInstanceIds != null && Array.IndexOf(result.RemovedInstanceIds, result.SourceInstanceId) >= 0;
+        }
+
+        private static string FormatIds(string[] values)
+        {
+            return values == null || values.Length == 0 ? "<NONE>" : string.Join(", ", values);
         }
 
         private static void TryNotify(Action notification, string label)

@@ -106,7 +106,9 @@ namespace OldScars.Core.Items
                 if (ReferenceEquals(registeredOwner, directOwner))
                     return;
 
-                throw new InvalidOperationException($"Item instance '{item.InstanceId}' is already bound to a different owner.");
+                throw new InvalidOperationException(
+                    $"OwnershipMismatch: item instance '{item.InstanceId}' is bound to " +
+                    $"'{DescribeOwner(registeredOwner)}'; expected '{DescribeOwner(directOwner)}'.");
             }
 
             directOwnersByInstanceId.Add(item.InstanceId, directOwner);
@@ -141,7 +143,9 @@ namespace OldScars.Core.Items
             if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
                 throw new InvalidOperationException($"Item instance '{instanceId}' has no registered direct owner.");
             if (!ReferenceEquals(registeredOwner, expectedOwner))
-                throw new InvalidOperationException($"Item instance '{instanceId}' is bound to a different owner than expected.");
+                throw new InvalidOperationException(
+                    $"OwnershipMismatch: item instance '{instanceId}' is bound to " +
+                    $"'{DescribeOwner(registeredOwner)}'; expected '{DescribeOwner(expectedOwner)}'.");
         }
 
         internal void ValidateEntries(IReadOnlyList<ItemStorageEntry> entries, object expectedOwner)
@@ -172,7 +176,10 @@ namespace OldScars.Core.Items
             if (ReferenceEquals(registeredOwner, target))
                 return;
             if (!ReferenceEquals(registeredOwner, expectedSource))
-                throw new InvalidOperationException($"Item instance '{instanceId}' cannot transfer from an unexpected owner.");
+                throw new InvalidOperationException(
+                    $"OwnershipTransitionFailed: item instance '{instanceId}' actual owner is " +
+                    $"'{DescribeOwner(registeredOwner)}'; expected source '{DescribeOwner(expectedSource)}'; " +
+                    $"target '{DescribeOwner(target)}'.");
 
             directOwnersByInstanceId[instanceId] = target;
         }
@@ -184,7 +191,9 @@ namespace OldScars.Core.Items
             if (!directOwnersByInstanceId.TryGetValue(instanceId, out object registeredOwner) || registeredOwner == null)
                 return;
             if (!ReferenceEquals(registeredOwner, expectedOwner))
-                throw new InvalidOperationException($"Item instance '{instanceId}' cannot be unbound from an unexpected owner.");
+                throw new InvalidOperationException(
+                    $"OwnershipMismatch: item instance '{instanceId}' cannot be unbound from " +
+                    $"'{DescribeOwner(expectedOwner)}'; actual owner is '{DescribeOwner(registeredOwner)}'.");
 
             directOwnersByInstanceId.Remove(instanceId);
         }
@@ -355,7 +364,8 @@ namespace OldScars.Core.Items
                 {
                     if (!ReferenceEquals(registeredOwner, targetDirectOwner))
                     {
-                        error = $"Committed target instance '{instanceId}' is bound to an unexpected owner.";
+                        error = $"OwnershipMismatch: committed target instance '{instanceId}' actual owner is " +
+                                $"'{DescribeOwner(registeredOwner)}'; expected '{DescribeOwner(targetDirectOwner)}'.";
                         return false;
                     }
                     continue;
@@ -399,7 +409,8 @@ namespace OldScars.Core.Items
                 return true;
             }
 
-            error = $"Item instance '{instanceId}' is not bound to its expected committed owner.";
+            error = $"OwnershipMismatch: item instance '{instanceId}' actual owner is " +
+                    $"'{DescribeOwner(registeredOwner)}'; expected committed owner '{DescribeOwner(expectedOwner)}'.";
             return false;
         }
 
@@ -421,7 +432,9 @@ namespace OldScars.Core.Items
                 return true;
             if (!ReferenceEquals(registeredOwner, expectedSource))
             {
-                error = $"Item instance '{instanceId}' cannot transfer from an unexpected owner.";
+                error = $"OwnershipTransitionFailed: item instance '{instanceId}' actual owner is " +
+                        $"'{DescribeOwner(registeredOwner)}'; expected source '{DescribeOwner(expectedSource)}'; " +
+                        $"target '{DescribeOwner(target)}'.";
                 return false;
             }
 
@@ -440,7 +453,8 @@ namespace OldScars.Core.Items
             }
             if (!ReferenceEquals(registeredOwner, expectedOwner))
             {
-                error = $"Item instance '{instanceId}' cannot be retired from an unexpected owner.";
+                error = $"OwnershipMismatch: item instance '{instanceId}' actual owner is " +
+                        $"'{DescribeOwner(registeredOwner)}'; expected retiring owner '{DescribeOwner(expectedOwner)}'.";
                 return false;
             }
 
@@ -536,7 +550,23 @@ namespace OldScars.Core.Items
                 return;
             }
             if (!ReferenceEquals(registeredOwner, first) && !ReferenceEquals(registeredOwner, second))
-                throw new InvalidOperationException($"Restored item instance '{instanceId}' is bound to an unexpected third owner.");
+                throw new InvalidOperationException(
+                    $"OwnershipMismatch: restored item instance '{instanceId}' actual owner is " +
+                    $"'{DescribeOwner(registeredOwner)}'; expected '{DescribeOwner(first)}' or '{DescribeOwner(second)}'.");
+        }
+
+        private static string DescribeOwner(object owner)
+        {
+            if (owner == null)
+                return "<NONE>";
+            if (owner is UnityEngine.Object unityObject)
+                return $"{owner.GetType().Name}({(string.IsNullOrWhiteSpace(unityObject.name) ? "<EMPTY>" : unityObject.name)})";
+            if (owner is IGridStorageOwner storageOwner)
+            {
+                string displayName = storageOwner.GridStorageDisplayName;
+                return $"{owner.GetType().Name}({(string.IsNullOrWhiteSpace(displayName) ? "<EMPTY>" : displayName)})";
+            }
+            return owner.GetType().Name;
         }
 
     }

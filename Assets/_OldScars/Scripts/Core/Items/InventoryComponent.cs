@@ -131,7 +131,14 @@ namespace OldScars.Core.Items
             InventoryMutationResult result = GetGridBackend().Add(definition, quantity);
             if (!result.Success)
             {
-                Debug.LogWarning($"[InventoryComponent] Cannot add '{normalizedDefinitionId}' x{quantity}: {SafeText(result.Message)}");
+                Debug.LogWarning(
+                    "[InventoryComponent][ADD_FAILED]" +
+                    $"\n  Owner: {name}" +
+                    $"\n  DefinitionId: {normalizedDefinitionId}" +
+                    $"\n  Quantity: {quantity}" +
+                    $"\n  FailureCode: {result.Failure}" +
+                    $"\n  MutationCommitted: false" +
+                    $"\n  Failure: {SafeText(result.Message)}");
                 return null;
             }
 
@@ -147,6 +154,7 @@ namespace OldScars.Core.Items
 
             Debug.Log(
                 "[InventoryComponent] Added runtime item instance." +
+                $"\n  Owner: {name}" +
                 $"\n  Definition: {storedItem.DefinitionId}" +
                 $"\n  Instance: {storedItem.InstanceId}" +
                 $"\n  Condition: {storedItem.Condition}" +

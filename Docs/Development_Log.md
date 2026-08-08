@@ -2040,3 +2040,43 @@ Limites y gate:
 - No se modificaron JSON gameplay, prefabs, Packages, ProjectSettings, GDD, save/load, condition, repair, actor lifecycle, gameplay nuevo o UI final.
 - La validacion manual de Checkpoint B por Mauro permanece pendiente; no se declara Play Mode manual validado.
 - M36.1 no queda `DONE`, `Foundation Freeze` no se aprueba, R03 permanece `MITIGATING` y M37 no comenzo.
+
+### M36.1 — Diagnostic Console Observability Pass 1
+
+Fecha: 2026-08-08
+
+Estado anterior:
+
+`IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING; FOUNDATION FREEZE REVIEW BLOCKED`
+
+Estado posterior:
+
+`IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED`
+
+Cambios localizados:
+
+- `InteractionSystem` deja silenciosas las consultas puras usadas por refresh/revalidation; `No equipped item`, el resumen de acciones y el detalle por accion quedan limitados a `LogAvailabilityDetails` en la ruta debug explicita.
+- `WorldItemPickup` diferencia failures de database, definition e identidad authored con escena, GameObject, IDs, readiness, resultado y accion tomada; pickup y Equipment conservan commits breves correlacionables.
+- `GridStorageTransferService` registra solamente failures de commit/rollback con definition/instance, source/target owners y storages, destination, IDs creados/retirados, `SourceWasRemoved` y resultado del rollback.
+- `ItemOwnedStorageRegistry` incorpora owner real, esperado y target en mismatches/transiciones sin cambiar reglas de ownership.
+- `InventoryComponent` identifica owner en creacion y failures de add; `ContainerLootComponent` identifica container, root, `PersistentSceneObjectId`, loot table, entries y cantidad total sin dump exitoso de contenido.
+- Los failure paths de equip/unequip y equip/replacement desde mundo incluyen actor, instance, slots, owners y rollback; no se agrego framework global, telemetry, analytics ni cache de logging.
+
+Validacion automatizada:
+
+- Unity 6.4.6f1 recompilo Runtime y Editor dos veces con `Tundra build success`, exit code 0, sin `error CS` ni `warning CS` en los logs batchmode del pase.
+- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- Los dos failures intencionales del diagnostico produjeron un bloque cada uno: owner tercero y owner faltante, ambos con `CommitAttempted: True`, `MutationCommitted: false`, `RollbackAttempted: True` y `RollbackSucceeded: True`.
+- `M36.1 Foundation Identity Validation: PASS`: actors 3, doors 3, containers 8, authored roots 14, authored world item IDs 2, duplicados 0 e invalidos 0.
+- Ninguna corrida emitio el spam `[InteractionSystem] No equipped item.` o `[InteractionSystem] Available actions:` desde consultas puras.
+
+Validacion manual informada por Mauro:
+
+- crowbar authored y Lee-Enfield authored funcionaron;
+- pickup, equip directo desde el mundo, inventario y drop funcionaron;
+- no se observaron errores funcionales nuevos de Old Scars.
+
+Limites y gate:
+
+- Se preservaron gameplay, identidad, ownership, Equipment, transacciones y `SampleScene`; no se modificaron JSON, prefabs, Packages o ProjectSettings y no se implemento save/load.
+- M36.1 no queda `DONE`; `Foundation Freeze` permanece abierto hasta su revision final y M37 no comenzo.

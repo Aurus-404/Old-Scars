@@ -27,7 +27,7 @@ namespace OldScars.Core.Interactions
         {
             var availableActions = new List<ActionDefinition>();
 
-            if (!TryBuildAvailabilityContext(query, true, out ActionAvailabilityContext context, out string[] itemTags))
+            if (!TryBuildAvailabilityContext(query, query != null && query.LogAvailabilityDetails, out ActionAvailabilityContext context, out string[] itemTags))
                 return availableActions;
 
             List<EvaluatedAction> evaluatedActions = EvaluateCandidateActions(query, context, query.LogAvailabilityDetails);
@@ -37,16 +37,19 @@ namespace OldScars.Core.Interactions
                     availableActions.Add(evaluatedActions[index].Action);
             }
 
-            Debug.Log(
-                "[InteractionSystem] Available actions:" +
-                $"\n  Target: {query.Target.name}" +
-                $"\n  Target tags: {FormatStrings(query.Target.Tags)}" +
-                $"\n  Actor tags: {FormatStrings(query.ActorTags)}" +
-                $"\n  Actor stats: {FormatStats(query.ActorStats)}" +
-                $"\n  Equipped item: {FormatEquippedItemId(query.EquippedItemId)}" +
-                $"\n  Equipped item tags: {FormatStrings(itemTags)}" +
-                $"\n  Required context: {query.RequiredContext}" +
-                $"\n  Actions: {FormatActionIds(availableActions)}");
+            if (query.LogAvailabilityDetails)
+            {
+                Debug.Log(
+                    "[InteractionSystem] Available actions:" +
+                    $"\n  Target: {query.Target.name}" +
+                    $"\n  Target tags: {FormatStrings(query.Target.Tags)}" +
+                    $"\n  Actor tags: {FormatStrings(query.ActorTags)}" +
+                    $"\n  Actor stats: {FormatStats(query.ActorStats)}" +
+                    $"\n  Equipped item: {FormatEquippedItemId(query.EquippedItemId)}" +
+                    $"\n  Equipped item tags: {FormatStrings(itemTags)}" +
+                    $"\n  Required context: {query.RequiredContext}" +
+                    $"\n  Actions: {FormatActionIds(availableActions)}");
+            }
 
             return availableActions;
         }

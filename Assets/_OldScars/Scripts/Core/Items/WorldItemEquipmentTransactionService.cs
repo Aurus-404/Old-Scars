@@ -158,6 +158,7 @@ namespace OldScars.Core.Items
                         equipment.PersonalInventory,
                         source);
                 }
+                UnityEngine.Debug.LogError($"[Equipment][TRANSACTION_FAILED]\n  Operation: EquipFromWorld\n  Actor: {equipment.name}\n  DefinitionId: {sourceItem?.DefinitionId ?? "<UNKNOWN>"}\n  InstanceId: {preview.InstanceId}\n  SourceOwner: WorldItemPickup({source.name})\n  TargetOwner: InventoryComponent({equipment.PersonalInventory.name})\n  Slots: {(preview.SlotIds != null ? string.Join(", ", preview.SlotIds) : "<NONE>")}\n  MutationCommitted: false\n  RollbackAttempted: true\n  RollbackSucceeded: true\n  FailureCode: EquipmentRejected\n  Failure: {exception.Message}");
                 return EquipmentMutationResult.Rejected($"Equip rolled back: {exception.Message}", preview.InstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
 
@@ -348,6 +349,7 @@ namespace OldScars.Core.Items
                         personal,
                         source);
                 }
+                UnityEngine.Debug.LogError($"[Equipment][TRANSACTION_FAILED]\n  Operation: ReplaceFromWorld\n  Actor: {equipment.name}\n  DefinitionId: {sourceItem?.DefinitionId ?? "<UNKNOWN>"}\n  InstanceId: {plan.SourceInstanceId}\n  SourceOwner: WorldItemPickup({source.name})\n  TargetOwner: InventoryComponent({personal.name})\n  Slots: {(plan.RequestedSlotSet != null ? string.Join(", ", plan.RequestedSlotSet) : "<NONE>")}\n  MutationCommitted: false\n  RollbackAttempted: true\n  RollbackSucceeded: true\n  FailureCode: EquipmentRejected\n  Failure: {exception.Message}");
                 return EquipmentMutationResult.Rejected($"Equipment replacement rolled back: {exception.Message}", plan.SourceInstanceId, EquipmentFailureCode.StorageMutationFailed);
             }
 

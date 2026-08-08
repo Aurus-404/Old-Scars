@@ -90,6 +90,12 @@ Debe indicar tambien la configuracion recomendada:
 
 Usar Luna para trabajo pequeño, mecanico y localizado; Terra para trabajo cotidiano, balanceado y acotado; Sol para arquitectura, transacciones, ownership, rollback, persistencia, ambiguedad o riesgo alto. Usar Plan para auditoria, arquitectura, ambiguedad o alcance abierto, y Objetivo cuando objetivo, alcance y aceptacion ya estan definidos. No cambiar de modelo durante la tarea sin motivo explicito ni convertir ajustes triviales en prompts enormes. Ver el detalle durable en [OldScars_Development_Rules.md](Docs/OldScars_Development_Rules.md) y aplicarlo mediante [Milestone_Template.md](Docs/Milestone_Template.md).
 
+## DIAGNOSTIC LOGGING POLICY
+
+- Los failure boundaries deben producir mensajes accionables en Unity Console / `Editor.log`, con contexto suficiente para diagnostico remoto y valores ausentes importantes representados como `<NONE>`, `<EMPTY>` o `<UNKNOWN>`.
+- Los success logs importantes deben ser breves y correlacionables por IDs; no registrar por frame, refresh de UI, celda de grid ni metodo interno rutinario.
+- No crear frameworks preventivos de logging, telemetry o analytics. Toda tarea futura que modifique un failure boundary debe revisar tambien la calidad y proporcionalidad de sus logs.
+
 ## Workflow Operativo
 
 - Todo trabajo mutante autorizado que supera sus verificaciones debe terminar con commit con cuerpo descriptivo, inspeccion mediante `git log -1 --format=full`, push a `origin/dev` y confirmacion de arbol limpio/sincronizado.

@@ -8,11 +8,17 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 Version actual:
 
-`Checkpoint B — Authored Slice Identity and Foundation Evidence / Recovery Completion Pass 1`
+`Diagnostic Console Observability Pass 1`
 
 Estado inicial:
 
-`IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED; CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`
+`IN PROGRESS — CHECKPOINT B IMPLEMENTED;`
+
+`AUTOMATED FOUNDATION VALIDATION PASSED;`
+
+`MANUAL UNITY VALIDATION PENDING;`
+
+`FOUNDATION FREEZE REVIEW BLOCKED`
 
 Estado actual:
 
@@ -20,7 +26,7 @@ Estado actual:
 
 `AUTOMATED FOUNDATION VALIDATION PASSED;`
 
-`MANUAL UNITY VALIDATION PENDING;`
+`DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE;`
 
 `FOUNDATION FREEZE REVIEW BLOCKED`
 
@@ -46,6 +52,16 @@ Objetivo: congelar identidad durable de items y del contenido authored del slice
 - las creaciones directas restantes son acotadas: `WorldItemPickup` exige storage vacio antes de bindear entries y `DebugInventory` conserva cada instancia en su lista.
 
 ## Evidencia Y Validacion
+
+- `Diagnostic Console Observability Pass 1` deja las consultas puras de availability sin logs rutinarios; el detalle permanece disponible solo cuando `LogAvailabilityDetails` activa la ruta debug explicita.
+- Los failures de authored world items, transfers/ownership, Equipment, inventario y containers incluyen IDs, owners, estado de commit/rollback y causa proporcional cuando esos datos existen; los commits importantes permanecen compactos.
+- Los containers correlacionan inicializacion con GameObject, root, `PersistentSceneObjectId`, loot table, entries y cantidad total sin volcar el inventario completo.
+- El pase no cambia gameplay, identidad, ownership, Equipment, transacciones, `SampleScene`, JSON ni save/load.
+- Mauro valido manualmente crowbar y Lee-Enfield authored, pickup, equip directo desde el mundo, inventario y drop; no observo errores funcionales nuevos de Old Scars.
+- Unity batchmode recompilo Runtime y Editor con `Tundra build success`, codigo 0 y sin `error CS`/`warning CS` en las dos corridas del pase.
+- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`; sus dos rollbacks intencionales registraron contexto accionable y `RollbackSucceeded: True` una sola vez por failure.
+- `M36.1 Foundation Identity Validation: PASS`: actors 3, doors 3, containers 8, authored roots 14, authored world item IDs 2, duplicados 0 e invalidos 0.
+- Ninguna corrida emitio `[InteractionSystem] No equipped item.` ni `[InteractionSystem] Available actions:` desde consultas puras.
 
 - Runtime y Editor compilaron sin errores en Unity 6.4.6f1; la recompilacion final sin el runner temporal termino con `Tundra build success` y recarga de dominio.
 - Diagnostico `Old Scars > Diagnostics > M36.1 > Run Checkpoint A Item Identity` (`Ctrl+Shift+I`): `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
@@ -82,13 +98,13 @@ Objetivo: congelar identidad durable de items y del contenido authored del slice
 - `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
 - El diff de `SampleScene` contiene solamente los 14 componentes/referencias de identidad y dos overrides `authoredItemInstanceId`; no cambia transforms, jerarquia, colliders, renderers, materiales, camara, iluminacion, loot o UI.
 - La evidencia manual que disparo el recovery confirmo que `GameDatabase` cargaba 8 items con 0 errors y 0 warnings; la causa era la ausencia de authored IDs serializados.
-- La validacion manual de Checkpoint B por Mauro permanece pendiente.
+- La validacion manual de Checkpoint B por Mauro fue exitosa: ambos authored world items y sus flujos de pickup/equip/inventario/drop funcionaron sin errores nuevos observados.
 
 ## Estado De Gates Y Secuencia
 
-- `Foundation Freeze`: no aprobado; Checkpoints A y B aportan evidencia automatizada, pero la validacion manual y revision final permanecen pendientes.
+- `Foundation Freeze`: no aprobado; Checkpoints A/B, la validacion manual y el pase de observabilidad aportan evidencia, pero la revision final permanece pendiente.
 - R03 permanece `MITIGATING`.
 - M37.0 no comenzo y sigue bloqueado hasta validar/revisar M36.1.
 - milestone anterior: M36.0 — `DONE — DOCUMENTATION REVIEWED`, commit de cierre `461b1b6508ef234777b82ccea97624b5b94b428c`.
 
-No iniciar M37, condition mutable, repair, actor lifecycle, save/load, gameplay nuevo ni UI final antes de la validacion manual y revision final de `Foundation Freeze`.
+No iniciar M37, condition mutable, repair, actor lifecycle, save/load, gameplay nuevo ni UI final antes de la revision final de `Foundation Freeze`.

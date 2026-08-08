@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Feedback;
+using OldScars.Core.Identity;
 using OldScars.Core.Items;
 using UnityEngine;
 
@@ -357,7 +358,8 @@ namespace OldScars.Core.Interactions
 
             if (!TryGetReadyDatabase(out GameDatabase database, out string databaseError))
             {
-                Debug.LogWarning($"[ContainerLootComponent] Cannot initialize storage for '{SafeText(lootTableId)}': {databaseError}");
+                LogStorageInitializationFailure("DatabaseUnavailable", false, false, databaseError,
+                    "Initialization deferred; storage remains empty.");
                 return false;
             }
 
@@ -423,18 +425,24 @@ namespace OldScars.Core.Interactions
             if (lootTable == null)
             {
                 error = $"loot table no encontrada: {SafeText(lootTableId)}.";
+                LogStorageInitializationFailure("LootTableNotFound", true, false, error,
+                    "Initialization aborted; storage remains empty.");
                 return false;
             }
 
             if (HasBrokenLootData(lootTable, database, out string dataError))
             {
                 error = $"loot table invalida: {dataError}.";
+                LogStorageInitializationFailure("InvalidLootTable", true, true, error,
+                    "Initialization aborted; storage remains empty.");
                 return false;
             }
 
             if (!TryPopulateStorage(lootTable, database, out string populationError))
             {
                 error = $"no se pudo poblar el storage: {populationError}";
+                LogStorageInitializationFailure("StoragePopulationFailed", true, true, error,
+                    "Storage snapshot restored; new instance reservations released.");
                 return false;
             }
 
@@ -449,12 +457,15 @@ namespace OldScars.Core.Interactions
                     $"\n  Reason: {SafeText(gridError)}");
             }
 
+            PersistentSceneObjectId persistentIdentity = GetComponent<PersistentSceneObjectId>();
             Debug.Log(
-                "[ContainerLootComponent] Runtime storage initialized." +
-                $"\n  Loot table: {SafeText(lootTableId)}" +
+                "[ContainerLootComponent][INITIALIZED]" +
+                $"\n  Container: {name}" +
+                $"\n  Root: {(transform.root != null ? transform.root.name : "<UNKNOWN>")}" +
+                $"\n  PersistentSceneObjectId: {DiagnosticText(persistentIdentity != null ? persistentIdentity.PersistentId : null)}" +
+                $"\n  LootTable: {DiagnosticText(lootTableId)}" +
                 $"\n  Entries: {storage.EntryCount}" +
-                $"\n  Total quantity: {storage.TotalQuantity}" +
-                $"\n  Contents: {FormatStorageContents(database)}");
+                $"\n  TotalQuantity: {storage.TotalQuantity}");
 
             return true;
         }
@@ -894,6 +905,31 @@ namespace OldScars.Core.Interactions
         private static string SafeText(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
+        }
+
+        private void LogStorageInitializationFailure(
+            string failureCode,
+            bool databaseReady,
+            bool lootTableFound,
+            string failure,
+            string actionTaken)
+        {
+            PersistentSceneObjectId persistentIdentity = GetComponent<PersistentSceneObjectId>();
+            Debug.LogError(
+                "[ContainerLootComponent][INITIALIZATION_FAILED]" +
+                $"\n  Operation: InitializeStorage\n  Scene: {DiagnosticText(gameObject.scene.name)}\n  Container: {name}" +
+                $"\n  PersistentSceneObjectId: {DiagnosticText(persistentIdentity != null ? persistentIdentity.PersistentId : null)}" +
+                $"\n  LootTable: {DiagnosticText(lootTableId)}\n  DatabaseReady: {databaseReady}\n  LootTableFound: {lootTableFound}" +
+                $"\n  MutationCommitted: false\n  RollbackAttempted: {failureCode == "StoragePopulationFailed"}" +
+                $"\n  RollbackSucceeded: {failureCode == "StoragePopulationFailed"}" +
+                $"\n  FailureCode: {failureCode}\n  Failure: {DiagnosticText(failure)}" +
+                $"\n  ActionTaken: {actionTaken}",
+                this);
+        }
+
+        private static string DiagnosticText(string value)
+        {
+            return value == null ? "<NONE>" : string.IsNullOrWhiteSpace(value) ? "<EMPTY>" : value;
         }
     }
 }

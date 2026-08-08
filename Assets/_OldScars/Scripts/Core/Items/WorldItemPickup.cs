@@ -255,6 +255,16 @@ namespace OldScars.Core.Items
                 default);
             if (!transferResult.Success)
             {
+                if (transferResult.Status != InventoryMutationResult.MutationStatus.RolledBack)
+                {
+                    Debug.LogWarning(
+                        "[WorldItemPickup][PICKUP_FAILED]" +
+                        $"\n  DefinitionId: {DiagnosticText(item.DefinitionId)}\n  InstanceId: {DiagnosticText(item.InstanceId)}" +
+                        $"\n  Quantity: {pickupQuantity}\n  Source: WorldItemPickup({name})\n  Target: InventoryComponent({inventory.name})" +
+                        $"\n  MutationCommitted: false\n  FailureCode: {transferResult.Failure}" +
+                        $"\n  Failure: {DiagnosticText(transferResult.Message)}",
+                        this);
+                }
                 string failureMessage = transferResult.Failure == InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded
                     ? transferResult.Message ?? "Too heavy."
                     : $"No se pudo recoger '{SafeText(itemDefinitionId)}'.";
@@ -350,7 +360,15 @@ namespace OldScars.Core.Items
             RecordItemPickedUp(actorContext, targetTags, item, displayName, transferredQuantity);
             RecordTargetStateChanged(actorContext, targetTags, addedPickedUp, removedPickupable);
 
-            Debug.Log($"[WorldItemPickup] Committed {SafeText(item?.DefinitionId)} x{transferredQuantity} [{SafeText(item?.InstanceId)}].");
+            InventoryComponent inventory = actorContext != null ? actorContext.GetInventoryComponent() : null;
+            Debug.Log(
+                "[WorldItemPickup][COMMIT]" +
+                $"\n  Operation: Pickup" +
+                $"\n  DefinitionId: {DiagnosticText(item?.DefinitionId)}" +
+                $"\n  InstanceId: {DiagnosticText(item?.InstanceId)}" +
+                $"\n  Quantity: {transferredQuantity}" +
+                $"\n  Source: WorldItemPickup({name})" +
+                $"\n  Target: {(inventory != null ? $"InventoryComponent({inventory.name})" : "<UNKNOWN>")}");
 
             if (destroyAfterPickup)
                 Destroy(gameObject);
@@ -379,7 +397,12 @@ namespace OldScars.Core.Items
             if (dataManager == null || !dataManager.IsReady || dataManager.Database == null)
             {
                 error = "Los datos del juego todavía no están disponibles.";
-                Debug.LogWarning("[WorldItemPickup] Game database is not ready.", this);
+                LogAuthoredInitializationFailure(
+                    "DatabaseUnavailable",
+                    dataManager != null && dataManager.IsReady,
+                    false,
+                    error,
+                    "Initialization aborted; no CreateNew fallback.");
                 return false;
             }
 
@@ -387,9 +410,12 @@ namespace OldScars.Core.Items
             if (definition == null)
             {
                 error = $"No existe la definición '{SafeText(itemDefinitionId)}'.";
-                Debug.LogWarning(
-                    $"[WorldItemPickup] Item definition '{SafeText(itemDefinitionId)}' was not found in the ready game database.",
-                    this);
+                LogAuthoredInitializationFailure(
+                    "DefinitionNotFound",
+                    true,
+                    false,
+                    error,
+                    "Initialization aborted; no CreateNew fallback.");
                 return false;
             }
 
@@ -405,10 +431,38 @@ namespace OldScars.Core.Items
             }
             catch (System.Exception exception)
             {
-                Debug.LogError($"[WorldItemPickup] Failed to initialize authored world item '{name}': {exception.Message}", this);
+                string failureCode = string.IsNullOrWhiteSpace(authoredItemInstanceId)
+                    ? "MissingAuthoredInstanceId"
+                    : !ItemInstanceIdRegistry.IsValidFormat(authoredItemInstanceId)
+                        ? "InvalidAuthoredInstanceId"
+                        : "AuthoredItemInitializationFailed";
+                LogAuthoredInitializationFailure(
+                    failureCode,
+                    true,
+                    true,
+                    exception.Message,
+                    "Initialization aborted; reserved state released; no CreateNew fallback.");
                 error = exception.Message;
                 return false;
             }
+        }
+
+        private void LogAuthoredInitializationFailure(
+            string failureCode,
+            bool databaseReady,
+            bool definitionFound,
+            string failure,
+            string actionTaken)
+        {
+            Debug.LogError(
+                "[WorldItemPickup][INITIALIZATION_FAILED]" +
+                $"\n  Operation: InitializeAuthoredWorldItem\n  Scene: {DiagnosticText(gameObject.scene.name)}\n  GameObject: {name}" +
+                $"\n  DefinitionId: {DiagnosticText(itemDefinitionId)}\n  AuthoredInstanceId: {DiagnosticText(authoredItemInstanceId)}" +
+                $"\n  RuntimeInstanceId: {DiagnosticText(storage.GetEntry(0)?.Item?.InstanceId)}" +
+                $"\n  DatabaseReady: {databaseReady}\n  DefinitionFound: {definitionFound}\n  StorageInitialized: {!storage.IsEmpty}" +
+                $"\n  FailureCode: {failureCode}\n  Failure: {DiagnosticText(failure)}" +
+                $"\n  ActionTaken: {actionTaken}",
+                this);
         }
 
         private void EnsureSimplePhysics()
@@ -539,6 +593,11 @@ namespace OldScars.Core.Items
         private static string SafeText(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
+        }
+
+        private static string DiagnosticText(string value)
+        {
+            return value == null ? "<NONE>" : string.IsNullOrWhiteSpace(value) ? "<EMPTY>" : value;
         }
     }
 }
