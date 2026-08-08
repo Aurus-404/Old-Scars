@@ -6,27 +6,27 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ### 1. M37.1 — Current Slice Persistent Round-Trip
 
-Estado: `IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING`.
+Estado: `IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
 
-Versión siguiente del mismo milestone: `Transactional Rehydration & Real-Scene Round-Trip Pass 2`.
+Versión siguiente del mismo milestone: `Manual Unity Validation & Persistence Ready Closeout`.
 
-El Pass 1 ya captura el slice real en DTOs durables, valida su semántica sin mutar, guarda/lee mediante M37.0 y compara canónicamente el resultado. `Persistence Ready` permanece no aprobado hasta completar apply, rollback, round-trip real y validación manual.
+Pass 1 y Pass 2 ya implementan snapshot/preflight, apply selectivo, rehydration exacta, world reconciliation, rollback y round-trip real automatizado. `Persistence Ready` permanece no aprobado hasta completar la validación manual fresh-session.
 
 Objetivo:
 
-- implementar rehydration exacta de jugador, items, inventory/grid, Equipment, ownership e item-owned storages sobre el snapshot ya validado;
-- aplicar containers, cuerpos, puertas, authored/runtime world items y runtime state sin reseed ni duplicaciones;
-- capturar rollback pre-load y restaurarlo mediante el mismo pipeline ante un fallo de apply;
-- agregar `Load Debug Slot` y demostrar `capture → save → mutate → load → recapture → compare` en escena real.
+- entrar a Play Mode, modificar pose/player, recoger crowbar, equipar Lee-Enfield, cambiar backpack/container, crear un runtime drop y cambiar una puerta;
+- guardar mediante `Save Debug Slot`, salir completamente de Play Mode y entrar a una sesión fresca;
+- esperar bootstrap normal, ejecutar `Load Debug Slot` y verificar identidades, quantities/placements, Equipment, owned storage, world state, doors, health/needs y player pose;
+- revisar Console y cerrar `Persistence Ready` solamente si Mauro confirma el resultado sin errores funcionales relacionados.
 
 Fuera de alcance:
 
-- cambios al contrato del snapshot sin evidencia de bug real;
+- cambios de implementación o contrato sin evidencia nueva de bug real;
 - autosave, UI final de save/load, cloud y profiles;
 - actor lifecycle futuro, clima, facciones o proceduralidad;
 - gameplay nuevo fuera del round-trip del slice existente.
 
-Salida: gate `Persistence Ready`.
+Salida: decisión documentada del gate `Persistence Ready` y cierre de M37.1 si la validación manual es exitosa.
 
 ### 2. M38.0 — Actor Runtime & Lifecycle V1
 

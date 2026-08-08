@@ -87,6 +87,11 @@ namespace OldScars.Core.Interactions
             doorPivot.localEulerAngles = new Vector3(currentEulerAngles.x, nextYAngle, currentEulerAngles.z);
         }
 
+        internal void SyncPersistenceState()
+        {
+            ApplyTargetAngle(true);
+        }
+
         private float GetTargetYAngle()
         {
             if (worldObjectTags.HasTag(OpenedDoorTag))

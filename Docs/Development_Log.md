@@ -2254,3 +2254,44 @@ Alcance y secuencia:
 - no se implementaron apply/load destructivo, rehydration, rollback, authoritative container restore, rehydrated world spawn ni `Load Debug Slot`.
 - `Persistence Ready` permanece `NOT YET APPROVED` y M38.0 no comenzó.
 - el próximo trabajo es la versión `Transactional Rehydration & Real-Scene Round-Trip Pass 2` dentro del mismo milestone canónico M37.1; no se reservaron IDs adicionales de milestone.
+
+### M37.1 — Transactional Rehydration & Real-Scene Round-Trip Pass 2
+
+Fecha: 2026-08-08
+
+Milestone: `M37.1 — Current Slice Persistent Round-Trip`.
+
+Estado anterior: `IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING`.
+
+Estado posterior: `IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Implementación:
+
+- `CurrentSliceLoadService` ejecuta read, semantic preflight, resolución de escena, snapshot pre-load, teardown selectivo, apply, recapture/compare y rollback mediante el mismo `ApplyCore`.
+- no usa reset global de identity/ownership; retira solamente IDs de las superficies seleccionadas y valida que NPCs vivos fuera del slice conserven IDs, direct owners y owned storages.
+- rehidrata `InstanceId`, `DefinitionId` y `Condition` exactos; reconstruye item-owned storage detached con contenido/layout exactos antes del registro, y restaura Inventory/grid, Equipment multi-slot y ownership.
+- containers reciben contenido autoritativo incluso vacío y no reseedean loot. Corpses ya muertos restauran sólo health, Inventory, Equipment y owned storage; roots vivos son rechazados antes de mutar porque lifecycle general queda fuera de M37.1.
+- authored world items restauran present/absent sin lazy respawn; runtime drops reutilizan la instancia ya rehidratada y conservan quantity/pose sin split ni ID nuevo.
+- doors restauran el tag lógico y sincronizan visual cuando existe controlador; player health/needs y transform se restauran al final con seguridad de movimiento/controller.
+- `Load Debug Slot` quedó disponible sólo en Play Mode sobre `m37_current_slice_debug`; no se agregó ventana, autosave ni UI final.
+- un único fault point `UNITY_EDITOR` posterior a storage restore demuestra el failure path. `ApplyFailed` sólo se devuelve como rollback seguro si el snapshot pre-load vuelve a capturarse equivalente; de lo contrario el resultado es `RollbackFailed` con ambas causas.
+
+Validación automatizada:
+
+- Unity 6.4.6f1 Runtime/Editor: `Tundra build success`, retorno 0;
+- `M37.0 Persistence Core Diagnostics: PASS`;
+- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`;
+- `M36.1 Foundation Identity Validation: PASS`;
+- `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS`;
+- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS`;
+- State A cubrió player pose/health/needs, dos pickups authored, Lee-Enfield equipada, stack transfer a backpack, container, NPC temporalmente muerto con Inventory/Equipment, door y runtime drop. State B fue distinto; load restauró A y A/C fueron equivalentes.
+- el fault produjo `ApplyFailed`, `RollbackAttempted: true`, `RollbackSucceeded: true`; el runtime post-rollback fue equivalente al pre-load.
+- el root temporal fue eliminado, la escena no quedó dirty y `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
+- no hubo warnings nuevos; permanecen cuatro `CS0618` preexistentes en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
+
+Alcance y secuencia:
+
+- se modificaron diez archivos C# y Unity generó el `.meta` del nuevo load service; quedaron fuera `SampleScene`, prefabs, JSON, Packages, ProjectSettings y asmdefs.
+- Snapshot V1 no cambió. No se implementaron NPC lifecycle/transform, AI, autosave, UI final, M38 ni sistemas futuros.
+- `Persistence Ready` permanece `NOT YET APPROVED`.
+- trabajo siguiente: `M37.1 — Manual Unity Validation & Persistence Ready Closeout` mediante fresh-session Save/Load Debug Slot por Mauro; M38.0 no comenzó.

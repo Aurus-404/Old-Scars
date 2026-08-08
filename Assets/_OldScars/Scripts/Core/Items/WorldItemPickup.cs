@@ -344,6 +344,69 @@ namespace OldScars.Core.Items
             return storage.GetEntryByInstanceId(instanceId) == null;
         }
 
+        internal bool RestorePersistenceRepresentation(
+            ItemInstance item,
+            int quantity,
+            bool authored,
+            out string error)
+        {
+            error = null;
+            if (item == null || quantity < 1 || quantity > Mathf.Max(1, item.MaxStack))
+            {
+                error = "Persistence world representation requires one valid item stack.";
+                return false;
+            }
+            if (authored && item.InstanceId != authoredItemInstanceId)
+            {
+                error = $"Authored marker '{authoredItemInstanceId}' cannot represent '{item.InstanceId}'.";
+                return false;
+            }
+
+            try
+            {
+                storage.Clear();
+                storage.AddItemAsSeparateEntry(item, quantity);
+                itemDefinitionId = item.DefinitionId;
+                sourceInitialized = true;
+                destroyAfterPickup = !authored;
+                WorldObjectTags tags = GetComponent<WorldObjectTags>();
+                tags?.RemoveTag(PickedUpTag);
+                tags?.AddTag(PickupableTag);
+                EnableVisiblePickupParts();
+                EnsureSimplePhysics();
+                gameObject.SetActive(true);
+                return true;
+            }
+            catch (System.Exception exception)
+            {
+                storage.Clear();
+                error = $"World representation restore failed: {exception.Message}";
+                return false;
+            }
+        }
+
+        internal void SetPersistenceAuthoredAbsent()
+        {
+            storage.Clear();
+            sourceInitialized = true;
+            destroyAfterPickup = false;
+            WorldObjectTags tags = GetComponent<WorldObjectTags>();
+            tags?.RemoveTag(PickupableTag);
+            tags?.AddTag(PickedUpTag);
+            DisableVisiblePickupParts();
+            DisablePhysics();
+        }
+
+        internal void RemovePersistenceRuntimeRepresentation()
+        {
+            storage.Clear();
+            sourceInitialized = true;
+            if (string.IsNullOrWhiteSpace(authoredItemInstanceId))
+                DestroyImmediate(gameObject);
+            else
+                SetPersistenceAuthoredAbsent();
+        }
+
         internal DebugActionExecutionResult FinalizeCommittedPickup(
             ActorInteractionContext actorContext,
             WorldObjectTags targetTags,
@@ -509,6 +572,17 @@ namespace OldScars.Core.Items
             Renderer[] renderers = GetComponentsInChildren<Renderer>();
             for (int index = 0; index < renderers.Length; index++)
                 renderers[index].enabled = false;
+        }
+
+        private void EnableVisiblePickupParts()
+        {
+            Collider[] colliders = GetComponentsInChildren<Collider>(true);
+            for (int index = 0; index < colliders.Length; index++)
+                colliders[index].enabled = true;
+
+            Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
+                renderers[index].enabled = true;
         }
 
         private static string GetItemDisplayName(string definitionId)

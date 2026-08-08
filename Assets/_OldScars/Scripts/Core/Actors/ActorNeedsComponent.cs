@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 namespace OldScars.Core.Actors
@@ -107,6 +108,32 @@ namespace OldScars.Core.Actors
             }
 
             return state.currentValue < Mathf.Max(0f, config.maxValue);
+        }
+
+        internal bool TryApplyPersistenceState(IReadOnlyDictionary<string, float> values, out string error)
+        {
+            error = null;
+            if (values == null || runtimeStates == null || values.Count != runtimeStates.Length)
+            {
+                error = "Persistence needs state does not match the runtime need set.";
+                return false;
+            }
+
+            for (int index = 0; index < runtimeStates.Length; index++)
+            {
+                ActorNeedState state = runtimeStates[index];
+                ActorNeedConfig config = state != null ? profile?.GetNeed(state.needId) : null;
+                if (state == null || config == null || !values.TryGetValue(state.needId, out float value) ||
+                    float.IsNaN(value) || float.IsInfinity(value) || value < 0f || value > Mathf.Max(0f, config.maxValue))
+                {
+                    error = $"Persistence need '{state?.needId ?? "<missing>"}' is missing or outside its configured range.";
+                    return false;
+                }
+            }
+
+            for (int index = 0; index < runtimeStates.Length; index++)
+                runtimeStates[index].currentValue = values[runtimeStates[index].needId];
+            return true;
         }
 
         private void InitializeRuntimeState()

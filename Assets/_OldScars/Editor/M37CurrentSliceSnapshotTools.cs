@@ -15,11 +15,14 @@ namespace OldScars.Editor
     public static class M37CurrentSliceSnapshotTools
     {
         private const string SaveMenu = "Old Scars/Persistence/M37.1/Save Debug Slot";
+        private const string LoadMenu = "Old Scars/Persistence/M37.1/Load Debug Slot";
         private const string DiagnosticMenu = "Old Scars/Diagnostics/M37.1/Run Snapshot & Semantic Preflight";
+        private const string RoundTripDiagnosticMenu = "Old Scars/Diagnostics/M37.1/Run Current Slice Persistent Round-Trip";
         private const string ScenePath = "Assets/Scenes/SampleScene.unity";
         private const string PendingKey = "OldScars.M37.1.SnapshotDiagnostics.Pending";
         private const string RunningKey = "OldScars.M37.1.SnapshotDiagnostics.Running";
         private const string ResultKey = "OldScars.M37.1.SnapshotDiagnostics.Result";
+        private const string ModeKey = "OldScars.M37.1.SnapshotDiagnostics.Mode";
 
         static M37CurrentSliceSnapshotTools()
         {
@@ -44,12 +47,45 @@ namespace OldScars.Editor
         [MenuItem(SaveMenu, true)]
         private static bool ValidateSaveDebugSlot() => EditorApplication.isPlaying && !EditorApplication.isCompiling;
 
+        [MenuItem(LoadMenu)]
+        public static void LoadDebugSlot()
+        {
+            CurrentSliceLoadResult result = CurrentSliceLoadService.Load(CurrentSliceSnapshotService.DebugSlotId);
+            if (!result.Success)
+            {
+                Debug.LogError("[Persistence][CURRENT_SLICE_LOAD_FAILURE]" +
+                    $"\nSlot: {CurrentSliceSnapshotService.DebugSlotId}\nPhase: {result.Phase}" +
+                    $"\nFailureCode: {result.FailureCode}\nRollbackAttempted: {result.RollbackAttempted}" +
+                    $"\nRollbackSucceeded: {result.RollbackSucceeded}\nFailure: {result.Failure}");
+            }
+        }
+
+        [MenuItem(LoadMenu, true)]
+        private static bool ValidateLoadDebugSlot() => EditorApplication.isPlaying && !EditorApplication.isCompiling;
+
         [MenuItem(DiagnosticMenu)]
         public static void RunSnapshotAndSemanticPreflightDiagnostics()
         {
+            StartDiagnostic("snapshot");
+        }
+
+        [MenuItem(DiagnosticMenu, true)]
+        private static bool ValidateDiagnostics() => !EditorApplication.isCompiling;
+
+        [MenuItem(RoundTripDiagnosticMenu)]
+        public static void RunCurrentSlicePersistentRoundTripDiagnostics()
+        {
+            StartDiagnostic("roundtrip");
+        }
+
+        [MenuItem(RoundTripDiagnosticMenu, true)]
+        private static bool ValidateRoundTripDiagnostics() => !EditorApplication.isCompiling;
+
+        private static void StartDiagnostic(string mode)
+        {
             if (EditorApplication.isPlaying)
             {
-                RunRuntimeDiagnostics();
+                if (mode == "roundtrip") RunRoundTripRuntimeDiagnostics(); else RunRuntimeDiagnostics();
                 return;
             }
             if (EditorApplication.isCompiling)
@@ -57,12 +93,10 @@ namespace OldScars.Editor
             SessionState.SetBool(PendingKey, true);
             SessionState.SetBool(RunningKey, false);
             SessionState.SetString(ResultKey, string.Empty);
+            SessionState.SetString(ModeKey, mode);
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             EditorApplication.EnterPlaymode();
         }
-
-        [MenuItem(DiagnosticMenu, true)]
-        private static bool ValidateDiagnostics() => !EditorApplication.isCompiling;
 
         private static void ContinueBatchDiagnostic()
         {
@@ -78,7 +112,10 @@ namespace OldScars.Editor
             SessionState.SetBool(RunningKey, true);
             try
             {
-                RunRuntimeDiagnostics();
+                if (SessionState.GetString(ModeKey, "snapshot") == "roundtrip")
+                    RunRoundTripRuntimeDiagnostics();
+                else
+                    RunRuntimeDiagnostics();
                 SessionState.SetString(ResultKey, "PASS");
             }
             catch (Exception exception)
@@ -102,6 +139,7 @@ namespace OldScars.Editor
             SessionState.EraseBool(PendingKey);
             SessionState.EraseBool(RunningKey);
             SessionState.EraseString(ResultKey);
+            SessionState.EraseString(ModeKey);
             bool cleanScene = !EditorSceneManager.GetActiveScene().isDirty;
             if (!cleanScene)
                 Debug.LogError("M37.1 diagnostics left SampleScene dirty; the scene was not saved.");
@@ -205,6 +243,106 @@ namespace OldScars.Editor
                 throw new InvalidOperationException(failure);
             }
             Debug.Log("M37.1 Snapshot & Semantic Preflight Diagnostics: PASS");
+        }
+
+        private static void RunRoundTripRuntimeDiagnostics()
+        {
+            var errors = new List<string>();
+            string root = Path.Combine(Path.GetTempPath(), "OldScars_M37_1_RoundTrip_" + Guid.NewGuid().ToString("N"));
+            var store = new PersistenceFileStore(root);
+            CurrentSliceSaveData initial = null;
+            bool initialWritten = false;
+            try
+            {
+                CurrentSliceResult initialCapture = CurrentSliceSnapshotService.Capture();
+                Require(initialCapture.Success, "initial cleanup snapshot", initialCapture.Failure, errors);
+                if (!initialCapture.Success) throw new InvalidOperationException(string.Join("\n", errors));
+                initial = initialCapture.Snapshot;
+                PersistenceWriteResult initialWrite = store.Write("diagnostic_initial", CurrentSliceSnapshotService.ToPayload(initial));
+                initialWritten = initialWrite.Success;
+                Require(initialWritten, "initial cleanup snapshot write", initialWrite.Failure, errors);
+
+                Require(CurrentSliceRoundTripDiagnosticScenario.TryPrepareStateA(out string setupFailure),
+                    "runtime State A setup", setupFailure, errors);
+                if (errors.Count > 0) throw new InvalidOperationException(string.Join("\n", errors));
+
+                CurrentSliceResult stateAResult = CurrentSliceSnapshotService.Capture();
+                Require(stateAResult.Success, "State A capture", stateAResult.Failure, errors);
+                if (!stateAResult.Success) throw new InvalidOperationException(string.Join("\n", errors));
+                CurrentSliceSaveData stateA = stateAResult.Snapshot;
+                Require(string.IsNullOrWhiteSpace(CurrentSliceRoundTripDiagnosticScenario.ValidateCoverage(stateA)),
+                    "State A slice coverage", CurrentSliceRoundTripDiagnosticScenario.ValidateCoverage(stateA), errors);
+                PersistenceWriteResult stateAWrite = store.Write("state_a", CurrentSliceSnapshotService.ToPayload(stateA));
+                Require(stateAWrite.Success, "State A M37.0 write", stateAWrite.Failure, errors);
+
+                Require(CurrentSliceRoundTripDiagnosticScenario.TryMutateStateB(out string mutationFailure),
+                    "runtime State B mutation", mutationFailure, errors);
+                CurrentSliceResult stateBResult = CurrentSliceSnapshotService.Capture();
+                Require(stateBResult.Success, "State B capture", stateBResult.Failure, errors);
+                if (stateBResult.Success)
+                    Require(!CurrentSliceSnapshotService.Compare(stateA, stateBResult.Snapshot).Equivalent,
+                        "State B differs from State A", null, errors);
+
+                CurrentSliceLoadResult load = CurrentSliceLoadService.Load("state_a", store);
+                Require(load.Success, "transactional State A load", load.Failure, errors);
+                CurrentSliceResult stateCResult = CurrentSliceSnapshotService.Capture();
+                Require(stateCResult.Success, "State C capture", stateCResult.Failure, errors);
+                if (stateCResult.Success)
+                    Require(CurrentSliceSnapshotService.Compare(stateA, stateCResult.Snapshot).Equivalent,
+                        "canonical A/C equivalence", CurrentSliceSnapshotService.Compare(stateA, stateCResult.Snapshot).Difference, errors);
+
+                CurrentSliceResult beforeFault = CurrentSliceSnapshotService.Capture();
+                Require(beforeFault.Success, "pre-fault snapshot", beforeFault.Failure, errors);
+                CurrentSliceLoadService.DiagnosticInjectFailureAfterStorageRestore = true;
+                CurrentSliceLoadResult fault = CurrentSliceLoadService.Load("state_a", store);
+                Require(fault.FailureCode == CurrentSliceLoadFailureCode.ApplyFailed &&
+                        fault.RollbackAttempted && fault.RollbackSucceeded,
+                    "faulted apply reports successful rollback", fault.Failure, errors);
+                CurrentSliceResult afterFault = CurrentSliceSnapshotService.Capture();
+                Require(afterFault.Success, "post-rollback snapshot", afterFault.Failure, errors);
+                if (beforeFault.Success && afterFault.Success)
+                    Require(CurrentSliceSnapshotService.Compare(beforeFault.Snapshot, afterFault.Snapshot).Equivalent,
+                        "rollback restores pre-load runtime", CurrentSliceSnapshotService.Compare(beforeFault.Snapshot, afterFault.Snapshot).Difference, errors);
+            }
+            catch (Exception exception)
+            {
+                if (errors.Count == 0) errors.Add(exception.Message);
+            }
+            finally
+            {
+                CurrentSliceLoadService.DiagnosticInjectFailureAfterStorageRestore = false;
+                if (!CurrentSliceRoundTripDiagnosticScenario.TryRestoreDiagnosticCorpseAlive(out string corpseCleanupFailure))
+                    errors.Add("Diagnostic corpse cleanup failed: " + corpseCleanupFailure);
+                if (initialWritten && initial != null)
+                {
+                    CurrentSliceLoadResult cleanupLoad = CurrentSliceLoadService.Load("diagnostic_initial", store);
+                    if (!cleanupLoad.Success) errors.Add("Initial-state cleanup load failed: " + cleanupLoad.Failure);
+                    else
+                    {
+                        CurrentSliceResult cleanupCapture = CurrentSliceSnapshotService.Capture();
+                        if (!cleanupCapture.Success) errors.Add("Initial-state cleanup capture failed: " + cleanupCapture.Failure);
+                        else
+                        {
+                            CurrentSliceComparisonResult cleanupComparison = CurrentSliceSnapshotService.Compare(initial, cleanupCapture.Snapshot);
+                            if (!cleanupComparison.Equivalent) errors.Add("Initial-state cleanup differs: " + cleanupComparison.Difference);
+                        }
+                    }
+                }
+                try
+                {
+                    if (Directory.Exists(root)) Directory.Delete(root, true);
+                    if (Directory.Exists(root)) errors.Add("Temporary round-trip diagnostic root still exists after cleanup.");
+                }
+                catch (Exception exception) { errors.Add("Temporary round-trip cleanup failed: " + exception.Message); }
+            }
+
+            if (errors.Count > 0)
+            {
+                string failure = "M37.1 Current Slice Persistent Round-Trip Diagnostics: FAIL\n- " + string.Join("\n- ", errors);
+                Debug.LogError(failure);
+                throw new InvalidOperationException(failure);
+            }
+            Debug.Log("M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS");
         }
 
         private static void ExpectInvalid(CurrentSliceSaveData source, string label, Action<CurrentSliceSaveData> mutation, List<string> errors)

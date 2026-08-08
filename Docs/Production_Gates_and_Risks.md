@@ -107,7 +107,9 @@ Evidencia de infraestructura M37.0: `DONE — PERSISTENCE CORE VALIDATED`. Envel
 
 Evidencia incremental M37.1 Pass 1: `Snapshot Contract & Semantic Preflight Pass 1` captura el slice real en una tabla única de items y DTOs referenciales, valida identidad/localización/quantity/placements/Equipment/owned storage/world state sin mutar, guarda/lee mediante M37.0 y compara canónicamente. Runtime/Editor, M37.0, Foundation Identity y `M37.1 Snapshot & Semantic Preflight Diagnostics` dieron `PASS`; el diagnóstico temporal no guardó `SampleScene`.
 
-Pendiente para aprobar el gate: M37.1 debe completar `Transactional Rehydration & Real-Scene Round-Trip Pass 2`, incluyendo pre-load rollback, apply ordenado, authored/runtime world reconciliation y recapture equivalente. Luego requiere validación manual fresh-session. Pass 1 y M37.0 por sí solos no aprueban `Persistence Ready`; R05/R14/R19 conservan su estado hasta esa revisión.
+Evidencia incremental M37.1 Pass 2: `Transactional Rehydration & Real-Scene Round-Trip Pass 2` implementa resolución previa, snapshot de rollback, teardown selectivo sin resets globales, rehydration exacta, restore de storages/Equipment/ownership, containers autoritativos, corpses actuales, authored/runtime world state, doors, health/needs y pose del player. `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS` demostró A → B → load A → C equivalente y el fault post-storage demostró `ApplyFailed` con rollback equivalente. Compile, M37.0, Checkpoint A, Foundation Identity y snapshot/preflight permanecieron en `PASS`; `SampleScene` conservó su hash.
+
+Pendiente para aprobar el gate: validación manual fresh-session mediante `Save Debug Slot`, salida completa de Play Mode, bootstrap nuevo y `Load Debug Slot`, con verificación funcional y Console por Mauro. La evidencia automatizada no aprueba por sí sola `Persistence Ready`; R05/R14/R19 conservan su estado hasta esa revisión.
 
 Deuda aceptable: cloud save y lifecycle/serializacion general de actores futuros, clima, facciones o proceduralidad que aun no existen. No se difieren el jugador ni los cuerpos actuales.
 

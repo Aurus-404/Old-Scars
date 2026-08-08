@@ -6,15 +6,15 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ### M37.1 — Current Slice Persistent Round-Trip
 
-Versión completada:
+Versión implementada:
 
-`Snapshot Contract & Semantic Preflight Pass 1`
+`Transactional Rehydration & Real-Scene Round-Trip Pass 2`
 
 Estado actual:
 
-`IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING`
+`IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
 
-## Contrato Implementado En Pass 1
+## Contrato Implementado
 
 - `CurrentSliceSaveData` define DTOs planos y explícitos para player, items, storages, Equipment, containers, corpses, doors y world items; pose usa floats propios y no serializa componentes ni objetos Unity.
 - la tabla única de items conserva `InstanceId`, `DefinitionId` y `Condition`; stacks conservan una identidad representativa, `Quantity` y placement/orientación exactos.
@@ -26,6 +26,11 @@ Estado actual:
 - semantic preflight valida schema, referencias de escena y definiciones, unicidad/localización, cantidades, placements, Equipment multi-slot, item-owned storage sin nesting, containers, corpses, doors y world representations.
 - el comparador canónico ignora orden incidental y tolera `0.0001` en poses, pero reporta la primera diferencia semántica accionable.
 - `Save Debug Slot` está disponible sólo en Play Mode y usa capture + preflight + `PersistenceFileStore.Write` sobre `m37_current_slice_debug`.
+- `Load Debug Slot` usa el mismo pipeline real que diagnostics: read, semantic preflight, resolución de escena, snapshot de rollback, teardown selectivo, apply, recapture y comparación canónica.
+- apply rehidrata cada item una vez mediante `ItemInstance.Rehydrate`, adjunta y valida item-owned storage antes de registrarlo, restaura storages/placements, Equipment y ownership, y reconcilia authored world items y runtime drops sin generar IDs sustitutos.
+- containers restauran contenido autoritativo incluso vacío y quedan marcados inicializados para impedir reseed. Corpses restauran solamente health, Inventory, Equipment y owned storage cuando el root ya está muerto; NPCs vivos y lifecycle general permanecen fuera del slice.
+- doors restauran el tag lógico y sincronizan el controlador visual cuando existe. Health/needs del player y su pose se aplican al final con cancelación de movimiento y `CharacterController` temporalmente deshabilitado.
+- un fallo posterior a la primera mutación ejecuta `ApplyCore` con el snapshot pre-load, sin rollback recursivo. `RollbackFailed` conserva ambas causas y nunca se presenta como un load seguro.
 
 ## Evidencia Automatizada
 
@@ -33,6 +38,9 @@ Estado actual:
 - `M37.0 Persistence Core Diagnostics: PASS`.
 - `M36.1 Foundation Identity Validation: PASS` después del seam authored de sólo lectura.
 - `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS` sobre el slice real en Play Mode, con save/read temporal, preflight post-read, comparación canónica y casos negativos requeridos.
+- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS`: preparó un State A real con player pose/health/needs, pickups authored, Lee-Enfield equipada, stack dentro de backpack, container, corpse equipado, door y runtime drop; mutó State B, cargó A y obtuvo equivalencia canónica.
+- el fault Editor-only posterior a storage restore produjo `ApplyFailed`, `RollbackAttempted: true`, `RollbackSucceeded: true` y runtime final equivalente al snapshot pre-load.
 - el diagnóstico representó y round-trippeó un container vacío sin mutar gameplay; limpió su root temporal y `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
 - persisten sólo los seis warnings preexistentes: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
 
@@ -40,6 +48,6 @@ Estado actual:
 
 - `Foundation Freeze`: `APPROVED`.
 - `Persistence Ready`: `NOT YET APPROVED`.
-- no existen todavía apply/load destructivo, rehydration, rollback de load ni `Load Debug Slot`.
-- la siguiente versión del mismo milestone M37.1 es `Transactional Rehydration & Real-Scene Round-Trip Pass 2`.
+- el próximo trabajo inmediato es `M37.1 — Manual Unity Validation & Persistence Ready Closeout` mediante Save/Load Debug Slot en una sesión fresca.
+- la implementación automatizada no sustituye la validación manual ni autoriza cerrar el gate.
 - M38.0 permanece bloqueado y no fue iniciado.

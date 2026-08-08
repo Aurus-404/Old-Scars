@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using OldScars.Core.Data.Definitions;
 
 namespace OldScars.Core.Items
@@ -65,6 +66,37 @@ namespace OldScars.Core.Items
         public bool CompleteInitialContentLoad(out string error)
         {
             return TryInitializeLayout(out error);
+        }
+
+        internal bool CompleteInitialContentLoadExact(
+            IReadOnlyList<ItemStorageEntry> entries,
+            IReadOnlyList<GridPlacement> placements,
+            out string error)
+        {
+            InitializationError = null;
+            InitializationState = useGridLayout
+                ? GridStorageInitializationState.Pending
+                : GridStorageInitializationState.Disabled;
+            if (backend.TryReplaceWithExactEntries(
+                    entries,
+                    useGridLayout,
+                    useGridLayout ? configuredGridWidth : 0,
+                    useGridLayout ? configuredGridHeight : 0,
+                    placements,
+                    out error))
+            {
+                InitializationState = useGridLayout
+                    ? GridStorageInitializationState.Active
+                    : GridStorageInitializationState.Disabled;
+                return true;
+            }
+
+            backend.DisableLayout();
+            InitializationError = error;
+            InitializationState = useGridLayout
+                ? GridStorageInitializationState.LinearFallback
+                : GridStorageInitializationState.Disabled;
+            return false;
         }
 
         public bool TryInitializeLayout(out string error)

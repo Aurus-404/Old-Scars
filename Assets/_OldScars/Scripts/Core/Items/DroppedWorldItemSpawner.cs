@@ -181,6 +181,30 @@ namespace OldScars.Core.Items
             return worldItem;
         }
 
+        internal static WorldItemPickup RestorePersistenceDrop(
+            ItemInstance item,
+            int quantity,
+            Vector3 position,
+            Quaternion rotation,
+            out string error)
+        {
+            error = null;
+            if (item == null)
+            {
+                error = "Runtime drop restore requires an item instance.";
+                return null;
+            }
+
+            GameObject worldItem = CreateWorldItemRoot(null, GetItemDisplayName(item.DefinitionId));
+            worldItem.transform.SetPositionAndRotation(position, rotation);
+            WorldItemPickup pickup = worldItem.AddComponent<WorldItemPickup>();
+            if (pickup.RestorePersistenceRepresentation(item, quantity, false, out error))
+                return pickup;
+
+            Object.DestroyImmediate(worldItem);
+            return null;
+        }
+
         private static Vector3 GetDropPosition(Transform actorTransform)
         {
             if (actorTransform == null)

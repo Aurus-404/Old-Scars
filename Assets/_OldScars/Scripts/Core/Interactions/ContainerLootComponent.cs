@@ -52,6 +52,11 @@ namespace OldScars.Core.Interactions
 
         GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => GetGridRuntime().Backend;
 
+        internal void MarkPersistenceStorageInitialized()
+        {
+            storageInitialized = true;
+        }
+
         private void Awake()
         {
             GetGridRuntime();

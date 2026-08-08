@@ -479,6 +479,97 @@ namespace OldScars.Core.Items
                 layout.RestoreState(snapshot.Layout);
         }
 
+        internal bool TryReplaceWithExactEntries(
+            IReadOnlyList<ItemStorageEntry> entries,
+            bool usesGrid,
+            int width,
+            int height,
+            IReadOnlyList<GridPlacement> placements,
+            out string error)
+        {
+            error = null;
+            entries = entries ?? Array.Empty<ItemStorageEntry>();
+            placements = placements ?? Array.Empty<GridPlacement>();
+
+            GridInventoryLayout candidateLayout = null;
+            if (usesGrid)
+            {
+                if (width <= 0 || height <= 0 || placements.Count != entries.Count)
+                {
+                    error = $"Exact grid replacement requires positive dimensions and one placement per entry (got {width}x{height}, {entries.Count} entries, {placements.Count} placements).";
+                    return false;
+                }
+                candidateLayout = new GridInventoryLayout(width, height);
+            }
+            else if (width != 0 || height != 0 || placements.Count != 0)
+            {
+                error = "Exact linear replacement cannot carry grid dimensions or placements.";
+                return false;
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var placementById = new Dictionary<string, GridPlacement>(StringComparer.Ordinal);
+            for (int index = 0; index < placements.Count; index++)
+            {
+                GridPlacement placement = placements[index];
+                if (placement == null || string.IsNullOrWhiteSpace(placement.InstanceId) ||
+                    !placementById.TryAdd(placement.InstanceId, placement))
+                {
+                    error = "Exact grid replacement contains a null, missing or duplicate placement identity.";
+                    return false;
+                }
+            }
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                ItemInstance item = entry?.Item;
+                if (item == null || !seen.Add(item.InstanceId) || entry.Quantity < 1 || entry.Quantity > Math.Max(1, item.MaxStack))
+                {
+                    error = $"Exact replacement entry {index} is null, duplicated or has an invalid quantity.";
+                    return false;
+                }
+                if (!usesGrid)
+                    continue;
+                if (!placementById.TryGetValue(item.InstanceId, out GridPlacement placement) ||
+                    !TryResolveFootprint(item.DefinitionId, out GridFootprint footprint, out _, out error))
+                {
+                    error = error ?? $"Exact replacement is missing placement for '{item.InstanceId}'.";
+                    return false;
+                }
+
+                int effectiveWidth = footprint.GetWidth(placement.IsRotated);
+                int effectiveHeight = footprint.GetHeight(placement.IsRotated);
+                if (placement.EffectiveWidth != effectiveWidth || placement.EffectiveHeight != effectiveHeight ||
+                    !candidateLayout.TryAddPlacement(item.InstanceId, new GridInventoryLayout.ReservedRect(
+                        placement.X, placement.Y, effectiveWidth, effectiveHeight, placement.IsRotated)))
+                {
+                    error = $"Exact placement for '{item.InstanceId}' is out of bounds, overlapping or has the wrong footprint.";
+                    return false;
+                }
+            }
+
+            ItemStorage.StateSnapshot previousStorage = storage.CaptureState();
+            GridInventoryLayout previousLayout = layout;
+            try
+            {
+                storage.Clear();
+                for (int index = 0; index < entries.Count; index++)
+                    storage.AddItemAsSeparateEntry(entries[index].Item, entries[index].Quantity);
+                layout = candidateLayout;
+                if (usesGrid && !ValidateLayoutMatchesStorage(storage, layout))
+                    throw new InvalidOperationException("Exact replacement layout does not match storage content.");
+                return true;
+            }
+            catch (Exception exception)
+            {
+                storage.RestoreState(previousStorage);
+                layout = previousLayout;
+                error = $"Exact storage replacement failed: {exception.Message}";
+                return false;
+            }
+        }
+
         public GridPlacementValidationResult PreviewTransferToExact(
             GridInventoryBackend target,
             string sourceInstanceId,

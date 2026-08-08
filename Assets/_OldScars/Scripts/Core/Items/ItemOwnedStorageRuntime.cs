@@ -65,6 +65,14 @@ namespace OldScars.Core.Items
             return gridRuntime.CompleteInitialContentLoad(out error);
         }
 
+        internal bool CompleteInitialContentLoadExact(
+            IReadOnlyList<ItemStorageEntry> entries,
+            IReadOnlyList<GridPlacement> placements,
+            out string error)
+        {
+            return gridRuntime.CompleteInitialContentLoadExact(entries, placements, out error);
+        }
+
         public bool TryGetEntryByInstanceId(string instanceId, out int index, out ItemStorageEntry entry)
         {
             index = storage.GetEntryIndexByInstanceId(instanceId);
