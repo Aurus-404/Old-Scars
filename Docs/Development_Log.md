@@ -2080,3 +2080,62 @@ Limites y gate:
 
 - Se preservaron gameplay, identidad, ownership, Equipment, transacciones y `SampleScene`; no se modificaron JSON, prefabs, Packages o ProjectSettings y no se implemento save/load.
 - M36.1 no queda `DONE`; `Foundation Freeze` permanece abierto hasta su revision final y M37 no comenzo.
+
+### M36.1 — Foundation Freeze Documentary Closeout
+
+Fecha: 2026-08-08
+
+Milestone:
+
+`M36.1 — Foundation Freeze & Persistent Identity Contract`
+
+Version:
+
+`Foundation Freeze Documentary Closeout`
+
+Commit base:
+
+`fed00faf9c1d8ea72520653d5326b4c21ca097e4`
+
+Estado anterior:
+
+`IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED`
+
+Estado posterior:
+
+`DONE — FOUNDATION FREEZE APPROVED`
+
+Evidencia aceptada:
+
+- Checkpoint A congelo `ItemInstance` durable, `CreateNew`, `Rehydrate` detached, ownership estricto, item-owned storage, split/merge, Equipment, world pickup/drop y rollback; su diagnostico y validacion manual pasaron.
+- Checkpoint B congelo `PersistentSceneObjectId` para 3 actores, 3 puertas y 8 contenedores, 14 authored roots, dos authored world items y `CreateAuthored`; Foundation Identity, reapertura/reaplicacion idempotente y validacion manual de Mauro pasaron.
+- Mauro valido crowbar y Lee-Enfield authored, pickup, equip directo desde mundo, inventario y drop sin errores funcionales nuevos observados.
+- `Diagnostic Console Observability Pass 1` dejo failures accionables, rollback diagnosticable y consultas puras de `InteractionSystem` sin spam de refresh; Runtime/Editor compilaron y ambos diagnosticos permanecieron en `PASS`.
+
+Decisiones congeladas para M37:
+
+- `DefinitionId` y `InstanceId` son autoridades distintas; runtime, authored y load usan respectivamente `CreateNew`, `CreateAuthored` y `Rehydrate`.
+- `Rehydrate` conserva exactamente el `InstanceId` y el `Condition` persistidos; `Condition` sigue get-only y no se vuelve mutable en M37.
+- cada stack visible conserva una `ItemInstance` representativa; las unidades fungibles internas no poseen IDs individuales; split crea sibling y merge conserva destino.
+- item-owned storage deriva de su item owner y ownership se reconstruye explicitamente; las referencias futuras usan identidad durable.
+
+Deuda aceptada:
+
+- save/load;
+- condition mutable;
+- repair/disassembly;
+- actor lifecycle;
+- gameplay nuevo;
+- UI final.
+
+Decision:
+
+- `Foundation Freeze — APPROVED`.
+- M36.1 queda `DONE — FOUNDATION FREEZE APPROVED`.
+- R03 permanece `MITIGATING` y no bloquea el inicio autorizado de M37.0.
+- M37.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`, pero no fue iniciado por este cierre documental.
+
+Alcance del cierre:
+
+- Solo documentacion; no se modificaron C#, Assets, `SampleScene`, prefabs, JSON, Packages o ProjectSettings.
+- No se ejecuto Unity ni se repitieron diagnosticos; el cierre consume la evidencia publicada en el commit base.

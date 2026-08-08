@@ -2,25 +2,15 @@
 
 Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, dependencias y gates es [Project_Roadmap.md](Project_Roadmap.md). La cronologia y evidencia permanecen en [Development_Log.md](Development_Log.md).
 
-## Milestone Activo
+## Milestone Cerrado Y Siguiente Trabajo
 
 ### M36.1 — Foundation Freeze & Persistent Identity Contract
 
 Version actual:
 
-`Diagnostic Console Observability Pass 1`
+`Foundation Freeze Documentary Closeout`
 
 Estado inicial:
-
-`IN PROGRESS — CHECKPOINT B IMPLEMENTED;`
-
-`AUTOMATED FOUNDATION VALIDATION PASSED;`
-
-`MANUAL UNITY VALIDATION PENDING;`
-
-`FOUNDATION FREEZE REVIEW BLOCKED`
-
-Estado actual:
 
 `IN PROGRESS — CHECKPOINT B IMPLEMENTED;`
 
@@ -30,7 +20,13 @@ Estado actual:
 
 `FOUNDATION FREEZE REVIEW BLOCKED`
 
-Objetivo: congelar identidad durable de items y del contenido authored del slice actual, junto con los contratos minimos de creacion, futura rehidratacion, stacking, ownership y rollback que consumira M37, sin implementar save/load.
+Estado actual:
+
+`DONE — FOUNDATION FREEZE APPROVED`
+
+Decision: `Foundation Freeze — APPROVED`. M36.1 cerro identidad durable y authored, ownership/rollback, granularidad de stacks y la politica exacta de `Condition` que consumira M37, sin implementar save/load.
+
+Siguiente milestone: M37.0 — Save Format & Persistence Core, `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. M37.0 todavia no comenzo.
 
 ## Resultado De Checkpoint A
 
@@ -102,9 +98,9 @@ Objetivo: congelar identidad durable de items y del contenido authored del slice
 
 ## Estado De Gates Y Secuencia
 
-- `Foundation Freeze`: no aprobado; Checkpoints A/B, la validacion manual y el pase de observabilidad aportan evidencia, pero la revision final permanece pendiente.
+- `Foundation Freeze`: `APPROVED`; Checkpoints A/B, la validacion manual y el pase de observabilidad satisfacen la evidencia de cierre.
 - R03 permanece `MITIGATING`.
-- M37.0 no comenzo y sigue bloqueado hasta validar/revisar M36.1.
+- M37.0 esta `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no comenzo.
 - milestone anterior: M36.0 — `DONE — DOCUMENTATION REVIEWED`, commit de cierre `461b1b6508ef234777b82ccea97624b5b94b428c`.
 
-No iniciar M37, condition mutable, repair, actor lifecycle, save/load, gameplay nuevo ni UI final antes de la revision final de `Foundation Freeze`.
+Este cierre no inicia M37. Condition mutable, repair/disassembly, actor lifecycle, gameplay nuevo y UI final permanecen fuera del alcance de M36.1.

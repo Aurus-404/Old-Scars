@@ -101,9 +101,9 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Frontera M36.1 / M37
 
 - M36.1 Checkpoint A validado y cerrado implementa identidad durable de items, invariantes, hydration detached, cleanup terminal, transiciones comprometidas de ownership y diagnostico determinista. Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions.
-- Checkpoint B implementa identidad authored para 14 roots stateful y 2 world items, con apply/validator Editor idempotente. Runtime/Editor compilaron, Foundation Identity y Checkpoint A dieron `PASS`; Mauro valido manualmente los flujos authored principales. La revision final de `Foundation Freeze` permanece pendiente.
+- Checkpoint B implementa identidad authored para 14 roots stateful y 2 world items, con apply/validator Editor idempotente. Runtime/Editor compilaron, Foundation Identity y Checkpoint A dieron `PASS`; Mauro valido manualmente los flujos authored principales. `Foundation Freeze` esta `APPROVED`; M37.0 queda listo para autorizacion, pero no iniciado.
 - M37 debe persistir y rehidratar el `Condition` get-only exacto, sin implementar condition mutable.
 - Items no stackeables y stacks visibles poseen identidad durable; las unidades fungibles internas conservan cantidad sin identidad individual.
-- M36.1 no implementa save/load, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.
+- M36.1 no implementa save/load, condition mutable, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.
 - M37 persiste primero el slice real: jugador, items, inventory/grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags existentes.
 - M37 no pre-serializa actores futuros, clima, facciones, economia regional o mundo procedural hipotetico.

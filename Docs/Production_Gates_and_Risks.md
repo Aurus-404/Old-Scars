@@ -62,6 +62,8 @@ Bloquea un gate la deuda que:
 
 ### Foundation Freeze - M36.1
 
+Estado: `APPROVED`.
+
 Debe validar:
 
 - identidad durable y fuentes de verdad para items, actores y objetos mundiales del slice actual;
@@ -78,9 +80,11 @@ Debe validar:
 
 Evidencia: matriz de identidad y ownership, contratos documentados, pruebas de invariantes y lista explicita de decisiones congeladas.
 
-Evidencia acumulada de Checkpoints A/B: Checkpoint A validado y cerrado congela identidad durable de items, `CreateNew`/`Rehydrate`, hydration detached, unicidad activa, item-owned storage, stacking, split/merge, rollback y ownership estricto; Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions. Checkpoint B implementa `CreateAuthored`, dos authored world item IDs exactos y `PersistentSceneObjectId` para 14 roots stateful (3 actores, 3 puertas y 8 contenedores), con visuales, children y `Debug Strange Machine` excluidos. Runtime/Editor compilaron; Foundation Identity paso despues de aplicar, reabrir y reaplicar idempotentemente la escena, y Checkpoint A volvio a dar `PASS`. Esta evidencia automatizada no aprueba el gate: la validacion manual de Checkpoint B y la revision final de `Foundation Freeze` permanecen pendientes. R03 sigue `MITIGATING`.
+Evidencia acumulada de Checkpoints A/B: Checkpoint A validado y cerrado congela identidad durable de items, `CreateNew`/`Rehydrate`, hydration detached, unicidad activa, item-owned storage, stacking, split/merge, rollback y ownership estricto; Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions. Checkpoint B implementa `CreateAuthored`, dos authored world item IDs exactos y `PersistentSceneObjectId` para 14 roots stateful (3 actores, 3 puertas y 8 contenedores), con visuales, children y `Debug Strange Machine` excluidos. Runtime/Editor compilaron; Foundation Identity paso despues de aplicar, reabrir y reaplicar idempotentemente la escena, y Checkpoint A volvio a dar `PASS`. Mauro valido manualmente crowbar y Lee-Enfield authored, pickup, equip directo desde mundo, inventario y drop sin errores funcionales nuevos observados. `Diagnostic Console Observability Pass 1` completo failures accionables, rollback diagnosticable y reduccion del spam de `InteractionSystem`; ambos diagnosticos permanecieron en `PASS`.
 
-Deuda aceptable: save/load, condition, repair/disassembly, actor lifecycle y gameplay nuevo.
+Decision: `Foundation Freeze — APPROVED`. Identidad durable/authored, ownership/rollback, granularidad representativa de stacks, `Condition` exacto y rutas separadas `CreateNew`/`CreateAuthored`/`Rehydrate` quedan congeladas para M37. No se implemento persistencia prematuramente. R03 permanece `MITIGATING` como riesgo estructural y no bloquea M37.0.
+
+Deuda aceptada para milestones posteriores: save/load, condition mutable, repair/disassembly, actor lifecycle, gameplay nuevo y UI final.
 
 Bloquea: IDs regenerables o ambiguos, ownership sin autoridad, mutaciones que eluden servicios existentes o cualquier contrato que M37 deba inferir.
 

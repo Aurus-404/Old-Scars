@@ -4,30 +4,11 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ## Proximos Tres Milestones
 
-### 1. M36.1 — Foundation Freeze & Persistent Identity Contract
+### 1. M37.0 — Save Format & Persistence Core
 
-Estado: `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED`.
+Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 
-M36.1 es el trabajo actual. Checkpoint A congelo y valido identidad durable, ownership y stacks de items. Checkpoint B implemento identidad authored para 14 roots stateful y 2 world items; la validacion automatizada y la validacion manual de los flujos authored pasaron. El pase localizado de observabilidad tambien quedo completo. El trabajo inmediato restante es la revision final de `Foundation Freeze`.
-
-Objetivo:
-
-- revisar la evidencia de Checkpoints A/B contra `Foundation Freeze`;
-- revisar la evidencia del pase de observabilidad y la calidad/frecuencia de sus logs;
-- mantener M37 bloqueado hasta esa decision.
-
-Fuera de alcance:
-
-- save/load;
-- condition, repair o disassembly;
-- actor lifecycle;
-- gameplay o UI final.
-
-Salida pendiente: revision final del gate `Foundation Freeze`; ni la evidencia automatizada, la validacion manual ni este pase lo aprueban por separado.
-
-### 2. M37.0 — Save Format & Persistence Core
-
-Estado: `PLANNED`.
+M36.1 esta `DONE — FOUNDATION FREEZE APPROVED`. M37.0 es el siguiente milestone, pero este cierre documental no lo inicia.
 
 Objetivo:
 
@@ -42,7 +23,7 @@ Fuera de alcance:
 - actores, clima, facciones o proceduralidad hipoteticos;
 - contenido jugable nuevo.
 
-### 3. M37.1 — Current Slice Persistent Round-Trip
+### 2. M37.1 — Current Slice Persistent Round-Trip
 
 Estado: `PLANNED`.
 
@@ -53,6 +34,22 @@ Objetivo:
 - comprobar que no se pierden `InstanceId`, cantidades, placements, owners o estados.
 
 Salida: gate `Persistence Ready`.
+
+### 3. M38.0 — Actor Runtime & Lifecycle V1
+
+Estado: `PLANNED`.
+
+Objetivo:
+
+- definir IDs, spawn y lifecycle durable de actores sobre `Persistence Ready`;
+- integrar muerte y cuerpos persistibles sin reabrir los contratos congelados de M36.1;
+- mantener este trabajo bloqueado por M37.1.
+
+Fuera de alcance:
+
+- necesidades/world clock de M38.1;
+- combate, IA o UI final;
+- mundo o contenido a escala.
 
 ## No Iniciar Todavia
 

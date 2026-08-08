@@ -18,18 +18,18 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone cerrado mas reciente | M36.0 — Old Scars Strategic Production Roadmap Rebaseline |
-| Estado M36.0 | `DONE — DOCUMENTATION REVIEWED` |
+| Milestone cerrado mas reciente | M36.1 — Foundation Freeze & Persistent Identity Contract |
+| Estado M36.1 | `DONE — FOUNDATION FREEZE APPROVED` |
 | Ultimo milestone funcional cerrado | M35.2 — Lootable Entity Inventory UI V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | M36.1 — Foundation Freeze & Persistent Identity Contract |
-| Estado M36.1 | `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED` |
-| Siguientes | M37.0 — Save Format & Persistence Core; M37.1 — Current Slice Persistent Round-Trip |
+| Siguiente milestone | M37.0 — Save Format & Persistence Core |
+| Estado M37.0 | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` |
+| Siguientes | M37.1 — Current Slice Persistent Round-Trip; M38.0 — Actor Runtime & Lifecycle V1 |
 
-Mauro completo y aprobo la revision documental final de M36.0. M36.1 esta activo: Checkpoint A fue validado manualmente y cerrado; Checkpoint B fue implementado, su validacion automatizada paso y Mauro confirmo manualmente crowbar/Lee-Enfield authored, pickup, equip directo desde el mundo, inventario y drop sin errores funcionales nuevos. El pase de observabilidad diagnostica quedo completo; la revision final de `Foundation Freeze` sigue pendiente, el gate no esta aprobado y M37 no comenzo.
+M36.1 queda `DONE — FOUNDATION FREEZE APPROVED`. Checkpoints A/B, la validacion automatizada, las validaciones manuales de Mauro y el pase de observabilidad aportan la evidencia de cierre. Los contratos de identidad durable, authored/runtime/rehydrate, ownership, rollback, granularidad de stacks y `Condition` exacto quedan congelados para M37. M37.0 esta `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`, pero no comenzo.
 
 ## Estados Canonicos
 
@@ -120,8 +120,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | Horizonte | Milestone | Tipo | Estado | Dependencias | Resultado / gate |
 | --- | --- | --- | --- | --- | --- |
 | CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
-| AHORA | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; DIAGNOSTIC CONSOLE OBSERVABILITY PASS COMPLETE; FOUNDATION FREEZE REVIEW BLOCKED` | M36.0 revisado | Checkpoint A congela y valida identidad, ownership y stacks de items; Checkpoint B aporta identidad authored validada manualmente. El pase localizado de observabilidad diagnostica failures y reduce ruido de availability; falta la revision final de `Foundation Freeze`. |
-| SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente. |
+| CERRADO | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `DONE — FOUNDATION FREEZE APPROVED` | M36.0 revisado | Identidad durable/authored, ownership, rollback, stack granularity y politica exacta de `Condition` congelados con evidencia automatizada y manual; no implemento save/load. |
+| SIGUIENTE | M37.0 — Save Format & Persistence Core | Arquitectura | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | M36.1 | Formato, version, escritura atomica, recovery y migrations para estado existente; no iniciado. |
 | SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`. |
 | SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED` | M37.1 | IDs, spawn, lifecycle, muerte y cuerpos persistibles. |
 | SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
@@ -155,6 +155,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 ## Gates Canonicos
 
 Este archivo es autoridad sobre los nombres y la ubicacion de los gates. Sus criterios detallados se desarrollan en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
+
+Estado vigente: `Foundation Freeze — APPROVED` en M36.1.
 
 | Gate | Cierre previsto |
 | --- | --- |
@@ -216,7 +218,7 @@ Corregir clasificaciones de diseño revisadas por Mauro, formalizar el workflow 
 
 Mauro aprobo la jerarquia documental, el GDD Markdown como baseline revisado, el roadmap M36–M55, los trece gates, R01–R23, el workflow de Codex/Git y las clasificaciones corregidas. M36.0 queda `DONE — DOCUMENTATION REVIEWED`; las decisiones creativas etiquetadas siguen abiertas y M36.1 requiere autorizacion independiente.
 
-### M36.1 — Checkpoint A Validado, Checkpoint B Implementado / Limite Obligatorio
+### M36.1 — Foundation Freeze Aprobado / Limite Obligatorio
 
 Checkpoint A corregido implementa IDs `item_<GUID N lowercase>` opacos e inmutables, rutas separadas `CreateNew`/`Rehydrate`, unicidad de IDs activos, ownership estricto, item-owned storage explicito y reglas de stack/split/merge/rollback consumibles por M37. Un stack conserva una `ItemInstance` representativa y cantidad fungible; `Condition` get-only forma parte del estado de instancia y de la compatibilidad de stack.
 
@@ -237,11 +239,13 @@ Decisiones congeladas para M37:
 
 - M37 debe rehidratar el `InstanceId` exacto y el `Condition` exacto validado; no debe crear otro ID durante carga;
 - items no stackeables y cada stack visible conservan identidad durable; las unidades fungibles internas de un stack no poseen IDs individuales;
-- el gate `Foundation Freeze` permanece abierto hasta la revision final de Checkpoint B y del pase de observabilidad.
+- `Foundation Freeze` queda `APPROVED`; estas decisiones son el contrato de entrada de M37 y no autorizan reinterpretarlas durante el closeout.
 
 ### M37 — Limite Obligatorio
 
 M37 persiste primero el slice actual: jugador, items, inventory/grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags existentes. No serializa sistemas hipoteticos para actores, clima, facciones o mundo procedural.
+
+M37.0 esta `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; este cierre documental no lo inicia.
 
 ## Trabajo Congelado O Diferido
 
