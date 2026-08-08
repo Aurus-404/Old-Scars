@@ -105,7 +105,9 @@ Evidencia: snapshots antes/despues, escenarios de round-trip, recovery y version
 
 Evidencia de infraestructura M37.0: `DONE — PERSISTENCE CORE VALIDATED`. Envelope V1, serializer Newtonsoft aislado, slots cerrados, temp/primary/backup, overwrite mediante `File.Replace`, fallback preservando backup, recovery, future-version rejection, migration seam y failure codes quedaron implementados. Runtime/Editor compilaron y `M37.0 Persistence Core Diagnostics: PASS` cubrio once escenarios en un root temporal sin residuos ni acceso a saves reales.
 
-Pendiente para aprobar el gate: M37.1 debe integrar y validar el round-trip del slice actual completo, conservar identidad/ownership/estado y aportar la evidencia funcional requerida. M37.0 por si solo no aprueba `Persistence Ready`; R05/R14/R19 conservan su estado hasta esa revision.
+Evidencia incremental M37.1 Pass 1: `Snapshot Contract & Semantic Preflight Pass 1` captura el slice real en una tabla única de items y DTOs referenciales, valida identidad/localización/quantity/placements/Equipment/owned storage/world state sin mutar, guarda/lee mediante M37.0 y compara canónicamente. Runtime/Editor, M37.0, Foundation Identity y `M37.1 Snapshot & Semantic Preflight Diagnostics` dieron `PASS`; el diagnóstico temporal no guardó `SampleScene`.
+
+Pendiente para aprobar el gate: M37.1 debe completar `Transactional Rehydration & Real-Scene Round-Trip Pass 2`, incluyendo pre-load rollback, apply ordenado, authored/runtime world reconciliation y recapture equivalente. Luego requiere validación manual fresh-session. Pass 1 y M37.0 por sí solos no aprueban `Persistence Ready`; R05/R14/R19 conservan su estado hasta esa revisión.
 
 Deuda aceptable: cloud save y lifecycle/serializacion general de actores futuros, clima, facciones o proceduralidad que aun no existen. No se difieren el jugador ni los cuerpos actuales.
 

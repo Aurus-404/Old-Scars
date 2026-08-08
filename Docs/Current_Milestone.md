@@ -1,49 +1,45 @@
 # Old Scars - Current Milestone
 
-Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, dependencias y gates es [Project_Roadmap.md](Project_Roadmap.md). La cronologia y evidencia permanecen en [Development_Log.md](Development_Log.md).
+Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, dependencias y gates es [Project_Roadmap.md](Project_Roadmap.md). La cronología y evidencia permanecen en [Development_Log.md](Development_Log.md).
 
-## Milestone Cerrado Y Siguiente Trabajo
+## Milestone Activo
 
-### M37.0 — Save Format & Persistence Core
+### M37.1 — Current Slice Persistent Round-Trip
 
-Version:
+Versión completada:
 
-`Persistence Core V1 — Functional Implementation Pass 1`
-
-Estado inicial:
-
-`PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`
+`Snapshot Contract & Semantic Preflight Pass 1`
 
 Estado actual:
 
-`DONE — PERSISTENCE CORE VALIDATED`
+`IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING`
 
-## Contratos Implementados
+## Contrato Implementado En Pass 1
 
-- `CurrentFormatVersion = 1`; el envelope usa nombres JSON estables `formatVersion`, `writtenUtc` y `payload`.
-- `payload` es un `JToken` desacoplado; M37.0 no conoce ni serializa `ItemInstance`, actores, componentes, objetos Unity o estado de escena.
-- `PersistenceSerializer` usa Newtonsoft.Json con configuracion exclusiva de saves, valida JSON, envelope, version y payload, rechaza versiones futuras y expone un seam explicito de migrations consecutivas.
-- `PersistenceFileStore` usa por defecto `Application.persistentDataPath/Saves` y admite un root configurado para diagnostics; los slots aceptan solamente IDs cerrados snake_case de hasta 64 caracteres.
-- cada slot conserva como maximo primary `<slot>.json`, backup `<slot>.json.bak` y temp `<slot>.json.tmp`.
-- el primer write serializa y valida en memoria, escribe y fuerza flush del temp en el mismo directorio y lo promueve por rename; overwrite usa `File.Replace(temp, primary, backup)` cuando la plataforma lo soporta.
-- el fallback por falta real de soporte conserva primero el primary como backup antes de promover el temp; no se afirma atomicidad universal.
-- load usa primary valido, recupera desde backup ante primary ausente/corrupto, preserva evidencia invalida y distingue causas mediante failure codes. Versiones futuras o antiguas sin migration se rechazan sin rollback silencioso a un backup viejo.
+- `CurrentSliceSaveData` define DTOs planos y explícitos para player, items, storages, Equipment, containers, corpses, doors y world items; pose usa floats propios y no serializa componentes ni objetos Unity.
+- la tabla única de items conserva `InstanceId`, `DefinitionId` y `Condition`; stacks conservan una identidad representativa, `Quantity` y placement/orientación exactos.
+- storages usan referencias durables por actor/container/item owner y cubren inventory, Equipment, item-owned storage, containers authored y cuerpos actualmente muertos.
+- player conserva identidad authored, pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Tags de health, peso y visuales permanecen derivados.
+- containers se capturan siempre con storage autoritativo explícito, incluso vacío, y sólo conservan los tags mutables de apertura, descubrimiento y contenido.
+- cada authored world item conserva un marker present/absent por su item ID; los drops runtime conservan identidad, cantidad y pose. Un authored item lazy se proyecta sin crear una `ItemInstance` ni reservar IDs.
+- puertas conservan sólo `opened_door`, `closed_door` o `locked_door`; el ángulo visual no forma parte del snapshot.
+- semantic preflight valida schema, referencias de escena y definiciones, unicidad/localización, cantidades, placements, Equipment multi-slot, item-owned storage sin nesting, containers, corpses, doors y world representations.
+- el comparador canónico ignora orden incidental y tolera `0.0001` en poses, pero reporta la primera diferencia semántica accionable.
+- `Save Debug Slot` está disponible sólo en Play Mode y usa capture + preflight + `PersistenceFileStore.Write` sobre `m37_current_slice_debug`.
 
-## Evidencia Y Validacion
+## Evidencia Automatizada
 
-- Unity 6.4.6f1 compilo Runtime y Editor con `Tundra build success` y retorno 0.
-- Persisten seis warnings preexistentes y fuera del alcance: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`; M37.0 no agrego warnings.
-- `M37.0 Persistence Core Diagnostics: PASS` con retorno 0.
-- El diagnostico cubrio envelope V1, first write/read, overwrite mediante `File.Replace`, backup anterior, recovery, doble corrupcion, future version, migration ausente, slot invalido, temp cleanup y payload exacto.
-- El diagnostico uso exclusivamente un root unico bajo el directorio temporal del sistema y termino sin directorios o archivos temporales de test.
-- No se modificaron gameplay, `SampleScene`, prefabs, JSON, Packages, ProjectSettings ni los contratos congelados de M36.1.
-- Manual Unity validation: `NOT APPLICABLE`; M37.0 no integra gameplay y su contrato filesystem/serialization/recovery quedo cubierto por batchmode.
+- Unity 6.4.6f1 compiló Runtime y Editor con `Tundra build success` y retorno 0.
+- `M37.0 Persistence Core Diagnostics: PASS`.
+- `M36.1 Foundation Identity Validation: PASS` después del seam authored de sólo lectura.
+- `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS` sobre el slice real en Play Mode, con save/read temporal, preflight post-read, comparación canónica y casos negativos requeridos.
+- el diagnóstico representó y round-trippeó un container vacío sin mutar gameplay; limpió su root temporal y `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
+- persisten sólo los seis warnings preexistentes: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
 
-## Estado De Gates Y Secuencia
+## Estado De Gates Y Próximo Trabajo
 
 - `Foundation Freeze`: `APPROVED`.
-- `Persistence Ready`: `NOT YET APPROVED`; pertenece al cierre de M37.1.
-- M37.1 — Current Slice Persistent Round-Trip queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`, pero no comenzo.
-- M37.1 debe construir snapshots del slice real y usar `Rehydrate`/identidad authored/ownership sin reescribir el envelope o filesystem base de M37.0.
-
-No iniciar autosave, UI save/load, cloud, profiles, snapshots hipoteticos, actor lifecycle o gameplay nuevo dentro del cierre de M37.0.
+- `Persistence Ready`: `NOT YET APPROVED`.
+- no existen todavía apply/load destructivo, rehydration, rollback de load ni `Load Debug Slot`.
+- la siguiente versión del mismo milestone M37.1 es `Transactional Rehydration & Real-Scene Round-Trip Pass 2`.
+- M38.0 permanece bloqueado y no fue iniciado.

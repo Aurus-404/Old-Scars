@@ -25,11 +25,11 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Siguiente milestone | M37.1 — Current Slice Persistent Round-Trip |
-| Estado M37.1 | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` |
+| Milestone activo | M37.1 — Current Slice Persistent Round-Trip |
+| Estado M37.1 | `IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING` |
 | Siguientes | M38.0 — Actor Runtime & Lifecycle V1; M38.1 — Needs, World Clock & Recovery V1 |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED`. Implementa envelope V1, payload JSON desacoplado, serializacion estable, slots cerrados, escritura temp/primary/backup, recovery, politica de versiones y seam explicito de migrations. Runtime/Editor compilaron y `M37.0 Persistence Core Diagnostics: PASS` valido los escenarios de infraestructura en un directorio temporal. M37.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`, pero no comenzo y `Persistence Ready` permanece no aprobado hasta su round-trip del slice real.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED`. M37.1 está activo: `Snapshot Contract & Semantic Preflight Pass 1` completó DTOs, captura del slice real, semantic preflight, save/read sobre M37.0 y comparación canónica con diagnóstico Play Mode en `PASS`. La siguiente versión del mismo M37.1 es `Transactional Rehydration & Real-Scene Round-Trip Pass 2`; `Persistence Ready` permanece no aprobado.
 
 ## Estados Canonicos
 
@@ -122,7 +122,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
 | CERRADO | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `DONE — FOUNDATION FREEZE APPROVED` | M36.0 revisado | Identidad durable/authored, ownership, rollback, stack granularity y politica exacta de `Condition` congelados con evidencia automatizada y manual; no implemento save/load. |
 | CERRADO | M37.0 — Save Format & Persistence Core | Arquitectura | `DONE — PERSISTENCE CORE VALIDATED` | M36.1 | Envelope V1, serializacion, safe write, backup/recovery, version policy y migration seam validados sin integrar estado gameplay. |
-| SIGUIENTE | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | M37.0 | El slice actual carga sin perder identidad, ownership o estado; gate `Persistence Ready`; no iniciado. |
+| ACTIVO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING` | M37.0 | Snapshot durable/preflight validados; falta apply transaccional, rollback, round-trip real y cierre de `Persistence Ready`. |
 | SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED` | M37.1 | IDs, spawn, lifecycle, muerte y cuerpos persistibles. |
 | SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
 | DESPUES | M39.0 — Localized Health & Medicine V1 | Jugable | `PLANNED` | M38.1 | Regiones, heridas, sangrado, dolor y tratamientos. |
@@ -245,7 +245,7 @@ Decisiones congeladas para M37:
 
 M37 persiste primero el slice actual: jugador, items, inventory/grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags existentes. No serializa sistemas hipoteticos para actores, clima, facciones o mundo procedural.
 
-M37.0 esta `DONE — PERSISTENCE CORE VALIDATED`. M37.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; este cierre no lo inicia y no aprueba `Persistence Ready`.
+M37.0 está `DONE — PERSISTENCE CORE VALIDATED`. M37.1 completó `Snapshot Contract & Semantic Preflight Pass 1` y permanece `IN PROGRESS`; `Transactional Rehydration & Real-Scene Round-Trip Pass 2` es el siguiente trabajo interno. No se aprueba `Persistence Ready` ni se inicia M38.0.
 
 ## Trabajo Congelado O Diferido
 

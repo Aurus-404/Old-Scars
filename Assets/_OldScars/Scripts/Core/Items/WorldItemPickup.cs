@@ -43,6 +43,7 @@ namespace OldScars.Core.Items
         }
 
         public string AuthoredItemInstanceId => authoredItemInstanceId;
+        public bool HasInitializedSource => sourceInitialized;
 
         public int Quantity
         {

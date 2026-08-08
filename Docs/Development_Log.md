@@ -2201,3 +2201,56 @@ Alcance y secuencia:
 - No se modificaron gameplay, `SampleScene`, prefabs, JSON, Packages, ProjectSettings, asmdefs ni los contratos de M36.1.
 - `Persistence Ready` permanece `NOT YET APPROVED` hasta M37.1.
 - M37.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`, pero no fue iniciado.
+
+### M37.1 — Snapshot Contract & Semantic Preflight Pass 1
+
+Fecha: 2026-08-08
+
+Milestone:
+
+`M37.1 — Current Slice Persistent Round-Trip`
+
+Versión:
+
+`Snapshot Contract & Semantic Preflight Pass 1`
+
+Commit base:
+
+`ca5c27184ce7dbdf864dbd5223ee84b6d667775d`
+
+Estado anterior:
+
+`PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`
+
+Estado posterior:
+
+`IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING`
+
+Implementación no destructiva:
+
+- `CurrentSliceSaveData` y sus DTOs explícitos representan player, tabla única de items, storages, Equipment, containers, corpses, doors y world items sin referencias a componentes/objetos Unity.
+- player captura `PersistentSceneObjectId`, pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Estado estático o derivado como profiles, carry weight, visuales y health tags no se duplica.
+- `ItemState` conserva exactamente `InstanceId`, `DefinitionId` y `Condition`; entries conservan `Quantity`, placement, orientación y storage owner durable.
+- inventory/equipment de player y corpses, item-owned storage y containers authored comparten una representación referencial. Un storage de container inicializado se incluye explícitamente aunque esté vacío.
+- sólo roots actualmente muertos entran como corpses; no se capturan transform/lifecycle/AI de NPCs vivos.
+- authored world items usan markers present/absent por su item ID. El estado lazy se proyecta desde authored ID + definition sin `CreateAuthored`, `CreateNew`, `Rehydrate` ni nuevas reservas. Drops runtime guardan quantity y pose.
+- puertas guardan sólo su estado lógico canónico; containers guardan únicamente los seis tags runtime mutables allowlisted. Tags estáticos/derivados y ángulos visuales quedan fuera.
+- semantic preflight valida schema, player/scene IDs, item IDs y definitions, Condition, location única, quantities/max stack, placements/overlap, Equipment multi-slot, required owned storage sin nesting, containers/corpses/doors y authored/runtime world representations.
+- el comparador canónico ignora orden incidental y formatting, usa tolerancia `0.0001` para poses y devuelve la primera diferencia accionable.
+- `Old Scars > Persistence > M37.1 > Save Debug Slot` está habilitado sólo en Play Mode y llama al capture/preflight/write real con slot `m37_current_slice_debug`.
+
+Diagnóstico y validación:
+
+- `M37.1 Snapshot & Semantic Preflight Diagnostics` abre el slice real en Play Mode mediante un runner Editor persistente a domain reload y usa exclusivamente un root temporal.
+- probó capture, semantic preflight, M37.0 write/read, deserialize, post-read preflight, canonical compare, duplicate InstanceId, dangling item, invalid quantity, invalid placement, Equipment inválido, owned-storage ilegal, world representation duplicada y container vacío explícito.
+- resultado final: `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS`, retorno 0 y cleanup completo.
+- Runtime/Editor compilaron con `Tundra build success`; `M37.0 Persistence Core Diagnostics: PASS` y `M36.1 Foundation Identity Validation: PASS` permanecieron verdes.
+- `SampleScene` no fue guardada y conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
+- no hubo warnings nuevos; permanecen los seis warnings preexistentes documentados en M37.0.
+
+Alcance y secuencia:
+
+- se tocaron/crearon tres archivos C# y dos `.meta`; no se modificaron `SampleScene`, prefabs, JSON, Packages, ProjectSettings o asmdefs.
+- no se implementaron apply/load destructivo, rehydration, rollback, authoritative container restore, rehydrated world spawn ni `Load Debug Slot`.
+- `Persistence Ready` permanece `NOT YET APPROVED` y M38.0 no comenzó.
+- el próximo trabajo es la versión `Transactional Rehydration & Real-Scene Round-Trip Pass 2` dentro del mismo milestone canónico M37.1; no se reservaron IDs adicionales de milestone.

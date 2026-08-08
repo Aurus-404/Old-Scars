@@ -6,20 +6,23 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ### 1. M37.1 — Current Slice Persistent Round-Trip
 
-Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+Estado: `IN PROGRESS — SNAPSHOT CONTRACT & SEMANTIC PREFLIGHT COMPLETE; TRANSACTIONAL REHYDRATION PENDING`.
 
-M37.0 esta `DONE — PERSISTENCE CORE VALIDATED`. M37.1 es el siguiente milestone, pero este cierre no lo inicia y `Persistence Ready` permanece no aprobado.
+Versión siguiente del mismo milestone: `Transactional Rehydration & Real-Scene Round-Trip Pass 2`.
+
+El Pass 1 ya captura el slice real en DTOs durables, valida su semántica sin mutar, guarda/lee mediante M37.0 y compara canónicamente el resultado. `Persistence Ready` permanece no aprobado hasta completar apply, rollback, round-trip real y validación manual.
 
 Objetivo:
 
-- guardar y rehidratar jugador, items, inventory/grid, Equipment, ownership e item-owned storages;
-- guardar y rehidratar containers, cuerpos, puertas, world items y runtime tags existentes;
-- comprobar que no se pierden `InstanceId`, cantidades, placements, owners o estados;
-- consumir envelope, serializer y filesystem M37.0 sin reescribir su base.
+- implementar rehydration exacta de jugador, items, inventory/grid, Equipment, ownership e item-owned storages sobre el snapshot ya validado;
+- aplicar containers, cuerpos, puertas, authored/runtime world items y runtime state sin reseed ni duplicaciones;
+- capturar rollback pre-load y restaurarlo mediante el mismo pipeline ante un fallo de apply;
+- agregar `Load Debug Slot` y demostrar `capture → save → mutate → load → recapture → compare` en escena real.
 
 Fuera de alcance:
 
-- autosave, UI save/load, cloud y profiles;
+- cambios al contrato del snapshot sin evidencia de bug real;
+- autosave, UI final de save/load, cloud y profiles;
 - actor lifecycle futuro, clima, facciones o proceduralidad;
 - gameplay nuevo fuera del round-trip del slice existente.
 

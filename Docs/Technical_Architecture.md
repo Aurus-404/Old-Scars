@@ -25,7 +25,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Un `GridInventoryBackend.Remove` que retiraria la entry completa rechaza antes de mutar si su item-owned storage no esta vacio; devuelve `OwnedStorageNotEmpty`. Una vez vacio, el retiro terminal libera bindings, storage e identidad mediante el contrato existente.
 - Los scopes de reserva ambient/nested estan limitados al hilo de sesion, exigen LIFO y transfieren reservas al scope padre. El contexto localizado es necesario porque constructors y split reservan IDs dentro de servicios transaccionales ya existentes; evita cambiar sus contratos publicos. Rollback restaura storage/layout/Equipment y luego libera solamente IDs nuevos con sus registros/bindings.
 - `ItemInstance.Condition` permanece get-only. Es estado de instancia representativo, participa en stacking y debe rehidratarse exactamente en M37; no hay mutacion, desgaste ni reparacion.
-- M37.0 implementa el envelope, versionado, filesystem y recovery descritos en `Persistence Core V1`; la captura/rehidratacion del slice real permanece en M37.1.
+- M37.0 implementa el envelope, versionado, filesystem y recovery descritos en `Persistence Core V1`; M37.1 Pass 1 implementa la captura y semantic preflight del slice real, mientras rehydration/apply permanece pendiente para Pass 2.
 - `PersistentSceneObjectId` aporta identidad authored estable a exactamente 14 roots stateful de `SampleScene`: 3 actores, 3 puertas y 8 contenedores. Los dos world items usan identidad de item separada; visuales, children y `Debug Strange Machine` quedan excluidos.
 - Actores, puertas, containers, cuerpos y world items todavia no poseen un lifecycle persistente comun ni serializacion de estado; Checkpoint B congela identidad, no implementa save/load.
 
@@ -42,6 +42,21 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Los resultados distinguen `Success`, `SaveNotFound`, `InvalidSlotId`, `IoFailure`, `MalformedJson`, `InvalidEnvelope`, `FutureVersionUnsupported`, `MigrationUnavailable`, `RecoveryFailed` y `SerializationFailure`.
 - Los failures registran operacion, slot, paths, versiones, existencia, recovery, failure code/causa y accion sin imprimir payload. Los commits y recoveries exitosos usan logs breves.
 - `M37PersistenceCoreDiagnostics` ejecuta once escenarios sobre un subdirectorio unico del temp del sistema, nunca sobre saves reales, y elimina ese root en `finally`.
+
+## Current Slice Snapshot V1
+
+- `CurrentSliceSaveData` es el payload explícito de M37.1. Contiene player, tabla única de items, storages, Equipment, containers, corpses, doors y world items; no serializa `MonoBehaviour`, `Transform`, referencias runtime ni definiciones estáticas.
+- `ItemState` define cada identidad una sola vez mediante `InstanceId`, `DefinitionId` y `Condition`. `StorageEntryState`, Equipment y world representations referencian ese ID; quantity permanece en la entry/representación y no crea IDs por unidad fungible.
+- `StorageState` usa claves derivadas de `kind + ownerId`: actor/container por `PersistentSceneObjectId` e item-owned storage por el `InstanceId` del item owner. Entries grid conservan x/y, rotación y footprint efectivo exactos.
+- player captura pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Health tags, carry weight, stats y visuales son derivados y no se duplican en el save.
+- containers se incluyen aunque su storage autoritativo esté vacío. Un container runtime no inicializado aborta capture; Pass 1 no ejecuta loot tables ni agrega un restore seam anticipado.
+- corpses representan sólo roots authored actualmente muertos. Los NPC vivos, su transform y su lifecycle permanecen fuera de M37.1 y pertenecen a M38.0.
+- cada world item authored posee un marker `present/absent` por su item ID. Un authored lazy se proyecta desde authored ID + definition sin reservar identidad; uno recogido queda absent y su item debe resolver en otro owner. Drops runtime presentes conservan quantity y pose.
+- puertas guardan sólo un estado lógico entre `opened_door`, `closed_door` y `locked_door`. Containers guardan únicamente los tags runtime mutables allowlisted; tags estáticos, health/world tags derivados y ángulos visuales quedan excluidos.
+- semantic preflight valida schema, scene identities, definitions, condición, localización única, quantity/max stack, placements/overlap, Equipment multi-slot completo, item-owned storage requerido sin nesting, referencias de containers/corpses/doors y authored/runtime world state. No muta gameplay.
+- el comparador canónico ordena colecciones incidentales y usa tolerancia `0.0001` sólo para pose; cualquier otra diferencia produce un path accionable.
+- `Save Debug Slot` llama al mismo capture/preflight/write real y usa `m37_current_slice_debug`. No existe todavía `Load Debug Slot`, apply, rehydration ni rollback de load.
+- `M37.1 Snapshot & Semantic Preflight Diagnostics` entra Play Mode sobre `SampleScene`, usa un root temporal, prueba casos válidos/negativos y sale sin guardar la escena.
 
 ## Inventory, Grid, Ownership Y Equipment
 
@@ -115,7 +130,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Frontera M36.1 / M37
 
 - M36.1 Checkpoint A validado y cerrado implementa identidad durable de items, invariantes, hydration detached, cleanup terminal, transiciones comprometidas de ownership y diagnostico determinista. Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions.
-- Checkpoint B implementa identidad authored para 14 roots stateful y 2 world items, con apply/validator Editor idempotente. Runtime/Editor compilaron, Foundation Identity y Checkpoint A dieron `PASS`; Mauro valido manualmente los flujos authored principales. `Foundation Freeze` esta `APPROVED`; M37.0 queda listo para autorizacion, pero no iniciado.
+- Checkpoint B implementa identidad authored para 14 roots stateful y 2 world items, con apply/validator Editor idempotente. Runtime/Editor compilaron, Foundation Identity y Checkpoint A dieron `PASS`; Mauro validó manualmente los flujos authored principales y `Foundation Freeze` está `APPROVED`. M37.0 quedó validado y M37.1 Pass 1 consume esas identidades sin reservar otras.
 - M37 debe persistir y rehidratar el `Condition` get-only exacto, sin implementar condition mutable.
 - Items no stackeables y stacks visibles poseen identidad durable; las unidades fungibles internas conservan cantidad sin identidad individual.
 - M36.1 no implementa save/load, condition mutable, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.
