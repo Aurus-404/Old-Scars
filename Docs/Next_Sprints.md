@@ -6,16 +6,16 @@ Este documento contiene solo los proximos trabajos reales. El trabajo activo se 
 
 ### 1. M36.1 — Foundation Freeze & Persistent Identity Contract
 
-Estado: `IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED; CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`.
+Estado: `IN PROGRESS — CHECKPOINT B IMPLEMENTED; AUTOMATED FOUNDATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING; FOUNDATION FREEZE REVIEW BLOCKED`.
 
-M36.1 es el trabajo actual. Checkpoint A congelo y valido identidad durable, ownership y stacks de items. La siguiente unidad autorizable es `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`; todavia no fue iniciada.
+M36.1 es el trabajo actual. Checkpoint A congelo y valido identidad durable, ownership y stacks de items. Checkpoint B implemento identidad authored para 14 roots stateful y 2 world items; la validacion automatizada paso. El trabajo inmediato restante es la validacion manual de Checkpoint B y la revision final de `Foundation Freeze`.
 
 Objetivo:
 
-- congelar contratos actuales que M37 debe poder persistir;
-- completar en Checkpoint B la identidad authored de actores y objetos mundiales actuales;
-- documentar invariantes de ownership y referencias;
-- crear seams de prueba y un baseline proporcional.
+- revisar manualmente la identidad authored aplicada al slice actual;
+- confirmar que pickup/drop preservan los IDs exactos sin regresiones;
+- revisar la evidencia de Checkpoints A/B contra `Foundation Freeze`;
+- mantener M37 bloqueado hasta esa decision.
 
 Fuera de alcance:
 
@@ -24,7 +24,7 @@ Fuera de alcance:
 - actor lifecycle;
 - gameplay o UI final.
 
-Salida pendiente: revisar el gate `Foundation Freeze` despues de Checkpoint B; Checkpoint A por si solo no lo aprueba.
+Salida pendiente: validacion manual de Checkpoint B y revision final del gate `Foundation Freeze`; la evidencia automatizada por si sola no lo aprueba.
 
 ### 2. M37.0 — Save Format & Persistence Core
 

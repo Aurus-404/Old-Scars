@@ -26,6 +26,7 @@ namespace OldScars.Core.Items
         private static readonly Vector3 DefaultColliderSize = new Vector3(0.8f, 0.5f, 0.8f);
 
         [SerializeField] private string itemDefinitionId;
+        [SerializeField] private string authoredItemInstanceId;
 
         private readonly ItemStorage storage = new ItemStorage();
         private GridInventoryBackend transferBackend;
@@ -40,6 +41,8 @@ namespace OldScars.Core.Items
                 return entry != null ? entry.DefinitionId : itemDefinitionId;
             }
         }
+
+        public string AuthoredItemInstanceId => authoredItemInstanceId;
 
         public int Quantity
         {
@@ -226,11 +229,8 @@ namespace OldScars.Core.Items
             if (targetTags.HasTag(PickedUpTag) || !targetTags.HasTag(PickupableTag))
                 return DebugActionExecutionResult.Info("Recoger", "Este objeto ya fue recogido o no se puede recoger.");
 
-            if (!EnsureConfiguredItemStorage())
-            {
-                Debug.LogWarning($"[WorldItemPickup] Item definition '{SafeText(itemDefinitionId)}' was not found or data is not ready.");
-                return DebugActionExecutionResult.Info("Recoger", $"No se pudo validar '{SafeText(itemDefinitionId)}'.");
-            }
+            if (!EnsureConfiguredItemStorage(out string initializationError))
+                return DebugActionExecutionResult.Info("Recoger", initializationError);
 
             InventoryComponent inventory = actorContext.GetInventoryComponent();
             if (inventory == null)
@@ -275,9 +275,9 @@ namespace OldScars.Core.Items
         {
             entry = null;
             error = null;
-            if (!EnsureConfiguredItemStorage())
+            if (!EnsureConfiguredItemStorage(out string initializationError))
             {
-                error = $"No se pudo validar '{SafeText(itemDefinitionId)}'.";
+                error = initializationError;
                 return false;
             }
 
@@ -360,8 +360,9 @@ namespace OldScars.Core.Items
                 $"{(string.IsNullOrWhiteSpace(resultVerb) ? "Recogiste" : resultVerb)} {displayName} x{transferredQuantity}.");
         }
 
-        private bool EnsureConfiguredItemStorage()
+        private bool EnsureConfiguredItemStorage(out string error)
         {
+            error = null;
             if (!storage.IsEmpty)
             {
                 sourceInitialized = true;
@@ -369,16 +370,45 @@ namespace OldScars.Core.Items
             }
 
             if (sourceInitialized)
+            {
+                error = "La fuente mundial ya fue inicializada y no contiene una instancia transferible.";
                 return false;
+            }
 
-            ItemDefinition definition = GetItemDefinition(itemDefinitionId);
+            GameDataManager dataManager = GameDataManager.Instance;
+            if (dataManager == null || !dataManager.IsReady || dataManager.Database == null)
+            {
+                error = "Los datos del juego todavía no están disponibles.";
+                Debug.LogWarning("[WorldItemPickup] Game database is not ready.", this);
+                return false;
+            }
+
+            ItemDefinition definition = dataManager.Database.GetItem(itemDefinitionId);
             if (definition == null)
+            {
+                error = $"No existe la definición '{SafeText(itemDefinitionId)}'.";
+                Debug.LogWarning(
+                    $"[WorldItemPickup] Item definition '{SafeText(itemDefinitionId)}' was not found in the ready game database.",
+                    this);
                 return false;
+            }
 
-            storage.AddItem(new ItemInstance(definition));
-            sourceInitialized = true;
-            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
-            return true;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(authoredItemInstanceId))
+                    throw new System.InvalidOperationException($"Authored world item '{name}' requires an authored item instance id.");
+
+                storage.AddItem(ItemInstance.CreateAuthored(definition, authoredItemInstanceId));
+                sourceInitialized = true;
+                ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
+                return true;
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogError($"[WorldItemPickup] Failed to initialize authored world item '{name}': {exception.Message}", this);
+                error = exception.Message;
+                return false;
+            }
         }
 
         private void EnsureSimplePhysics()

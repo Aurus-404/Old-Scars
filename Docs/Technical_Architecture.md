@@ -17,6 +17,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 - `ItemInstance.InstanceId` es un `string` get-only autoritativo. Los IDs nuevos usan `item_<GUID N lowercase>`; son opacos para consumidores y no codifican comportamiento.
 - `ItemInstance.CreateNew` valida la definicion, reserva un ID nuevo, usa `condition_max` y registra explicitamente item-owned storage. El constructor publico legacy conserva exactamente esa semantica de new runtime item.
+- `ItemInstance.CreateAuthored` valida una definicion y reserva exactamente un `item_<32 hex lowercase>` preasignado para un world item colocado en escena. No genera fallback, no reemplaza `Rehydrate` y no se usa para drops runtime, que conservan su instancia existente.
 - `ItemInstance.Rehydrate` valida y reserva exactamente el ID y el `Condition` recibidos, rechaza duplicados y devuelve un item detached. En una futura hidratacion con storage propio, el caller puede adjuntarlo sin publicar, poblar su contenido con layout pendiente, completar la validacion inicial y recien entonces registrarlo de forma explicita. M37 debe usar esta ruta y no el constructor publico.
 - `ItemInstanceIdRegistry` mantiene solamente un `HashSet` de IDs activos. Un reset en `SubsystemRegistration` limpia de forma coordinada identidad, storages y ownership runtime; no existen tombstones persistentes, high-water ni historial de retirados.
 - Un stack contiene una `ItemInstance` representativa y `ItemStorageEntry.Quantity`; las unidades fungibles internas no poseen IDs individuales. `CanStackWith` exige `DefinitionId`, `Condition`, `MaxStack` y ausencia de owned storage compatibles.
@@ -25,8 +26,8 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Los scopes de reserva ambient/nested estan limitados al hilo de sesion, exigen LIFO y transfieren reservas al scope padre. El contexto localizado es necesario porque constructors y split reservan IDs dentro de servicios transaccionales ya existentes; evita cambiar sus contratos publicos. Rollback restaura storage/layout/Equipment y luego libera solamente IDs nuevos con sus registros/bindings.
 - `ItemInstance.Condition` permanece get-only. Es estado de instancia representativo, participa en stacking y debe rehidratarse exactamente en M37; no hay mutacion, desgaste ni reparacion.
 - No hay save envelope, version de formato, checksum, escritura atomica, recovery, migrations ni pruebas round-trip.
-- Actores, puertas, containers, cuerpos y world items dependen de objetos/componentes de escena; todavia no poseen un lifecycle persistente comun.
-- Checkpoint B debe completar la identidad authored y evidencia restante del slice antes de revisar `Foundation Freeze`.
+- `PersistentSceneObjectId` aporta identidad authored estable a exactamente 14 roots stateful de `SampleScene`: 3 actores, 3 puertas y 8 contenedores. Los dos world items usan identidad de item separada; visuales, children y `Debug Strange Machine` quedan excluidos.
+- Actores, puertas, containers, cuerpos y world items todavia no poseen un lifecycle persistente comun ni serializacion de estado; Checkpoint B congela identidad, no implementa save/load.
 
 ## Inventory, Grid, Ownership Y Equipment
 
@@ -92,7 +93,8 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Frontera M36.1 / M37
 
-- M36.1 Checkpoint A validado y cerrado implementa identidad durable de items, invariantes, hydration detached, cleanup terminal, transiciones comprometidas de ownership y diagnostico determinista. Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions; Checkpoint B queda listo para autorizacion, pero no esta iniciado.
+- M36.1 Checkpoint A validado y cerrado implementa identidad durable de items, invariantes, hydration detached, cleanup terminal, transiciones comprometidas de ownership y diagnostico determinista. Mauro confirmo manualmente los flujos del slice sin duplicaciones ni ownership exceptions.
+- Checkpoint B implementa identidad authored para 14 roots stateful y 2 world items, con apply/validator Editor idempotente. Runtime/Editor compilaron, Foundation Identity y Checkpoint A dieron `PASS`; la validacion manual y revision final de `Foundation Freeze` permanecen pendientes.
 - M37 debe persistir y rehidratar el `Condition` get-only exacto, sin implementar condition mutable.
 - Items no stackeables y stacks visibles poseen identidad durable; las unidades fungibles internas conservan cantidad sin identidad individual.
 - M36.1 no implementa save/load, condition, repair/disassembly, actor lifecycle, gameplay nuevo ni UI final.

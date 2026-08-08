@@ -1981,3 +1981,62 @@ Cierre y limites:
 - Checkpoint A queda validado y cerrado. Este cierre modifica solamente documentacion y no reejecuta Unity ni altera codigo, escenas, prefabs, JSON, Packages, ProjectSettings o el GDD.
 - Checkpoint B no fue iniciado. La siguiente unidad autorizable es `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`.
 - M36.1 permanece `IN PROGRESS`; `Foundation Freeze` continua abierto hasta completar y revisar Checkpoint B, R03 sigue `MITIGATING` y M37 permanece bloqueado.
+
+### M36.1 — Checkpoint B Authored Identity Recovery / Completion Pass 1
+
+Fecha: 2026-08-08
+
+Version:
+
+`Checkpoint B — Authored Slice Identity and Foundation Evidence`
+
+`Recovery / Completion Pass 1`
+
+Estado anterior:
+
+`IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED;`
+
+`CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`
+
+Estado posterior:
+
+`IN PROGRESS — CHECKPOINT B IMPLEMENTED;`
+
+`AUTOMATED FOUNDATION VALIDATION PASSED;`
+
+`MANUAL UNITY VALIDATION PENDING;`
+
+`FOUNDATION FREEZE REVIEW BLOCKED`
+
+Recuperacion y causa:
+
+- Se encontro y preservo trabajo local parcial de Checkpoint B: `PersistentSceneObjectId`, `ItemInstance.CreateAuthored`, authored identity en `WorldItemPickup` y el apply/validator de `M36PersistentIdentityTools`.
+- `WorldItemPickup` ya exigia `authoredItemInstanceId`, pero `SampleScene` no tenia serializados los IDs de `Debug World Crowbar` y `Debug World Lee-Enfield Rifle`.
+- El log manual confirmaba que `GameDatabase` cargaba 8 items y que Core terminaba con 0 errors y 0 warnings; la data no era la causa del fallo.
+- El warning posterior `Item definition '...' was not found or data is not ready` era secundario y engañoso porque el fallo primario ya era la ausencia de authored identity.
+
+Correccion implementada:
+
+- `Debug World Crowbar` conserva `rusted_crowbar_01` y serializa `item_4c1952809f1a4968ac86384b5a331201`.
+- `Debug World Lee-Enfield Rifle` conserva `lee_enfield_rifle_01` y serializa `item_c0f66d58249e4892aa4632028975816e`.
+- `CreateAuthored` reserva el ID exacto con el formato durable; no existe fallback a `CreateNew`. Los drops runtime conservan su `ItemInstance` y no reciben authored IDs nuevos.
+- `WorldItemPickup` distingue database no disponible, definition inexistente e identidad authored faltante/invalida sin emitir el warning secundario falso.
+- `M36PersistentIdentityTools` aplica y valida una tabla aprobada de 3 actores, 3 puertas, 8 contenedores y 2 world items; valida antes de guardar, revierte la escena en memoria ante fallo y es idempotente.
+- `Debug Strange Machine`, visuales y children permanecen excluidos de `PersistentSceneObjectId`.
+
+Validacion automatizada:
+
+- Unity 6.4.6f1 compilo Runtime y Editor con `Tundra build success`; todas las corridas validas terminaron con codigo 0 y sin errores C#.
+- La primera aplicacion produjo `M36.1 Foundation Identity Validation: PASS` y guardo `SampleScene` con `changed: true`.
+- Una apertura independiente de la escena produjo nuevamente `M36.1 Foundation Identity Validation: PASS`.
+- Resultado Foundation: actors 3, doors 3, containers 8, authored roots 14, authored world item IDs 2, IDs duplicados 0 e IDs invalidos 0.
+- La reaplicacion produjo `changed: false`; el SHA-256 de `SampleScene` permanecio `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335` antes y despues.
+- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- `git diff --check` termino sin errores despues de retirar cuatro campos nulos que Unity serializo incidentalmente y normalizar whitespace de los componentes nuevos.
+- El diff final de `SampleScene` contiene solamente 14 componentes/referencias `PersistentSceneObjectId` y dos overrides `authoredItemInstanceId`; no modifica transforms, jerarquia, posiciones, rotaciones, escalas, colliders, renderers, materiales, camara, iluminacion, loot o UI.
+
+Limites y gate:
+
+- No se modificaron JSON gameplay, prefabs, Packages, ProjectSettings, GDD, save/load, condition, repair, actor lifecycle, gameplay nuevo o UI final.
+- La validacion manual de Checkpoint B por Mauro permanece pendiente; no se declara Play Mode manual validado.
+- M36.1 no queda `DONE`, `Foundation Freeze` no se aprueba, R03 permanece `MITIGATING` y M37 no comenzo.

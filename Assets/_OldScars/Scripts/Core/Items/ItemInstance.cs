@@ -71,6 +71,15 @@ namespace OldScars.Core.Items
             return new ItemInstance(definition);
         }
 
+        /// <summary>
+        /// Creates a new scene-authored gameplay item with an exact preassigned identity.
+        /// Save loading must use Rehydrate instead.
+        /// </summary>
+        public static ItemInstance CreateAuthored(ItemDefinition definition, string authoredInstanceId)
+        {
+            return new ItemInstance(PrepareAuthored(definition, authoredInstanceId), ResolveOwnedStorageProfile);
+        }
+
         internal static ItemInstance CreateNew(
             ItemDefinition definition,
             Func<string, ItemStorageProfileDefinition> profileResolver)
@@ -203,6 +212,21 @@ namespace OldScars.Core.Items
             string instanceId = ItemInstanceIdRegistry.Instance.ReserveNewId();
             return new NewItemState(
                 instanceId,
+                definition.id,
+                definition.physical.condition_max,
+                Math.Max(1, definition.max_stack),
+                definition.owned_storage_profile_id);
+        }
+
+        private static NewItemState PrepareAuthored(ItemDefinition definition, string authoredInstanceId)
+        {
+            ValidateDefinition(definition);
+            if (!ItemInstanceIdRegistry.IsValidFormat(authoredInstanceId))
+                throw new ArgumentException($"Authored item instance id '{authoredInstanceId}' does not match the durable item ID format.", nameof(authoredInstanceId));
+
+            ItemInstanceIdRegistry.Instance.ReserveExact(authoredInstanceId);
+            return new NewItemState(
+                authoredInstanceId,
                 definition.id,
                 definition.physical.condition_max,
                 Math.Max(1, definition.max_stack),

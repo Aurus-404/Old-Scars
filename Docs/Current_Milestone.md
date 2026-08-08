@@ -8,19 +8,23 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 Version actual:
 
-`Checkpoint A — Manual Validation Closeout`
+`Checkpoint B — Authored Slice Identity and Foundation Evidence / Recovery Completion Pass 1`
 
 Estado inicial:
 
-`PLANNED — REVISED ARCHITECTURE PLAN READY FOR IMPLEMENTATION AUTHORIZATION`
+`IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED; CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`
 
 Estado actual:
 
-`IN PROGRESS — CHECKPOINT A VALIDATED AND CLOSED;`
+`IN PROGRESS — CHECKPOINT B IMPLEMENTED;`
 
-`CHECKPOINT B READY FOR IMPLEMENTATION AUTHORIZATION`
+`AUTOMATED FOUNDATION VALIDATION PASSED;`
 
-Objetivo: reemplazar la identidad temporal de `ItemInstance` por IDs durables y congelar los contratos minimos de creacion, futura rehidratacion, stacking, split, merge, item-owned storage, ownership y rollback que consumira M37.
+`MANUAL UNITY VALIDATION PENDING;`
+
+`FOUNDATION FREEZE REVIEW BLOCKED`
+
+Objetivo: congelar identidad durable de items y del contenido authored del slice actual, junto con los contratos minimos de creacion, futura rehidratacion, stacking, ownership y rollback que consumira M37, sin implementar save/load.
 
 ## Resultado De Checkpoint A
 
@@ -49,7 +53,7 @@ Objetivo: reemplazar la identidad temporal de `ItemInstance` por IDs durables y 
 - El smoke real de Play Mode produjo `M36.1 Checkpoint A Real Scene Ownership Smoke: PASS` sobre crowbar, rifle, mochila y crate: pickup, equip/unequip, storage round-trip, drop/re-pick y stack transfer conservaron identidad y una sola representación.
 - Play Mode se cerró correctamente; Console no registró `InvalidOperationException`, `already bound to a different owner` ni errores relacionados con M36.1.
 - Persisten seis warnings preexistentes: cuatro de API obsolete en `BuildingVisibilityManager` y dos campos no usados en `ItemStorageDebugPanel`.
-- `SampleScene` permanece intacta con SHA-256 `7EBB6605CBFE564F17CA5CAC7BA46348A1CDE887CC3462086DAE1D2B602A1AFB`.
+- `SampleScene` permanecio intacta durante Checkpoint A; su identidad authored se aplica exclusivamente en Checkpoint B.
 - Mauro confirmo manualmente pickup desde el mundo con desaparicion de la representacion mundial y sin duplicados.
 - Equip desde inventario y equip directo desde el mundo funcionaron; equip/unequip preservaron la misma identidad.
 - Transfers entre inventario, mochila, containers y cuerpos preservaron ownership e identidad sin duplicaciones.
@@ -59,15 +63,32 @@ Objetivo: reemplazar la identidad temporal de `ItemInstance` por IDs durables y 
 
 ## Checkpoint B
 
-`READY FOR IMPLEMENTATION AUTHORIZATION`
+`IMPLEMENTED — AUTOMATED FOUNDATION VALIDATION PASSED`
 
-Siguiente unidad: `M36.1 Checkpoint B — Authored Slice Identity and Foundation Evidence`. Debe completar identidad authored y evidencia del slice para actores/objetos mundiales sin convertir Checkpoint A en save/load. No fue iniciada por este cierre documental.
+- `PersistentSceneObjectId` identifica exactamente 14 roots stateful de `SampleScene`: 3 actores, 3 puertas y 8 contenedores.
+- `Debug Strange Machine`, visuales y children quedan excluidos.
+- `Debug World Crowbar` conserva `rusted_crowbar_01` y usa `item_4c1952809f1a4968ac86384b5a331201`.
+- `Debug World Lee-Enfield Rifle` conserva `lee_enfield_rifle_01` y usa `item_c0f66d58249e4892aa4632028975816e`.
+- `ItemInstance.CreateAuthored` reserva el ID exacto; los drops runtime conservan su `ItemInstance` y no reciben authored IDs nuevos.
+- `WorldItemPickup` distingue database no disponible, definition inexistente e identidad authored invalida; un fallo de identidad ya no emite el warning secundario falso de definition/data readiness.
+- El tool Editor aplica la tabla aprobada, valida antes de guardar, revierte la escena en memoria ante fallo y es idempotente.
+
+## Evidencia Automatizada De Checkpoint B
+
+- Unity 6.4.6f1 compilo Runtime y Editor con `Tundra build success` y codigo de salida 0.
+- `M36.1 Foundation Identity Validation: PASS`: actors 3, doors 3, containers 8, authored roots 14, authored world item IDs 2, duplicados 0 e invalidos 0.
+- El validator paso nuevamente despues de reabrir `SampleScene` desde disco.
+- La reaplicacion fue idempotente (`changed: false`) y preservo el SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
+- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- El diff de `SampleScene` contiene solamente los 14 componentes/referencias de identidad y dos overrides `authoredItemInstanceId`; no cambia transforms, jerarquia, colliders, renderers, materiales, camara, iluminacion, loot o UI.
+- La evidencia manual que disparo el recovery confirmo que `GameDatabase` cargaba 8 items con 0 errors y 0 warnings; la causa era la ausencia de authored IDs serializados.
+- La validacion manual de Checkpoint B por Mauro permanece pendiente.
 
 ## Estado De Gates Y Secuencia
 
-- `Foundation Freeze`: no aprobado; evidencia parcial de Checkpoint A solamente.
+- `Foundation Freeze`: no aprobado; Checkpoints A y B aportan evidencia automatizada, pero la validacion manual y revision final permanecen pendientes.
 - R03 permanece `MITIGATING`.
-- M37.0 no comenzo y sigue bloqueado hasta completar/revisar M36.1.
+- M37.0 no comenzo y sigue bloqueado hasta validar/revisar M36.1.
 - milestone anterior: M36.0 — `DONE — DOCUMENTATION REVIEWED`, commit de cierre `461b1b6508ef234777b82ccea97624b5b94b428c`.
 
-No iniciar Checkpoint B, M37, condition mutable, repair, actor lifecycle, save/load, gameplay nuevo ni UI final sin una autorizacion posterior.
+No iniciar M37, condition mutable, repair, actor lifecycle, save/load, gameplay nuevo ni UI final antes de la validacion manual y revision final de `Foundation Freeze`.
