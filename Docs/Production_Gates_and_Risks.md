@@ -90,6 +90,8 @@ Bloquea: IDs regenerables o ambiguos, ownership sin autoridad, mutaciones que el
 
 ### Persistence Ready - M37.1
 
+Estado: `NOT YET APPROVED`.
+
 Debe validar:
 
 - envelope y version de save;
@@ -100,6 +102,10 @@ Debe validar:
 - fallo de carga seguro y explicable.
 
 Evidencia: snapshots antes/despues, escenarios de round-trip, recovery y versionado, checks automatizados aplicables y validacion manual sin errores relacionados en Console.
+
+Evidencia de infraestructura M37.0: `DONE — PERSISTENCE CORE VALIDATED`. Envelope V1, serializer Newtonsoft aislado, slots cerrados, temp/primary/backup, overwrite mediante `File.Replace`, fallback preservando backup, recovery, future-version rejection, migration seam y failure codes quedaron implementados. Runtime/Editor compilaron y `M37.0 Persistence Core Diagnostics: PASS` cubrio once escenarios en un root temporal sin residuos ni acceso a saves reales.
+
+Pendiente para aprobar el gate: M37.1 debe integrar y validar el round-trip del slice actual completo, conservar identidad/ownership/estado y aportar la evidencia funcional requerida. M37.0 por si solo no aprueba `Persistence Ready`; R05/R14/R19 conservan su estado hasta esa revision.
 
 Deuda aceptable: cloud save y lifecycle/serializacion general de actores futuros, clima, facciones o proceduralidad que aun no existen. No se difieren el jugador ni los cuerpos actuales.
 

@@ -2139,3 +2139,65 @@ Alcance del cierre:
 
 - Solo documentacion; no se modificaron C#, Assets, `SampleScene`, prefabs, JSON, Packages o ProjectSettings.
 - No se ejecuto Unity ni se repitieron diagnosticos; el cierre consume la evidencia publicada en el commit base.
+
+### M37.0 — Persistence Core V1 Functional Implementation Pass 1
+
+Fecha: 2026-08-08
+
+Milestone:
+
+`M37.0 — Save Format & Persistence Core`
+
+Version:
+
+`Persistence Core V1 — Functional Implementation Pass 1`
+
+Commit base:
+
+`6eb1568b314445190d79b3c5ad20ba04fddac2b8`
+
+Estado anterior:
+
+`PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`
+
+Estado posterior:
+
+`DONE — PERSISTENCE CORE VALIDATED`
+
+Implementacion:
+
+- `PersistenceSerializer.CurrentFormatVersion = 1` y un envelope estable con `formatVersion`, `writtenUtc` y `payload` no-null.
+- El payload usa `JToken` y mantiene el core desacoplado de gameplay, componentes Unity, identidad, ownership y estado de escena; M37.1 sera el consumidor de snapshots/DTOs.
+- La configuracion Newtonsoft exclusiva de saves valida JSON, envelope y nombres duplicados, conserva cultura estable y rechaza loops/type metadata.
+- El reader acepta V1, rechaza future versions mediante `FutureVersionUnsupported` y exige un paso `ISaveMigration` consecutivo explicito para versiones anteriores; V1 no registra migrations ficticias.
+- `PersistenceFileStore` usa `Application.persistentDataPath/Saves` en produccion y root inyectable para diagnostics. Los slots aceptan solamente snake_case cerrado de hasta 64 caracteres.
+- Cada slot queda limitado a primary, backup y temp; el documento se serializa/valida en memoria y el temp recibe flush forzado en el mismo directorio.
+- First write usa same-directory rename. El overwrite validado uso `File.Replace(temp, primary, backup)`; el fallback por plataforma preserva primero primary como backup y restaura si falla la promocion.
+- Read prioriza primary, recupera backup sin borrar evidencia corrupta, distingue ausencia de IO/corrupcion/versionado y no usa un backup viejo para ocultar future versions o migrations ausentes.
+- Los resultados distinguen `Success`, `SaveNotFound`, `InvalidSlotId`, `IoFailure`, `MalformedJson`, `InvalidEnvelope`, `FutureVersionUnsupported`, `MigrationUnavailable`, `RecoveryFailed` y `SerializationFailure`.
+- Los failure logs incluyen operacion, slot, paths, versiones, existencia, recovery, codigo/causa y accion sin volcar payload; successes permanecen compactos.
+
+Diagnostico automatizado:
+
+- `M37PersistenceCoreDiagnostics` trabajo exclusivamente bajo un root unico de `Path.GetTempPath()` y lo retiro en `finally`; no toco `Application.persistentDataPath` ni saves reales.
+- V1 envelope serialize/deserialize preservo version y payload.
+- First write/read y el round-trip exacto de un payload nested pasaron.
+- Overwrite creo backup con el payload anterior y uso `Strategy: File.Replace`.
+- Primary corrupto con backup valido produjo recovery exitoso desde backup sin reescribir el primary.
+- Primary y backup corruptos produjeron `RecoveryFailed` sin payload parcial.
+- Future format produjo `FutureVersionUnsupported`; version 0 sin migration produjo `MigrationUnavailable`.
+- Slot `../escape` produjo `InvalidSlotId`; el temp stale fue limpiado y no quedaron `.tmp` ni directorios de test.
+- Resultado final: `M37.0 Persistence Core Diagnostics: PASS` y batchmode retorno 0.
+
+Compilacion y warnings:
+
+- Unity 6.4.6f1 compilo Runtime y Editor con `Tundra build success` y retorno 0.
+- Persisten solamente seis warnings preexistentes: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`; M37.0 no agrego warnings.
+- Manual Unity validation: `NOT APPLICABLE`; no existe integracion gameplay en M37.0.
+
+Alcance y secuencia:
+
+- La implementacion uso tres archivos C# y 641 lineas nuevas, dentro del techo autorizado; Unity genero sus cuatro `.meta` correspondientes.
+- No se modificaron gameplay, `SampleScene`, prefabs, JSON, Packages, ProjectSettings, asmdefs ni los contratos de M36.1.
+- `Persistence Ready` permanece `NOT YET APPROVED` hasta M37.1.
+- M37.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`, pero no fue iniciado.

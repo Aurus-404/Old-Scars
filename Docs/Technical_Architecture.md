@@ -25,9 +25,23 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Un `GridInventoryBackend.Remove` que retiraria la entry completa rechaza antes de mutar si su item-owned storage no esta vacio; devuelve `OwnedStorageNotEmpty`. Una vez vacio, el retiro terminal libera bindings, storage e identidad mediante el contrato existente.
 - Los scopes de reserva ambient/nested estan limitados al hilo de sesion, exigen LIFO y transfieren reservas al scope padre. El contexto localizado es necesario porque constructors y split reservan IDs dentro de servicios transaccionales ya existentes; evita cambiar sus contratos publicos. Rollback restaura storage/layout/Equipment y luego libera solamente IDs nuevos con sus registros/bindings.
 - `ItemInstance.Condition` permanece get-only. Es estado de instancia representativo, participa en stacking y debe rehidratarse exactamente en M37; no hay mutacion, desgaste ni reparacion.
-- No hay save envelope, version de formato, checksum, escritura atomica, recovery, migrations ni pruebas round-trip.
+- M37.0 implementa el envelope, versionado, filesystem y recovery descritos en `Persistence Core V1`; la captura/rehidratacion del slice real permanece en M37.1.
 - `PersistentSceneObjectId` aporta identidad authored estable a exactamente 14 roots stateful de `SampleScene`: 3 actores, 3 puertas y 8 contenedores. Los dos world items usan identidad de item separada; visuales, children y `Debug Strange Machine` quedan excluidos.
 - Actores, puertas, containers, cuerpos y world items todavia no poseen un lifecycle persistente comun ni serializacion de estado; Checkpoint B congela identidad, no implementa save/load.
+
+## Persistence Core V1
+
+- `PersistenceSerializer.CurrentFormatVersion` vale `1`. El envelope JSON conserva los nombres estables `formatVersion`, `writtenUtc` y `payload`; `payload` debe estar presente y no ser null.
+- El payload es un `JToken` desacoplado. M37.0 no serializa directamente `MonoBehaviour`, `GameObject`, `Transform`, `UnityEngine.Object`, `ItemInstance`, registries ni componentes runtime; M37.1 construye y consume sus DTOs sobre este limite.
+- La configuracion Newtonsoft.Json de saves es independiente del loader de definiciones: cultura invariante, `TypeNameHandling.None`, parseo de fechas desactivado, nulls explicitos, loops rechazados, nombres duplicados rechazados y JSON indentado UTF-8 sin BOM.
+- El reader valida JSON, root object, `formatVersion` entero y payload. Version actual se entrega; version futura produce `FutureVersionUnsupported`; version anterior usa solamente pasos `ISaveMigration` consecutivos registrados explicitamente o produce `MigrationUnavailable`. No existe migration historica ficticia en V1.
+- `PersistenceFileStore` resuelve produccion bajo `Application.persistentDataPath/Saves`; un root base inyectado queda reservado para diagnostics. Slot IDs usan snake_case cerrado, maximo 64 caracteres, y nunca aceptan separadores, extensiones o rutas arbitrarias.
+- Cada slot usa `<slot>.json`, `<slot>.json.tmp` y `<slot>.json.bak`. El documento se serializa y valida completamente en memoria; el temp se escribe en el mismo directorio con flush forzado antes de su promocion.
+- El primer write promueve temp por rename en el mismo filesystem. Overwrite usa `File.Replace(temp, primary, backup)` cuando esta soportado; el fallback por `PlatformNotSupportedException`/`NotSupportedException` mueve primero primary a backup y luego temp a primary, restaurando primary si la segunda promocion falla. No se afirma atomicidad universal fuera de la operacion soportada por plataforma/filesystem.
+- Read prefiere primary valido. Primary ausente/corrupto puede entregar backup valido con recovery explicito sin borrar o reescribir evidencia; primary y backup invalidos producen `RecoveryFailed`. Versiones futuras o migrations ausentes son rechazos de politica y no hacen rollback silencioso a backup.
+- Los resultados distinguen `Success`, `SaveNotFound`, `InvalidSlotId`, `IoFailure`, `MalformedJson`, `InvalidEnvelope`, `FutureVersionUnsupported`, `MigrationUnavailable`, `RecoveryFailed` y `SerializationFailure`.
+- Los failures registran operacion, slot, paths, versiones, existencia, recovery, failure code/causa y accion sin imprimir payload. Los commits y recoveries exitosos usan logs breves.
+- `M37PersistenceCoreDiagnostics` ejecuta once escenarios sobre un subdirectorio unico del temp del sistema, nunca sobre saves reales, y elimina ese root en `finally`.
 
 ## Inventory, Grid, Ownership Y Equipment
 
