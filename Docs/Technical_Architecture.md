@@ -6,17 +6,31 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Datos, Mods Y Runtime
 
-- JSON contiene definiciones moddables; `GameDataLoader` las carga una vez, `GameDatabase` las registra por ID y `DataValidator` rechaza los contratos o referencias que valida explicitamente.
-- `Mods/Core` se carga primero. Los directorios externos se cargan despues en orden alfabetico y pueden agregar IDs nuevos.
+- JSON contiene definiciones moddables; `GameDataLoader` las carga una vez, canonicaliza sus Global Content IDs en la frontera, `GameDatabase` las registra por ID canónico y `DataValidator` rechaza los contratos o referencias que valida explicitamente.
+- `Mods/Core` se carga primero y declara contenido oficial bajo el namespace reservado `core`. Usa el mismo parser, normalizador, registries y validator que una fuente externa; la compatibilidad legacy no evita validación.
+- Los directorios externos se cargan despues en orden alfabetico y pueden agregar IDs canónicos explícitos en namespaces no reservados. Un ID externo sin namespace se rechaza; el nombre del directorio todavía no prueba ownership del namespace.
 - No existe todavia politica de override, manifest, dependencia o version de mod. Un ID duplicado dentro de su tipo/registro produce error y la segunda definicion se rechaza.
 - El deserializador actual ignora campos desconocidos. Eso no los incorpora al contrato: un campo no documentado puede quedar silenciosamente sin consumidor hasta que loader, validator y runtime lo implementen.
 - Las definiciones no contienen estado de partida. Los objetos colocados en escena y las instancias runtime consumen definiciones por ID.
 - `ItemDefinition` describe un tipo; `ItemInstance` conserva identidad y estado de una instancia representativa. La cantidad del stack pertenece a `ItemStorageEntry`, no a `ItemInstance`.
 
+## Identidad De Contenido
+
+- `ContentId` es el contrato sintáctico único para una Definition registrada globalmente. La forma canónica es `namespace:local_id`; cada segmento admite sólo letras ASCII minúsculas, dígitos y `_`. No se corrigen case, guiones ni whitespace silenciosamente.
+- `DefinitionContentIdNormalizer` se ejecuta después de deserializar y antes de registrar. Canonicaliza tanto `definition.id` como cada referencia que apunta a un registry global; una referencia cross-namespace explícita se conserva.
+- Las familias globales actuales son `ItemDefinition`, `ItemStorageProfileDefinition`, `EquipmentSlotDefinition`, `EquipmentLayoutDefinition`, `WeaponProfileDefinition`, `FirearmProfileDefinition`, `AmmoProfileDefinition`, `ActionDefinition`, `LootTableDefinition`, `ActorProfileDefinition`, `WorldObjectProfileDefinition`, `VisualRigCapabilityDefinition`, `VisualRigProfileDefinition`, `VisualAssetDefinition`, `ItemVisualProfileDefinition` y `AttachmentPoseDefinition`.
+- La unicidad sigue perteneciendo a cada registry tipado. Reutilizar el mismo texto en otra familia no crea identidad compartida; dentro de un registry, `legacy_id` y `core:legacy_id` nunca se almacenan como dos keys.
+- IDs miembros de un contrato permanecen locales: grupos de layout, parts/sockets de un rig, `socket_role`, `family_id`, pose `socket_id`, contexts, stat keys y tokens cerrados como effect `type`. No se convierten por tener sufijo `_id`.
+- Equipment slots como `core:hand_right` y capabilities como `core:mount_storage` sí son Global Content IDs porque viven en registries propios. El role visual `hand_right` sigue siendo un Local ID; ambos dominios no son intercambiables.
+- Tags permanecen sin namespace y registrados por `TagRegistry`. `asset_key` ya usa dos segmentos pero es una clave secundaria de provider, no un `Definition.id`. `ItemInstance.InstanceId`, `PersistentSceneObjectId`, save slot IDs y storage IDs compuestos son dominios runtime/persistentes separados.
+- Compatibilidad temporal: sólo una carga con contexto Core puede cualificar un ID legacy sin namespace como `core:*`; consultas authored y saves schema v1 usan un resolver Core explícito y generan diagnóstico. Los mods externos no reciben namespace implícito. La excepción histórica `right_hand` → `core:hand_right` está limitada a referencias legacy de Equipment.
+- `ContentLoadContext` conserva mod directory/nombre y source file mientras normaliza, por lo que los errores de carga incluyen fuente. `GameDatabase` todavía no persiste un sidecar completo de provenance: un manifest futuro debe aportar Mod ID/namespace autoritativo y extender este seam antes de dependencies y patches.
+- Secuencia de extensión prevista, no implementada: `manifest → provenance → dependencies → patches`.
+
 ## Identidad Durable De Items Y Limite De Persistencia
 
 - `ItemInstance.InstanceId` es un `string` get-only autoritativo. Los IDs nuevos usan `item_<GUID N lowercase>`; son opacos para consumidores y no codifican comportamiento.
-- `ItemInstance.CreateNew` valida la definicion, reserva un ID nuevo, usa `condition_max` y registra explicitamente item-owned storage. El constructor publico legacy conserva exactamente esa semantica de new runtime item.
+- `ItemInstance.CreateNew` valida la definicion canónica, reserva un ID nuevo, usa `condition_max` y registra explicitamente item-owned storage. El constructor publico legacy conserva exactamente esa semantica de new runtime item.
 - `ItemInstance.CreateAuthored` valida una definicion y reserva exactamente un `item_<32 hex lowercase>` preasignado para un world item colocado en escena. No genera fallback, no reemplaza `Rehydrate` y no se usa para drops runtime, que conservan su instancia existente.
 - `ItemInstance.Rehydrate` valida y reserva exactamente el ID y el `Condition` recibidos, rechaza duplicados y devuelve un item detached. En una futura hidratacion con storage propio, el caller puede adjuntarlo sin publicar, poblar su contenido con layout pendiente, completar la validacion inicial y recien entonces registrarlo de forma explicita. M37 debe usar esta ruta y no el constructor publico.
 - `ItemInstanceIdRegistry` mantiene solamente un `HashSet` de IDs activos. Un reset en `SubsystemRegistration` limpia de forma coordinada identidad, storages y ownership runtime; no existen tombstones persistentes, high-water ni historial de retirados.
@@ -46,7 +60,8 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Current Slice Snapshot V1
 
 - `CurrentSliceSaveData` es el payload explícito de M37.1. Contiene player, tabla única de items, storages, Equipment, containers, corpses, doors y world items; no serializa `MonoBehaviour`, `Transform`, referencias runtime ni definiciones estáticas.
-- `ItemState` define cada identidad una sola vez mediante `InstanceId`, `DefinitionId` y `Condition`. `StorageEntryState`, Equipment y world representations referencian ese ID; quantity permanece en la entry/representación y no crea IDs por unidad fungible.
+- `ItemState` define cada identidad una sola vez mediante `InstanceId`, `DefinitionId` y `Condition`. `DefinitionId` es Global Content ID; `InstanceId` no lo es. `StorageEntryState`, Equipment y world representations referencian la instancia; quantity permanece en la entry/representación y no crea IDs por unidad fungible.
+- Antes del semantic preflight, la compatibilidad schema v1 normaliza en memoria los únicos tres surfaces persistidos que apuntan a definitions globales: `ItemState.definitionId`, `EquipmentState.layoutId` y `EquippedItemState.slots`. Un valor legacy sin namespace sólo se interpreta como Core; no cambia `schemaVersion` y el siguiente capture escribe la identidad canónica. Esta ruta queda pendiente de validación manual en Unity.
 - `StorageState` usa claves derivadas de `kind + ownerId`: actor/container por `PersistentSceneObjectId` e item-owned storage por el `InstanceId` del item owner. Entries grid conservan x/y, rotación y footprint efectivo exactos.
 - player captura pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Health tags, carry weight, stats y visuales son derivados y no se duplican en el save.
 - containers se incluyen aunque su storage autoritativo esté vacío. Un container runtime no inicializado aborta capture; Pass 1 no ejecuta loot tables ni agrega un restore seam anticipado.
@@ -63,7 +78,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `CurrentSliceLoadService` distingue `Success`, `ReadFailed`, `SemanticPreflightFailed`, `SceneResolutionFailed`, `ApplyFailed` y `RollbackFailed`, con fase, causa y resultado de rollback localizados.
 - La secuencia es read/preflight, resolución de referencias, capture del snapshot pre-load, teardown selectivo, `ItemInstance.Rehydrate`, owned storages, root storages/Equipment/ownership, world reconciliation, runtime state, pose del player, recapture y comparación canónica.
 - El teardown no usa resets globales. Limpia solamente las superficies del player, containers, corpses y world representations seleccionadas; recoge también los IDs bootstrap realmente contenidos y preserva bindings de NPCs vivos fuera del slice.
-- Cada item se rehidrata una vez con `InstanceId`, `DefinitionId` y `Condition` exactos. Los owned storages se adjuntan detached, reciben entries/placements exactos, completan layout y sólo entonces se registran.
+- Cada item se rehidrata una vez con `InstanceId`, `DefinitionId` canónico y `Condition` exactos. Los owned storages se adjuntan detached, reciben entries/placements exactos, completan layout y sólo entonces se registran.
 - Root storages se reemplazan atómicamente después de validar quantities, footprints, bounds y overlap. Equipment restaura layout, una entry por item y slot IDs sin duplicar items multi-slot; ownership se reconstruye después de publicar storages válidos.
 - Authored world markers restauran present/absent de forma autoritativa; absent marca la fuente inicializada y evita lazy respawn. Runtime drops se crean desde la `ItemInstance` ya rehidratada, conservando quantity y pose, sin split, transfer ni ID nuevo.
 - Containers quedan inicializados con contenido autoritativo incluso vacío, por lo que load nunca ejecuta loot tables. Corpses deben estar ya muertos y restauran sólo health/Inventory/Equipment/owned storage; un root vivo produce `SceneResolutionFailed` porque lifecycle general pertenece a M38.0.
@@ -76,7 +91,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `ItemStorage` es la autoridad de entries, cantidades y stacks. `GridStorageRuntime` y `GridInventoryBackend` agregan layout, placements y transacciones espaciales sin crear otra lista de items.
 - `ActorItemOwnershipComponent` agrega inventario personal, equipment storage y contenido item-owned para exigir ownership unico.
 - `ActorEquipmentComponent` guarda una sola entry por item equipado; los slots referencian su `InstanceId`. Un item multi-slot no duplica storage, detalle ni peso.
-- `back` es un slot generico. Equipar una mochila no crea ni copia su storage y no cambia el peso si el owner raiz sigue siendo el actor.
+- `core:back` es un EquipmentSlot global genérico. El role visual local `back` sigue separado. Equipar una mochila no crea ni copia su storage y no cambia el peso si el owner raiz sigue siendo el actor.
 - Preview, commit, stale checks, guards y rollback viven en servicios transaccionales existentes; UI y visuales no mutan storages directamente.
 - Un commit exitoso publica un unico snapshot visual final. Preview, no-op, fallo y rollback no publican estado visual confirmado.
 - Hooks y observers posteriores al commit son notificaciones best-effort, no parte del rollback transaccional: una excepcion se diagnostica, pero no revierte gameplay ya confirmado.
@@ -119,7 +134,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 - Equipment conserva autoridad exclusiva sobre storage, ownership, slots e `InstanceId`. El visual consume `EquipmentVisualStateSnapshot`, una copia read-only de una revision confirmada.
 - `EntityEquipmentVisualSynchronizer` combina ese snapshot con `EntityVisualRigRuntime` y perfiles del `GameDatabase`; mantiene como maximo un visual por `InstanceId`.
-- Parts y sockets son miembros declarados dentro de `VisualRigProfileDefinition`. Capabilities, visual assets, item visual profiles y attachment poses pertenecen a familias de definicion separadas. Offsets y compatibilidad no se hardcodean en el synchronizer.
+- Parts y sockets son Local IDs declarados dentro de `VisualRigProfileDefinition`. Capabilities, visual assets, item visual profiles y attachment poses pertenecen a familias globales de Definition y usan Content IDs canónicos. Offsets y compatibilidad no se hardcodean en el synchronizer.
 - `IVisualAssetProvider` separa asset keys data-driven de la carga. El slice actual implementa solamente el provider `builtin`; AssetBundles y Mod Kit no forman parte del contrato actual.
 - Visuales equipados son presentacion reemplazable: no contienen gameplay, storage, ownership, colliders ni rigidbodies.
 
@@ -138,7 +153,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `FirearmDebugController` es un prototipo debug de arma de fuego, no el contrato final de combate.
 - No existe actor runtime registry, spawn/lifecycle durable, IA, navegacion de NPCs, clima, ecologia, facciones, sectorizacion ni proceduralidad runtime.
 - La UI es debug OnGUI y no debe expandirse como si fuera la UI final.
-- Los mods son aditivos y sin overrides/versiones; el soporte de compatibilidad de produccion pertenece a un milestone posterior.
+- Los mods son aditivos, exigen Global Content IDs canónicos y siguen sin manifests, ownership de namespace, overrides/versiones, dependencies ni patches; el soporte de compatibilidad de produccion pertenece a milestones posteriores.
 
 ## Frontera M36.1 / M37
 

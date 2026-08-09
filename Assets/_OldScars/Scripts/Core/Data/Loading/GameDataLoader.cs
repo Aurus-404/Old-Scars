@@ -11,7 +11,7 @@ namespace OldScars.Core.Data.Loading
     /// Reads JSON definition files from StreamingAssets/Mods and registers them
     /// into TagRegistry and GameDatabase.
     ///
-    /// Milestone 1 scope:
+    /// Current definition families:
     /// - tags
     /// - weapon_profiles
     /// - actions
@@ -25,7 +25,10 @@ namespace OldScars.Core.Data.Loading
     /// - visual_capabilities / visual_rig_profiles
     /// - visual_assets / item_visual_profiles / attachment_poses
     ///
-    /// No entities, save system, IA, final combat or protection profiles yet.
+    /// Global Content IDs are canonicalized with source context before
+    /// registration. Core is the only source allowed to qualify legacy IDs;
+    /// external sources require explicit namespace:local_id until manifests
+    /// provide authoritative mod identity and dependency context.
     /// </summary>
     public sealed class GameDataLoader
     {
@@ -45,7 +48,7 @@ namespace OldScars.Core.Data.Loading
         {
             this.modsRootPath = modsRootPath;
             this.report = report;
-            Database = new GameDatabase();
+            Database = new GameDatabase(report);
             Tags = new TagRegistry();
         }
 
@@ -68,8 +71,14 @@ namespace OldScars.Core.Data.Loading
             foreach (string modDirectory in modDirectories)
             {
                 string modName = Path.GetFileName(modDirectory);
-                Debug.Log($"[GameDataLoader] Loading mod: {modName}");
-                LoadMod(modDirectory);
+                bool isCore = string.Equals(modName, "Core", StringComparison.OrdinalIgnoreCase);
+                var context = new ContentLoadContext(modName, modDirectory, isCore);
+                Debug.Log($"[GameDataLoader] Loading mod source: {modName}" +
+                          (isCore
+                              ? $" (namespace '{ContentId.CoreNamespace}', Core legacy compatibility enabled)"
+                              : " (canonical Global Content IDs required; manifest ownership pending)"));
+                LoadMod(context);
+                context.ReportLegacyUsage(report);
             }
 
             Database.LogStats();
@@ -113,25 +122,26 @@ namespace OldScars.Core.Data.Loading
             return result;
         }
 
-        private void LoadMod(string modDirectory)
+        private void LoadMod(ContentLoadContext context)
         {
+            string modDirectory = context.ModDirectory;
             LoadTagsFrom(Path.Combine(modDirectory, "tags"));
-            LoadWeaponProfilesFrom(Path.Combine(modDirectory, "profiles"));
-            LoadFirearmProfilesFrom(Path.Combine(modDirectory, "firearm_profiles"));
-            LoadAmmoProfilesFrom(Path.Combine(modDirectory, "ammo_profiles"));
-            LoadActionsFrom(Path.Combine(modDirectory, "actions"));
-            LoadItemsFrom(Path.Combine(modDirectory, "items"));
-            LoadItemStorageProfilesFrom(Path.Combine(modDirectory, "item_storage_profiles"));
-            LoadEquipmentSlotsFrom(Path.Combine(modDirectory, "equipment_slots"));
-            LoadEquipmentLayoutsFrom(Path.Combine(modDirectory, "equipment_layouts"));
-            LoadVisualRigCapabilitiesFrom(Path.Combine(modDirectory, "visual_capabilities"));
-            LoadVisualRigProfilesFrom(Path.Combine(modDirectory, "visual_rig_profiles"));
-            LoadVisualAssetsFrom(Path.Combine(modDirectory, "visual_assets"));
-            LoadItemVisualProfilesFrom(Path.Combine(modDirectory, "item_visual_profiles"));
-            LoadAttachmentPosesFrom(Path.Combine(modDirectory, "attachment_poses"));
-            LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"));
-            LoadActorProfilesFrom(Path.Combine(modDirectory, "actor_profiles"));
-            LoadWorldObjectProfilesFrom(Path.Combine(modDirectory, "world_object_profiles"));
+            LoadWeaponProfilesFrom(Path.Combine(modDirectory, "profiles"), context);
+            LoadFirearmProfilesFrom(Path.Combine(modDirectory, "firearm_profiles"), context);
+            LoadAmmoProfilesFrom(Path.Combine(modDirectory, "ammo_profiles"), context);
+            LoadActionsFrom(Path.Combine(modDirectory, "actions"), context);
+            LoadItemsFrom(Path.Combine(modDirectory, "items"), context);
+            LoadItemStorageProfilesFrom(Path.Combine(modDirectory, "item_storage_profiles"), context);
+            LoadEquipmentSlotsFrom(Path.Combine(modDirectory, "equipment_slots"), context);
+            LoadEquipmentLayoutsFrom(Path.Combine(modDirectory, "equipment_layouts"), context);
+            LoadVisualRigCapabilitiesFrom(Path.Combine(modDirectory, "visual_capabilities"), context);
+            LoadVisualRigProfilesFrom(Path.Combine(modDirectory, "visual_rig_profiles"), context);
+            LoadVisualAssetsFrom(Path.Combine(modDirectory, "visual_assets"), context);
+            LoadItemVisualProfilesFrom(Path.Combine(modDirectory, "item_visual_profiles"), context);
+            LoadAttachmentPosesFrom(Path.Combine(modDirectory, "attachment_poses"), context);
+            LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"), context);
+            LoadActorProfilesFrom(Path.Combine(modDirectory, "actor_profiles"), context);
+            LoadWorldObjectProfilesFrom(Path.Combine(modDirectory, "world_object_profiles"), context);
         }
 
         private void LoadTagsFrom(string directory)
@@ -152,7 +162,7 @@ namespace OldScars.Core.Data.Loading
             }
         }
 
-        private void LoadWeaponProfilesFrom(string directory)
+        private void LoadWeaponProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -164,13 +174,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (WeaponProfileDefinition profile in wrapper.weapon_profiles)
-                    Database.RegisterWeaponProfile(profile, report);
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterWeaponProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] WeaponProfiles: {wrapper.weapon_profiles.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadFirearmProfilesFrom(string directory)
+        private void LoadFirearmProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -182,13 +193,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (FirearmProfileDefinition profile in wrapper.firearm_profiles)
-                    Database.RegisterFirearmProfile(profile, report);
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterFirearmProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] FirearmProfiles: {wrapper.firearm_profiles.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadAmmoProfilesFrom(string directory)
+        private void LoadAmmoProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -200,13 +212,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (AmmoProfileDefinition profile in wrapper.ammo_profiles)
-                    Database.RegisterAmmoProfile(profile, report);
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterAmmoProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] AmmoProfiles: {wrapper.ammo_profiles.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadActionsFrom(string directory)
+        private void LoadActionsFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -218,13 +231,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (ActionDefinition action in wrapper.actions)
-                    Database.RegisterAction(action, report);
+                    if (action == null || DefinitionContentIdNormalizer.Normalize(action, context, FileName(file), report))
+                        Database.RegisterAction(action, report);
 
                 Debug.Log($"[GameDataLoader] Actions: {wrapper.actions.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadItemsFrom(string directory)
+        private void LoadItemsFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -236,13 +250,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (ItemDefinition item in wrapper.items)
-                    Database.RegisterItem(item, report);
+                    if (item == null || DefinitionContentIdNormalizer.Normalize(item, context, FileName(file), report))
+                        Database.RegisterItem(item, report);
 
                 Debug.Log($"[GameDataLoader] Items: {wrapper.items.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadItemStorageProfilesFrom(string directory)
+        private void LoadItemStorageProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -254,13 +269,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (ItemStorageProfileDefinition profile in wrapper.item_storage_profiles)
-                    Database.RegisterItemStorageProfile(profile, report);
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterItemStorageProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] ItemStorageProfiles: {wrapper.item_storage_profiles.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadEquipmentSlotsFrom(string directory)
+        private void LoadEquipmentSlotsFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -272,13 +288,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (EquipmentSlotDefinition slot in wrapper.equipment_slots)
-                    Database.RegisterEquipmentSlot(slot, report);
+                    if (slot == null || DefinitionContentIdNormalizer.Normalize(slot, context, FileName(file), report))
+                        Database.RegisterEquipmentSlot(slot, report);
 
                 Debug.Log($"[GameDataLoader] EquipmentSlots: {wrapper.equipment_slots.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadEquipmentLayoutsFrom(string directory)
+        private void LoadEquipmentLayoutsFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -290,13 +307,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (EquipmentLayoutDefinition layout in wrapper.equipment_layouts)
-                    Database.RegisterEquipmentLayout(layout, report);
+                    if (layout == null || DefinitionContentIdNormalizer.Normalize(layout, context, FileName(file), report))
+                        Database.RegisterEquipmentLayout(layout, report);
 
                 Debug.Log($"[GameDataLoader] EquipmentLayouts: {wrapper.equipment_layouts.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadVisualRigCapabilitiesFrom(string directory)
+        private void LoadVisualRigCapabilitiesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -308,13 +326,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (VisualRigCapabilityDefinition capability in wrapper.visual_rig_capabilities)
-                    Database.RegisterVisualRigCapability(capability, report);
+                    if (capability == null || DefinitionContentIdNormalizer.Normalize(capability, context, FileName(file), report))
+                        Database.RegisterVisualRigCapability(capability, report);
 
                 Debug.Log($"[GameDataLoader] VisualRigCapabilities: {wrapper.visual_rig_capabilities.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadVisualRigProfilesFrom(string directory)
+        private void LoadVisualRigProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -326,13 +345,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (VisualRigProfileDefinition profile in wrapper.visual_rig_profiles)
-                    Database.RegisterVisualRigProfile(profile, report);
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterVisualRigProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] VisualRigProfiles: {wrapper.visual_rig_profiles.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadVisualAssetsFrom(string directory)
+        private void LoadVisualAssetsFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -344,13 +364,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (VisualAssetDefinition asset in wrapper.visual_assets)
-                    Database.RegisterVisualAsset(asset, report);
+                    if (asset == null || DefinitionContentIdNormalizer.Normalize(asset, context, FileName(file), report))
+                        Database.RegisterVisualAsset(asset, report);
 
                 Debug.Log($"[GameDataLoader] VisualAssets: {wrapper.visual_assets.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadItemVisualProfilesFrom(string directory)
+        private void LoadItemVisualProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -362,13 +383,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (ItemVisualProfileDefinition profile in wrapper.item_visual_profiles)
-                    Database.RegisterItemVisualProfile(profile, report);
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterItemVisualProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] ItemVisualProfiles: {wrapper.item_visual_profiles.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadAttachmentPosesFrom(string directory)
+        private void LoadAttachmentPosesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -380,13 +402,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (AttachmentPoseDefinition pose in wrapper.attachment_poses)
-                    Database.RegisterAttachmentPose(pose, report);
+                    if (pose == null || DefinitionContentIdNormalizer.Normalize(pose, context, FileName(file), report))
+                        Database.RegisterAttachmentPose(pose, report);
 
                 Debug.Log($"[GameDataLoader] AttachmentPoses: {wrapper.attachment_poses.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadLootTablesFrom(string directory)
+        private void LoadLootTablesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -398,13 +421,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (LootTableDefinition lootTable in wrapper.loot_tables)
-                    Database.RegisterLootTable(lootTable, report);
+                    if (lootTable == null || DefinitionContentIdNormalizer.Normalize(lootTable, context, FileName(file), report))
+                        Database.RegisterLootTable(lootTable, report);
 
                 Debug.Log($"[GameDataLoader] LootTables: {wrapper.loot_tables.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadActorProfilesFrom(string directory)
+        private void LoadActorProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -416,13 +440,14 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (ActorProfileDefinition actorProfile in wrapper.actor_profiles)
-                    Database.RegisterActorProfile(actorProfile, report);
+                    if (actorProfile == null || DefinitionContentIdNormalizer.Normalize(actorProfile, context, FileName(file), report))
+                        Database.RegisterActorProfile(actorProfile, report);
 
                 Debug.Log($"[GameDataLoader] ActorProfiles: {wrapper.actor_profiles.Length} entries from {FileName(file)}");
             }
         }
 
-        private void LoadWorldObjectProfilesFrom(string directory)
+        private void LoadWorldObjectProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory))
             {
@@ -434,7 +459,8 @@ namespace OldScars.Core.Data.Loading
                 }
 
                 foreach (WorldObjectProfileDefinition worldObjectProfile in wrapper.world_object_profiles)
-                    Database.RegisterWorldObjectProfile(worldObjectProfile, report);
+                    if (worldObjectProfile == null || DefinitionContentIdNormalizer.Normalize(worldObjectProfile, context, FileName(file), report))
+                        Database.RegisterWorldObjectProfile(worldObjectProfile, report);
 
                 Debug.Log($"[GameDataLoader] WorldObjectProfiles: {wrapper.world_object_profiles.Length} entries from {FileName(file)}");
             }

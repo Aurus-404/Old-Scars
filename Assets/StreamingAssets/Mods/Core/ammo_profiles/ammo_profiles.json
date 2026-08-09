@@ -2,7 +2,7 @@
   "ammo_profiles": [
     {
       "type": "ammo_profile",
-      "id": "ammo_303_british_01_profile",
+      "id": "core:ammo_303_british_01_profile",
       "display_name": ".303 British Rounds",
       "caliber_tag": "caliber_303",
       "damage": 35,

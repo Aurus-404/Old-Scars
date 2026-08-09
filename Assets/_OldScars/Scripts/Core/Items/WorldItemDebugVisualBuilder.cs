@@ -1,3 +1,4 @@
+using OldScars.Core.Data;
 using UnityEngine;
 
 namespace OldScars.Core.Items
@@ -34,35 +35,39 @@ namespace OldScars.Core.Items
             if (WorldItemVisualResolver.TryBuild(visualRoot, itemDefinitionId))
                 return;
 
-            switch (itemDefinitionId)
+            string canonicalId = ContentId.TryResolveLegacyCore(
+                itemDefinitionId, out ContentId resolved, out _, out _)
+                ? resolved.Canonical
+                : itemDefinitionId;
+            switch (canonicalId)
             {
-                case "rusted_crowbar_01":
+                case "core:rusted_crowbar_01":
                     CreatePrimitive(visualRoot, PrimitiveType.Cylinder, new Vector3(0f, 0.25f, 0f), new Vector3(0.08f, 0.65f, 0.08f), new Vector3(0f, 0f, 90f), new Color(0.45f, 0.48f, 0.5f));
                     break;
 
-                case "lee_enfield_rifle_01":
+                case "core:lee_enfield_rifle_01":
                     CreatePrimitive(visualRoot, PrimitiveType.Cube, new Vector3(-0.25f, 0.22f, 0f), new Vector3(1.4f, 0.18f, 0.3f), Vector3.zero, new Color(0.32f, 0.18f, 0.08f));
                     CreatePrimitive(visualRoot, PrimitiveType.Cube, new Vector3(-0.82f, 0.22f, 0f), new Vector3(0.55f, 0.28f, 0.38f), Vector3.zero, new Color(0.25f, 0.12f, 0.05f));
                     CreatePrimitive(visualRoot, PrimitiveType.Cylinder, new Vector3(0.82f, 0.22f, 0f), new Vector3(0.045f, 0.7f, 0.045f), new Vector3(0f, 0f, 90f), new Color(0.16f, 0.17f, 0.18f));
                     break;
 
-                case "ammo_303_british_01":
+                case "core:ammo_303_british_01":
                     CreatePrimitive(visualRoot, PrimitiveType.Cube, new Vector3(0f, 0.18f, 0f), new Vector3(0.38f, 0.2f, 0.28f), Vector3.zero, new Color(0.55f, 0.38f, 0.08f));
                     break;
 
-                case "bandage_01":
+                case "core:bandage_01":
                     CreatePrimitive(visualRoot, PrimitiveType.Cube, new Vector3(0f, 0.2f, 0f), new Vector3(0.5f, 0.18f, 0.35f), Vector3.zero, new Color(0.9f, 0.9f, 0.82f));
                     break;
 
-                case "water_bottle_01":
+                case "core:water_bottle_01":
                     CreatePrimitive(visualRoot, PrimitiveType.Cylinder, new Vector3(0f, 0.3f, 0f), new Vector3(0.22f, 0.3f, 0.22f), Vector3.zero, new Color(0.15f, 0.45f, 0.9f));
                     break;
 
-                case "food_ration_01":
+                case "core:food_ration_01":
                     CreatePrimitive(visualRoot, PrimitiveType.Cube, new Vector3(0f, 0.2f, 0f), new Vector3(0.55f, 0.25f, 0.4f), Vector3.zero, new Color(0.75f, 0.35f, 0.08f));
                     break;
 
-                case "scrap_metal_01":
+                case "core:scrap_metal_01":
                     CreatePrimitive(visualRoot, PrimitiveType.Cube, new Vector3(0f, 0.2f, 0f), new Vector3(0.45f, 0.25f, 0.45f), new Vector3(8f, 22f, 12f), new Color(0.22f, 0.24f, 0.26f));
                     break;
 

@@ -8,8 +8,6 @@ namespace OldScars.Core.Items
 {
     public static class EquipmentTransactionService
     {
-        private const string LegacyRightHandSlotId = "right_hand";
-
         public static IReadOnlyList<EquipmentSlotSet> GetCompatibleSlotSets(
             ActorEquipmentComponent equipment,
             string instanceId,
@@ -1040,7 +1038,9 @@ namespace OldScars.Core.Items
 
         private static string MapLegacySlot(string slotId)
         {
-            return slotId == LegacyRightHandSlotId ? ActorEquipmentComponent.HandRightSlotId : slotId;
+            return ContentId.TryResolveLegacyCoreEquipmentSlot(slotId, out ContentId resolved, out _, out _)
+                ? resolved.Canonical
+                : slotId;
         }
 
         private static bool VersionsMatch(ActorEquipmentComponent equipment, EquipmentPreview preview)

@@ -435,6 +435,8 @@ namespace OldScars.Core.Interactions
                 return false;
             }
 
+            lootTableId = lootTable.id;
+
             if (HasBrokenLootData(lootTable, database, out string dataError))
             {
                 error = $"loot table invalida: {dataError}.";

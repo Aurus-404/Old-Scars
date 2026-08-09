@@ -57,6 +57,7 @@ namespace OldScars.Core.Actors
                 return;
             }
 
+            actorProfileId = profile.id;
             profileApplied = true;
 
             WarnIfDebugSeederExists();

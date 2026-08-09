@@ -9,7 +9,7 @@ namespace OldScars.Core.Interactions
     {
         [SerializeField] private string[] actorTags = { "player", "human" };
         [SerializeField] private ActorInteractionStat[] actorStats = { new ActorInteractionStat("strength", 4f) };
-        [SerializeField] private string equippedItemDefinitionId = "rusted_crowbar_01";
+        [SerializeField] private string equippedItemDefinitionId = "core:rusted_crowbar_01";
         [SerializeField] private InventoryComponent inventoryComponent;
         [SerializeField] private DebugInventory debugInventory;
 

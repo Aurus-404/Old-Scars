@@ -2,7 +2,7 @@
   "visual_rig_profiles": [
     {
       "type": "visual_rig_profile",
-      "id": "human_standard_visual_rig",
+      "id": "core:human_standard_visual_rig",
       "display_name": "Rig visual humano estandar",
       "family_id": "humanoid_standard",
       "parts": [
@@ -15,49 +15,49 @@
           "id": "human_back_socket",
           "part_id": "torso",
           "role": "back",
-          "capabilities": ["mount_storage", "mount_armor", "mount_clothing"],
+          "capabilities": ["core:mount_storage", "core:mount_armor", "core:mount_clothing"],
           "enabled": true
         },
         {
           "id": "human_waist_socket",
           "part_id": "torso",
           "role": "waist",
-          "capabilities": ["mount_tool", "mount_weapon", "mount_cosmetic"],
+          "capabilities": ["core:mount_tool", "core:mount_weapon", "core:mount_cosmetic"],
           "enabled": true
         },
         {
           "id": "human_sling_socket",
           "part_id": "torso",
           "role": "sling",
-          "capabilities": ["mount_weapon"],
+          "capabilities": ["core:mount_weapon"],
           "enabled": true
         },
         {
           "id": "human_hand_left_socket",
           "part_id": "arm_left",
           "role": "hand_left",
-          "capabilities": ["hold_primary", "hold_secondary", "mount_tool", "mount_weapon"],
+          "capabilities": ["core:hold_primary", "core:hold_secondary", "core:mount_tool", "core:mount_weapon"],
           "enabled": true
         },
         {
           "id": "human_hand_right_socket",
           "part_id": "arm_right",
           "role": "hand_right",
-          "capabilities": ["hold_primary", "hold_secondary", "mount_tool", "mount_weapon"],
+          "capabilities": ["core:hold_primary", "core:hold_secondary", "core:mount_tool", "core:mount_weapon"],
           "enabled": true
         }
       ],
       "equipment_slot_mappings": [
-        { "equipment_slot_id": "back", "socket_role": "back" },
-        { "equipment_slot_id": "waist", "socket_role": "waist" },
-        { "equipment_slot_id": "sling", "socket_role": "sling" },
-        { "equipment_slot_id": "hand_left", "socket_role": "hand_left" },
-        { "equipment_slot_id": "hand_right", "socket_role": "hand_right" }
+        { "equipment_slot_id": "core:back", "socket_role": "back" },
+        { "equipment_slot_id": "core:waist", "socket_role": "waist" },
+        { "equipment_slot_id": "core:sling", "socket_role": "sling" },
+        { "equipment_slot_id": "core:hand_left", "socket_role": "hand_left" },
+        { "equipment_slot_id": "core:hand_right", "socket_role": "hand_right" }
       ]
     },
     {
       "type": "visual_rig_profile",
-      "id": "debug_cargo_visual_rig",
+      "id": "core:debug_cargo_visual_rig",
       "display_name": "Debug Cargo Rig",
       "family_id": "cargo_static",
       "parts": [
@@ -68,7 +68,7 @@
           "id": "cargo_mount",
           "part_id": "cargo_body",
           "role": "cargo_mount",
-          "capabilities": ["mount_storage"],
+          "capabilities": ["core:mount_storage"],
           "enabled": true
         }
       ],

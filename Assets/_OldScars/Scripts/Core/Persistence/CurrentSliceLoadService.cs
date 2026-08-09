@@ -693,9 +693,9 @@ namespace OldScars.Core.Persistence
 #if UNITY_EDITOR
     public static class CurrentSliceRoundTripDiagnosticScenario
     {
-        private const string BackpackId = "small_backpack_01";
-        private const string CrowbarId = "rusted_crowbar_01";
-        private const string RifleId = "lee_enfield_rifle_01";
+        private const string BackpackId = "core:small_backpack_01";
+        private const string CrowbarId = "core:rusted_crowbar_01";
+        private const string RifleId = "core:lee_enfield_rifle_01";
         private static readonly Vector3 DropOffset = new Vector3(1.75f, 0.35f, -0.8f);
         private static string diagnosticCorpseId;
 
@@ -861,7 +861,9 @@ namespace OldScars.Core.Persistence
 
         private static void PickUpAuthored(ActorInteractionContext player, string definitionId)
         {
-            WorldItemPickup pickup = FindScene<WorldItemPickup>().Single(value => value.ItemDefinitionId == definitionId &&
+            GameDatabase database = GameDataManager.Instance.Database;
+            WorldItemPickup pickup = FindScene<WorldItemPickup>().Single(value =>
+                database.GetItem(value.ItemDefinitionId)?.id == definitionId &&
                 !string.IsNullOrWhiteSpace(value.AuthoredItemInstanceId));
             string instanceId = pickup.AuthoredItemInstanceId;
             pickup.PickUp(player, pickup.GetComponent<WorldObjectTags>());

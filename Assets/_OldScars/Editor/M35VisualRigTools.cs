@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Newtonsoft.Json;
 using OldScars.Core.Actors;
+using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Visuals;
 using UnityEditor;
@@ -85,7 +86,7 @@ namespace OldScars.EditorTools
 
             Undo.RecordObject(rig, "Configure visual rig bindings");
             rig.ConfigureBindings(
-                "human_standard_visual_rig",
+                "core:human_standard_visual_rig",
                 new[]
                 {
                     new VisualPartBinding("torso", spine),
@@ -146,14 +147,14 @@ namespace OldScars.EditorTools
                 CrowbarWorldPrefabPath,
                 CrowbarHeldPath,
                 "PFB_VIS_Rusted_Crowbar_Held_PSX",
-                "rusted_crowbar_visual",
+                "core:rusted_crowbar_visual",
                 true,
                 false);
             GenerateEquippedWrapper(
                 RifleWorldPrefabPath,
                 RifleHeldPath,
                 "PFB_VIS_Lee_Enfield_Held_PSX",
-                "lee_enfield_visual",
+                "core:lee_enfield_visual",
                 true,
                 true);
             AssetDatabase.SaveAssets();
@@ -182,7 +183,7 @@ namespace OldScars.EditorTools
 
                 EntityVisualRigRuntime rig = root.AddComponent<EntityVisualRigRuntime>();
                 rig.ConfigureBindings(
-                    "debug_cargo_visual_rig",
+                    "core:debug_cargo_visual_rig",
                     new[] { new VisualPartBinding("cargo_body", cargoBody.transform) },
                     new[] { new VisualSocketBinding("cargo_mount", cargoMountObject.transform) });
                 DebugEquipmentVisualSnapshotSource source = root.AddComponent<DebugEquipmentVisualSnapshotSource>();
@@ -316,7 +317,7 @@ namespace OldScars.EditorTools
                 "Backpack",
                 BackpackEquippedPath,
                 "PFB_VIS_Small_Backpack_Equipped_PSX",
-                "small_backpack_visual",
+                "core:small_backpack_visual",
                 0.8f);
         }
 
@@ -532,15 +533,17 @@ namespace OldScars.EditorTools
 
         private static string BuildPoseId(string visualProfileId, string rigProfileId, string socketId)
         {
-            string raw = string.Join("_", visualProfileId, rigProfileId, socketId, "pose").ToLowerInvariant();
-            var characters = raw.ToCharArray();
-            for (int index = 0; index < characters.Length; index++)
-            {
-                char value = characters[index];
-                if ((value < 'a' || value > 'z') && (value < '0' || value > '9') && value != '_')
-                    characters[index] = '_';
-            }
-            return new string(characters);
+            if (!ContentId.TryParse(visualProfileId, out ContentId visual, out string visualError))
+                throw new InvalidOperationException($"Invalid visual profile Global Content ID '{visualProfileId}': {visualError}.");
+            if (!ContentId.TryParse(rigProfileId, out ContentId rig, out string rigError))
+                throw new InvalidOperationException($"Invalid rig profile Global Content ID '{rigProfileId}': {rigError}.");
+            string rigToken = visual.Namespace == rig.Namespace
+                ? rig.LocalId
+                : rig.Namespace + "_" + rig.LocalId;
+            string raw = visual.Namespace + ":" + string.Join("_", visual.LocalId, rigToken, socketId, "pose");
+            if (!ContentId.TryParse(raw, out ContentId pose, out string poseError))
+                throw new InvalidOperationException($"Generated attachment pose ID '{raw}' is invalid: {poseError}.");
+            return pose.Canonical;
         }
 
         private static Float3Definition ToDefinition(Vector3 value)

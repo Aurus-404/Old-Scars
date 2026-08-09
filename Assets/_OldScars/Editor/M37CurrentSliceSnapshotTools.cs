@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using OldScars.Core;
+using OldScars.Core.Data;
 using OldScars.Core.Persistence;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -166,6 +167,29 @@ namespace OldScars.Editor
                 {
                     CurrentSliceComparisonResult comparison = CurrentSliceSnapshotService.Compare(snapshot, read.Snapshot);
                     Require(comparison.Equivalent, "canonical save/read comparison", comparison.Difference, errors);
+                }
+
+                CurrentSliceSaveData legacyContentIds = Clone(snapshot);
+                foreach (ItemState item in legacyContentIds.items ?? Array.Empty<ItemState>())
+                    if (item != null) item.definitionId = LegacyCoreId(item.definitionId);
+                foreach (EquipmentState equipment in legacyContentIds.equipment ?? Array.Empty<EquipmentState>())
+                {
+                    if (equipment == null) continue;
+                    equipment.layoutId = LegacyCoreId(equipment.layoutId);
+                    foreach (EquippedItemState item in equipment.items ?? Array.Empty<EquippedItemState>())
+                    {
+                        if (item?.slots == null) continue;
+                        for (int slotIndex = 0; slotIndex < item.slots.Length; slotIndex++)
+                            item.slots[slotIndex] = LegacyCoreId(item.slots[slotIndex]);
+                    }
+                }
+                CurrentSliceResult legacyRead = CurrentSliceSnapshotService.FromPayload(
+                    CurrentSliceSnapshotService.ToPayload(legacyContentIds));
+                Require(legacyRead.Success, "schema-v1 legacy Core Content ID migration", legacyRead.Failure, errors);
+                if (legacyRead.Success)
+                {
+                    CurrentSliceComparisonResult migrated = CurrentSliceSnapshotService.Compare(snapshot, legacyRead.Snapshot);
+                    Require(migrated.Equivalent, "legacy save references become canonical in memory", migrated.Difference, errors);
                 }
 
                 CurrentSliceSaveData withinPoseTolerance = Clone(snapshot);
@@ -356,6 +380,13 @@ namespace OldScars.Editor
         private static CurrentSliceSaveData Clone(CurrentSliceSaveData source) =>
             CurrentSliceSnapshotService.ToPayload(source).ToObject<CurrentSliceSaveData>();
         private static T Clone<T>(T source) => JToken.FromObject(source).ToObject<T>();
+        private static string LegacyCoreId(string value)
+        {
+            return ContentId.TryParse(value, out ContentId contentId, out _) &&
+                   contentId.Namespace == ContentId.CoreNamespace
+                ? contentId.LocalId
+                : value;
+        }
         private static StorageEntryState FirstEntry(CurrentSliceSaveData data) => data.storages.SelectMany(storage => storage.entries).First();
         private static StorageEntryState FirstPlacedEntry(CurrentSliceSaveData data) => data.storages.SelectMany(storage => storage.entries).First(entry => entry.placement != null);
 

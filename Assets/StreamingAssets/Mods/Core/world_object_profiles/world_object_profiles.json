@@ -2,13 +2,13 @@
   "world_object_profiles": [
     {
       "type": "world_object_profile",
-      "id": "debug_locked_door_01",
+      "id": "core:debug_locked_door_01",
       "display_name": "Debug Locked Door",
       "initial_tags": ["locked_door", "inspectable"]
     },
     {
       "type": "world_object_profile",
-      "id": "debug_closed_door_01",
+      "id": "core:debug_closed_door_01",
       "display_name": "Debug Closed Door",
       "initial_tags": ["closed_door", "inspectable"]
     }

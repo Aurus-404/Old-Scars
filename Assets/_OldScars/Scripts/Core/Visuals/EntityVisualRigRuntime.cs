@@ -27,7 +27,7 @@ namespace OldScars.Core.Visuals
 
         public event EventHandler<VisualRigAvailabilityChangedEventArgs> AvailabilityChanged;
 
-        public string VisualRigProfileId => visualRigProfileId;
+        public string VisualRigProfileId => activeProfile != null ? activeProfile.id : visualRigProfileId;
         public string RigFamilyId => activeProfile != null ? activeProfile.family_id : null;
         public VisualRigProfileDefinition ActiveProfile => activeProfile;
         public IReadOnlyList<VisualPartBinding> PartBindings => Array.AsReadOnly(partBindings ?? Array.Empty<VisualPartBinding>());
@@ -53,18 +53,25 @@ namespace OldScars.Core.Visuals
                 return false;
             }
 
-            if (visualRigProfileId == profileId && IsReady)
-                return true;
-
-            visualRigProfileId = profileId;
-            IsReady = false;
             if (!TryGetDatabase(out GameDatabase database))
+            {
+                visualRigProfileId = profileId;
+                IsReady = false;
                 return true;
-            if (database.GetVisualRigProfile(profileId) == null)
+            }
+
+            VisualRigProfileDefinition profile = database.GetVisualRigProfile(profileId);
+            if (profile == null)
             {
                 reason = $"Visual rig profile '{profileId}' was not loaded.";
                 return false;
             }
+
+            if (visualRigProfileId == profile.id && IsReady)
+                return true;
+
+            visualRigProfileId = profile.id;
+            IsReady = false;
 
             return RebuildBindings(out reason);
         }
@@ -112,6 +119,7 @@ namespace OldScars.Core.Visuals
                 reason = $"Visual rig profile '{visualRigProfileId}' was not loaded.";
                 return false;
             }
+            visualRigProfileId = activeProfile.id;
 
             if (!IndexConfiguredBindings(partBindings, partsById, binding => binding.PartId, binding => binding.Target, "part", out reason) ||
                 !IndexConfiguredBindings(socketBindings, socketsById, binding => binding.SocketId, binding => binding.Target, "socket", out reason))
@@ -232,9 +240,19 @@ namespace OldScars.Core.Visuals
             resolution = default;
             if (string.IsNullOrWhiteSpace(equipmentSlotId))
                 return false;
+
+            if (TryGetDatabase(out GameDatabase database) &&
+                database.TryResolveEquipmentSlotId(equipmentSlotId, out string canonicalSlotId, out _))
+            {
+                equipmentSlotId = canonicalSlotId;
+            }
+
+            string fallbackRole = ContentId.TryParse(equipmentSlotId, out ContentId slotContentId, out _)
+                ? slotContentId.LocalId
+                : equipmentSlotId;
             string role = socketRoleByEquipmentSlot.TryGetValue(equipmentSlotId, out string mappedRole)
                 ? mappedRole
-                : equipmentSlotId;
+                : fallbackRole;
             return TryResolveByRole(role, requiredCapabilities, out resolution);
         }
 

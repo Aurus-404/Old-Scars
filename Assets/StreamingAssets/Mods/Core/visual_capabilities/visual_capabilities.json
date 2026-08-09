@@ -1,12 +1,12 @@
 {
   "visual_rig_capabilities": [
-    { "type": "visual_rig_capability", "id": "hold_primary", "display_name": "Sujecion primaria" },
-    { "type": "visual_rig_capability", "id": "hold_secondary", "display_name": "Sujecion secundaria" },
-    { "type": "visual_rig_capability", "id": "mount_storage", "display_name": "Montaje de storage" },
-    { "type": "visual_rig_capability", "id": "mount_armor", "display_name": "Montaje de armadura" },
-    { "type": "visual_rig_capability", "id": "mount_clothing", "display_name": "Montaje de ropa" },
-    { "type": "visual_rig_capability", "id": "mount_tool", "display_name": "Montaje de herramienta" },
-    { "type": "visual_rig_capability", "id": "mount_weapon", "display_name": "Montaje de arma" },
-    { "type": "visual_rig_capability", "id": "mount_cosmetic", "display_name": "Montaje cosmetico" }
+    { "type": "visual_rig_capability", "id": "core:hold_primary", "display_name": "Sujecion primaria" },
+    { "type": "visual_rig_capability", "id": "core:hold_secondary", "display_name": "Sujecion secundaria" },
+    { "type": "visual_rig_capability", "id": "core:mount_storage", "display_name": "Montaje de storage" },
+    { "type": "visual_rig_capability", "id": "core:mount_armor", "display_name": "Montaje de armadura" },
+    { "type": "visual_rig_capability", "id": "core:mount_clothing", "display_name": "Montaje de ropa" },
+    { "type": "visual_rig_capability", "id": "core:mount_tool", "display_name": "Montaje de herramienta" },
+    { "type": "visual_rig_capability", "id": "core:mount_weapon", "display_name": "Montaje de arma" },
+    { "type": "visual_rig_capability", "id": "core:mount_cosmetic", "display_name": "Montaje cosmetico" }
   ]
 }

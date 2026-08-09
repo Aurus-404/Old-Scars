@@ -54,6 +54,7 @@ namespace OldScars.Core.Interactions
                 return;
             }
 
+            worldObjectProfileId = profile.id;
             profileApplied = true;
 
             ApplyDisplayName(profile);

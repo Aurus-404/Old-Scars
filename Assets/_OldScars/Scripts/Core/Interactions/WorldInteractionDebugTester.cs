@@ -209,7 +209,7 @@ namespace OldScars.Core.Interactions
 
             Func<IReadOnlyList<InventoryContextAction>> quickActionsProvider = null;
             Func<InventoryContextAction, bool> quickActionHandler = null;
-            ActionDefinition pickupAction = FindAction(availableActions, "pick_up_item");
+            ActionDefinition pickupAction = FindAction(availableActions, "core:pick_up_item");
             WorldItemPickup worldSource = targetTags.GetComponent<WorldItemPickup>() ??
                                           targetTags.GetComponentInChildren<WorldItemPickup>();
             if (pickupAction != null && worldSource != null &&
@@ -242,7 +242,7 @@ namespace OldScars.Core.Interactions
                 return Array.Empty<InventoryContextAction>();
             }
 
-            ActionDefinition pickupAction = FindAction(availableActions, "pick_up_item");
+            ActionDefinition pickupAction = FindAction(availableActions, "core:pick_up_item");
             if (pickupAction == null || !source.TryPrepareTransactionSource(out ItemStorageEntry entry, out _))
                 return Array.Empty<InventoryContextAction>();
 
@@ -287,7 +287,7 @@ namespace OldScars.Core.Interactions
                 return false;
             }
 
-            ActionDefinition pickupAction = FindAction(availableActions, "pick_up_item");
+            ActionDefinition pickupAction = FindAction(availableActions, "core:pick_up_item");
             if (pickupAction == null)
                 return false;
 
@@ -376,7 +376,7 @@ namespace OldScars.Core.Interactions
             if (!TryBuildAvailableActions(selection.Target, out List<ActionDefinition> availableActions, out string equippedItemId))
                 return QuickActionFailure("No se pudo reconstruir el contexto de interacciÃ³n.");
 
-            ActionDefinition pickupAction = FindAction(availableActions, "pick_up_item");
+            ActionDefinition pickupAction = FindAction(availableActions, "core:pick_up_item");
             if (pickupAction == null)
                 return QuickActionFailure("Recoger ya no estÃ¡ disponible para este objeto.");
 

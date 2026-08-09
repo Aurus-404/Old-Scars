@@ -8,10 +8,10 @@ namespace OldScars.Core.Visuals
     [DisallowMultipleComponent]
     public sealed class DebugEquipmentVisualSnapshotSource : MonoBehaviour, IEquipmentVisualSource
     {
-        [SerializeField] private string equipmentLayoutId = "debug_cargo_visual_layout";
+        [SerializeField] private string equipmentLayoutId = "core:debug_cargo_visual_layout";
         [SerializeField] private string instanceId = "debug_visual_backpack_0001";
-        [SerializeField] private string definitionId = "small_backpack_01";
-        [SerializeField] private string[] occupiedSlots = { "back" };
+        [SerializeField] private string definitionId = "core:small_backpack_01";
+        [SerializeField] private string[] occupiedSlots = { "core:back" };
         [SerializeField] private bool includeItem = true;
 
         private long committedRevision;
@@ -41,19 +41,19 @@ namespace OldScars.Core.Visuals
         [ContextMenu("Publish Backpack Equipped Snapshot")]
         public void PublishBackpackEquipped()
         {
-            PublishItem("debug_visual_backpack_0001", "small_backpack_01", "back");
+            PublishItem("debug_visual_backpack_0001", "core:small_backpack_01", "core:back");
         }
 
         [ContextMenu("Publish Crowbar Right Hand Snapshot")]
         public void PublishCrowbarRightHand()
         {
-            PublishItem("debug_visual_crowbar_0001", "rusted_crowbar_01", "hand_right");
+            PublishItem("debug_visual_crowbar_0001", "core:rusted_crowbar_01", "core:hand_right");
         }
 
         [ContextMenu("Publish Crowbar Left Hand Snapshot")]
         public void PublishCrowbarLeftHand()
         {
-            PublishItem("debug_visual_crowbar_0001", "rusted_crowbar_01", "hand_left");
+            PublishItem("debug_visual_crowbar_0001", "core:rusted_crowbar_01", "core:hand_left");
         }
 
         [ContextMenu("Publish Lee-Enfield Two-Hand Snapshot")]
@@ -61,9 +61,9 @@ namespace OldScars.Core.Visuals
         {
             PublishItem(
                 "debug_visual_lee_enfield_0001",
-                "lee_enfield_rifle_01",
-                "hand_left",
-                "hand_right");
+                "core:lee_enfield_rifle_01",
+                "core:hand_left",
+                "core:hand_right");
         }
 
         [ContextMenu("Publish Configured Item Snapshot")]

@@ -103,8 +103,9 @@ Una barra aislada, simulacion sin decisiones o backend sin consumidor real no sa
 - Definitions viven en JSON/mods; instances y estado mutable viven en runtime o save.
 - Los datos se cargan una vez, se validan y se consultan mediante `GameDatabase`.
 - El deserializador actual ignora campos desconocidos; solo los campos documentados y respaldados por definition, validator y runtime forman parte del contrato.
-- IDs son estables y snake_case. Deben ser unicos dentro de su tipo/registro; una reutilizacion textual entre familias no implica identidad compartida.
-- `Mods/Core` carga primero. Mods externos pueden agregar IDs; no hay overrides, manifests ni versionado y los duplicados dentro del mismo tipo/registro se rechazan.
+- Global Content IDs de Definitions son estables y canónicos `namespace:local_id`; ambos segmentos usan minúsculas ASCII, dígitos y `_`. Son únicos dentro de su tipo/registro; una reutilización textual entre familias no implica identidad compartida.
+- Local IDs, tags, runtime/instance IDs, persistent scene IDs, save slot IDs y asset keys conservan sus contratos separados; no se namespacen por búsqueda/reemplazo.
+- `Mods/Core` carga primero bajo el namespace reservado `core`. Mods externos pueden agregar IDs canónicos explícitos; no hay ownership por manifest, overrides, dependencies ni versionado y los duplicados dentro del mismo tipo/registro se rechazan.
 - Loot tables son definiciones separadas; los items no declaran sus fuentes de spawn.
 - Effects JSON se limitan a tipos C# permitidos; no hay scripting libre.
 - No agregar campos futuros, placeholders o schemas aspiracionales sin loader, validator y milestone aprobados.

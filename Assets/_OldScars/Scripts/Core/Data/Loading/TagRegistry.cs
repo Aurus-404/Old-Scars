@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using OldScars.Core.Data.Definitions;
 
 namespace OldScars.Core.Data.Loading
@@ -13,7 +12,6 @@ namespace OldScars.Core.Data.Loading
     /// </summary>
     public sealed class TagRegistry
     {
-        private static readonly Regex SnakeCasePattern = new Regex("^[a-z0-9_]+$", RegexOptions.Compiled);
         private readonly HashSet<string> validTags = new HashSet<string>();
 
         public int Count => validTags.Count;
@@ -32,9 +30,9 @@ namespace OldScars.Core.Data.Loading
                 return;
             }
 
-            if (!SnakeCasePattern.IsMatch(tag.id))
+            if (!ContentId.TryValidateLocalId(tag.id, out string error))
             {
-                report.Error($"Tag '{tag.id}': id must use snake_case only: lowercase letters, digits and underscores.");
+                report.Error($"Tag '{tag.id}': invalid tag ID: {error}. Tags remain unnamespaced in this milestone.");
                 return;
             }
 

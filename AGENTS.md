@@ -53,7 +53,8 @@ No existe una prohibicion permanente sobre inventario, Equipment, loot, UI, save
 
 ## Reglas de JSON
 
-- Los IDs usan `snake_case`: sin espacios, mayusculas ni guiones.
+- Los Global Content IDs de Definitions registradas usan `namespace:local_id` canónico; ambos segmentos aceptan sólo letras minúsculas ASCII, dígitos y `_`. `core` está reservado para contenido oficial.
+- Los Local IDs, tags, runtime/instance IDs, persistent scene IDs, save slot IDs y asset keys son dominios separados; no agregarles `core:` por sufijo o búsqueda textual.
 - Los IDs duplicados dentro de su tipo o registro son errores fuertes; el runtime actual no ofrece overrides de definiciones. La reutilizacion textual entre familias distintas no debe presentarse como identidad compartida.
 - El campo `type` debe validarse.
 - Los tags usados deben existir en `tags.json`.

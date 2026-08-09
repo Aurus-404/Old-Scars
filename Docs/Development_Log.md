@@ -2295,3 +2295,53 @@ Alcance y secuencia:
 - Snapshot V1 no cambió. No se implementaron NPC lifecycle/transform, AI, autosave, UI final, M38 ni sistemas futuros.
 - `Persistence Ready` permanece `NOT YET APPROVED`.
 - trabajo siguiente: `M37.1 — Manual Unity Validation & Persistence Ready Closeout` mediante fresh-session Save/Load Debug Slot por Mauro; M38.0 no comenzó.
+
+### ID TBD — Global Content ID Namespace Foundation
+
+Fecha: 2026-08-09
+
+Milestone: `ID TBD — Global Content ID Namespace Foundation`.
+
+Commit base: `a3659df8aa469cad3db1759efdb87f6eb555e5fe`.
+
+Motivo de identificación:
+
+- el Roadmap no reservaba un número libre para esta unidad y prohíbe inventarlo o reutilizar uno histórico;
+- M37.1 permanece abierto por validación manual y M50.0 sigue futuro con dependencias posteriores;
+- por autorización explícita se interpone esta cimentación estrecha como `ID TBD`, sin llamarla M37.2/M38.x ni marcar M50.0 iniciado.
+
+Estado posterior: `IMPLEMENTED — STATIC/DATA VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Implementación:
+
+- `ContentId` centraliza parseo, validación y resolución de `namespace:local_id`, con razones precisas y segmentos limitados a minúsculas ASCII, dígitos y `_`; no corrige input inválido silenciosamente.
+- `DefinitionContentIdNormalizer` conserva source mod/file en la frontera de carga, canonicaliza IDs y referencias de las 16 Definition families de `GameDatabase`, reserva `core` para contenido oficial y exige namespace explícito a fuentes externas.
+- la compatibilidad legacy sólo cualifica referencias sin namespace cuando el contexto es Core. Agrega warnings resumidos y es temporal/removible; `right_hand` → `core:hand_right` queda como excepción histórica estrecha de Equipment.
+- `GameDatabase` registra exclusivamente keys canónicas y resuelve lookups authored/schema-v1 contra Core sin registrar aliases. Por tanto una forma legacy y `core:*` no pueden convertirse en dos Definitions distintas dentro del mismo registry.
+- `DataValidator` separa `RequireGlobalContentId` de `RequireLocalId`; tags siguen sin namespace, asset keys conservan su dominio secundario y las regex de `PersistentSceneObjectId`/save slot ID permanecen independientes.
+- `Mods/Core` migró explícitamente Definition IDs y referencias globales en items, actions, loot, actor/world profiles, weapons/ammo, storage/equipment y visuals/poses. Tags, local group/part/socket/role IDs, icon/provider keys y effect types no fueron migrados.
+- componentes runtime que retenían un lookup legacy ahora guardan el ID de la Definition resuelta; Equipment y visual rig canonicalizan layouts/slots/profile IDs antes de comparaciones o snapshots.
+- saves schema v1 normalizan en memoria `ItemState.definitionId`, `EquipmentState.layoutId` y `EquippedItemState.slots` antes del semantic preflight. `schemaVersion` permanece en 1; instance IDs, persistent IDs, storage IDs compuestos y tags no se modifican.
+- el diagnostic M37.1 ahora construye un payload legacy Core real y exige equivalencia canónica después de leerlo.
+- `ContentIdNamespaceDiagnostics` crea bajo `Path.GetTempPath()` una fixture `Mods/Core` + `Mods/TestNamespaceMod`, demuestra coexistencia `core:test_item`/`test_namespace:test_item`, lookup alias único, rechazo legacy externo y referencia cross-namespace, y elimina el root en `finally`. No se agregó un mod distribuido a `StreamingAssets`.
+
+Validación disponible en este entorno:
+
+- los 21 JSON del repositorio parsearon con `jq`;
+- auditoría tipada Core: `PASS` para 81 Definitions y 103 referencias globales; auditoría separada de 49 tags y 6 asset keys: `PASS`;
+- auditoría sistemática de hardcodes encontró como remanentes intencionales únicamente scene/prefab compatibility, fixtures negativas/legacy y tokens locales de Action effects;
+- los 24 C# modificados o nuevos parsearon sin nodos de error con grammar C#: `PASS`;
+- `git diff --check`: `PASS`;
+- no existen workflows bajo `.github/workflows` ni tests no-Unity aplicables.
+
+Limitación de validación:
+
+- no hay ejecutable Unity ni toolchain C#/.NET disponible en el entorno; no se afirma compilación Unity, ejecución de diagnostics ni compatibilidad de saves validada;
+- `Manual Unity validation pending` para compilación Runtime/Editor, carga de Core, nuevo diagnostic de Content IDs, suite M36.1/M37.0/M37.1 y fresh-session Save/Load Debug Slot.
+
+Alcance:
+
+- no se modificaron `SampleScene`, prefabs, tags JSON, Packages, ProjectSettings ni asmdefs;
+- no se implementaron manifests, provenance persistida completa, dependencies, overrides/patches, Workshop, SDK, scripting, DLL mods, hot reload, AssetBundles ni namespace de tags;
+- seam posterior documentado: `manifest → provenance → dependencies → patches`;
+- `Persistence Ready` permanece `NOT YET APPROVED`, M37.1 permanece abierto y M38.0 no comenzó.

@@ -1,3 +1,4 @@
+using OldScars.Core.Data;
 using OldScars.Core.Visuals;
 using UnityEngine;
 
@@ -64,15 +65,19 @@ namespace OldScars.Core.Items
 
         public static string GetVisualPrefabId(string itemDefinitionId)
         {
-            switch (itemDefinitionId)
+            string canonicalId = ContentId.TryResolveLegacyCore(
+                itemDefinitionId, out ContentId resolved, out _, out _)
+                ? resolved.Canonical
+                : itemDefinitionId;
+            switch (canonicalId)
             {
-                case "rusted_crowbar_01":
+                case "core:rusted_crowbar_01":
                     return "PFB_VIS_Rusted_Crowbar_PSX";
 
-                case "lee_enfield_rifle_01":
+                case "core:lee_enfield_rifle_01":
                     return "PFB_VIS_Lee_Enfield_PSX";
 
-                case "ammo_303_british_01":
+                case "core:ammo_303_british_01":
                     return "PFB_VIS_Ammo_303_PSX";
 
                 default:

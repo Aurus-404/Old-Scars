@@ -14,10 +14,10 @@ namespace OldScars.Core.Actors
     [RequireComponent(typeof(ActorItemOwnershipComponent))]
     public sealed class ActorEquipmentComponent : MonoBehaviour, IEquipmentVisualSource
     {
-        public const string BackSlotId = "back";
-        public const string DefaultHumanLayoutId = "human_standard_01";
-        public const string HandLeftSlotId = "hand_left";
-        public const string HandRightSlotId = "hand_right";
+        public const string BackSlotId = "core:back";
+        public const string DefaultHumanLayoutId = "core:human_standard_01";
+        public const string HandLeftSlotId = "core:hand_left";
+        public const string HandRightSlotId = "core:hand_right";
 
         [SerializeField] private string equipmentLayoutId = DefaultHumanLayoutId;
         [SerializeField] private InventoryComponent inventoryComponent;
@@ -32,7 +32,14 @@ namespace OldScars.Core.Actors
 
         public event EventHandler<EquipmentVisualStateCommittedEventArgs> VisualStateCommitted;
 
-        public string EquipmentLayoutId => equipmentLayoutId;
+        public string EquipmentLayoutId
+        {
+            get
+            {
+                EquipmentLayoutDefinition layout = GetActiveLayout();
+                return layout != null ? layout.id : equipmentLayoutId;
+            }
+        }
         public int Version => equipmentVersion;
         public int StorageVersion => equipmentStorage.Version;
         public IReadOnlyList<ItemStorageEntry> Entries => equipmentStorage.Entries;
@@ -114,7 +121,8 @@ namespace OldScars.Core.Actors
             }
 
             GameDatabase database = GetDatabase();
-            if (database == null || database.GetEquipmentLayout(layoutId) == null)
+            EquipmentLayoutDefinition layout = database != null ? database.GetEquipmentLayout(layoutId) : null;
+            if (layout == null)
             {
                 reason = $"Equipment layout '{layoutId}' was not loaded.";
                 return false;
@@ -126,10 +134,10 @@ namespace OldScars.Core.Actors
                 return false;
             }
 
-            if (equipmentLayoutId == layoutId)
+            if (equipmentLayoutId == layout.id)
                 return true;
 
-            equipmentLayoutId = layoutId;
+            equipmentLayoutId = layout.id;
             equipmentVersion++;
             return true;
         }
@@ -146,10 +154,13 @@ namespace OldScars.Core.Actors
             if (layout == null || layout.slots == null || string.IsNullOrWhiteSpace(slotId))
                 return false;
 
+            EquipmentSlotDefinition requested = GetSlotDefinition(slotId);
+            string canonicalSlotId = requested != null ? requested.id : slotId;
+
             for (int index = 0; index < layout.slots.Length; index++)
             {
                 EquipmentLayoutSlotDefinition slot = layout.slots[index];
-                if (slot != null && slot.slot_id == slotId)
+                if (slot != null && slot.slot_id == canonicalSlotId)
                     return true;
             }
             return false;
@@ -163,7 +174,9 @@ namespace OldScars.Core.Actors
 
         public ItemStorageEntry GetEquippedStorageEntry(string slotId)
         {
-            if (string.IsNullOrWhiteSpace(slotId) || !slotToInstanceId.TryGetValue(slotId, out string instanceId))
+            EquipmentSlotDefinition slot = GetSlotDefinition(slotId);
+            string canonicalSlotId = slot != null ? slot.id : slotId;
+            if (string.IsNullOrWhiteSpace(canonicalSlotId) || !slotToInstanceId.TryGetValue(canonicalSlotId, out string instanceId))
                 return null;
             return equipmentStorage.GetEntryByInstanceId(instanceId);
         }
@@ -321,9 +334,11 @@ namespace OldScars.Core.Actors
 
         internal bool TryGetSlotOccupant(string slotId, out string instanceId)
         {
+            EquipmentSlotDefinition slot = GetSlotDefinition(slotId);
+            string canonicalSlotId = slot != null ? slot.id : slotId;
             instanceId = null;
-            return !string.IsNullOrWhiteSpace(slotId) &&
-                   slotToInstanceId.TryGetValue(slotId, out instanceId) &&
+            return !string.IsNullOrWhiteSpace(canonicalSlotId) &&
+                   slotToInstanceId.TryGetValue(canonicalSlotId, out instanceId) &&
                    !string.IsNullOrWhiteSpace(instanceId);
         }
 
@@ -355,14 +370,17 @@ namespace OldScars.Core.Actors
             if (instanceToSlots.ContainsKey(instanceId))
                 throw new InvalidOperationException($"Item instance '{instanceId}' is already equipped.");
 
+            var seenSlots = new HashSet<string>(StringComparer.Ordinal);
+            var storedSlots = new string[slotIds.Length];
             for (int index = 0; index < slotIds.Length; index++)
             {
-                string slotId = slotIds[index];
-                if (!HasSlot(slotId) || !IsSlotFree(slotId))
-                    throw new InvalidOperationException($"Equipment slot '{slotId}' is unavailable.");
+                EquipmentSlotDefinition slot = GetSlotDefinition(slotIds[index]);
+                string canonicalSlotId = slot != null ? slot.id : slotIds[index];
+                if (!seenSlots.Add(canonicalSlotId) || !HasSlot(canonicalSlotId) || !IsSlotFree(canonicalSlotId))
+                    throw new InvalidOperationException($"Equipment slot '{slotIds[index]}' is unavailable or duplicated.");
+                storedSlots[index] = canonicalSlotId;
             }
 
-            string[] storedSlots = (string[])slotIds.Clone();
             instanceToSlots[instanceId] = storedSlots;
             for (int index = 0; index < storedSlots.Length; index++)
                 slotToInstanceId[storedSlots[index]] = instanceId;
@@ -452,7 +470,7 @@ namespace OldScars.Core.Actors
                 revision,
                 equipmentVersion,
                 equipmentStorage.Version,
-                equipmentLayoutId,
+                EquipmentLayoutId,
                 items);
         }
 

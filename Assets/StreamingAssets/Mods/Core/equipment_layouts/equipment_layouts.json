@@ -2,7 +2,7 @@
   "equipment_layouts": [
     {
       "type": "equipment_layout",
-      "id": "human_standard_01",
+      "id": "core:human_standard_01",
       "display_name": "Humano estándar",
       "groups": [
         { "id": "head_group", "display_name": "CABEZA", "display_order": 10 },
@@ -12,23 +12,23 @@
         { "id": "feet_group", "display_name": "PIES", "display_order": 50 }
       ],
       "slots": [
-        { "slot_id": "head", "group_id": "head_group", "display_order": 10 },
-        { "slot_id": "eyes", "group_id": "head_group", "display_order": 20 },
-        { "slot_id": "neck", "group_id": "head_group", "display_order": 30 },
-        { "slot_id": "torso_inner", "group_id": "torso_group", "display_order": 10 },
-        { "slot_id": "torso_middle", "group_id": "torso_group", "display_order": 20 },
-        { "slot_id": "torso_outer", "group_id": "torso_group", "display_order": 30 },
-        { "slot_id": "hands_wear", "group_id": "hands_load_group", "display_order": 10 },
-        { "slot_id": "hand_left", "group_id": "hands_load_group", "display_order": 20 },
-        { "slot_id": "hand_right", "group_id": "hands_load_group", "display_order": 30 },
-        { "slot_id": "back", "group_id": "hands_load_group", "display_order": 40 },
-        { "slot_id": "waist", "group_id": "hands_load_group", "display_order": 50 },
-        { "slot_id": "sling", "group_id": "hands_load_group", "display_order": 60 },
-        { "slot_id": "legs_inner", "group_id": "legs_group", "display_order": 10 },
-        { "slot_id": "legs_outer", "group_id": "legs_group", "display_order": 20 },
-        { "slot_id": "feet_inner", "group_id": "feet_group", "display_order": 10 },
-        { "slot_id": "foot_left", "group_id": "feet_group", "display_order": 20 },
-        { "slot_id": "foot_right", "group_id": "feet_group", "display_order": 30 }
+        { "slot_id": "core:head", "group_id": "head_group", "display_order": 10 },
+        { "slot_id": "core:eyes", "group_id": "head_group", "display_order": 20 },
+        { "slot_id": "core:neck", "group_id": "head_group", "display_order": 30 },
+        { "slot_id": "core:torso_inner", "group_id": "torso_group", "display_order": 10 },
+        { "slot_id": "core:torso_middle", "group_id": "torso_group", "display_order": 20 },
+        { "slot_id": "core:torso_outer", "group_id": "torso_group", "display_order": 30 },
+        { "slot_id": "core:hands_wear", "group_id": "hands_load_group", "display_order": 10 },
+        { "slot_id": "core:hand_left", "group_id": "hands_load_group", "display_order": 20 },
+        { "slot_id": "core:hand_right", "group_id": "hands_load_group", "display_order": 30 },
+        { "slot_id": "core:back", "group_id": "hands_load_group", "display_order": 40 },
+        { "slot_id": "core:waist", "group_id": "hands_load_group", "display_order": 50 },
+        { "slot_id": "core:sling", "group_id": "hands_load_group", "display_order": 60 },
+        { "slot_id": "core:legs_inner", "group_id": "legs_group", "display_order": 10 },
+        { "slot_id": "core:legs_outer", "group_id": "legs_group", "display_order": 20 },
+        { "slot_id": "core:feet_inner", "group_id": "feet_group", "display_order": 10 },
+        { "slot_id": "core:foot_left", "group_id": "feet_group", "display_order": 20 },
+        { "slot_id": "core:foot_right", "group_id": "feet_group", "display_order": 30 }
       ]
     }
   ]

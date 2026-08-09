@@ -415,7 +415,9 @@ namespace OldScars.Core.Items
 
         private static string MapLegacySlot(string slotId)
         {
-            return slotId == "right_hand" ? ActorEquipmentComponent.HandRightSlotId : slotId;
+            return ContentId.TryResolveLegacyCoreEquipmentSlot(slotId, out ContentId resolved, out _, out _)
+                ? resolved.Canonical
+                : slotId;
         }
 
         internal static bool IsEquipEnabled(ItemDefinition definition)

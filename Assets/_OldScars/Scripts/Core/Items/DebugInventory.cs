@@ -16,7 +16,7 @@ namespace OldScars.Core.Items
     {
         private const string NoItemId = "none";
 
-        [SerializeField] private string[] initialItemDefinitionIds = { "rusted_crowbar_01" };
+        [SerializeField] private string[] initialItemDefinitionIds = { "core:rusted_crowbar_01" };
         [SerializeField] private int equippedItemIndex = 0;
 
         private readonly List<ItemInstance> itemInstances = new List<ItemInstance>();

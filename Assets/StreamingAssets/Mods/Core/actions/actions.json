@@ -2,7 +2,7 @@
   "actions": [
     {
       "type": "action",
-      "id": "blunt_swing",
+      "id": "core:blunt_swing",
       "contexts": ["combat"],
       "display": {
         "name": "Golpe",
@@ -24,7 +24,7 @@
     },
     {
       "type": "action",
-      "id": "forceful_strike",
+      "id": "core:forceful_strike",
       "contexts": ["combat"],
       "display": {
         "name": "Golpe fuerte",
@@ -49,7 +49,7 @@
     },
     {
       "type": "action",
-      "id": "force_door",
+      "id": "core:force_door",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Forzar puerta",
@@ -79,7 +79,7 @@
     },
     {
       "type": "action",
-      "id": "open_door",
+      "id": "core:open_door",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Abrir puerta",
@@ -101,7 +101,7 @@
     },
     {
       "type": "action",
-      "id": "close_door",
+      "id": "core:close_door",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Cerrar puerta",
@@ -123,7 +123,7 @@
     },
     {
       "type": "action",
-      "id": "examine_object",
+      "id": "core:examine_object",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Examinar",
@@ -144,7 +144,7 @@
     },
     {
       "type": "action",
-      "id": "pick_up_item",
+      "id": "core:pick_up_item",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Recoger",
@@ -165,7 +165,7 @@
     },
     {
       "type": "action",
-      "id": "pry_open_container",
+      "id": "core:pry_open_container",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Abrir contenedor",
@@ -192,7 +192,7 @@
     },
     {
       "type": "action",
-      "id": "search_container",
+      "id": "core:search_container",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Buscar contenedor",
@@ -213,7 +213,7 @@
     },
     {
       "type": "action",
-      "id": "open_storage",
+      "id": "core:open_storage",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Abrir contenedor",
@@ -234,7 +234,7 @@
     },
     {
       "type": "action",
-      "id": "debug_damage_actor",
+      "id": "core:debug_damage_actor",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Debug Damage Actor",
@@ -255,7 +255,7 @@
     },
     {
       "type": "action",
-      "id": "debug_kill_actor",
+      "id": "core:debug_kill_actor",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Matar actor",
@@ -276,7 +276,7 @@
     },
     {
       "type": "action",
-      "id": "search_body",
+      "id": "core:search_body",
       "contexts": ["world_interaction"],
       "display": {
         "name": "Revisar cuerpo",

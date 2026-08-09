@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using OldScars.Core.Actions;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Data.Loading;
@@ -15,11 +14,7 @@ namespace OldScars.Core.Data.Validation
     /// </summary>
     public sealed class DataValidator
     {
-        private static readonly Regex SnakeCasePattern = new Regex("^[a-z0-9_]+$", RegexOptions.Compiled);
-        private static readonly Regex AssetKeyPattern = new Regex("^[a-z0-9_]+:[a-z0-9_]+$", RegexOptions.Compiled);
         private const string EffectTargetTarget = "target";
-        private const string LegacyRightHandSlotId = "right_hand";
-        private const string HandRightSlotId = "hand_right";
         private const int MaxItemStorageDimension = 64;
         private static readonly HashSet<string> RuntimeHealthTags = new HashSet<string>
         {
@@ -83,7 +78,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(slot.type, "equipment_slot", ctx);
-                RequireSnakeCase(slot.id, "id", ctx);
+                RequireGlobalContentId(slot.id, "id", ctx);
                 if (string.IsNullOrWhiteSpace(slot.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
             }
@@ -101,7 +96,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(layout.type, "equipment_layout", ctx);
-                RequireSnakeCase(layout.id, "id", ctx);
+                RequireGlobalContentId(layout.id, "id", ctx);
                 if (string.IsNullOrWhiteSpace(layout.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
 
@@ -123,7 +118,7 @@ namespace OldScars.Core.Data.Validation
                             continue;
                         }
 
-                        RequireSnakeCase(group.id, "id", groupCtx);
+                        RequireLocalId(group.id, "id", groupCtx);
                         if (!groupIds.Add(group.id))
                             report.Error($"{ctx}: duplicate group id '{SafeId(group.id)}'.");
                         if (string.IsNullOrWhiteSpace(group.display_name))
@@ -153,8 +148,8 @@ namespace OldScars.Core.Data.Validation
                         continue;
                     }
 
-                    RequireSnakeCase(slot.slot_id, "slot_id", slotCtx);
-                    RequireSnakeCase(slot.group_id, "group_id", slotCtx);
+                    RequireGlobalContentId(slot.slot_id, "slot_id", slotCtx);
+                    RequireLocalId(slot.group_id, "group_id", slotCtx);
                     if (database.GetEquipmentSlot(slot.slot_id) == null)
                         report.Error($"{slotCtx}: slot_id references '{SafeId(slot.slot_id)}' which was not loaded.");
                     if (!groupIds.Contains(slot.group_id))
@@ -186,7 +181,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
                 RequireType(capability.type, "visual_rig_capability", ctx);
-                RequireSnakeCase(capability.id, "id", ctx);
+                RequireGlobalContentId(capability.id, "id", ctx);
                 if (string.IsNullOrWhiteSpace(capability.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
             }
@@ -204,8 +199,8 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(profile.type, "visual_rig_profile", ctx);
-                RequireSnakeCase(profile.id, "id", ctx);
-                RequireSnakeCase(profile.family_id, "family_id", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
+                RequireLocalId(profile.family_id, "family_id", ctx);
                 if (string.IsNullOrWhiteSpace(profile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
 
@@ -225,11 +220,11 @@ namespace OldScars.Core.Data.Validation
                             report.Error($"{partCtx} must not be null.");
                             continue;
                         }
-                        RequireSnakeCase(part.id, "id", partCtx);
+                        RequireLocalId(part.id, "id", partCtx);
                         if (!string.IsNullOrWhiteSpace(part.parent_part_id))
-                            RequireSnakeCase(part.parent_part_id, "parent_part_id", partCtx);
+                            RequireLocalId(part.parent_part_id, "parent_part_id", partCtx);
                         if (!string.IsNullOrWhiteSpace(part.damage_region_id))
-                            RequireSnakeCase(part.damage_region_id, "damage_region_id", partCtx);
+                            RequireLocalId(part.damage_region_id, "damage_region_id", partCtx);
                         if (!parts.ContainsKey(part.id ?? string.Empty))
                             parts[part.id ?? string.Empty] = part;
                         else
@@ -261,9 +256,9 @@ namespace OldScars.Core.Data.Validation
                             report.Error($"{socketCtx} must not be null.");
                             continue;
                         }
-                        RequireSnakeCase(socket.id, "id", socketCtx);
-                        RequireSnakeCase(socket.part_id, "part_id", socketCtx);
-                        RequireSnakeCase(socket.role, "role", socketCtx);
+                        RequireLocalId(socket.id, "id", socketCtx);
+                        RequireLocalId(socket.part_id, "part_id", socketCtx);
+                        RequireLocalId(socket.role, "role", socketCtx);
                         if (!socketIds.Add(socket.id ?? string.Empty))
                             report.Error($"{ctx}: duplicate socket id '{SafeId(socket.id)}'.");
                         socketRoles.Add(socket.role ?? string.Empty);
@@ -277,7 +272,7 @@ namespace OldScars.Core.Data.Validation
                             for (int capabilityIndex = 0; capabilityIndex < socket.capabilities.Length; capabilityIndex++)
                             {
                                 string capabilityId = socket.capabilities[capabilityIndex];
-                                RequireSnakeCase(capabilityId, "capability", socketCtx);
+                                RequireGlobalContentId(capabilityId, "capability", socketCtx);
                                 if (!seenCapabilities.Add(capabilityId ?? string.Empty))
                                     report.Error($"{socketCtx}: duplicate capability '{SafeId(capabilityId)}'.");
                                 if (database.GetVisualRigCapability(capabilityId) == null)
@@ -298,8 +293,8 @@ namespace OldScars.Core.Data.Validation
                         report.Error($"{mappingCtx} must not be null.");
                         continue;
                     }
-                    RequireSnakeCase(mapping.equipment_slot_id, "equipment_slot_id", mappingCtx);
-                    RequireSnakeCase(mapping.socket_role, "socket_role", mappingCtx);
+                    RequireGlobalContentId(mapping.equipment_slot_id, "equipment_slot_id", mappingCtx);
+                    RequireLocalId(mapping.socket_role, "socket_role", mappingCtx);
                     if (!mappedEquipmentSlots.Add(mapping.equipment_slot_id ?? string.Empty))
                         report.Error($"{mappingCtx}: duplicate mapping for equipment slot '{SafeId(mapping.equipment_slot_id)}'.");
                     if (database.GetEquipmentSlot(mapping.equipment_slot_id) == null)
@@ -321,7 +316,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
                 RequireType(asset.type, "visual_asset", ctx);
-                RequireSnakeCase(asset.id, "id", ctx);
+                RequireGlobalContentId(asset.id, "id", ctx);
                 RequireAssetKey(asset.asset_key, "asset_key", ctx);
                 if (asset.provider_id != "builtin")
                     report.Error($"{ctx}: unsupported provider_id '{SafeId(asset.provider_id)}'. M35.0 supports only 'builtin'.");
@@ -341,8 +336,8 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
                 RequireType(profile.type, "item_visual_profile", ctx);
-                RequireSnakeCase(profile.id, "id", ctx);
-                RequireSnakeCase(profile.item_definition_id, "item_definition_id", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
+                RequireGlobalContentId(profile.item_definition_id, "item_definition_id", ctx);
                 ItemDefinition item = database.GetItem(profile.item_definition_id);
                 if (item == null)
                     report.Error($"{ctx}: item_definition_id '{SafeId(profile.item_definition_id)}' was not loaded.");
@@ -355,7 +350,7 @@ namespace OldScars.Core.Data.Validation
                     report.Error($"{ctx}: socket_policy must be '{ItemVisualSocketPolicy.EquipmentSlot}' or '{ItemVisualSocketPolicy.PreferredRoleThenCapability}'.");
                 }
                 if (!string.IsNullOrWhiteSpace(profile.primary_socket_role))
-                    RequireSnakeCase(profile.primary_socket_role, "primary_socket_role", ctx);
+                    RequireLocalId(profile.primary_socket_role, "primary_socket_role", ctx);
                 if (profile.required_socket_capabilities == null || profile.required_socket_capabilities.Length == 0)
                 {
                     report.Error($"{ctx}: 'required_socket_capabilities' is required and must not be empty.");
@@ -366,7 +361,7 @@ namespace OldScars.Core.Data.Validation
                     for (int index = 0; index < profile.required_socket_capabilities.Length; index++)
                     {
                         string capability = profile.required_socket_capabilities[index];
-                        RequireSnakeCase(capability, "required_socket_capability", ctx);
+                        RequireGlobalContentId(capability, "required_socket_capability", ctx);
                         if (!seen.Add(capability ?? string.Empty))
                             report.Error($"{ctx}: duplicate required capability '{SafeId(capability)}'.");
                         if (database.GetVisualRigCapability(capability) == null)
@@ -376,8 +371,12 @@ namespace OldScars.Core.Data.Validation
 
                 if (profile.fallback_visual != ItemVisualFallback.None && profile.fallback_visual != ItemVisualFallback.DebugBox)
                     report.Error($"{ctx}: fallback_visual must be '{ItemVisualFallback.None}' or '{ItemVisualFallback.DebugBox}'.");
-                if (!string.IsNullOrWhiteSpace(profile.persistent_pose_id) && database.GetAttachmentPose(profile.persistent_pose_id) == null)
-                    report.Error($"{ctx}: persistent_pose_id references '{profile.persistent_pose_id}' which was not loaded.");
+                if (!string.IsNullOrWhiteSpace(profile.persistent_pose_id))
+                {
+                    RequireGlobalContentId(profile.persistent_pose_id, "persistent_pose_id", ctx);
+                    if (database.GetAttachmentPose(profile.persistent_pose_id) == null)
+                        report.Error($"{ctx}: persistent_pose_id references '{profile.persistent_pose_id}' which was not loaded.");
+                }
 
                 if (HasMultiSlotAlternative(item) && string.IsNullOrWhiteSpace(profile.primary_socket_role))
                     report.Error($"{ctx}: a multi-slot item requires 'primary_socket_role' so it produces one primary visual.");
@@ -396,8 +395,8 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
                 RequireType(pose.type, "attachment_pose", ctx);
-                RequireSnakeCase(pose.id, "id", ctx);
-                RequireSnakeCase(pose.visual_profile_id, "visual_profile_id", ctx);
+                RequireGlobalContentId(pose.id, "id", ctx);
+                RequireGlobalContentId(pose.visual_profile_id, "visual_profile_id", ctx);
                 if (database.GetItemVisualProfile(pose.visual_profile_id) == null)
                     report.Error($"{ctx}: visual_profile_id references '{SafeId(pose.visual_profile_id)}' which was not loaded.");
 
@@ -405,13 +404,13 @@ namespace OldScars.Core.Data.Validation
                     report.Error($"{ctx}: use either rig_profile_id or rig_family_id, not both.");
                 if (!string.IsNullOrWhiteSpace(pose.rig_profile_id))
                 {
-                    RequireSnakeCase(pose.rig_profile_id, "rig_profile_id", ctx);
+                    RequireGlobalContentId(pose.rig_profile_id, "rig_profile_id", ctx);
                     if (database.GetVisualRigProfile(pose.rig_profile_id) == null)
                         report.Error($"{ctx}: rig_profile_id references '{pose.rig_profile_id}' which was not loaded.");
                 }
                 if (!string.IsNullOrWhiteSpace(pose.rig_family_id))
                 {
-                    RequireSnakeCase(pose.rig_family_id, "rig_family_id", ctx);
+                    RequireLocalId(pose.rig_family_id, "rig_family_id", ctx);
                     if (!VisualRigFamilyExists(pose.rig_family_id))
                         report.Error($"{ctx}: rig_family_id '{pose.rig_family_id}' is not used by a loaded rig profile.");
                 }
@@ -419,9 +418,9 @@ namespace OldScars.Core.Data.Validation
                 if (!string.IsNullOrWhiteSpace(pose.socket_id) && !string.IsNullOrWhiteSpace(pose.socket_role))
                     report.Error($"{ctx}: use either socket_id or socket_role, not both.");
                 if (!string.IsNullOrWhiteSpace(pose.socket_id))
-                    RequireSnakeCase(pose.socket_id, "socket_id", ctx);
+                    RequireLocalId(pose.socket_id, "socket_id", ctx);
                 if (!string.IsNullOrWhiteSpace(pose.socket_role))
-                    RequireSnakeCase(pose.socket_role, "socket_role", ctx);
+                    RequireLocalId(pose.socket_role, "socket_role", ctx);
                 if (!PoseSocketExists(pose))
                     report.Error($"{ctx}: socket selector does not exist on the referenced rig profile or family.");
 
@@ -467,8 +466,8 @@ namespace OldScars.Core.Data.Validation
                 report.Error($"{context}: '{fieldName}' is required.");
                 return;
             }
-            if (!AssetKeyPattern.IsMatch(value))
-                report.Error($"{context}: '{fieldName}' value '{value}' must use namespace:name with snake_case segments.");
+            if (!ContentId.TryParse(value, out _, out string error))
+                report.Error($"{context}: '{fieldName}' asset key '{value}' is invalid: {error}.");
         }
 
         private bool VisualRigFamilyExists(string familyId)
@@ -547,7 +546,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(worldObjectProfile.type, "world_object_profile", ctx);
-                RequireSnakeCase(worldObjectProfile.id, "id", ctx);
+                RequireGlobalContentId(worldObjectProfile.id, "id", ctx);
 
                 if (string.IsNullOrWhiteSpace(worldObjectProfile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
@@ -579,7 +578,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
 
-                if (!SnakeCasePattern.IsMatch(tag))
+                if (!ContentId.TryValidateLocalId(tag, out _))
                     report.Error($"{context}: tag '{tag}' must use snake_case.");
 
                 if (!tags.IsValid(tag))
@@ -607,14 +606,14 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(actorProfile.type, "actor_profile", ctx);
-                RequireSnakeCase(actorProfile.id, "id", ctx);
+                RequireGlobalContentId(actorProfile.id, "id", ctx);
 
                 if (string.IsNullOrWhiteSpace(actorProfile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
 
                 if (!string.IsNullOrWhiteSpace(actorProfile.inventory_seed_actor_tag))
                 {
-                    RequireSnakeCase(actorProfile.inventory_seed_actor_tag, "inventory_seed_actor_tag", ctx);
+                    RequireLocalId(actorProfile.inventory_seed_actor_tag, "inventory_seed_actor_tag", ctx);
                     if (!tags.IsValid(actorProfile.inventory_seed_actor_tag))
                         report.Error($"{ctx}: inventory_seed_actor_tag '{actorProfile.inventory_seed_actor_tag}' is not registered in tags.json.");
                     if (!inventorySeedTags.Add(actorProfile.inventory_seed_actor_tag))
@@ -631,7 +630,7 @@ namespace OldScars.Core.Data.Validation
 
                 if (!string.IsNullOrWhiteSpace(actorProfile.equipment_layout_id))
                 {
-                    RequireSnakeCase(actorProfile.equipment_layout_id, "equipment_layout_id", ctx);
+                    RequireGlobalContentId(actorProfile.equipment_layout_id, "equipment_layout_id", ctx);
                     if (database.GetEquipmentLayout(actorProfile.equipment_layout_id) == null)
                         report.Error($"{ctx}: equipment_layout_id references '{actorProfile.equipment_layout_id}' which was not loaded.");
                 }
@@ -643,7 +642,7 @@ namespace OldScars.Core.Data.Validation
 
                 if (!string.IsNullOrWhiteSpace(actorProfile.visual_rig_profile_id))
                 {
-                    RequireSnakeCase(actorProfile.visual_rig_profile_id, "visual_rig_profile_id", ctx);
+                    RequireGlobalContentId(actorProfile.visual_rig_profile_id, "visual_rig_profile_id", ctx);
                     if (database.GetVisualRigProfile(actorProfile.visual_rig_profile_id) == null)
                         report.Error($"{ctx}: visual_rig_profile_id references '{actorProfile.visual_rig_profile_id}' which was not loaded.");
                 }
@@ -673,7 +672,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
 
-                if (!SnakeCasePattern.IsMatch(tag))
+                if (!ContentId.TryValidateLocalId(tag, out _))
                     report.Error($"{context}: tag '{tag}' must use snake_case.");
 
                 if (!tags.IsValid(tag))
@@ -728,7 +727,7 @@ namespace OldScars.Core.Data.Validation
             }
             else
             {
-                RequireSnakeCase(entry.item_id, "item_id", context);
+                RequireGlobalContentId(entry.item_id, "item_id", context);
 
                 if (database.GetItem(entry.item_id) == null)
                     report.Error($"{context}: item_id '{entry.item_id}' references an item that was not loaded.");
@@ -773,7 +772,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
 
-                RequireSnakeCase(entry.item_id, "item_id", entryContext);
+                RequireGlobalContentId(entry.item_id, "item_id", entryContext);
                 ItemDefinition item = database.GetItem(entry.item_id);
                 if (item == null)
                 {
@@ -803,7 +802,7 @@ namespace OldScars.Core.Data.Validation
                     for (int slotIndex = 0; slotIndex < entry.slot_ids.Length; slotIndex++)
                     {
                         string slotId = entry.slot_ids[slotIndex];
-                        RequireSnakeCase(slotId, $"slot_ids[{slotIndex}]", entryContext);
+                        RequireGlobalContentId(slotId, $"slot_ids[{slotIndex}]", entryContext);
                         if (!requestedSlots.Add(slotId))
                             report.Error($"{entryContext}: duplicate slot_id '{SafeId(slotId)}'.");
                     }
@@ -875,10 +874,7 @@ namespace OldScars.Core.Data.Validation
 
         private static string[] MapActorProfileSlots(string[] slots)
         {
-            var mapped = new string[slots.Length];
-            for (int index = 0; index < slots.Length; index++)
-                mapped[index] = slots[index] == LegacyRightHandSlotId ? HandRightSlotId : slots[index];
-            return mapped;
+            return (string[])slots.Clone();
         }
 
         private static bool SameSlotSet(string[] left, string[] right)
@@ -936,7 +932,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(lootTable.type, "loot_table", ctx);
-                RequireSnakeCase(lootTable.id, "id", ctx);
+                RequireGlobalContentId(lootTable.id, "id", ctx);
 
                 if (lootTable.entries == null || lootTable.entries.Length == 0)
                 {
@@ -963,7 +959,7 @@ namespace OldScars.Core.Data.Validation
             }
             else
             {
-                RequireSnakeCase(entry.item_id, "item_id", ctx);
+                RequireGlobalContentId(entry.item_id, "item_id", ctx);
 
                 if (database.GetItem(entry.item_id) == null)
                     report.Error($"{ctx}: item_id '{entry.item_id}' references an item that was not loaded.");
@@ -986,7 +982,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(item.type, "item", ctx);
-                RequireSnakeCase(item.id, "id", ctx);
+                RequireGlobalContentId(item.id, "id", ctx);
 
                 if (item.display == null)
                     report.Error($"{ctx}: 'display' block is required.");
@@ -1061,7 +1057,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(profile.type, "item_storage_profile", ctx);
-                RequireSnakeCase(profile.id, "id", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
                 if (string.IsNullOrWhiteSpace(profile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
                 if (profile.width <= 0 || profile.width > MaxItemStorageDimension)
@@ -1076,7 +1072,7 @@ namespace OldScars.Core.Data.Validation
             if (string.IsNullOrWhiteSpace(item.owned_storage_profile_id))
                 return;
 
-            RequireSnakeCase(item.owned_storage_profile_id, "owned_storage_profile_id", ctx);
+            RequireGlobalContentId(item.owned_storage_profile_id, "owned_storage_profile_id", ctx);
             if (database.GetItemStorageProfile(item.owned_storage_profile_id) == null)
                 report.Error($"{ctx}: 'owned_storage_profile_id' references '{item.owned_storage_profile_id}' which was not loaded.");
             if (item.max_stack != 1)
@@ -1117,7 +1113,7 @@ namespace OldScars.Core.Data.Validation
                 string iconId = inventory.icon_id.Trim();
                 if (iconId.Length == 0)
                     report.Warning($"{ctx}: optional 'inventory.icon_id' is empty; inventory UI will use its visual fallback.");
-                else if (!SnakeCasePattern.IsMatch(iconId))
+                else if (!ContentId.TryValidateLocalId(iconId, out _))
                     report.Warning($"{ctx}: optional 'inventory.icon_id' should use snake_case (got '{inventory.icon_id}'); inventory UI will use its visual fallback if the sprite cannot be resolved.");
             }
         }
@@ -1132,7 +1128,7 @@ namespace OldScars.Core.Data.Validation
 
             if (hasFirearmProfile)
             {
-                RequireSnakeCase(item.firearm_profile_id, "firearm_profile_id", ctx);
+                RequireGlobalContentId(item.firearm_profile_id, "firearm_profile_id", ctx);
 
                 if (database.GetFirearmProfile(item.firearm_profile_id) == null)
                     report.Error($"{ctx}: 'firearm_profile_id' references '{item.firearm_profile_id}' which was not loaded.");
@@ -1143,7 +1139,7 @@ namespace OldScars.Core.Data.Validation
 
             if (hasAmmoProfile)
             {
-                RequireSnakeCase(item.ammo_profile_id, "ammo_profile_id", ctx);
+                RequireGlobalContentId(item.ammo_profile_id, "ammo_profile_id", ctx);
 
                 if (database.GetAmmoProfile(item.ammo_profile_id) == null)
                     report.Error($"{ctx}: 'ammo_profile_id' references '{item.ammo_profile_id}' which was not loaded.");
@@ -1221,7 +1217,7 @@ namespace OldScars.Core.Data.Validation
                 for (int slotIndex = 0; slotIndex < slotSet.Length; slotIndex++)
                 {
                     string slotId = slotSet[slotIndex];
-                    RequireSnakeCase(slotId, $"slot[{slotIndex}]", setContext);
+                    RequireGlobalContentId(slotId, $"slot[{slotIndex}]", setContext);
                     if (!seenSlots.Add(slotId))
                         report.Error($"{setContext}: duplicate slot '{SafeId(slotId)}'.");
                     if (database.GetEquipmentSlot(slotId) == null)
@@ -1240,16 +1236,15 @@ namespace OldScars.Core.Data.Validation
                 return;
             }
 
-            ValidateSnakeCaseList(slots, context);
-
-            foreach (string slot in slots)
+            for (int index = 0; index < slots.Length; index++)
             {
+                string slot = slots[index];
+                RequireGlobalContentId(slot, $"slot[{index}]", context);
                 if (string.IsNullOrWhiteSpace(slot))
                     continue;
 
-                string mappedSlot = slot == LegacyRightHandSlotId ? HandRightSlotId : slot;
-                if (database.GetEquipmentSlot(mappedSlot) == null)
-                    report.Error($"{context}: slot '{slot}' maps to '{mappedSlot}', which was not loaded.");
+                if (database.GetEquipmentSlot(slot) == null)
+                    report.Error($"{context}: slot '{slot}' was not loaded.");
             }
         }
 
@@ -1281,7 +1276,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
 
-                RequireSnakeCase(restoreNeed.need_id, "need_id", restoreCtx);
+                RequireLocalId(restoreNeed.need_id, "need_id", restoreCtx);
 
                 if (restoreNeed.amount <= 0f)
                     report.Error($"{restoreCtx}: 'amount' must be > 0 (got {restoreNeed.amount}).");
@@ -1294,9 +1289,11 @@ namespace OldScars.Core.Data.Validation
             {
                 report.Error($"{ctx}: 'combat.weapon_profile' is required when 'combat' block is present.");
             }
-            else if (database.GetWeaponProfile(item.combat.weapon_profile) == null)
+            else
             {
-                report.Error($"{ctx}: 'combat.weapon_profile' references '{item.combat.weapon_profile}' which was not loaded.");
+                RequireGlobalContentId(item.combat.weapon_profile, "combat.weapon_profile", ctx);
+                if (database.GetWeaponProfile(item.combat.weapon_profile) == null)
+                    report.Error($"{ctx}: 'combat.weapon_profile' references '{item.combat.weapon_profile}' which was not loaded.");
             }
 
             if (item.combat.damage == null)
@@ -1325,8 +1322,7 @@ namespace OldScars.Core.Data.Validation
                         continue;
                     }
 
-                    if (!SnakeCasePattern.IsMatch(actionId))
-                        report.Error($"{ctx}: combat action id '{actionId}' must use snake_case.");
+                    RequireGlobalContentId(actionId, "combat.actions entry", ctx);
 
                     if (database.GetAction(actionId) == null)
                         report.Error($"{ctx}: 'combat.actions' references '{actionId}' which was not loaded.");
@@ -1347,15 +1343,15 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(profile.type, "weapon_profile", ctx);
-                RequireSnakeCase(profile.id, "id", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
 
                 if (string.IsNullOrWhiteSpace(profile.damage_type))
                     report.Error($"{ctx}: 'damage_type' is required.");
                 else
-                    RequireSnakeCase(profile.damage_type, "damage_type", ctx);
+                    RequireLocalId(profile.damage_type, "damage_type", ctx);
 
                 if (profile.scales_with != null)
-                    ValidateSnakeCaseList(profile.scales_with, $"{ctx}: scales_with");
+                    ValidateLocalIdList(profile.scales_with, $"{ctx}: scales_with");
 
                 if (profile.default_actions == null || profile.default_actions.Length == 0)
                 {
@@ -1371,8 +1367,7 @@ namespace OldScars.Core.Data.Validation
                             continue;
                         }
 
-                        if (!SnakeCasePattern.IsMatch(actionId))
-                            report.Error($"{ctx}: default action id '{actionId}' must use snake_case.");
+                        RequireGlobalContentId(actionId, "default_actions entry", ctx);
 
                         if (database.GetAction(actionId) == null)
                             report.Error($"{ctx}: 'default_actions' references '{actionId}' which was not loaded.");
@@ -1394,7 +1389,7 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(profile.type, "firearm_profile", ctx);
-                RequireSnakeCase(profile.id, "id", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
 
                 if (string.IsNullOrWhiteSpace(profile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
@@ -1409,7 +1404,7 @@ namespace OldScars.Core.Data.Validation
                     for (int index = 0; index < profile.accepted_ammo_profile_ids.Length; index++)
                     {
                         string ammoProfileId = profile.accepted_ammo_profile_ids[index];
-                        RequireSnakeCase(ammoProfileId, $"accepted_ammo_profile_ids[{index}]", ctx);
+                        RequireGlobalContentId(ammoProfileId, $"accepted_ammo_profile_ids[{index}]", ctx);
 
                         if (!string.IsNullOrWhiteSpace(ammoProfileId) && database.GetAmmoProfile(ammoProfileId) == null)
                             report.Error($"{ctx}: accepted ammo profile '{ammoProfileId}' was not loaded.");
@@ -1449,12 +1444,12 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(profile.type, "ammo_profile", ctx);
-                RequireSnakeCase(profile.id, "id", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
 
                 if (string.IsNullOrWhiteSpace(profile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
 
-                RequireSnakeCase(profile.caliber_tag, "caliber_tag", ctx);
+                RequireLocalId(profile.caliber_tag, "caliber_tag", ctx);
                 if (!string.IsNullOrWhiteSpace(profile.caliber_tag) && !tags.IsValid(profile.caliber_tag))
                     report.Error($"{ctx}: caliber_tag '{profile.caliber_tag}' is not registered in tags.json.");
 
@@ -1482,12 +1477,12 @@ namespace OldScars.Core.Data.Validation
                 }
 
                 RequireType(action.type, "action", ctx);
-                RequireSnakeCase(action.id, "id", ctx);
+                RequireGlobalContentId(action.id, "id", ctx);
 
                 if (action.contexts == null || action.contexts.Length == 0)
                     report.Error($"{ctx}: 'contexts' array is required and must not be empty.");
                 else
-                    ValidateSnakeCaseList(action.contexts, $"{ctx}: contexts");
+                    ValidateLocalIdList(action.contexts, $"{ctx}: contexts");
 
                 if (action.display == null)
                     report.Error($"{ctx}: 'display' block is required.");
@@ -1517,7 +1512,7 @@ namespace OldScars.Core.Data.Validation
                     {
                         foreach (KeyValuePair<string, float> stat in action.requirements.actor_min_stats)
                         {
-                            if (string.IsNullOrWhiteSpace(stat.Key) || !SnakeCasePattern.IsMatch(stat.Key))
+                            if (string.IsNullOrWhiteSpace(stat.Key) || !ContentId.TryValidateLocalId(stat.Key, out _))
                                 report.Error($"{ctx}: actor_min_stats key '{stat.Key}' must use snake_case.");
                         }
                     }
@@ -1558,7 +1553,7 @@ namespace OldScars.Core.Data.Validation
                 if (string.IsNullOrWhiteSpace(tag))
                     continue;
 
-                if (!SnakeCasePattern.IsMatch(tag))
+                if (!ContentId.TryValidateLocalId(tag, out _))
                     continue;
 
                 if (!tags.IsValid(tag))
@@ -1598,7 +1593,7 @@ namespace OldScars.Core.Data.Validation
                 }
                 else
                 {
-                    if (!SnakeCasePattern.IsMatch(effect.type))
+                    if (!ContentId.TryValidateLocalId(effect.type, out _))
                         report.Error($"{effectCtx}: type '{effect.type}' must use snake_case.");
 
                     if (effect.type == ActionEffectTypes.AddTag || effect.type == ActionEffectTypes.RemoveTag)
@@ -1651,7 +1646,7 @@ namespace OldScars.Core.Data.Validation
                 return;
             }
 
-            if (!SnakeCasePattern.IsMatch(tag))
+            if (!ContentId.TryValidateLocalId(tag, out _))
             {
                 report.Error($"{effectCtx}: tag '{tag}' must use snake_case.");
             }
@@ -1674,7 +1669,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
 
-                if (!SnakeCasePattern.IsMatch(tag))
+                if (!ContentId.TryValidateLocalId(tag, out _))
                     report.Error($"{context}: tag '{tag}' must use snake_case.");
 
                 if (!tags.IsValid(tag))
@@ -1682,7 +1677,7 @@ namespace OldScars.Core.Data.Validation
             }
         }
 
-        private void ValidateSnakeCaseList(string[] values, string context)
+        private void ValidateLocalIdList(string[] values, string context)
         {
             if (values == null)
                 return;
@@ -1695,7 +1690,7 @@ namespace OldScars.Core.Data.Validation
                     continue;
                 }
 
-                if (!SnakeCasePattern.IsMatch(value))
+                if (!ContentId.TryValidateLocalId(value, out _))
                     report.Error($"{context}: value '{value}' must use snake_case.");
             }
         }
@@ -1733,7 +1728,7 @@ namespace OldScars.Core.Data.Validation
                 report.Error($"{context}: 'type' is '{actual}' but must be '{expected}'.");
         }
 
-        private void RequireSnakeCase(string value, string fieldName, string context)
+        private void RequireLocalId(string value, string fieldName, string context)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -1741,8 +1736,14 @@ namespace OldScars.Core.Data.Validation
                 return;
             }
 
-            if (!SnakeCasePattern.IsMatch(value))
-                report.Error($"{context}: '{fieldName}' value '{value}' must use snake_case only.");
+            if (!ContentId.TryValidateLocalId(value, out string error))
+                report.Error($"{context}: Local ID '{fieldName}' value '{value}' is invalid: {error}.");
+        }
+
+        private void RequireGlobalContentId(string value, string fieldName, string context)
+        {
+            if (!ContentId.TryParse(value, out _, out string error))
+                report.Error($"{context}: Global Content ID '{fieldName}' value '{SafeId(value)}' is invalid: {error}.");
         }
 
         private static string SafeId(string id)

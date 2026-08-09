@@ -93,6 +93,82 @@ namespace OldScars.Core.Persistence
         public WorldItemState[] worldItems = Array.Empty<WorldItemState>();
     }
 
+    /// <summary>
+    /// In-memory migration for the three Global Content ID reference surfaces
+    /// persisted by schema v1. Runtime/instance/persistent IDs and tags are not
+    /// touched, and the on-disk schema version remains unchanged.
+    /// </summary>
+    internal static class CurrentSliceContentIdCompatibility
+    {
+        internal static bool TryNormalizeLegacyCoreReferences(
+            CurrentSliceSaveData snapshot,
+            GameDatabase database,
+            out string error)
+        {
+            error = null;
+            if (snapshot == null || database == null)
+                return true;
+
+            ItemState[] itemStates = snapshot.items ?? Array.Empty<ItemState>();
+            for (int index = 0; index < itemStates.Length; index++)
+            {
+                ItemState item = itemStates[index];
+                if (item == null)
+                    continue;
+                string rawDefinitionId = item.definitionId;
+                if (!TryNormalize(rawDefinitionId, database, out item.definitionId, out string reason))
+                {
+                    error = $"items[{index}].definitionId '{rawDefinitionId}' is not a valid Global Content ID: {reason}.";
+                    return false;
+                }
+            }
+
+            EquipmentState[] equipmentStates = snapshot.equipment ?? Array.Empty<EquipmentState>();
+            for (int equipmentIndex = 0; equipmentIndex < equipmentStates.Length; equipmentIndex++)
+            {
+                EquipmentState equipment = equipmentStates[equipmentIndex];
+                if (equipment == null)
+                    continue;
+                string rawLayoutId = equipment.layoutId;
+                if (!TryNormalize(rawLayoutId, database, out equipment.layoutId, out string layoutReason))
+                {
+                    error = $"equipment[{equipmentIndex}].layoutId '{rawLayoutId}' is not a valid Global Content ID: {layoutReason}.";
+                    return false;
+                }
+
+                EquippedItemState[] equippedItems = equipment.items ?? Array.Empty<EquippedItemState>();
+                for (int itemIndex = 0; itemIndex < equippedItems.Length; itemIndex++)
+                {
+                    EquippedItemState equipped = equippedItems[itemIndex];
+                    if (equipped?.slots == null)
+                        continue;
+                    for (int slotIndex = 0; slotIndex < equipped.slots.Length; slotIndex++)
+                    {
+                        string raw = equipped.slots[slotIndex];
+                        if (!database.TryResolveEquipmentSlotId(
+                                raw, out equipped.slots[slotIndex], out string slotReason))
+                        {
+                            error = $"equipment[{equipmentIndex}].items[{itemIndex}].slots[{slotIndex}] " +
+                                    $"'{raw}' is not a valid Global Content ID: {slotReason}.";
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TryNormalize(
+            string raw,
+            GameDatabase database,
+            out string canonical,
+            out string error)
+        {
+            return database.TryResolveGlobalContentId(raw, out canonical, out error);
+        }
+    }
+
     public sealed class CurrentSliceResult
     {
         internal CurrentSliceResult(CurrentSliceSaveData snapshot, string failure)
@@ -200,6 +276,9 @@ namespace OldScars.Core.Persistence
             try
             {
                 CurrentSliceSaveData snapshot = payload.ToObject<CurrentSliceSaveData>(PayloadSerializer);
+                GameDatabase database = GameDataManager.Instance != null ? GameDataManager.Instance.Database : null;
+                if (!CurrentSliceContentIdCompatibility.TryNormalizeLegacyCoreReferences(snapshot, database, out string migrationError))
+                    return Failed("Current Slice legacy Content ID migration failed: " + migrationError);
                 CurrentSliceValidationResult validation = Validate(snapshot);
                 return validation.Success ? new CurrentSliceResult(snapshot, null) : Failed(validation.Failure);
             }

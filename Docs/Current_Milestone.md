@@ -4,50 +4,58 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ## Milestone Activo
 
-### M37.1 — Current Slice Persistent Round-Trip
+### ID TBD — Global Content ID Namespace Foundation
 
-Versión implementada:
-
-`Transactional Rehydration & Real-Scene Round-Trip Pass 2`
+No se asigna un número por inferencia: no existe un ID libre reservado para esta unidad y la regla vigente del Roadmap exige `ID TBD`. Es una unidad técnica interpuesta y acotada; no es M37.2 ni adelanta M50.0.
 
 Estado actual:
 
-`IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
+`IMPLEMENTED — STATIC/DATA VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
+
+M37.1 permanece abierto con su estado previo `IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. `Persistence Ready` continúa `NOT YET APPROVED`.
 
 ## Contrato Implementado
 
-- `CurrentSliceSaveData` define DTOs planos y explícitos para player, items, storages, Equipment, containers, corpses, doors y world items; pose usa floats propios y no serializa componentes ni objetos Unity.
-- la tabla única de items conserva `InstanceId`, `DefinitionId` y `Condition`; stacks conservan una identidad representativa, `Quantity` y placement/orientación exactos.
-- storages usan referencias durables por actor/container/item owner y cubren inventory, Equipment, item-owned storage, containers authored y cuerpos actualmente muertos.
-- player conserva identidad authored, pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Tags de health, peso y visuales permanecen derivados.
-- containers se capturan siempre con storage autoritativo explícito, incluso vacío, y sólo conservan los tags mutables de apertura, descubrimiento y contenido.
-- cada authored world item conserva un marker present/absent por su item ID; los drops runtime conservan identidad, cantidad y pose. Un authored item lazy se proyecta sin crear una `ItemInstance` ni reservar IDs.
-- puertas conservan sólo `opened_door`, `closed_door` o `locked_door`; el ángulo visual no forma parte del snapshot.
-- semantic preflight valida schema, referencias de escena y definiciones, unicidad/localización, cantidades, placements, Equipment multi-slot, item-owned storage sin nesting, containers, corpses, doors y world representations.
-- el comparador canónico ignora orden incidental y tolera `0.0001` en poses, pero reporta la primera diferencia semántica accionable.
-- `Save Debug Slot` está disponible sólo en Play Mode y usa capture + preflight + `PersistenceFileStore.Write` sobre `m37_current_slice_debug`.
-- `Load Debug Slot` usa el mismo pipeline real que diagnostics: read, semantic preflight, resolución de escena, snapshot de rollback, teardown selectivo, apply, recapture y comparación canónica.
-- apply rehidrata cada item una vez mediante `ItemInstance.Rehydrate`, adjunta y valida item-owned storage antes de registrarlo, restaura storages/placements, Equipment y ownership, y reconcilia authored world items y runtime drops sin generar IDs sustitutos.
-- containers restauran contenido autoritativo incluso vacío y quedan marcados inicializados para impedir reseed. Corpses restauran solamente health, Inventory, Equipment y owned storage cuando el root ya está muerto; NPCs vivos y lifecycle general permanecen fuera del slice.
-- doors restauran el tag lógico y sincronizan el controlador visual cuando existe. Health/needs del player y su pose se aplican al final con cancelación de movimiento y `CharacterController` temporalmente deshabilitado.
-- un fallo posterior a la primera mutación ejecuta `ApplyCore` con el snapshot pre-load, sin rollback recursivo. `RollbackFailed` conserva ambas causas y nunca se presenta como un load seguro.
+- `ContentId` es el contrato central para Global Content IDs canónicos `namespace:local_id`; ambos segmentos aceptan sólo letras ASCII minúsculas, dígitos y `_`, sin trim ni lowercase silenciosos.
+- `core` es el namespace reservado del contenido oficial. `Mods/Core` usa el mismo parser, normalizador, registries y validator que una fuente externa; no existe bypass de validación.
+- `DefinitionContentIdNormalizer` recorre en la frontera de carga únicamente IDs y referencias que apuntan a los 16 registries globales actuales. Los mods externos deben declarar IDs canónicos explícitos; el nombre de carpeta aún no prueba ownership del namespace.
+- `GameDatabase` registra sólo IDs canónicos y resuelve consultas por una única clave. Un alias legacy no crea una segunda entry ni puede coexistir accidentalmente con su forma `core:*`.
+- `DataValidator` distingue `Global Content ID` de `Local ID` y conserva dominios separados para tags, asset keys e identidades runtime/persistentes.
+- Los JSON oficiales de `Mods/Core` migraron sus Definition IDs y referencias globales a `core:*`, incluyendo items, actions, loot, actor/world profiles, weapons/ammo, storage/equipment y visuals/poses.
+- `ItemInstance.InstanceId`, `PersistentSceneObjectId`, storage IDs compuestos, save slot IDs y tags no fueron namespaced.
+- El diagnóstico Editor `Old Scars > Diagnostics > Content IDs > Run Namespace Foundation` usa una fixture temporal, no contamina `StreamingAssets`, y cubre parser, errores, compatibilidad Core, rechazo legacy externo, identidad canónica, coexistencia `core:test_item` / `test_namespace:test_item` y referencia cross-namespace.
 
-## Evidencia Automatizada
+## Compatibilidad Legacy Y Saves
 
-- Unity 6.4.6f1 compiló Runtime y Editor con `Tundra build success` y retorno 0.
-- `M37.0 Persistence Core Diagnostics: PASS`.
-- `M36.1 Foundation Identity Validation: PASS` después del seam authored de sólo lectura.
-- `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS` sobre el slice real en Play Mode, con save/read temporal, preflight post-read, comparación canónica y casos negativos requeridos.
-- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
-- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS`: preparó un State A real con player pose/health/needs, pickups authored, Lee-Enfield equipada, stack dentro de backpack, container, corpse equipado, door y runtime drop; mutó State B, cargó A y obtuvo equivalencia canónica.
-- el fault Editor-only posterior a storage restore produjo `ApplyFailed`, `RollbackAttempted: true`, `RollbackSucceeded: true` y runtime final equivalente al snapshot pre-load.
-- el diagnóstico representó y round-trippeó un container vacío sin mutar gameplay; limpió su root temporal y `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
-- persisten sólo los seis warnings preexistentes: cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
+- Sólo el contexto explícito de carga Core puede convertir una referencia sin namespace, por ejemplo `bandage_01` → `core:bandage_01`; produce warning agregado y la ruta está documentada como temporal/removible.
+- Los lookups legacy de escenas/prefabs y los tres campos Global Content ID de saves schema v1 se resuelven explícitamente contra Core: `ItemState.definitionId`, `EquipmentState.layoutId` y `EquippedItemState.slots`.
+- La compatibilidad histórica específica `right_hand` → `core:hand_right` se limita a referencias legacy de Equipment; no define un alias canónico general.
+- El snapshot se normaliza en memoria antes de semantic preflight. No se incrementó `schemaVersion`; el siguiente save escribe las referencias canónicas provenientes de definitions/runtime.
+- No se afirma compatibilidad de saves como validada hasta ejecutar el diagnóstico y el round-trip manual en Unity.
 
-## Estado De Gates Y Próximo Trabajo
+## Validación Disponible
 
-- `Foundation Freeze`: `APPROVED`.
-- `Persistence Ready`: `NOT YET APPROVED`.
-- el próximo trabajo inmediato es `M37.1 — Manual Unity Validation & Persistence Ready Closeout` mediante Save/Load Debug Slot en una sesión fresca.
-- la implementación automatizada no sustituye la validación manual ni autoriza cerrar el gate.
-- M38.0 permanece bloqueado y no fue iniciado.
+- todos los JSON del repositorio parsean con `jq`;
+- auditoría tipada de Core: todos los Global Content IDs son canónicos y todas las referencias auditadas resuelven en su registry destino;
+- auditoría de hardcodes: los valores sin namespace restantes corresponden a fixtures negativos, diagnostics legacy, scene/prefab compatibility o tokens locales de effects;
+- parseo sintáctico de todos los C# modificados con grammar C#: `PASS`;
+- `git diff --check`: `PASS`;
+- no existen workflows de GitHub Actions aplicables en el repositorio.
+
+`Manual Unity validation pending`
+
+Checklist manual obligatorio:
+
+1. Abrir el proyecto en Unity 6.4.6f1 y confirmar compilación Runtime/Editor sin errores nuevos.
+2. Abrir `SampleScene` en una sesión fresca, entrar a Play Mode y confirmar `CoreDataSystem ready`, cero errores de data y sólo warnings legacy explicables para campos authored todavía no migrados.
+3. Ejecutar `Old Scars > Diagnostics > Content IDs > Run Namespace Foundation` y exigir `PASS`.
+4. Ejecutar los diagnostics existentes M36.1/M37.0/M37.1, incluido `Current Slice Persistent Round-Trip`, y exigir `PASS`.
+5. Probar `Save Debug Slot`, salir completamente de Play Mode, volver a entrar y ejecutar `Load Debug Slot`; verificar Definition IDs/layout/slots canónicos, inventario, Equipment, owned storage, visuals, world items, containers, puertas, health/needs y ausencia de duplicados.
+6. Confirmar que `SampleScene` no queda dirty y revisar Console antes de aprobar esta unidad o `Persistence Ready`.
+
+## Próximo Trabajo
+
+- completar el checklist manual de esta unidad;
+- volver al closeout manual fresh-session de M37.1;
+- mantener M38.0 bloqueado hasta ambos cierres;
+- continuar después, en unidades separadas, con `manifest → provenance → dependencies → patches` sin marcar esas capacidades futuras como implementadas.

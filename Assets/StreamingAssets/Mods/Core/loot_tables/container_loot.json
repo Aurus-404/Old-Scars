@@ -2,116 +2,116 @@
   "loot_tables": [
     {
       "type": "loot_table",
-      "id": "debug_sealed_container_loot_01",
+      "id": "core:debug_sealed_container_loot_01",
       "entries": [
         {
-          "item_id": "scrap_metal_01",
+          "item_id": "core:scrap_metal_01",
           "count": 1
         }
       ]
     },
     {
       "type": "loot_table",
-      "id": "debug_food_water_crate_loot_01",
+      "id": "core:debug_food_water_crate_loot_01",
       "entries": [
         {
-          "item_id": "water_bottle_01",
+          "item_id": "core:water_bottle_01",
           "count": 500
         },
         {
-          "item_id": "food_ration_01",
+          "item_id": "core:food_ration_01",
           "count": 500
         },
         {
-          "item_id": "bandage_01",
+          "item_id": "core:bandage_01",
           "count": 500
         }
       ]
     },
     {
       "type": "loot_table",
-      "id": "debug_misc_supply_crate_loot_01",
+      "id": "core:debug_misc_supply_crate_loot_01",
       "entries": [
         {
-          "item_id": "scrap_metal_01",
+          "item_id": "core:scrap_metal_01",
           "count": 500
         },
         {
-          "item_id": "ammo_303_british_01",
+          "item_id": "core:ammo_303_british_01",
           "count": 20
         }
       ]
     },
     {
       "type": "loot_table",
-      "id": "house_fridge_loot_01",
+      "id": "core:house_fridge_loot_01",
       "entries": [
         {
-          "item_id": "food_ration_01",
+          "item_id": "core:food_ration_01",
           "count": 2
         },
         {
-          "item_id": "water_bottle_01",
-          "count": 2
-        }
-      ]
-    },
-    {
-      "type": "loot_table",
-      "id": "house_oven_loot_01",
-      "entries": [
-        {
-          "item_id": "food_ration_01",
-          "count": 1
-        }
-      ]
-    },
-    {
-      "type": "loot_table",
-      "id": "house_countertop_loot_01",
-      "entries": [
-        {
-          "item_id": "food_ration_01",
-          "count": 1
-        },
-        {
-          "item_id": "water_bottle_01",
-          "count": 1
-        },
-        {
-          "item_id": "scrap_metal_01",
+          "item_id": "core:water_bottle_01",
           "count": 2
         }
       ]
     },
     {
       "type": "loot_table",
-      "id": "house_cupboard_loot_01",
+      "id": "core:house_oven_loot_01",
       "entries": [
         {
-          "item_id": "bandage_01",
+          "item_id": "core:food_ration_01",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "type": "loot_table",
+      "id": "core:house_countertop_loot_01",
+      "entries": [
+        {
+          "item_id": "core:food_ration_01",
           "count": 1
         },
         {
-          "item_id": "ammo_303_british_01",
+          "item_id": "core:water_bottle_01",
+          "count": 1
+        },
+        {
+          "item_id": "core:scrap_metal_01",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "type": "loot_table",
+      "id": "core:house_cupboard_loot_01",
+      "entries": [
+        {
+          "item_id": "core:bandage_01",
+          "count": 1
+        },
+        {
+          "item_id": "core:ammo_303_british_01",
           "count": 6
         }
       ]
     },
     {
       "type": "loot_table",
-      "id": "house_upper_cupboard_loot_01",
+      "id": "core:house_upper_cupboard_loot_01",
       "entries": [
         {
-          "item_id": "bandage_01",
+          "item_id": "core:bandage_01",
           "count": 1
         },
         {
-          "item_id": "ammo_303_british_01",
+          "item_id": "core:ammo_303_british_01",
           "count": 4
         },
         {
-          "item_id": "food_ration_01",
+          "item_id": "core:food_ration_01",
           "count": 1
         }
       ]
