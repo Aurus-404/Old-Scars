@@ -137,6 +137,11 @@ namespace OldScars.Core.Items
                 actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeAmount, "Tomar cantidad..."));
                 actions.Add(new InventoryContextAction(InventoryContextActionKind.TakeStack, "Tomar todo"));
             }
+
+            if (InventoryItemUseService.IsConsumable(entry))
+                actions.Add(new InventoryContextAction(InventoryContextActionKind.Use, "Usar / Consumir"));
+
+            actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Examinar"));
             return actions;
         }
 
@@ -144,10 +149,7 @@ namespace OldScars.Core.Items
             IGridStorageOwner externalOwner,
             string instanceId)
         {
-            var actions = new List<InventoryContextAction>(ResolveExternal(externalOwner, instanceId));
-            if (actions.Count > 0)
-                actions.Add(new InventoryContextAction(InventoryContextActionKind.ShowDetails, "Examinar"));
-            return actions;
+            return ResolveExternal(externalOwner, instanceId);
         }
 
         public static IReadOnlyList<InventoryContextAction> ResolveLootableEquipment(

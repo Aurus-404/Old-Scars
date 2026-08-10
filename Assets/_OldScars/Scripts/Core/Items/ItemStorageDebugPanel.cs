@@ -24,7 +24,7 @@ namespace OldScars.Core.Items
         private const float EquipmentSelectionHeight = 62f;
         private const float EquipmentScrollPadding = 10f;
         private const float MinimumInventorySectionHeight = 100f;
-        private const float CenterDetailsHeight = 72f;
+        private const float CenterDetailsHeight = 118f;
         private const float ScrollbarSize = 16f;
 
         [SerializeField, Range(20f, 64f)] private float gridVisualCellSize = 32f;
@@ -49,6 +49,7 @@ namespace OldScars.Core.Items
         private Vector2 playerGridScroll;
         private Vector2 externalGridScroll;
         private PersonalStorageNavigator personalStorageNavigator;
+        private string focusedDetailsInstanceId;
 
         private readonly InventoryGridDebugView playerGridView = new InventoryGridDebugView();
         private readonly InventoryGridDebugView externalGridView = new InventoryGridDebugView();
@@ -61,6 +62,7 @@ namespace OldScars.Core.Items
         private int observedGridSelectionVersion;
 
         public bool IsVisible => isVisible;
+        public string FocusedDetailsInstanceId => focusedDetailsInstanceId;
 
         internal bool IsBoundToLootableActor(LootableActorInventoryComponent source)
         {
@@ -129,6 +131,7 @@ namespace OldScars.Core.Items
             playerLegacyScroll = Vector2.zero;
             externalLegacyScroll = Vector2.zero;
             centerDetailsScrollPosition = Vector2.zero;
+            focusedDetailsInstanceId = null;
             playerGridScroll = Vector2.zero;
             externalGridScroll = Vector2.zero;
             lootableEquipmentSelection.ResetTransient();
@@ -156,6 +159,7 @@ namespace OldScars.Core.Items
             targetInventory = null;
             actorEquipment = null;
             personalStorageNavigator = null;
+            focusedDetailsInstanceId = null;
             executionContext = new DebugActionExecutionContext(null, null, null);
             action = null;
             title = null;
@@ -1005,6 +1009,7 @@ namespace OldScars.Core.Items
             switch (currentAction.Kind)
             {
                 case InventoryContextActionKind.ShowDetails:
+                    FocusDetails(entry);
                     if (invocation.Request.SourceKind == InventoryContextSourceKind.InspectedOwnedStorage)
                     {
                         inspectionView.GridView.SelectInstance(entry.Item.InstanceId);
@@ -1050,7 +1055,10 @@ namespace OldScars.Core.Items
                         toast.Show("La mochila ya no pertenece al actor.", InventoryToastSeverity.Error);
                     return;
                 case InventoryContextActionKind.Use:
-                    UsePersonalItem(owner, entry.Item.InstanceId);
+                    if (invocation.Request.SourceKind == InventoryContextSourceKind.External)
+                        UseExternalItem(owner, entry.Item.InstanceId);
+                    else
+                        UsePersonalItem(owner, entry.Item.InstanceId);
                     return;
                 case InventoryContextActionKind.Equip:
                     if (invocation.Request.SourceKind == InventoryContextSourceKind.Equipment)
@@ -1472,6 +1480,7 @@ namespace OldScars.Core.Items
             GUILayout.Label(GetEntryLabel(entry));
             GUILayout.Label($"Instance: {entry.Item.InstanceId}");
             DrawSelectedItemWeight(entry);
+            DrawFocusedDetails(entry);
             GUILayout.EndScrollView();
             GUILayout.Label("Right-click the occupied slot for actions.");
         }
@@ -1527,6 +1536,7 @@ namespace OldScars.Core.Items
             GUILayout.Label(GetEntryLabel(entry));
             GUILayout.Label($"Instance: {entry.Item.InstanceId}");
             DrawSelectedItemWeight(entry);
+            DrawFocusedDetails(entry);
             if (owner.TryGetGridPlacement(entry.Item.InstanceId, out GridPlacement placement))
             {
                 GUILayout.Label(
@@ -1597,6 +1607,48 @@ namespace OldScars.Core.Items
             ReconcileSelections();
             if (!sourceOwner.TryGetEntryByInstanceId(instanceId, out _, out _))
                 sessionController?.Selection.ClearPersonalIfMissing(instanceId);
+        }
+
+        private void UseExternalItem(IGridStorageOwner sourceOwner, string instanceId)
+        {
+            ActorNeedsComponent needs = targetInventory.GetComponentInParent<ActorNeedsComponent>();
+            ActorHealthComponent health = targetInventory.GetComponentInParent<ActorHealthComponent>();
+            InventoryItemUseResult result = InventoryItemUseService.TryUseExternalItem(
+                sourceOwner,
+                instanceId,
+                targetInventory,
+                needs,
+                health,
+                new GridStorageTransferContext(executionContext, action));
+            toast.Show(result.Message, result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Warning);
+            ReconcileSelections();
+            if (!sourceOwner.TryGetEntryByInstanceId(instanceId, out _, out _))
+            {
+                sessionController?.Selection.ClearExternalIfMissing(instanceId);
+                if (focusedDetailsInstanceId == instanceId)
+                    focusedDetailsInstanceId = null;
+            }
+        }
+
+        private void FocusDetails(ItemStorageEntry entry)
+        {
+            focusedDetailsInstanceId = entry?.Item?.InstanceId;
+            centerDetailsScrollPosition = Vector2.zero;
+            toast.Show($"Detalles: {GetEntryLabel(entry)}", InventoryToastSeverity.Success);
+        }
+
+        private void DrawFocusedDetails(ItemStorageEntry entry)
+        {
+            if (entry?.Item == null || focusedDetailsInstanceId != entry.Item.InstanceId)
+                return;
+
+            GUILayout.Label("DETALLES", GUI.skin.box);
+            GUILayout.Label($"Cantidad: {entry.Quantity}");
+            GUILayout.Label($"Condition: {entry.Item.Condition:0.##}");
+            GUILayout.Label($"DefinitionId: {entry.DefinitionId}");
+            ItemDefinition definition = GameDataManager.Instance?.Database?.GetItem(entry.DefinitionId);
+            if (!string.IsNullOrWhiteSpace(definition?.display?.description))
+                GUILayout.Label(definition.display.description, GUI.skin.label);
         }
 
         private void EquipPersonalItem(IGridStorageOwner sourceOwner, string instanceId, IReadOnlyList<string> slotIds)

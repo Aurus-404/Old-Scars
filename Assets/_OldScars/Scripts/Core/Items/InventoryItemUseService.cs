@@ -65,10 +65,43 @@ namespace OldScars.Core.Items
                 actorHealth);
         }
 
+        public static InventoryItemUseResult TryUseExternalItem(
+            IGridStorageOwner sourceOwner,
+            string instanceId,
+            InventoryComponent actorInventory,
+            ActorNeedsComponent actorNeeds,
+            ActorHealthComponent actorHealth,
+            GridStorageTransferContext context)
+        {
+            if (sourceOwner == null || !(sourceOwner is IGridStorageTransferEndpoint endpoint) ||
+                !sourceOwner.TryGetEntryByInstanceId(instanceId, out _, out ItemStorageEntry entry) ||
+                entry?.Item == null)
+            {
+                return InventoryItemUseResult.Failed("No item available in that external storage.");
+            }
+
+            return TryUseEntry(
+                entry,
+                () => RemoveOne(endpoint, sourceOwner, instanceId, entry.DefinitionId, context),
+                actorInventory,
+                actorNeeds,
+                actorHealth);
+        }
+
         private static bool RemoveOne(
             IGridStorageTransferEndpoint endpoint,
             IGridStorageOwner owner,
             string instanceId)
+        {
+            return RemoveOne(endpoint, owner, instanceId, null, default);
+        }
+
+        private static bool RemoveOne(
+            IGridStorageTransferEndpoint endpoint,
+            IGridStorageOwner owner,
+            string instanceId,
+            string definitionId,
+            GridStorageTransferContext context)
         {
             InventoryMutationResult result = endpoint.TransferBackend.Remove(instanceId, 1);
             if (!result.Success)
@@ -76,6 +109,9 @@ namespace OldScars.Core.Items
 
             if (!owner.TryGetEntryByInstanceId(instanceId, out _, out _))
                 ItemOwnedStorageRegistry.Instance.UnbindItem(instanceId);
+
+            if (!string.IsNullOrWhiteSpace(definitionId))
+                endpoint.OnTransferCommittedOut(new GridStorageTransferReceipt(definitionId, result), context);
             return true;
         }
 

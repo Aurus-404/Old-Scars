@@ -229,7 +229,7 @@ namespace OldScars.Core.Items
                                      Time.unscaledTime - lastClickTime <= DoubleClickSeconds;
                 if (IsShiftPressed() || isDoubleClick)
                 {
-                    TransferQuick(endpoint, instanceId);
+                    TransferQuick(endpoint, instanceId, isDoubleClick && !IsShiftPressed() ? 1 : 0);
                     lastClickOwner = null;
                     lastClickInstanceId = null;
                     lastClickTime = -10f;
@@ -287,7 +287,7 @@ namespace OldScars.Core.Items
             guiEvent.Use();
         }
 
-        private void TransferQuick(EndpointView source, string instanceId)
+        private void TransferQuick(EndpointView source, string instanceId, int requestedQuantity)
         {
             EndpointView target = FindQuickTransferTarget(source);
             if (target == null)
@@ -302,16 +302,29 @@ namespace OldScars.Core.Items
                 return;
             }
 
-            GridStorageTransferQuantityPolicy quantityPolicy =
-                GridStorageTransferService.GetAutomaticQuantityPolicy(source.Owner, target.Owner);
-            InventoryMutationResult result = GridStorageTransferService.TransferStackAuto(
-                source.Owner,
-                target.Owner,
-                instanceId,
-                quantityPolicy,
-                transferContext);
+            bool transferOne = requestedQuantity == 1;
+            GridStorageTransferQuantityPolicy quantityPolicy = transferOne
+                ? GridStorageTransferQuantityPolicy.Exact
+                : GridStorageTransferService.GetAutomaticQuantityPolicy(source.Owner, target.Owner);
+            InventoryMutationResult result = transferOne
+                ? GridStorageTransferService.TransferQuantityAuto(
+                    source.Owner,
+                    target.Owner,
+                    instanceId,
+                    1,
+                    true,
+                    quantityPolicy,
+                    transferContext)
+                : GridStorageTransferService.TransferStackAuto(
+                    source.Owner,
+                    target.Owner,
+                    instanceId,
+                    quantityPolicy,
+                    transferContext);
             SetStatus(
-                result.Success
+                result.Success && transferOne
+                    ? "Transferred 1 unit."
+                    : result.Success
                     ? result.WasLimitedByWeight
                         ? $"Transferidas {result.ActualTransferredQuantity} de {result.RequestedQuantity} unidades por límite de peso."
                         : $"Transferred stack x{result.AffectedQuantity}."

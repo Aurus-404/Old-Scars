@@ -2345,3 +2345,41 @@ Alcance:
 - no se implementaron manifests, provenance persistida completa, dependencies, overrides/patches, Workshop, SDK, scripting, DLL mods, hot reload, AssetBundles ni namespace de tags;
 - seam posterior documentado: `manifest → provenance → dependencies → patches`;
 - `Persistence Ready` permanece `NOT YET APPROVED`, M37.1 permanece abierto y M38.0 no comenzó.
+
+### ID TBD — Inventory Interaction UX Correction
+
+Fecha: 2026-08-10
+
+Parent funcional: `M35.2 — Lootable Entity Inventory UI V1`.
+
+Versión: `Context Actions & Quick Transfer Correction Pass 1`.
+
+Estado anterior: `PLANNED — MANUAL UX ISSUES CONFIRMED`.
+
+Estado posterior: `IMPLEMENTED — AUTOMATED VALIDATION PASSED; USER UNITY RECHECK PENDING`.
+
+Implementación:
+
+- `ResolveExternal` expone `Usar / Consumir` solamente para entries consumibles y también expone `Examinar`; lootable inventory reutiliza el mismo resolver sin duplicar acciones.
+- `InventoryItemUseService.TryUseExternalItem` consume una unidad directamente desde un endpoint externo accesible, aplica los efectos existentes al actor jugador y ejecuta el callback de salida normal del storage; la ruta personal continúa exigiendo ownership compartido.
+- doble click usa `TransferQuantityAuto` con cantidad exacta uno; Shift+click conserva `TransferStackAuto` y drag/single click no cambian.
+- `ShowDetails` ahora fija un estado visible y muestra nombre, cantidad, Condition, peso existente, DefinitionId y descripción disponible en el panel debug; no crea una ventana de producción.
+- se agregó `Old Scars > Diagnostics > Inventory > Run Interaction UX Correction`, con runner batch que carga `SampleScene` temporalmente y cubre resolver, consumo externo, remoción de última unidad, transferencia exacta y quick-transfer de stack.
+
+Validación automatizada:
+
+- Unity 6.4.6f1 compiló Runtime y Editor sin errores.
+- `Inventory Interaction UX Correction Diagnostics: PASS`.
+- `Global Content ID Namespace Foundation: PASS`.
+- `M36.1 Foundation Identity Validation: PASS`.
+- `M37.0 Persistence Core Diagnostics: PASS`.
+- `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS`.
+- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS`; su `ApplyFailed` con rollback exitoso es el fault-injection esperado.
+- `SampleScene` no fue modificado ni quedó dirty; `git diff --check` pasó.
+- no hubo errores ni warnings nuevos atribuidos a este pass. Permanecen los warnings preexistentes de `BuildingVisibilityManager` y los campos legacy de `ItemStorageDebugPanel`; los mensajes de compatibilidad legacy, licensing y casos negativos pertenecen a fixtures/entorno de los diagnósticos.
+
+Alcance y secuencia:
+
+- no se modificaron escenas, prefabs, JSON, Packages, ProjectSettings, Content IDs, save schema ni contratos M36/M37.
+- el recheck manual de Mauro sigue pendiente para contexto externo, doble click, Shift+click, scrap, details de container/cadáver y Console.
+- `M37.1` permanece `IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; `Persistence Ready` permanece `NOT YET APPROVED` y M38.0 no comenzó.
