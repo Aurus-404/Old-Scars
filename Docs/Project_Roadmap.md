@@ -18,19 +18,20 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone cerrado mas reciente | M37.0 — Save Format & Persistence Core |
+| Milestone cerrado mas reciente | M37.1 — Current Slice Persistent Round-Trip |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
 | Ultimo milestone funcional cerrado | M35.2 — Lootable Entity Inventory UI V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | ID TBD — Global Content ID Namespace Foundation |
-| Estado ID TBD | `IMPLEMENTED — STATIC/DATA VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` |
-| Estado M37.1 | `IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` |
-| Siguientes | validación Unity de ID TBD; retorno al closeout manual de M37.1; luego M38.0 |
+| Milestone activo | Ninguno — M38.0 espera autorización de implementación |
+| Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
+| Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
+| Persistence Ready | `APPROVED` |
+| Siguientes | M38.0 — Actor Runtime & Lifecycle V1; luego M38.1 |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED`. M37.1 permanece abierto después de sus dos passes implementados, pero la solicitud explícita de cimentar identidad de contenido antes de agregar más sistemas interpone `ID TBD — Global Content ID Namespace Foundation`. No existe un número libre reservado y no se inventa M37.2/M38.x ni se adelanta M50.0. El trabajo inmediato es validar esta unidad en Unity, regresar al closeout manual de M37.1 y mantener `Persistence Ready` no aprobado.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED` tras diagnóstico automatizado y round-trip fresh-session manual. `Persistence Ready` está `APPROVED` exclusivamente para el Current Slice documentado. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`; no implementa manifests, provenance completa, dependency resolution ni patches/load-order. M38.0 es el próximo trabajo y permanece `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 
 ## Estados Canonicos
 
@@ -113,7 +114,7 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | M35.2.4 — Persistent Body Review | `DEFERRED — RECLASSIFIED` | Significa reabrir un cuerpo vacio; no equivale a save/load. Retomar por necesidad jugable comprobada. |
 | M35.2.5 — Multiple Floating Storage Windows | `DEFERRED — RECLASSIFIED` | Retomar en UI/UX de produccion si la investigacion de uso justifica multiples ventanas. |
 | ID TBD — Container State / Naming Cleanup v0 | `DEFERRED — ID REQUIRED ON REACTIVATION` | Deuda de naming/tags legacy; no bloquea M36/M37. |
-| ID TBD — Global Content ID Namespace Foundation | `IMPLEMENTED — STATIC/DATA VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | Unidad técnica explícitamente autorizada e interpuesta para evitar deuda de IDs globales antes de nuevos sistemas. El nombre queda reservado con `ID TBD`; no consume un número histórico. |
+| ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` | Foundation actual: `namespace:local_id`, namespace `core`, identidad canónica de `GameDatabase`, migración Core, compatibilidad legacy temporal, normalización schema-v1 y diagnósticos. No implementa manifests, provenance completa, dependencies ni patches/load-order. El nombre queda reservado con `ID TBD`; no consume un número histórico. |
 
 ## Roadmap Estrategico Desde M36
 
@@ -124,9 +125,9 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
 | CERRADO | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `DONE — FOUNDATION FREEZE APPROVED` | M36.0 revisado | Identidad durable/authored, ownership, rollback, stack granularity y politica exacta de `Condition` congelados con evidencia automatizada y manual; no implemento save/load. |
 | CERRADO | M37.0 — Save Format & Persistence Core | Arquitectura | `DONE — PERSISTENCE CORE VALIDATED` | M36.1 | Envelope V1, serializacion, safe write, backup/recovery, version policy y migration seam validados sin integrar estado gameplay. |
-| ACTIVO | ID TBD — Global Content ID Namespace Foundation | Arquitectura/datos | `IMPLEMENTED — STATIC/DATA VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | M37.0; autorización explícita interpuesta mientras M37.1 sigue abierto | `ContentId`, namespace `core`, referencias globales canónicas, compatibilidad legacy acotada y fixture aislada; no implementa manifests/dependencies/patches. |
-| ABIERTO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | M37.0; validar también compatibilidad de Content IDs schema v1 | Snapshot, apply transaccional, rollback y round-trip real automatizado validados; falta validación manual fresh-session y cierre de `Persistence Ready`. |
-| SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED — BLOCKED BY ID TBD AND M37.1 CLOSEOUT` | ID TBD y M37.1 | IDs, spawn, lifecycle, muerte y cuerpos persistibles sobre identidad de contenido canónica. |
+| CERRADO | ID TBD — Global Content ID Namespace Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | M37.0 | `ContentId`, namespace `core`, referencias globales canónicas, compatibilidad legacy acotada, normalización schema-v1 y diagnósticos. Excluye manifests, provenance completa, dependencies y patches/load-order. |
+| CERRADO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` | M37.0; compatibilidad schema-v1 Core validada | Snapshot, apply transaccional, rollback, diagnóstico y round-trip fresh-session manual validados; `Persistence Ready` aprobado para el Current Slice. |
+| SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | ID TBD y M37.1 cerrados | IDs, spawn, lifecycle, muerte y cuerpos persistibles sobre identidad de contenido canónica. |
 | SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
 | DESPUES | M39.0 — Localized Health & Medicine V1 | Jugable | `PLANNED` | M38.1 | Regiones, heridas, sangrado, dolor y tratamientos. |
 | DESPUES | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED` | M39.0 | Damage contract, melee/firearms, ammo y reload. |
@@ -159,7 +160,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 
 Este archivo es autoridad sobre los nombres y la ubicacion de los gates. Sus criterios detallados se desarrollan en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 
-Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready — NOT YET APPROVED` hasta M37.1.
+Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready — APPROVED` para el Current Slice validado en M37.1.
 
 | Gate | Cierre previsto |
 | --- | --- |
@@ -181,7 +182,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (M37.1 abierto + ID TBD interpuesto) → Persistence Ready → M38.0`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -247,7 +248,7 @@ Decisiones congeladas para M37:
 
 ### ID TBD — Global Content ID Namespace Foundation / Límite Obligatorio
 
-Unidad técnica interpuesta por autorización explícita para evitar que nuevos sistemas acumulen supuestos de ID global simple y Core implícito. Su estado es `IMPLEMENTED — STATIC/DATA VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Unidad técnica interpuesta por autorización explícita para evitar que nuevos sistemas acumulen supuestos de ID global simple y Core implícito. Su estado es `VALIDATED — FOUNDATION COMPLETE`.
 
 Implementa solamente:
 
@@ -264,7 +265,7 @@ No implementa manifest, provenance persistida completa, dependencies, overrides/
 
 M37 persiste primero el slice actual: jugador, items, inventory/grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags existentes. No serializa sistemas hipoteticos para actores, clima, facciones o mundo procedural.
 
-M37.0 está `DONE — PERSISTENCE CORE VALIDATED`. M37.1 implementó Pass 1 y `Transactional Rehydration & Real-Scene Round-Trip Pass 2`, con round-trip y rollback automatizados en `PASS`; permanece abierto hasta `Manual Unity Validation & Persistence Ready Closeout`. La validación fresh-session debe incluir la compatibilidad legacy de Global Content IDs schema v1 introducida por ID TBD. No se aprueba `Persistence Ready` ni se inicia M38.0.
+M37.0 está `DONE — PERSISTENCE CORE VALIDATED`. M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`: los diagnostics automatizados y la validación fresh-session manual, incluida la compatibilidad schema-v1 de Global Content IDs Core, pasaron. `Persistence Ready` está aprobado sólo para el Current Slice; lifecycle general de actores vivos, transform durable de NPCs, spawn/despawn runtime y AI quedan para M38.0, que no está iniciado.
 
 ## Trabajo Congelado O Diferido
 

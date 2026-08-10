@@ -39,7 +39,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Un `GridInventoryBackend.Remove` que retiraria la entry completa rechaza antes de mutar si su item-owned storage no esta vacio; devuelve `OwnedStorageNotEmpty`. Una vez vacio, el retiro terminal libera bindings, storage e identidad mediante el contrato existente.
 - Los scopes de reserva ambient/nested estan limitados al hilo de sesion, exigen LIFO y transfieren reservas al scope padre. El contexto localizado es necesario porque constructors y split reservan IDs dentro de servicios transaccionales ya existentes; evita cambiar sus contratos publicos. Rollback restaura storage/layout/Equipment y luego libera solamente IDs nuevos con sus registros/bindings.
 - `ItemInstance.Condition` permanece get-only. Es estado de instancia representativo, participa en stacking y debe rehidratarse exactamente en M37; no hay mutacion, desgaste ni reparacion.
-- M37.0 implementa el envelope, versionado, filesystem y recovery descritos en `Persistence Core V1`; M37.1 implementa snapshot/preflight y apply transaccional del slice real. La validación manual fresh-session permanece pendiente.
+- M37.0 implementa el envelope, versionado, filesystem y recovery descritos en `Persistence Core V1`; M37.1 implementa snapshot/preflight y apply transaccional del slice real. Runtime/Editor, diagnostics y validación manual fresh-session pasaron; `Persistence Ready` está aprobado exclusivamente para el Current Slice.
 - `PersistentSceneObjectId` aporta identidad authored estable a exactamente 14 roots stateful de `SampleScene`: 3 actores, 3 puertas y 8 contenedores. Los dos world items usan identidad de item separada; visuales, children y `Debug Strange Machine` quedan excluidos.
 - No existe un lifecycle persistente común. M37.1 restaura sólo el estado explícito del Current Slice; actores vivos fuera del slice, transform/lifecycle de NPCs y sistemas futuros permanecen excluidos.
 
@@ -61,7 +61,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 - `CurrentSliceSaveData` es el payload explícito de M37.1. Contiene player, tabla única de items, storages, Equipment, containers, corpses, doors y world items; no serializa `MonoBehaviour`, `Transform`, referencias runtime ni definiciones estáticas.
 - `ItemState` define cada identidad una sola vez mediante `InstanceId`, `DefinitionId` y `Condition`. `DefinitionId` es Global Content ID; `InstanceId` no lo es. `StorageEntryState`, Equipment y world representations referencian la instancia; quantity permanece en la entry/representación y no crea IDs por unidad fungible.
-- Antes del semantic preflight, la compatibilidad schema v1 normaliza en memoria los únicos tres surfaces persistidos que apuntan a definitions globales: `ItemState.definitionId`, `EquipmentState.layoutId` y `EquippedItemState.slots`. Un valor legacy sin namespace sólo se interpreta como Core; no cambia `schemaVersion` y el siguiente capture escribe la identidad canónica. Esta ruta queda pendiente de validación manual en Unity.
+- Antes del semantic preflight, la compatibilidad schema v1 normaliza en memoria los únicos tres surfaces persistidos que apuntan a definitions globales: `ItemState.definitionId`, `EquipmentState.layoutId` y `EquippedItemState.slots`. Un valor legacy sin namespace sólo se interpreta como Core; no cambia `schemaVersion` y el siguiente capture escribe la identidad canónica. Esta ruta fue validada en Unity.
 - `StorageState` usa claves derivadas de `kind + ownerId`: actor/container por `PersistentSceneObjectId` e item-owned storage por el `InstanceId` del item owner. Entries grid conservan x/y, rotación y footprint efectivo exactos.
 - player captura pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Health tags, carry weight, stats y visuales son derivados y no se duplican en el save.
 - containers se incluyen aunque su storage autoritativo esté vacío. Un container runtime no inicializado aborta capture; Pass 1 no ejecuta loot tables ni agrega un restore seam anticipado.
@@ -85,6 +85,11 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Doors restauran el tag lógico y sincronizan visual si exponen `DoorSwingController`. Player health/needs se aplican exactamente y la pose se restaura al final, cancelando movimiento y deshabilitando temporalmente `CharacterController`.
 - Ante fallo posterior a mutación, el mismo `ApplyCore` recibe el snapshot pre-load sin recursión. Sólo un rollback recapturado y equivalente produce `ApplyFailed` seguro; si falla, `RollbackFailed` conserva causa de apply y rollback.
 - `M37.1 Current Slice Persistent Round-Trip Diagnostics` usa `SampleScene` y root temporal, prepara State A mediante rutas runtime, muta State B, carga A y compara A/C. Un único fault point `UNITY_EDITOR` posterior a storages demuestra rollback equivalente; el diagnóstico sale sin guardar la escena ni dejar archivos.
+
+## Persistence Ready — Current Slice Aprobado
+
+- El alcance aprobado persiste player pose, health/needs representados, `ItemInstance` identity, `DefinitionId`, `Condition`, stacks/quantities, grid placements, Inventory, Equipment, ownership, item-owned storage, containers, corpse surfaces actuales, doors, authored world items, runtime dropped world items y runtime mutable state incluido por M37.1.
+- No existe todavía lifecycle persistente general de actores vivos: posición durable general de NPCs, transición alive/dead entre sesiones frescas, spawn/despawn runtime de NPCs y AI son contratos de M38.0, no capacidades del Current Slice.
 
 ## Inventory, Grid, Ownership Y Equipment
 

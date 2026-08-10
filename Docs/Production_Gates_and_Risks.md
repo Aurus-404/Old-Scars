@@ -90,7 +90,7 @@ Bloquea: IDs regenerables o ambiguos, ownership sin autoridad, mutaciones que el
 
 ### Persistence Ready - M37.1
 
-Estado: `NOT YET APPROVED`.
+Estado: `APPROVED — CURRENT SLICE PERSISTENCE VALIDATED`.
 
 Debe validar:
 
@@ -109,9 +109,9 @@ Evidencia incremental M37.1 Pass 1: `Snapshot Contract & Semantic Preflight Pass
 
 Evidencia incremental M37.1 Pass 2: `Transactional Rehydration & Real-Scene Round-Trip Pass 2` implementa resolución previa, snapshot de rollback, teardown selectivo sin resets globales, rehydration exacta, restore de storages/Equipment/ownership, containers autoritativos, corpses actuales, authored/runtime world state, doors, health/needs y pose del player. `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS` demostró A → B → load A → C equivalente y el fault post-storage demostró `ApplyFailed` con rollback equivalente. Compile, M37.0, Checkpoint A, Foundation Identity y snapshot/preflight permanecieron en `PASS`; `SampleScene` conservó su hash.
 
-Pendiente para aprobar el gate: validación manual fresh-session mediante `Save Debug Slot`, salida completa de Play Mode, bootstrap nuevo y `Load Debug Slot`, con verificación funcional y Console por Mauro. La evidencia automatizada no aprueba por sí sola `Persistence Ready`; R05/R14/R19 conservan su estado hasta esa revisión.
+Validación manual aprobatoria: Mauro ejecutó `Save Debug Slot`, salió completamente de Play Mode, entró a un bootstrap fresh-session y ejecutó `Load Debug Slot` con `Success`. El save/load informó 23 items, 11 storages, 3 world items, 8 containers, 0 corpses y 3 doors; el load tuvo `MutationStarted: True`, sin rollback requerido. La verificación visual confirmó Inventory, Equipment, item-owned storage, containers y estado esperado sin duplicados, pérdidas, fallos de ownership, rehydration o persistence.
 
-Deuda aceptable: cloud save y lifecycle/serializacion general de actores futuros, clima, facciones o proceduralidad que aun no existen. No se difieren el jugador ni los cuerpos actuales.
+Alcance aprobado: player pose, health/needs representados, identidad/DefinitionId/Condition de items, stacks, placements, Inventory, Equipment, ownership, item-owned storage, containers, corpse surfaces actuales, doors, authored/runtime world items y runtime mutable state de M37.1. Deuda aceptable: cloud save, lifecycle/serialización general de actores vivos, transform durable de NPCs, alive/dead entre fresh sessions, spawn/despawn runtime, AI, clima, facciones o proceduralidad. No se difieren el jugador ni los cuerpos actuales.
 
 Bloquea: perdida o duplicacion, referencias colgantes, reset silencioso, saves sin version o recovery no demostrado.
 
@@ -320,7 +320,7 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | R02 | `OPEN` | Mauro | Desarrollo individual | Alta | Alta | Tooling y validacion se vuelven cuellos de botella. | Reducir amplitud y automatizar tareas repetibles. | Revisar Content Pipeline y Production Ready; aceptacion requiere decision explicita. |
 | R03 | `MITIGATING` | Mauro | Sobreingenieria | Media | Alta | Aparecen abstracciones sin consumidor actual. | Exigir necesidad actual, contrato minimo y consumidor demostrado. | Riesgo estructural permanente; revisar en cada milestone arquitectonico y cada gate, especialmente M36.1, M37, M41, M45 y M50. Foundation Freeze revisa su mitigacion local, no lo cierra globalmente. |
 | R04 | `MITIGATING` | Mauro | Deuda OnGUI | Alta | Media | UI debug condiciona backends nuevos. | Congelar ampliaciones y reemplazar en M48.0. | Cerrar en Production Ready; aceptacion de deuda requiere decision explicita. |
-| R05 | `MITIGATING` | Mauro | Persistencia introducida tarde | Media | Alta | Sistemas nuevos carecen de identidad durable. | M36.1 corto y M37 inmediato. | Cerrar en Persistence Ready; revalidar en releases. |
+| R05 | `CLOSED` | Mauro | Persistencia introducida tarde | Media | Alta | Sistemas nuevos carecen de identidad durable. | M36.1 y M37.1 validaron identidad y Current Slice persistence. | Cerrado en Persistence Ready; revalidar en releases. |
 | R06 | `OPEN` | Mauro | IA demasiado compleja | Media | Alta | Multiples capas antes de un encuentro funcional. | Limitar M41.1 a avoid/alert/flee/fight. | Cerrar en AI Ready. |
 | R07 | `MITIGATING` | Mauro | Proceduralidad prematura | Media | Alta | Generacion antes de sectorizacion y tools. | Bloquearla hasta M47.0. | Cerrar al autorizar el alcance acotado de M47.0; reconfirmar en Production Ready. |
 | R08 | `OPEN` | Mauro | Falta de herramientas de contenido | Alta | Alta | Cada contenido exige edicion manual fragil. | Validators, catalogos e inspector. | Cerrar en Content Pipeline Ready. |
@@ -329,12 +329,12 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | R11 | `OPEN` | Mauro | Rendimiento tardio | Media | Alta | Ningun escenario representativo tiene baseline. | Aprobar budgets y perfilar por etapa. | Revisar en gates jugables y desde Content Pipeline; cerrar en Beta. |
 | R12 | `OPEN` | Mauro | Animacion insuficiente | Alta | Media | Estados jugables no se leen visualmente. | Pipeline y cobertura priorizada. | Cerrar en Production Ready. |
 | R13 | `OPEN` | Mauro | Pipeline artistico ausente | Alta | Alta | Assets one-off y reprocesado continuo. | Convenciones, import y budgets repetibles. | Cerrar en Production Ready. |
-| R14 | `MITIGATING` | Mauro | Cambios tardios de arquitectura | Media | Alta | Save y nuevos sistemas fuerzan IDs nuevos. | Freeze de contratos y migrations explicitas. | Cerrar en Persistence Ready. |
+| R14 | `CLOSED` | Mauro | Cambios tardios de arquitectura | Media | Alta | Save y nuevos sistemas fuerzan IDs nuevos. | Foundation Freeze, Content IDs y M37.1 validados. | Cerrado en Persistence Ready. |
 | R15 | `MITIGATING` | Mauro | Sistemas sin loop integrado | Alta | Alta | Features aisladas sin decisiones compartidas. | Regla transversal de sistemas conectados. | Cerrar en Vertical Slice Approved. |
 | R16 | `MITIGATING` | Mauro | Milestones siempre pendientes | Alta | Alta | Se acumula `PENDING UNITY VALIDATION`. | Definir escenario/evidencia antes de implementar. | Revisar cada gate; cerrar en Release Candidate. |
 | R17 | `MITIGATING` | Mauro | Drift entre GDD, Roadmap y mirrors | Alta | Alta | Pilares o alcance difieren entre documentos. | Jerarquia explicita y revision cruzada. | Mitigar en M36.0 Checkpoint B; revisar cada gate. |
 | R18 | `MITIGATING` | Mauro | Atomicidad cross-actor incompleta | Media | Alta | Transferencias universales duplican, pierden o reasignan items. | Reutilizar identidad, ownership, preview/commit/rollback y no reactivar M35.2.3.1 antes de sus dependencias. | Revisar Foundation/Persistence; cerrar antes de Vertical Slice Approved. |
-| R19 | `OPEN` | Mauro | Corrupcion o recovery insuficiente de saves | Media | Alta | Carga parcial, perdida silenciosa o save irrecuperable. | Envelope versionado, integridad, escritura atomica, recovery, migrations y pruebas de fallo. | Cerrar en Persistence Ready; revalidar en releases. |
+| R19 | `CLOSED` | Mauro | Corrupcion o recovery insuficiente de saves | Media | Alta | Carga parcial, perdida silenciosa o save irrecuperable. | Envelope versionado, integridad, escritura atomica, recovery, migrations y pruebas de fallo. | Cerrado en Persistence Ready; revalidar en releases. |
 | R20 | `OPEN` | Mauro | Incompatibilidad entre save, datos y mods | Media | Alta | Un cambio de definicion rompe referencias o altera estado cargado. | Politica de compatibilidad, manifests/versiones, migrations y matriz de upgrades. | Revisar desde Persistence; cerrar en Production Ready y revalidar en releases. |
 | R21 | `OPEN` | Mauro | Referencias o assets sin derechos verificables | Media | Alta | Moodboards, marcas o material de autor desconocido entran en build, deck, store o trailer. | Ledger de derechos, cuarentena interna y reemplazo/licencia antes de cualquier uso externo. | Revisar desde Content Pipeline; cerrar antes de material publico y, como maximo, en Production Ready. |
 | R22 | `MITIGATING` | Mauro | Trabajo asistido por IA no comprendido o documentacion falsa | Media | Alta | Nadie puede explicar el cambio, la documentacion contradice el repo o un prompt reescribe contratos validados. | Tareas pequeñas, revision humana, evidencia del repo, pruebas e integracion por contratos existentes. | Riesgo estructural; revisar en cada gate. |

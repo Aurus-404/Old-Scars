@@ -2383,3 +2383,45 @@ Alcance y secuencia:
 - no se modificaron escenas, prefabs, JSON, Packages, ProjectSettings, Content IDs, save schema ni contratos M36/M37.
 - el recheck manual de Mauro sigue pendiente para contexto externo, doble click, Shift+click, scrap, details de container/cadáver y Console.
 - `M37.1` permanece `IMPLEMENTED — AUTOMATED ROUND-TRIP VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; `Persistence Ready` permanece `NOT YET APPROVED` y M38.0 no comenzó.
+
+### M37.1 — Manual Unity Validation & Persistence Ready Closeout
+
+Fecha: 2026-08-10
+
+Milestone: `M37.1 — Current Slice Persistent Round-Trip`.
+
+Estado posterior: `DONE — CURRENT SLICE PERSISTENCE VALIDATED`.
+
+Gate: `Persistence Ready — APPROVED` para el Current Slice.
+
+Evidencia manual confirmada por Mauro:
+
+- Runtime/Editor compilation: `PASS`.
+- `Global Content ID Namespace Foundation Diagnostics`, M36.1, M37.0 y ambos diagnostics M37.1: `PASS`.
+- En Play Mode fresh se modificó estado real, se recogió authored crowbar, se equipó Lee-Enfield, se usó backpack/item-owned storage y se modificaron containers.
+- `Old Scars > Persistence > M37.1 > Save Debug Slot`: `Success`; 23 items, 11 storages, 3 world items, 8 containers, 0 corpses y 3 doors.
+- Tras salir completamente de Play Mode y entrar a un bootstrap fresh-session, `Load Debug Slot` terminó `Success`; 23 items, 11 storages, 3 world items, 8 containers, 0 corpses y 3 doors; `MutationStarted: True`, `RollbackAttempted: False` y `RollbackSucceeded: False`.
+- La verificación visual confirmó Inventory, Equipment, item-owned storage, containers y estado esperado; no se reportaron duplicados, pérdidas de items, ownership failures, rehydration failures ni errores de persistence.
+
+Content ID Namespace Foundation:
+
+- `VALIDATED — FOUNDATION COMPLETE`: `namespace:local_id`, namespace `core`, identidad canónica de `GameDatabase`, migración Core, compatibilidad legacy temporal, normalización schema-v1 y diagnostics.
+- Los warnings `Legacy unqualified Global Content ID lookup ...` corresponden a referencias authored legacy conocidas de scene/prefab y siguen resueltos por compatibilidad Core-only temporal; no son un bug nuevo.
+- Deuda aceptada: migrar las referencias Global Content ID authored restantes en escenas/prefabs a `core:*` canónico y retirar luego la compatibilidad temporal Core legacy cuando ningún path authored o schema-v1 soportado la requiera.
+- No existen aún mod manifests, provenance completo, dependency resolution ni patch/load-order system.
+
+Inventory Interaction UX Correction:
+
+- `VALIDATED — AUTOMATED + MANUAL RECHECK PASSED`.
+- Mauro confirmó consumo externo de una unidad, double-click de una unidad, Shift+click de stack, ausencia de Use en non-consumables, details visibles, interacciones de corpse/container y ausencia de errores runtime atribuibles.
+
+Alcance aprobado de Persistence Ready:
+
+- Current Slice: player pose, health/needs representados, `ItemInstance` identity, `DefinitionId`, `Condition`, stacks/quantities, grid placements, Inventory, Equipment, ownership, item-owned storage, containers, corpse surfaces actuales, doors, authored world items, runtime dropped world items y runtime mutable state de M37.1.
+- Fuera: lifecycle general de actores vivos, posición durable general de NPCs, alive/dead transition entre fresh sessions, runtime NPC spawn/despawn y AI; pertenecen a M38.0.
+
+Secuencia:
+
+- M38.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no está iniciado.
+- M38.1 queda siguiente después de M38.0.
+- Durante o después de M38.x se reutilizará la infraestructura en un pequeño playable exploration prototype para evaluar gameplay y presentación, sin declarar vertical slice final ni crear un milestone nuevo.
