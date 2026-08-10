@@ -65,6 +65,7 @@ namespace OldScars.Core.Persistence
 
 #if UNITY_EDITOR
         public static bool DiagnosticInjectFailureAfterStorageRestore { get; set; }
+        public static bool DiagnosticInjectFailureAfterActorReconciliation { get; set; }
 #endif
 
         public static CurrentSliceLoadResult Load(string slotId, PersistenceFileStore store = null)
@@ -80,13 +81,13 @@ namespace OldScars.Core.Persistence
             if (!preflight.Success)
                 return Failure(CurrentSliceLoadFailureCode.SemanticPreflightFailed, "SemanticPreflight", preflight.Failure);
 
-            if (!ResolvedScene.TryCreate(preflight.Snapshot, out ResolvedScene targetScene, out string resolutionError))
+            if (!ResolvedScene.TryCreate(preflight.Snapshot, true, out ResolvedScene targetScene, out string resolutionError))
                 return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "SceneResolution", resolutionError);
 
             CurrentSliceResult rollbackCapture = CurrentSliceSnapshotService.Capture();
             if (!rollbackCapture.Success)
                 return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "RollbackCapture", rollbackCapture.Failure);
-            if (!ResolvedScene.TryCreate(rollbackCapture.Snapshot, out ResolvedScene rollbackScene, out resolutionError))
+            if (!ResolvedScene.TryCreate(rollbackCapture.Snapshot, false, out ResolvedScene rollbackScene, out resolutionError))
                 return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "RollbackResolution", resolutionError);
 
             var rollbackIds = new HashSet<string>(Items(rollbackCapture.Snapshot.items).Select(item => item.instanceId), StringComparer.Ordinal);
@@ -97,8 +98,26 @@ namespace OldScars.Core.Persistence
                         $"Target item identity '{item.instanceId}' is active outside the captured Current Slice.");
             }
 
+            var rollbackActorIds = new HashSet<string>(Items(rollbackCapture.Snapshot.actors)
+                .Where(actor => actor != null).Select(actor => actor.actorInstanceId), StringComparer.Ordinal);
+            if (!string.IsNullOrWhiteSpace(rollbackCapture.Snapshot.player?.actorInstanceId))
+                rollbackActorIds.Add(rollbackCapture.Snapshot.player.actorInstanceId);
+            foreach (ActorState actor in Items(preflight.Snapshot.actors))
+            {
+                if (actor != null && ActorRuntimeRegistry.TryGet(actor.actorInstanceId, out _) &&
+                    !rollbackActorIds.Contains(actor.actorInstanceId))
+                    return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "ActorIdentityCollision",
+                        $"Target ActorInstanceId '{actor.actorInstanceId}' is active outside the captured Current Slice.");
+            }
+
             var sliceActorIds = new HashSet<string>(StringComparer.Ordinal) { preflight.Snapshot.player.persistentId };
             sliceActorIds.Add(rollbackCapture.Snapshot.player.persistentId);
+            if (!string.IsNullOrWhiteSpace(preflight.Snapshot.player.actorInstanceId))
+                sliceActorIds.Add(preflight.Snapshot.player.actorInstanceId);
+            if (!string.IsNullOrWhiteSpace(rollbackCapture.Snapshot.player.actorInstanceId))
+                sliceActorIds.Add(rollbackCapture.Snapshot.player.actorInstanceId);
+            foreach (ActorState actor in Items(preflight.Snapshot.actors)) sliceActorIds.Add(actor.actorInstanceId);
+            foreach (ActorState actor in Items(rollbackCapture.Snapshot.actors)) sliceActorIds.Add(actor.actorInstanceId);
             foreach (CorpseState corpse in Items(preflight.Snapshot.corpses)) sliceActorIds.Add(corpse.persistentId);
             foreach (CorpseState corpse in Items(rollbackCapture.Snapshot.corpses)) sliceActorIds.Add(corpse.persistentId);
             if (!ExternalBindings.TryCapture(sliceActorIds, out ExternalBindings external, out resolutionError))
@@ -106,9 +125,11 @@ namespace OldScars.Core.Persistence
 
             var teardownIds = new HashSet<string>(rollbackIds, StringComparer.Ordinal);
             teardownIds.UnionWith(Items(preflight.Snapshot.items).Select(item => item.instanceId));
+            bool injectActorFailure = ShouldInjectActorDiagnosticFailure();
+            bool injectStorageFailure = ShouldInjectStorageDiagnosticFailure();
             bool mutationStarted;
             if (TryApplyCore(preflight.Snapshot, targetScene, rollbackScene, teardownIds, external,
-                    ShouldInjectDiagnosticFailure(), out mutationStarted, out string applyFailure))
+                    injectActorFailure, injectStorageFailure, out mutationStarted, out string applyFailure))
             {
                 CurrentSliceLoadResult success = new CurrentSliceLoadResult(
                     CurrentSliceLoadFailureCode.Success, "Complete", null, mutationStarted, false, false);
@@ -131,6 +152,7 @@ namespace OldScars.Core.Persistence
                 teardownIds,
                 external,
                 false,
+                false,
                 out rollbackMutationStarted,
                 out string rollbackFailure);
             CurrentSliceLoadResult result = rollbackSucceeded
@@ -147,7 +169,8 @@ namespace OldScars.Core.Persistence
             ResolvedScene alternateScene,
             HashSet<string> teardownIds,
             ExternalBindings external,
-            bool injectFailure,
+            bool injectActorFailure,
+            bool injectStorageFailure,
             out bool mutationStarted,
             out string failure)
         {
@@ -160,14 +183,19 @@ namespace OldScars.Core.Persistence
                     throw new InvalidOperationException("GameDatabase is unavailable during apply.");
 
                 mutationStarted = true;
-                TeardownSlice(scene, alternateScene, teardownIds);
+                TeardownSlice(snapshot, scene, alternateScene, teardownIds);
+                ReconcileActorRepresentations(snapshot, scene);
+                if (injectActorFailure)
+                    throw new InvalidOperationException("Injected diagnostic failure after actor reconciliation.");
+                if (!ResolvedScene.TryCreate(snapshot, false, out scene, out string resolutionError))
+                    throw new InvalidOperationException("Post-reconciliation scene resolution failed: " + resolutionError);
                 Dictionary<string, ItemInstance> items = RehydrateItems(snapshot, database);
                 RestoreOwnedStorages(snapshot, items, database);
                 RestoreEquipmentLayouts(snapshot, scene);
                 RestoreRootStorages(snapshot, scene, items);
                 BindStorageOwnership(snapshot, scene, items);
 
-                if (injectFailure)
+                if (injectStorageFailure)
                     throw new InvalidOperationException("Injected diagnostic failure after storage restore.");
 
                 RestoreWorld(snapshot, scene, items);
@@ -178,9 +206,12 @@ namespace OldScars.Core.Persistence
                 CurrentSliceResult captured = CurrentSliceSnapshotService.Capture();
                 if (!captured.Success)
                     throw new InvalidOperationException($"Post-apply capture failed: {captured.Failure}");
-                CurrentSliceComparisonResult comparison = CurrentSliceSnapshotService.Compare(snapshot, captured.Snapshot);
-                if (!comparison.Equivalent)
-                    throw new InvalidOperationException($"Post-apply snapshot differs: {comparison.Difference}");
+                if (Items(snapshot.actors).Length > 0)
+                {
+                    CurrentSliceComparisonResult comparison = CurrentSliceSnapshotService.Compare(snapshot, captured.Snapshot);
+                    if (!comparison.Equivalent)
+                        throw new InvalidOperationException($"Post-apply snapshot differs: {comparison.Difference}");
+                }
                 return true;
             }
             catch (Exception exception)
@@ -190,12 +221,23 @@ namespace OldScars.Core.Persistence
             }
         }
 
-        private static void TeardownSlice(ResolvedScene first, ResolvedScene second, HashSet<string> ids)
+        private static void TeardownSlice(
+            CurrentSliceSaveData snapshot,
+            ResolvedScene first,
+            ResolvedScene second,
+            HashSet<string> ids)
         {
             var retireIds = new HashSet<string>(ids, StringComparer.Ordinal);
-            InventoryComponent[] inventories = first.AllInventories.Concat(second.AllInventories)
+            string[] actorOwners = Items(snapshot.storages)
+                .Where(state => state != null && (state.kind == InventoryKind || state.kind == EquipmentKind))
+                .Select(state => state.ownerId).Distinct(StringComparer.Ordinal).ToArray();
+            InventoryComponent[] inventories = actorOwners.Select(owner =>
+                    first.Actors.TryGetValue(owner, out ActorRuntime primary) ? primary.Inventory :
+                    second.Actors.TryGetValue(owner, out ActorRuntime alternate) ? alternate.Inventory : null)
                 .Where(value => value != null).Distinct().ToArray();
-            ActorEquipmentComponent[] equipmentComponents = first.AllEquipment.Concat(second.AllEquipment)
+            ActorEquipmentComponent[] equipmentComponents = actorOwners.Select(owner =>
+                    first.Actors.TryGetValue(owner, out ActorRuntime primary) ? primary.Equipment :
+                    second.Actors.TryGetValue(owner, out ActorRuntime alternate) ? alternate.Equipment : null)
                 .Where(value => value != null).Distinct().ToArray();
             ContainerLootComponent[] containers = first.Containers.Values.Concat(second.Containers.Values)
                 .Where(value => value != null).Distinct().ToArray();
@@ -241,6 +283,52 @@ namespace OldScars.Core.Persistence
             {
                 if (ItemInstanceIdRegistry.Instance.IsActive(instanceId))
                     ItemInstanceIdRegistry.Instance.RetireAfterCommit(instanceId);
+            }
+        }
+
+        private static void ReconcileActorRepresentations(CurrentSliceSaveData snapshot, ResolvedScene scene)
+        {
+            if (Items(snapshot.actors).Length == 0)
+                return;
+
+            foreach (ActorRuntimeIdentity runtime in ActorRuntimeRegistry.ActiveRepresentations
+                         .Where(identity => identity != null && identity.OriginKind == ActorOriginKind.Runtime)
+                         .OrderBy(identity => identity.ActorInstanceId, StringComparer.Ordinal).ToArray())
+            {
+                if (!ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(runtime.ActorInstanceId, out string removeError))
+                    throw new InvalidOperationException(
+                        $"Runtime actor '{runtime.ActorInstanceId}' representation teardown failed: {removeError}");
+            }
+
+            scene.Actors[snapshot.player.persistentId].Inventory.PreparePersistenceRestore();
+            foreach (ActorState state in Items(snapshot.actors).OrderBy(value => value.actorInstanceId, StringComparer.Ordinal))
+            {
+                if (state.originKind == CurrentSliceSnapshotService.AuthoredActorOrigin)
+                {
+                    if (!scene.Identities.TryGetValue(state.authoredSceneObjectId, out PersistentSceneObjectId locator))
+                        throw new InvalidOperationException(
+                            $"Authored actor locator '{state.authoredSceneObjectId}' disappeared during reconciliation.");
+                    ActorProfileComponent profile = locator.GetComponent<ActorProfileComponent>();
+                    string profileError = profile == null ? "ActorProfileComponent is missing." : null;
+                    if (profile == null || !profile.TryPreparePersistenceRestore(state.actorProfileId, out profileError))
+                        throw new InvalidOperationException(
+                            $"Authored actor '{state.actorInstanceId}' restore preparation failed: {profileError}");
+                    if (!ActorRuntimeIdentity.TryEnsureAuthored(
+                            locator.gameObject, state.actorProfileId,
+                            out ActorRuntimeIdentity identity, out string identityError) ||
+                        identity.ActorInstanceId != state.actorInstanceId)
+                        throw new InvalidOperationException(
+                            $"Authored actor '{state.authoredSceneObjectId}' identity reconciliation failed: " +
+                            (identityError ?? $"expected '{state.actorInstanceId}', got '{identity?.ActorInstanceId ?? "<NONE>"}'."));
+                    continue;
+                }
+
+                if (!ActorSpawnService.TrySpawn(
+                        state.actorProfileId, Position(state.pose), Rotation(state.pose),
+                        state.actorInstanceId, ActorSpawnInitialization.PersistenceRestore,
+                        out _, out string spawnError))
+                    throw new InvalidOperationException(
+                        $"Runtime actor '{state.actorInstanceId}' representation restore failed: {spawnError}");
             }
         }
 
@@ -399,6 +487,19 @@ namespace OldScars.Core.Persistence
             if (!player.Needs.TryApplyPersistenceState(needs, out string needsError))
                 throw new InvalidOperationException($"Player needs restore failed: {needsError}");
 
+            foreach (ActorState state in Items(snapshot.actors))
+            {
+                ActorRuntime actor = scene.Actors[state.actorInstanceId];
+                ApplyPose(state.pose, actor.Root);
+                actor.Health.ApplyInitialHealth(actor.Health.MaxHealth, state.currentHealth);
+                actor.Lootable?.RefreshLootableState();
+                bool expectedDead = state.lifecycleState == CurrentSliceSnapshotService.DeadLifecycle;
+                if (actor.Health.IsDead != expectedDead ||
+                    (actor.ActorIdentity?.LifecycleState == ActorLifecycleState.Dead) != expectedDead)
+                    throw new InvalidOperationException(
+                        $"Actor '{state.actorInstanceId}' lifecycle restore did not reach '{state.lifecycleState}'.");
+            }
+
             foreach (CorpseState corpse in Items(snapshot.corpses))
             {
                 ActorRuntime actor = scene.Actors[corpse.persistentId];
@@ -416,6 +517,7 @@ namespace OldScars.Core.Persistence
             }
             foreach (ActorRuntime actor in scene.Actors.Values)
                 actor.Equipment?.CommitVisualState(EquipmentVisualCommitKind.Replacement);
+            Physics.SyncTransforms();
         }
 
         private static void ValidateOwnership(ResolvedScene scene, ExternalBindings external)
@@ -423,7 +525,7 @@ namespace OldScars.Core.Persistence
             foreach (ActorRuntime actor in scene.Actors.Values)
             {
                 if (actor.Ownership != null && !actor.Ownership.ValidateUniqueOwnership(out string error))
-                    throw new InvalidOperationException($"Actor '{actor.Identity.PersistentId}' ownership failed: {error}");
+                    throw new InvalidOperationException($"Actor '{actor.DisplayId}' ownership failed: {error}");
                 actor.Equipment?.ValidateActorOwnedItems();
             }
             external.Validate();
@@ -506,7 +608,8 @@ namespace OldScars.Core.Persistence
                 (snapshot == null ? string.Empty :
                     $"\nItems: {Items(snapshot.items).Length}\nStorages: {Items(snapshot.storages).Length}" +
                     $"\nWorldItems: {Items(snapshot.worldItems).Length}\nContainers: {Items(snapshot.containers).Length}" +
-                    $"\nCorpses: {Items(snapshot.corpses).Length}\nDoors: {Items(snapshot.doors).Length}") +
+                    $"\nActors: {Items(snapshot.actors).Length}\nCorpsesLegacy: {Items(snapshot.corpses).Length}" +
+                    $"\nDoors: {Items(snapshot.doors).Length}") +
                 $"\nPhase: {result.Phase}\nFailureCode: {result.FailureCode}" +
                 $"\nMutationStarted: {result.MutationStarted}\nRollbackAttempted: {result.RollbackAttempted}" +
                 $"\nRollbackSucceeded: {result.RollbackSucceeded}\nResult: {(result.Success ? "Success" : "Failure")}" +
@@ -514,7 +617,7 @@ namespace OldScars.Core.Persistence
             if (result.Success) Debug.Log(message); else Debug.LogError(message);
         }
 
-        private static bool ShouldInjectDiagnosticFailure()
+        private static bool ShouldInjectStorageDiagnosticFailure()
         {
 #if UNITY_EDITOR
             bool inject = DiagnosticInjectFailureAfterStorageRestore;
@@ -525,9 +628,23 @@ namespace OldScars.Core.Persistence
 #endif
         }
 
+        private static bool ShouldInjectActorDiagnosticFailure()
+        {
+#if UNITY_EDITOR
+            bool inject = DiagnosticInjectFailureAfterActorReconciliation;
+            DiagnosticInjectFailureAfterActorReconciliation = false;
+            return inject;
+#else
+            return false;
+#endif
+        }
+
         private sealed class ActorRuntime
         {
             internal PersistentSceneObjectId Identity;
+            internal ActorRuntimeIdentity ActorIdentity;
+            internal Transform Root;
+            internal string DisplayId;
             internal InventoryComponent Inventory;
             internal ActorEquipmentComponent Equipment;
             internal ActorItemOwnershipComponent Ownership;
@@ -543,26 +660,59 @@ namespace OldScars.Core.Persistence
             internal readonly Dictionary<string, ContainerLootComponent> Containers = new Dictionary<string, ContainerLootComponent>(StringComparer.Ordinal);
             internal readonly Dictionary<string, WorldItemPickup> AuthoredWorld = new Dictionary<string, WorldItemPickup>(StringComparer.Ordinal);
             internal ActorInteractionContext Player;
-            internal IEnumerable<InventoryComponent> AllInventories => Actors.Values.Select(actor => actor.Inventory);
-            internal IEnumerable<ActorEquipmentComponent> AllEquipment => Actors.Values.Select(actor => actor.Equipment);
-
-            internal static bool TryCreate(CurrentSliceSaveData snapshot, out ResolvedScene scene, out string error)
+            internal static bool TryCreate(
+                CurrentSliceSaveData snapshot,
+                bool allowMissingRuntimeActors,
+                out ResolvedScene scene,
+                out string error)
             {
                 scene = new ResolvedScene();
                 error = null;
                 foreach (PersistentSceneObjectId identity in FindScene<PersistentSceneObjectId>())
                 {
+                    if (!identity.enabled)
+                        continue;
                     if (!scene.Identities.TryAdd(identity.PersistentId, identity))
                         return Fail(out scene, out error, $"Persistent scene identity '{identity.PersistentId}' does not resolve exactly once.");
                 }
-                if (!scene.TryActor(snapshot.player.persistentId, true, out ActorRuntime player, out error))
+                if (!scene.TrySceneActor(snapshot.player.persistentId, true, true, false, out ActorRuntime player, out error))
                     return false;
                 scene.Player = player.Identity.GetComponent<ActorInteractionContext>();
                 if (scene.Player == null || !Items(scene.Player.ActorTags).Contains("player"))
                     return Fail(out scene, out error, $"Player '{snapshot.player.persistentId}' does not resolve the current player role.");
 
+                foreach (ActorState state in Items(snapshot.actors))
+                {
+                    if (state.originKind == CurrentSliceSnapshotService.AuthoredActorOrigin)
+                    {
+                        if (!scene.TrySceneActor(
+                                state.authoredSceneObjectId, false, false, false,
+                                out ActorRuntime actor, out error))
+                            return false;
+                        if (actor.ActorIdentity == null ||
+                            actor.ActorIdentity.ActorInstanceId != state.actorInstanceId ||
+                            actor.ActorIdentity.ActorProfileId != state.actorProfileId ||
+                            actor.ActorIdentity.OriginKind != ActorOriginKind.Authored)
+                            return Fail(out scene, out error,
+                                $"Authored actor '{state.authoredSceneObjectId}' does not expose expected runtime identity '{state.actorInstanceId}'.");
+                        scene.Actors.Remove(state.authoredSceneObjectId);
+                        scene.Actors.Add(state.actorInstanceId, actor);
+                    }
+                    else if (ActorRuntimeRegistry.TryGet(state.actorInstanceId, out ActorRuntimeIdentity runtimeIdentity))
+                    {
+                        if (!scene.TryRuntimeActor(runtimeIdentity, state, out ActorRuntime actor, out error))
+                            return false;
+                        scene.Actors.Add(state.actorInstanceId, actor);
+                    }
+                    else if (!allowMissingRuntimeActors)
+                    {
+                        return Fail(out scene, out error,
+                            $"Runtime actor '{state.actorInstanceId}' has no active representation after reconciliation.");
+                    }
+                }
+
                 foreach (CorpseState corpse in Items(snapshot.corpses))
-                    if (!scene.TryActor(corpse.persistentId, false, out _, out error)) return false;
+                    if (!scene.TrySceneActor(corpse.persistentId, false, false, true, out _, out error)) return false;
                 foreach (ContainerState state in Items(snapshot.containers))
                 {
                     if (!scene.Identities.TryGetValue(state.persistentId, out PersistentSceneObjectId identity) ||
@@ -589,7 +739,13 @@ namespace OldScars.Core.Persistence
                 return true;
             }
 
-            private bool TryActor(string id, bool requireNeeds, out ActorRuntime actor, out string error)
+            private bool TrySceneActor(
+                string id,
+                bool requireNeeds,
+                bool requireOwnership,
+                bool requireDead,
+                out ActorRuntime actor,
+                out string error)
             {
                 actor = null;
                 error = null;
@@ -600,6 +756,9 @@ namespace OldScars.Core.Persistence
                 actor = new ActorRuntime
                 {
                     Identity = identity,
+                    ActorIdentity = identity.GetComponent<ActorRuntimeIdentity>(),
+                    Root = identity.transform,
+                    DisplayId = id,
                     Inventory = identity.GetComponent<InventoryComponent>(),
                     Equipment = identity.GetComponent<ActorEquipmentComponent>(),
                     Ownership = identity.GetComponent<ActorItemOwnershipComponent>(),
@@ -607,12 +766,43 @@ namespace OldScars.Core.Persistence
                     Needs = identity.GetComponent<ActorNeedsComponent>(),
                     Lootable = identity.GetComponent<LootableActorInventoryComponent>()
                 };
-                if (actor.Inventory == null || actor.Health == null || actor.Ownership == null || requireNeeds && actor.Needs == null)
+                if (actor.Inventory == null || actor.Health == null ||
+                    requireOwnership && actor.Ownership == null || requireNeeds && actor.Needs == null)
                     return FailActor(out actor, out error, $"Actor '{id}' lacks required Current Slice runtime components.");
-                if (!requireNeeds && !actor.Health.IsDead)
+                if (requireDead && !actor.Health.IsDead)
                     return FailActor(out actor, out error,
-                        $"Corpse '{id}' is not currently dead; M37.1 does not restore general NPC lifecycle.");
+                        $"Legacy corpse '{id}' is not currently dead; its schema-v1 compatibility record cannot restore general lifecycle.");
                 Actors.Add(id, actor);
+                return true;
+            }
+
+            private bool TryRuntimeActor(
+                ActorRuntimeIdentity identity,
+                ActorState state,
+                out ActorRuntime actor,
+                out string error)
+            {
+                actor = null;
+                error = null;
+                if (identity == null || identity.OriginKind != ActorOriginKind.Runtime ||
+                    identity.ActorProfileId != state.actorProfileId)
+                    return FailActor(out actor, out error,
+                        $"Runtime actor '{state.actorInstanceId}' representation is incompatible with its snapshot state.");
+                actor = new ActorRuntime
+                {
+                    ActorIdentity = identity,
+                    Root = identity.transform,
+                    DisplayId = state.actorInstanceId,
+                    Inventory = identity.GetComponent<InventoryComponent>(),
+                    Equipment = identity.GetComponent<ActorEquipmentComponent>(),
+                    Ownership = identity.GetComponent<ActorItemOwnershipComponent>(),
+                    Health = identity.GetComponent<ActorHealthComponent>(),
+                    Needs = identity.GetComponent<ActorNeedsComponent>(),
+                    Lootable = identity.GetComponent<LootableActorInventoryComponent>()
+                };
+                if (actor.Inventory == null || actor.Health == null || actor.Ownership == null)
+                    return FailActor(out actor, out error,
+                        $"Runtime actor '{state.actorInstanceId}' lacks required lifecycle runtime components.");
                 return true;
             }
 
@@ -642,7 +832,11 @@ namespace OldScars.Core.Persistence
                 foreach (ActorItemOwnershipComponent ownership in FindScene<ActorItemOwnershipComponent>())
                 {
                     PersistentSceneObjectId identity = ownership.GetComponent<PersistentSceneObjectId>();
-                    if (identity != null && sliceActorIds.Contains(identity.PersistentId))
+                    ActorRuntimeIdentity actorIdentity = ownership.GetComponent<ActorRuntimeIdentity>();
+                    string ownerId = actorIdentity != null && actorIdentity.IsRegistered
+                        ? actorIdentity.ActorInstanceId
+                        : identity != null && identity.enabled ? identity.PersistentId : null;
+                    if (!string.IsNullOrWhiteSpace(ownerId) && sliceActorIds.Contains(ownerId))
                         continue;
                     foreach (ItemStorageEntry entry in ownership.GetAllOwnedEntries())
                     {
@@ -830,7 +1024,9 @@ namespace OldScars.Core.Persistence
             if (!snapshot.worldItems.Any(item => item.kind == "authored" && !item.present)) missing.Add("authored pickup absent marker");
             if (!snapshot.worldItems.Any(item => item.kind == "runtime" && item.present)) missing.Add("runtime dropped item");
             if (snapshot.containers.Length == 0) missing.Add("authored containers");
-            if (snapshot.corpses.Length == 0 || !snapshot.corpses.Any(corpse => !string.IsNullOrWhiteSpace(corpse.inventoryStorageId)))
+            if (snapshot.actors == null || snapshot.actors.Length == 0 || !snapshot.actors.Any(actor =>
+                    actor != null && actor.lifecycleState == CurrentSliceSnapshotService.DeadLifecycle &&
+                    !string.IsNullOrWhiteSpace(actor.inventoryStorageId)))
                 missing.Add("current corpse storage");
             if (snapshot.doors.Length == 0) missing.Add("door state");
             if (snapshot.player.currentHealth >= 100f || snapshot.player.needs.Length == 0) missing.Add("health / needs");

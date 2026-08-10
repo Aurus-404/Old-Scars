@@ -39,9 +39,19 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Un `GridInventoryBackend.Remove` que retiraria la entry completa rechaza antes de mutar si su item-owned storage no esta vacio; devuelve `OwnedStorageNotEmpty`. Una vez vacio, el retiro terminal libera bindings, storage e identidad mediante el contrato existente.
 - Los scopes de reserva ambient/nested estan limitados al hilo de sesion, exigen LIFO y transfieren reservas al scope padre. El contexto localizado es necesario porque constructors y split reservan IDs dentro de servicios transaccionales ya existentes; evita cambiar sus contratos publicos. Rollback restaura storage/layout/Equipment y luego libera solamente IDs nuevos con sus registros/bindings.
 - `ItemInstance.Condition` permanece get-only. Es estado de instancia representativo, participa en stacking y debe rehidratarse exactamente en M37; no hay mutacion, desgaste ni reparacion.
-- M37.0 implementa el envelope, versionado, filesystem y recovery descritos en `Persistence Core V1`; M37.1 implementa snapshot/preflight y apply transaccional del slice real. Runtime/Editor, diagnostics y validación manual fresh-session pasaron; `Persistence Ready` está aprobado exclusivamente para el Current Slice.
+- M37.0 implementa el envelope, versionado, filesystem y recovery descritos en `Persistence Core V1`; M37.1 implementa snapshot/preflight y apply transaccional del slice real. M38.0 extiende ese mismo payload/apply con actor identity, lifecycle y representación runtime sin crear otra transacción. `Persistence Ready` permanece aprobado.
 - `PersistentSceneObjectId` aporta identidad authored estable a exactamente 14 roots stateful de `SampleScene`: 3 actores, 3 puertas y 8 contenedores. Los dos world items usan identidad de item separada; visuales, children y `Debug Strange Machine` quedan excluidos.
-- No existe un lifecycle persistente común. M37.1 restaura sólo el estado explícito del Current Slice; actores vivos fuera del slice, transform/lifecycle de NPCs y sistemas futuros permanecen excluidos.
+- `ActorInstanceId`, `ActorProfileId` y `PersistentSceneObjectId` son tres dominios distintos: quién es el actor, qué profile canónico usa y dónde está su root authored, respectivamente.
+
+## Actor Runtime & Lifecycle V1
+
+- `ActorRuntimeIdentity` expone un ID opaco e inmutable `actor_<32 hex lowercase>`, profile canónico, origin `Authored/Runtime` y lifecycle `Alive/Dead`. `ActorRuntimeRegistry` rechaza duplicados activos y se limpia por sesión mediante `SubsystemRegistration`.
+- Runtime actors generan el ID una sola vez. Authored roots aceptan override serializado; mientras `SampleScene` siga intacta, el fallback estable es `actor_` más los primeros 16 bytes de SHA-256 sobre `old_scars:actor-authored:v1|` y el `PersistentSceneObjectId` congelado. No se parsea ni se revierte el hash; cambiar el locator exige materializar antes el override.
+- El player comparte el contrato runtime identity/profile, pero `PlayerState` continúa como única autoridad de su pose, health/needs y storages. `ActorState[]` excluye al player y representa NPCs authored/runtime con identity, profile, origin, lifecycle, pose, health y referencias a storage.
+- `ActorHealthComponent` sigue siendo autoridad de salud y sincroniza la identidad lógica: health mayor que cero implica `Alive`; muerte implica `Dead` sin cambiar actor/profile/item IDs. Los tags y `LootableActorInventoryComponent` convierten el mismo actor en corpse lootable.
+- `ActorProfileComponent` distingue bootstrap de new game y preparación de persistence restore. Bootstrap aplica profile, tags, health, layout y seeds una sola vez; restore valida/aplica metadata estática y bloquea el seed de Inventory/Equipment/health antes de que el snapshot mande.
+- `ActorSpawnService` construye una cápsula lógica visible con tags/debug info, identity, Inventory, ownership, Equipment, health, lootable y profile. New spawn bootstrappea el profile; restore exige un ID existente y omite seeds. No hay prefab humano genérico ni visual rig: los bindings de `EntityVisualRigRuntime` requieren transforms authored y quedan fuera de este lifecycle seam.
+- Retirar una representación runtime no equivale a muerte: libera actor registry, storages, ownership/item identities contenidas y destruye sólo el GameObject representativo. Persistencia decide después qué actores lógicos deben tener representación; no existe world streaming, pooling ni desaparición permanente.
 
 ## Persistence Core V1
 
@@ -59,16 +69,16 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Current Slice Snapshot V1
 
-- `CurrentSliceSaveData` es el payload explícito de M37.1. Contiene player, tabla única de items, storages, Equipment, containers, corpses, doors y world items; no serializa `MonoBehaviour`, `Transform`, referencias runtime ni definiciones estáticas.
+- `CurrentSliceSaveData` conserva el envelope/schema V1 aditivo. Contiene player, tabla única de items, storages, Equipment, containers, actors, doors y world items; `corpses` queda sólo como lectura compatible de saves pre-M38. No serializa `MonoBehaviour`, `Transform`, referencias runtime ni definiciones estáticas.
 - `ItemState` define cada identidad una sola vez mediante `InstanceId`, `DefinitionId` y `Condition`. `DefinitionId` es Global Content ID; `InstanceId` no lo es. `StorageEntryState`, Equipment y world representations referencian la instancia; quantity permanece en la entry/representación y no crea IDs por unidad fungible.
-- Antes del semantic preflight, la compatibilidad schema v1 normaliza en memoria los únicos tres surfaces persistidos que apuntan a definitions globales: `ItemState.definitionId`, `EquipmentState.layoutId` y `EquippedItemState.slots`. Un valor legacy sin namespace sólo se interpreta como Core; no cambia `schemaVersion` y el siguiente capture escribe la identidad canónica. Esta ruta fue validada en Unity.
-- `StorageState` usa claves derivadas de `kind + ownerId`: actor/container por `PersistentSceneObjectId` e item-owned storage por el `InstanceId` del item owner. Entries grid conservan x/y, rotación y footprint efectivo exactos.
+- Antes del semantic preflight, la compatibilidad schema v1 normaliza en memoria las referencias globales persistidas: item definition, equipment layout/slots y actor profile. Un valor legacy sin namespace sólo se interpreta como Core; no cambia `schemaVersion` y el siguiente capture escribe identidad canónica.
+- `StorageState` usa claves derivadas de `kind + ownerId`: player/container por `PersistentSceneObjectId`, NPC por `ActorInstanceId` e item-owned storage por el `InstanceId` del item owner. Entries grid conservan x/y, rotación y footprint efectivo exactos.
 - player captura pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Health tags, carry weight, stats y visuales son derivados y no se duplican en el save.
 - containers se incluyen aunque su storage autoritativo esté vacío. Un container runtime no inicializado aborta capture; Pass 1 no ejecuta loot tables ni agrega un restore seam anticipado.
-- corpses representan sólo roots authored actualmente muertos. Los NPC vivos, su transform y su lifecycle permanecen fuera de M37.1 y pertenecen a M38.0.
+- `ActorState[]` es la autoridad NPC viva/muerta para nuevos captures y referencia Inventory/Equipment sin duplicar `ItemState`. `CorpseState[]` no se vuelve a escribir y existe únicamente para cargar payloads V1 anteriores.
 - cada world item authored posee un marker `present/absent` por su item ID. Un authored lazy se proyecta desde authored ID + definition sin reservar identidad; uno recogido queda absent y su item debe resolver en otro owner. Drops runtime presentes conservan quantity y pose.
 - puertas guardan sólo un estado lógico entre `opened_door`, `closed_door` y `locked_door`. Containers guardan únicamente los tags runtime mutables allowlisted; tags estáticos, health/world tags derivados y ángulos visuales quedan excluidos.
-- semantic preflight valida schema, scene identities, definitions, condición, localización única, quantity/max stack, placements/overlap, Equipment multi-slot completo, item-owned storage requerido sin nesting, referencias de containers/corpses/doors y authored/runtime world state. No muta gameplay.
+- semantic preflight valida además ActorInstanceId/profile/origin/lifecycle, cobertura authored exacta, locator determinista, capacidad de recrear runtime actors, coherencia health Alive/Dead y referencias storage/equipment por actor. Rechaza player duplicado y no muta gameplay.
 - el comparador canónico ordena colecciones incidentales y usa tolerancia `0.0001` sólo para pose; cualquier otra diferencia produce un path accionable.
 - `Save Debug Slot` llama al capture/preflight/write real y `Load Debug Slot` llama al pipeline transaccional real sobre `m37_current_slice_debug`; ambos están disponibles sólo en Play Mode.
 - `M37.1 Snapshot & Semantic Preflight Diagnostics` entra Play Mode sobre `SampleScene`, usa un root temporal, prueba casos válidos/negativos y sale sin guardar la escena.
@@ -76,20 +86,21 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Transactional Current Slice Load V1
 
 - `CurrentSliceLoadService` distingue `Success`, `ReadFailed`, `SemanticPreflightFailed`, `SceneResolutionFailed`, `ApplyFailed` y `RollbackFailed`, con fase, causa y resultado de rollback localizados.
-- La secuencia es read/preflight, resolución de referencias, capture del snapshot pre-load, teardown selectivo, `ItemInstance.Rehydrate`, owned storages, root storages/Equipment/ownership, world reconciliation, runtime state, pose del player, recapture y comparación canónica.
-- El teardown no usa resets globales. Limpia solamente las superficies del player, containers, corpses y world representations seleccionadas; recoge también los IDs bootstrap realmente contenidos y preserva bindings de NPCs vivos fuera del slice.
+- La secuencia M38 es read/preflight, resolución parcial, capture de rollback, teardown selectivo, reconciliación authored/runtime, reindexado de escena, `ItemInstance.Rehydrate`, owned/root storages, Equipment/ownership, world state, health/lifecycle/poses, recapture y comparación canónica.
+- El teardown no usa resets globales. Limpia sólo owners del snapshot y representaciones seleccionadas; el reindexado posterior evita referencias stale cuando el apply o rollback destruye/spawnea runtime actors.
 - Cada item se rehidrata una vez con `InstanceId`, `DefinitionId` canónico y `Condition` exactos. Los owned storages se adjuntan detached, reciben entries/placements exactos, completan layout y sólo entonces se registran.
 - Root storages se reemplazan atómicamente después de validar quantities, footprints, bounds y overlap. Equipment restaura layout, una entry por item y slot IDs sin duplicar items multi-slot; ownership se reconstruye después de publicar storages válidos.
 - Authored world markers restauran present/absent de forma autoritativa; absent marca la fuente inicializada y evita lazy respawn. Runtime drops se crean desde la `ItemInstance` ya rehidratada, conservando quantity y pose, sin split, transfer ni ID nuevo.
-- Containers quedan inicializados con contenido autoritativo incluso vacío, por lo que load nunca ejecuta loot tables. Corpses deben estar ya muertos y restauran sólo health/Inventory/Equipment/owned storage; un root vivo produce `SceneResolutionFailed` porque lifecycle general pertenece a M38.0.
+- Containers quedan inicializados con contenido autoritativo incluso vacío, por lo que load nunca ejecuta loot tables. Un authored actor puede bootstrappear Alive y luego recibir un target Dead; termina como el mismo actor/corpse sin seed adicional ni representación duplicada. La regla antigua de corpse ya muerto se conserva sólo para payloads pre-M38.
 - Doors restauran el tag lógico y sincronizan visual si exponen `DoorSwingController`. Player health/needs se aplican exactamente y la pose se restaura al final, cancelando movimiento y deshabilitando temporalmente `CharacterController`.
-- Ante fallo posterior a mutación, el mismo `ApplyCore` recibe el snapshot pre-load sin recursión. Sólo un rollback recapturado y equivalente produce `ApplyFailed` seguro; si falla, `RollbackFailed` conserva causa de apply y rollback.
+- Ante fallo posterior a mutación, el mismo `ApplyCore` recibe el snapshot pre-load sin recursión. Los fault points one-shot post-actor-reconciliation y post-storage validan existencia, lifecycle, representación, pose, storages y ownership; sólo rollback recapturado equivalente produce `ApplyFailed` seguro.
 - `M37.1 Current Slice Persistent Round-Trip Diagnostics` usa `SampleScene` y root temporal, prepara State A mediante rutas runtime, muta State B, carga A y compara A/C. Un único fault point `UNITY_EDITOR` posterior a storages demuestra rollback equivalente; el diagnóstico sale sin guardar la escena ni dejar archivos.
+- `M38.0 Actor Runtime & Lifecycle Diagnostics` usa dos Play sessions sobre `SampleScene`: guarda authored Alive/Dead y runtime actor en A; en B comprueba bootstrap Alive previo al load, aplica Dead/corpse, recrea runtime con mismo ID, vuelve a Alive selectivamente y prueba rollback post-reconciliation. Sale sin guardar escena ni dejar saves temporales.
 
 ## Persistence Ready — Current Slice Aprobado
 
 - El alcance aprobado persiste player pose, health/needs representados, `ItemInstance` identity, `DefinitionId`, `Condition`, stacks/quantities, grid placements, Inventory, Equipment, ownership, item-owned storage, containers, corpse surfaces actuales, doors, authored world items, runtime dropped world items y runtime mutable state incluido por M37.1.
-- No existe todavía lifecycle persistente general de actores vivos: posición durable general de NPCs, transición alive/dead entre sesiones frescas, spawn/despawn runtime de NPCs y AI son contratos de M38.0, no capacidades del Current Slice.
+- M38.0 agrega lifecycle/pose y spawn/restore mínimo de NPCs al Current Slice. AI, navegación, world-scale population, needs/world clock, combat y world streaming no forman parte de `Persistence Ready` ni de este pass.
 
 ## Inventory, Grid, Ownership Y Equipment
 
@@ -156,7 +167,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Actor needs avanza con `Time.deltaTime`; no existe world clock persistente ni offline progression.
 - Health es un valor escalar con tags derivados; no existe daño localizado, heridas, sangrado, dolor, armadura ni penetracion integrados.
 - `FirearmDebugController` es un prototipo debug de arma de fuego, no el contrato final de combate.
-- No existe actor runtime registry, spawn/lifecycle durable, IA, navegacion de NPCs, clima, ecologia, facciones, sectorizacion ni proceduralidad runtime.
+- Existe actor registry/spawn/lifecycle durable acotado a M38.0; no existen IA, navegación de NPCs, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
 - La UI es debug OnGUI y no debe expandirse como si fuera la UI final.
 - Los mods son aditivos, exigen Global Content IDs canónicos y siguen sin manifests, ownership de namespace, overrides/versiones, dependencies ni patches; el soporte de compatibilidad de produccion pertenece a milestones posteriores.
 

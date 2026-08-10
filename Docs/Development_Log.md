@@ -2425,3 +2425,43 @@ Secuencia:
 - M38.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no está iniciado.
 - M38.1 queda siguiente después de M38.0.
 - Durante o después de M38.x se reutilizará la infraestructura en un pequeño playable exploration prototype para evaluar gameplay y presentación, sin declarar vertical slice final ni crear un milestone nuevo.
+
+### M38.0 — Actor Identity, Lifecycle & Persistence V1 — Functional Implementation Pass 1
+
+Fecha: 2026-08-10
+
+Milestone: `M38.0 — Actor Runtime & Lifecycle V1`.
+
+Estado anterior: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+
+Estado posterior: `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Implementación:
+
+- `ActorRuntimeIdentity` separa ActorInstanceId opaco/inmutable, ActorProfileId canónico y PersistentSceneObjectId authored. Runtime usa `actor_<32 hex>` generado una vez; authored acepta override serializado y, sin modificar `SampleScene`, deriva fallback estable SHA-256 versionado desde el locator congelado.
+- `ActorRuntimeRegistry` exige unicidad activa; `ActorHealthComponent` sincroniza `Alive/Dead` sin cambiar identidad y conserva el mismo actor como corpse lootable.
+- `ActorProfileComponent` separa bootstrap normal de preparación de persistence restore; Inventory/Equipment/health seeds no pisan el snapshot cargado.
+- `ActorSpawnService` crea una cápsula lógica visible con identity/profile/tags, health, Inventory, Equipment, ownership y lootable. New spawn bootstrappea una vez; restore usa el ID existente; representation removal libera registries/items sin significar muerte ni world streaming.
+- `CurrentSliceSaveData` agrega `ActorState[]` referencial para NPCs authored/runtime y deja `PlayerState` como autoridad única del jugador. `CorpseState[]` queda sólo como compatibilidad de lectura V1 pre-M38.
+- Preflight valida IDs/profile/origin/lifecycle, cobertura authored, capacidad de spawn, health y referencias storage/equipment. Apply reconcilia representaciones, reindexa escena y reutiliza rehydration/ownership/rollback M37.1; un segundo fault one-shot prueba rollback después de actor reconciliation.
+
+Validación automatizada:
+
+- Runtime compile: `PASS`.
+- Editor compile: `PASS`.
+- `M36.1 Foundation Identity Validation: PASS`.
+- `Global Content ID Namespace Foundation: PASS`.
+- `M37.0 Persistence Core Diagnostics: PASS`.
+- `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS`.
+- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS`.
+- `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS` en dos Play sessions: authored Alive, authored Dead contra bootstrap fresh Alive, misma identity/profile/pose/storages/Equipment, runtime spawn/restore con mismo ID, duplicate rejection, selective lifecycle y rollback post-reconciliation equivalente.
+- `SampleScene` no se guardó y conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
+- No hubo warnings nuevos atribuibles a M38.0; permanecen cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
+
+Alcance y secuencia:
+
+- siete archivos C# tocados/creados y 1336 líneas C# agregadas, dentro del presupuesto; Unity generó los dos `.meta` nuevos.
+- no se modificaron `SampleScene`, prefabs, JSON, Packages, ProjectSettings ni asmdefs;
+- M36.1, M37.1 y `Persistence Ready — APPROVED` se preservaron; no se implementaron M38.1, needs/world clock, AI, combat, world-scale spawn, UI final ni playable exploration prototype;
+- M38.1 queda `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT`;
+- siguiente trabajo: `M38.0 — Manual Unity Validation & Closeout` por Mauro sobre Alive, Dead/corpse y runtime actor fresh-session.

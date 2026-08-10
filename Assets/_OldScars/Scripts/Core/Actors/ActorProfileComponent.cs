@@ -1,6 +1,7 @@
 using System.Collections;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
+using OldScars.Core.Identity;
 using OldScars.Core.Interactions;
 using OldScars.Core.Items;
 using OldScars.Core.Visuals;
@@ -14,6 +15,9 @@ namespace OldScars.Core.Actors
 
         private bool profileApplied;
         private bool loggedWaitingForData;
+
+        public string ActorProfileId => actorProfileId;
+        public bool ProfileApplied => profileApplied;
 
         private IEnumerator Start()
         {
@@ -30,6 +34,43 @@ namespace OldScars.Core.Actors
             }
 
             ApplyProfile(GameDataManager.Instance.Database);
+        }
+
+        public bool TryApplyRuntimeBootstrap(string requestedProfileId, out string error)
+        {
+            error = null;
+            if (!TryResolveProfile(requestedProfileId, out GameDatabase database, out ActorProfileDefinition profile, out error))
+                return false;
+            actorProfileId = profile.id;
+            ApplyProfile(database);
+            if (!profileApplied)
+            {
+                error = $"Actor profile '{profile.id}' did not complete bootstrap.";
+                return false;
+            }
+            return true;
+        }
+
+        public bool TryPreparePersistenceRestore(string requestedProfileId, out string error)
+        {
+            error = null;
+            if (!TryResolveProfile(requestedProfileId, out GameDatabase database, out ActorProfileDefinition profile, out error))
+                return false;
+            if (profileApplied && actorProfileId != profile.id)
+            {
+                error = $"Actor profile is already '{actorProfileId}' and cannot restore as '{profile.id}'.";
+                return false;
+            }
+
+            actorProfileId = profile.id;
+            profileApplied = true;
+            EnsureAuthoredIdentity(profile.id);
+            WarnIfDebugSeederExists();
+            ApplyDisplayName(profile);
+            ApplyInitialTags(profile);
+            ApplyVisualRigProfile(profile);
+            GetComponent<InventoryComponent>()?.PreparePersistenceRestore();
+            return true;
         }
 
         private static bool IsGameDataReady()
@@ -60,6 +101,8 @@ namespace OldScars.Core.Actors
             actorProfileId = profile.id;
             profileApplied = true;
 
+            EnsureAuthoredIdentity(profile.id);
+
             WarnIfDebugSeederExists();
             ApplyDisplayName(profile);
             ApplyInitialTags(profile);
@@ -70,6 +113,45 @@ namespace OldScars.Core.Actors
             ApplyVisualRigProfile(profile);
 
             Debug.Log($"[ActorProfileComponent] '{name}' applied actor profile '{actorProfileId}'.");
+        }
+
+        private bool TryResolveProfile(
+            string requestedProfileId,
+            out GameDatabase database,
+            out ActorProfileDefinition profile,
+            out string error)
+        {
+            database = GameDataManager.Instance?.Database;
+            profile = null;
+            error = null;
+            if (database == null || GameDataManager.Instance?.IsReady != true)
+            {
+                error = "GameDatabase is not ready.";
+                return false;
+            }
+            profile = database.GetActorProfile(requestedProfileId);
+            if (profile == null)
+            {
+                error = $"Actor profile '{requestedProfileId ?? "<EMPTY>"}' was not found.";
+                return false;
+            }
+            return true;
+        }
+
+        private void EnsureAuthoredIdentity(string canonicalProfileId)
+        {
+            PersistentSceneObjectId sceneIdentity = GetComponent<PersistentSceneObjectId>();
+            if (sceneIdentity == null || !sceneIdentity.enabled)
+                return;
+            if (!ActorRuntimeIdentity.TryEnsureAuthored(gameObject, canonicalProfileId, out _, out string error))
+            {
+                Debug.LogError(
+                    "[Actors][AUTHORED_IDENTITY_FAILURE]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  PersistentSceneObjectId: {sceneIdentity.PersistentId ?? "<EMPTY>"}" +
+                    $"\n  ActorProfileId: {canonicalProfileId ?? "<EMPTY>"}" +
+                    $"\n  Failure: {error ?? "<UNKNOWN>"}");
+            }
         }
 
         private void ApplyDisplayName(ActorProfileDefinition profile)

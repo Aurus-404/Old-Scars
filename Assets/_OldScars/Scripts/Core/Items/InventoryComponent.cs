@@ -33,6 +33,7 @@ namespace OldScars.Core.Items
         private ActorCarryWeightComponent carryWeightComponent;
         private bool carryWeightComponentResolved;
         private int initialContentLoadDepth;
+        private bool persistenceRestorePrepared;
 
         public string RightHandItemInstanceId
         {
@@ -76,7 +77,15 @@ namespace OldScars.Core.Items
             while (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
                 yield return null;
 
+            if (persistenceRestorePrepared)
+                yield break;
+
             TryApplyTaggedInitialInventoryProfile();
+        }
+
+        internal void PreparePersistenceRestore()
+        {
+            persistenceRestorePrepared = true;
         }
 
         public ItemInstance AddItemByDefinitionId(string definitionId)

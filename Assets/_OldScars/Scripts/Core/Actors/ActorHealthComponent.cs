@@ -105,6 +105,7 @@ namespace OldScars.Core.Actors
 
         private void SyncLivingTags()
         {
+            GetComponent<ActorRuntimeIdentity>()?.SetLifecycle(ActorLifecycleState.Alive);
             ResolveWorldObjectTags();
             if (worldObjectTags == null)
                 return;
@@ -131,6 +132,7 @@ namespace OldScars.Core.Actors
 
         private void ProcessDeath()
         {
+            GetComponent<ActorRuntimeIdentity>()?.SetLifecycle(ActorLifecycleState.Dead);
             ResolveWorldObjectTags();
             if (deathProcessed)
                 return;

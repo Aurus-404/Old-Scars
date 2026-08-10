@@ -25,13 +25,13 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | Ninguno — M38.0 espera autorización de implementación |
+| Milestone activo | M38.0 — Manual Unity Validation & Closeout |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
-| Siguientes | M38.0 — Actor Runtime & Lifecycle V1; luego M38.1 |
+| Siguientes | closeout manual M38.0; luego M38.1 bloqueado hasta ese cierre |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED` tras diagnóstico automatizado y round-trip fresh-session manual. `Persistence Ready` está `APPROVED` exclusivamente para el Current Slice documentado. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`; no implementa manifests, provenance completa, dependency resolution ni patches/load-order. M38.0 es el próximo trabajo y permanece `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED` tras diagnóstico automatizado y round-trip fresh-session manual. `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`; no implementa manifests, provenance completa, dependency resolution ni patches/load-order. M38.0 está `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; M38.1 no comenzó.
 
 ## Estados Canonicos
 
@@ -127,8 +127,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M37.0 — Save Format & Persistence Core | Arquitectura | `DONE — PERSISTENCE CORE VALIDATED` | M36.1 | Envelope V1, serializacion, safe write, backup/recovery, version policy y migration seam validados sin integrar estado gameplay. |
 | CERRADO | ID TBD — Global Content ID Namespace Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | M37.0 | `ContentId`, namespace `core`, referencias globales canónicas, compatibilidad legacy acotada, normalización schema-v1 y diagnósticos. Excluye manifests, provenance completa, dependencies y patches/load-order. |
 | CERRADO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` | M37.0; compatibilidad schema-v1 Core validada | Snapshot, apply transaccional, rollback, diagnóstico y round-trip fresh-session manual validados; `Persistence Ready` aprobado para el Current Slice. |
-| SIGUIENTE | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | ID TBD y M37.1 cerrados | IDs, spawn, lifecycle, muerte y cuerpos persistibles sobre identidad de contenido canónica. |
-| SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
+| ACTUAL | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | ID TBD y M37.1 cerrados | Identidad durable, Alive/Dead, corpse continuity, spawn/restore runtime y persistencia fresh-session automatizada; falta closeout manual. |
+| SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
 | DESPUES | M39.0 — Localized Health & Medicine V1 | Jugable | `PLANNED` | M38.1 | Regiones, heridas, sangrado, dolor y tratamientos. |
 | DESPUES | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED` | M39.0 | Damage contract, melee/firearms, ammo y reload. |
 | DESPUES | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. |
@@ -182,7 +182,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 manual closeout → M38.1`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -265,7 +265,11 @@ No implementa manifest, provenance persistida completa, dependencies, overrides/
 
 M37 persiste primero el slice actual: jugador, items, inventory/grid, Equipment, ownership, item-owned storages, containers, cuerpos, puertas, world items y runtime tags existentes. No serializa sistemas hipoteticos para actores, clima, facciones o mundo procedural.
 
-M37.0 está `DONE — PERSISTENCE CORE VALIDATED`. M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`: los diagnostics automatizados y la validación fresh-session manual, incluida la compatibilidad schema-v1 de Global Content IDs Core, pasaron. `Persistence Ready` está aprobado sólo para el Current Slice; lifecycle general de actores vivos, transform durable de NPCs, spawn/despawn runtime y AI quedan para M38.0, que no está iniciado.
+M37.0 está `DONE — PERSISTENCE CORE VALIDATED`. M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`: los diagnostics automatizados y la validación fresh-session manual, incluida la compatibilidad schema-v1 de Global Content IDs Core, pasaron. `Persistence Ready` permanece aprobado para el Current Slice y no se reabre.
+
+### M38.0 — Límite Obligatorio
+
+M38.0 está `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. Extiende el Current Slice con identidad durable distinta de profile/locator, lifecycle `Alive/Dead`, pose/health y referencias a storages existentes; reconcilia authored bootstrap y representaciones runtime mediante el apply/rollback de M37.1. No implementa M38.1, AI, combat, world streaming, spawn a escala ni el playable exploration prototype. M38.1 permanece bloqueado hasta el closeout manual de M38.0.
 
 ## Trabajo Congelado O Diferido
 

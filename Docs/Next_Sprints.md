@@ -2,17 +2,17 @@
 
 Este documento contiene sólo los próximos trabajos reales. El trabajo activo se resume en [Current_Milestone.md](Current_Milestone.md); los IDs, estados, dependencias y gates se derivan de [Project_Roadmap.md](Project_Roadmap.md).
 
-## Próximos Tres Milestones
+## Próximos Tres Trabajos
 
 ### 1. M38.0 — Actor Runtime & Lifecycle V1
 
-Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+Estado: `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
 
 Objetivo:
 
-- definir IDs, spawn y lifecycle durable de actores sobre `Persistence Ready` y Global Content IDs canónicos;
-- integrar muerte y cuerpos persistibles sin reabrir los contratos congelados de M36.1;
-- evitar nuevas referencias de contenido global sin namespace.
+- completar el closeout manual fresh-session de actor authored Alive;
+- comprobar visualmente Dead/corpse con misma identidad, transform, Inventory y Equipment después de load;
+- comprobar spawn/save/fresh-session/load del actor runtime y Console sin errores de lifecycle/persistence.
 
 Fuera de alcance:
 
@@ -22,7 +22,7 @@ Fuera de alcance:
 
 ### 2. M38.1 — Needs, World Clock & Recovery V1
 
-Estado: `PLANNED`.
+Estado: `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT`.
 
 Objetivo: reloj y necesidades conectadas; sueño/descanso MUST y fatiga SHOULD, sobre el lifecycle de M38.0.
 
@@ -34,7 +34,7 @@ Objetivo: regiones, heridas, sangrado, dolor y tratamientos después de M38.1.
 
 ## Dirección De Producción
 
-Durante o después de M38.x debe comenzar a reutilizarse la infraestructura existente en un pequeño playable exploration prototype para evaluar gameplay y presentación. No es una vertical slice final, no recibe milestone ID nuevo y no adelanta M45.1.
+El pequeño playable exploration prototype no está iniciado. Después del closeout aplicable podrá reutilizar la infraestructura existente para evaluar gameplay y presentación; no es una vertical slice final, no recibe milestone ID nuevo y no adelanta M45.1.
 
 ## Secuencia De Modding Posterior
 
@@ -50,7 +50,7 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 - UI final;
 - combate o IA;
 - condition, repair o crafting;
-- actores o mundo a escala fuera de M38.0 autorizado;
+- actores o mundo a escala fuera del seam mínimo implementado por M38.0;
 - facciones amplias;
 - generación procedural;
 - producción masiva de contenido.

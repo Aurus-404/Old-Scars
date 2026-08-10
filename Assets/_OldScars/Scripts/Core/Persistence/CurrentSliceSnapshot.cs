@@ -45,6 +45,8 @@ namespace OldScars.Core.Persistence
     public sealed class PlayerState
     {
         public string persistentId;
+        public string actorInstanceId;
+        public string actorProfileId;
         public PoseState pose;
         public float currentHealth;
         public NeedState[] needs = Array.Empty<NeedState>();
@@ -63,6 +65,19 @@ namespace OldScars.Core.Persistence
     public sealed class CorpseState
     {
         public string persistentId;
+        public float currentHealth;
+        public string inventoryStorageId;
+        public string equipmentStorageId;
+    }
+    [Serializable]
+    public sealed class ActorState
+    {
+        public string actorInstanceId;
+        public string actorProfileId;
+        public string authoredSceneObjectId;
+        public string originKind;
+        public string lifecycleState;
+        public PoseState pose;
         public float currentHealth;
         public string inventoryStorageId;
         public string equipmentStorageId;
@@ -88,6 +103,8 @@ namespace OldScars.Core.Persistence
         public StorageState[] storages = Array.Empty<StorageState>();
         public EquipmentState[] equipment = Array.Empty<EquipmentState>();
         public ContainerState[] containers = Array.Empty<ContainerState>();
+        public ActorState[] actors = Array.Empty<ActorState>();
+        // Read-only compatibility with pre-M38 schema-v1 saves. New captures use actors exclusively.
         public CorpseState[] corpses = Array.Empty<CorpseState>();
         public DoorState[] doors = Array.Empty<DoorState>();
         public WorldItemState[] worldItems = Array.Empty<WorldItemState>();
@@ -119,6 +136,32 @@ namespace OldScars.Core.Persistence
                 if (!TryNormalize(rawDefinitionId, database, out item.definitionId, out string reason))
                 {
                     error = $"items[{index}].definitionId '{rawDefinitionId}' is not a valid Global Content ID: {reason}.";
+                    return false;
+                }
+            }
+
+            if (snapshot.player != null && !string.IsNullOrWhiteSpace(snapshot.player.actorProfileId))
+            {
+                string rawProfileId = snapshot.player.actorProfileId;
+                if (!TryNormalize(rawProfileId, database, out snapshot.player.actorProfileId, out string reason) ||
+                    database.GetActorProfile(snapshot.player.actorProfileId) == null)
+                {
+                    error = $"player.actorProfileId '{rawProfileId}' is not a valid Actor Profile Global Content ID: {reason}.";
+                    return false;
+                }
+            }
+
+            ActorState[] actorStates = snapshot.actors ?? Array.Empty<ActorState>();
+            for (int index = 0; index < actorStates.Length; index++)
+            {
+                ActorState actor = actorStates[index];
+                if (actor == null)
+                    continue;
+                string rawProfileId = actor.actorProfileId;
+                if (!TryNormalize(rawProfileId, database, out actor.actorProfileId, out string reason) ||
+                    database.GetActorProfile(actor.actorProfileId) == null)
+                {
+                    error = $"actors[{index}].actorProfileId '{rawProfileId}' is not a valid Actor Profile Global Content ID: {reason}.";
                     return false;
                 }
             }
@@ -217,6 +260,10 @@ namespace OldScars.Core.Persistence
         private const string ItemOwnedKind = "item_owned";
         private const string AuthoredWorldKind = "authored";
         private const string RuntimeWorldKind = "runtime";
+        internal const string AuthoredActorOrigin = "Authored";
+        internal const string RuntimeActorOrigin = "Runtime";
+        internal const string AliveLifecycle = "Alive";
+        internal const string DeadLifecycle = "Dead";
         private const float PoseTolerance = 0.0001f;
         private static readonly string[] ContainerTags =
         {
@@ -319,7 +366,8 @@ namespace OldScars.Core.Persistence
             return "[Persistence][CURRENT_SLICE_SAVE]" +
                    $"\nSlot: {slot}\nItems: {snapshot.items.Length}\nStorages: {snapshot.storages.Length}" +
                    $"\nWorldItems: {snapshot.worldItems.Length}\nContainers: {snapshot.containers.Length}" +
-                   $"\nCorpses: {snapshot.corpses.Length}\nDoors: {snapshot.doors.Length}\nResult: Success";
+                   $"\nActors: {Items(snapshot.actors).Length}\nCorpsesLegacy: {Items(snapshot.corpses).Length}" +
+                   $"\nDoors: {snapshot.doors.Length}\nResult: Success";
         }
 
         private static CurrentSliceResult Failed(string failure) => new CurrentSliceResult(null, failure ?? "Unknown failure.");
@@ -334,7 +382,11 @@ namespace OldScars.Core.Persistence
                 .ToArray();
         }
 
-        private static PersistentSceneObjectId Identity(Component component) => component != null ? component.GetComponent<PersistentSceneObjectId>() : null;
+        private static PersistentSceneObjectId Identity(Component component)
+        {
+            PersistentSceneObjectId identity = component != null ? component.GetComponent<PersistentSceneObjectId>() : null;
+            return identity != null && identity.enabled ? identity : null;
+        }
         private static PoseState Pose(Transform transform) => new PoseState
         {
             position = new Float3State { x = transform.position.x, y = transform.position.y, z = transform.position.z },
@@ -418,6 +470,12 @@ namespace OldScars.Core.Persistence
                     return Fail($"Expected exactly one persistent player ActorInteractionContext; found {players.Length}.");
                 ActorInteractionContext player = players[0];
                 string playerId = Identity(player).PersistentId;
+                ActorProfileDefinition playerProfile = ResolveTaggedPlayerProfile(player);
+                if (playerProfile == null)
+                    return Fail($"Player '{playerId}' does not resolve exactly one actor profile bootstrap tag.");
+                if (!ActorRuntimeIdentity.TryEnsureAuthored(
+                        player.gameObject, playerProfile.id, out ActorRuntimeIdentity playerIdentity, out string playerIdentityError))
+                    return Fail($"Player '{playerId}' actor identity failed: {playerIdentityError}");
                 InventoryComponent playerInventory = player.GetInventoryComponent();
                 ActorHealthComponent playerHealth = player.GetComponent<ActorHealthComponent>();
                 ActorNeedsComponent playerNeeds = player.GetComponent<ActorNeedsComponent>();
@@ -432,6 +490,8 @@ namespace OldScars.Core.Persistence
                 snapshot.player = new PlayerState
                 {
                     persistentId = playerId,
+                    actorInstanceId = playerIdentity.ActorInstanceId,
+                    actorProfileId = playerProfile.id,
                     pose = CurrentSliceSnapshotService.Pose(player.transform),
                     currentHealth = playerHealth.CurrentHealth,
                     needs = playerNeeds.RuntimeStates.Where(state => state != null)
@@ -441,12 +501,28 @@ namespace OldScars.Core.Persistence
                     equipmentStorageId = playerEquipmentId
                 };
 
+                foreach (ActorProfileComponent profileComponent in FindScene<ActorProfileComponent>())
+                {
+                    if (!profileComponent.gameObject.activeInHierarchy)
+                        continue;
+                    PersistentSceneObjectId authored = Identity(profileComponent);
+                    if (authored != null && !ActorRuntimeIdentity.TryEnsureAuthored(
+                            profileComponent.gameObject, profileComponent.ActorProfileId,
+                            out _, out string identityError))
+                        return Fail($"Authored actor '{authored.PersistentId}' identity failed: {identityError}");
+                }
+
+                snapshot.actors = FindScene<ActorRuntimeIdentity>()
+                    .Where(identity => identity.IsRegistered && identity.gameObject.activeInHierarchy &&
+                                       identity.ActorInstanceId != playerIdentity.ActorInstanceId)
+                    .Select(CaptureActor).Where(state => state != null)
+                    .OrderBy(state => state.actorInstanceId, StringComparer.Ordinal).ToArray();
+                if (Failure != null) return null;
+
                 snapshot.containers = FindScene<ContainerLootComponent>().Select(container => CaptureContainer(container)).Where(state => state != null)
                     .OrderBy(state => state.persistentId, StringComparer.Ordinal).ToArray();
                 if (Failure != null) return null;
-                snapshot.corpses = identities.Values.Select(identity => CaptureCorpse(identity, playerId)).Where(state => state != null)
-                    .OrderBy(state => state.persistentId, StringComparer.Ordinal).ToArray();
-                if (Failure != null) return null;
+                snapshot.corpses = Array.Empty<CorpseState>();
                 snapshot.doors = identities.Values.Select(CaptureDoor).Where(state => state != null)
                     .OrderBy(state => state.persistentId, StringComparer.Ordinal).ToArray();
                 if (Failure != null) return null;
@@ -460,11 +536,57 @@ namespace OldScars.Core.Persistence
                 return snapshot;
             }
 
+            private ActorProfileDefinition ResolveTaggedPlayerProfile(ActorInteractionContext player)
+            {
+                string[] tags = Items(player?.ActorTags);
+                ActorProfileDefinition[] matches = database.GetAllActorProfiles()
+                    .Where(profile => profile != null && !string.IsNullOrWhiteSpace(profile.inventory_seed_actor_tag) &&
+                                      tags.Contains(profile.inventory_seed_actor_tag))
+                    .ToArray();
+                return matches.Length == 1 ? matches[0] : null;
+            }
+
+            private ActorState CaptureActor(ActorRuntimeIdentity identity)
+            {
+                if (identity == null || !identity.IsRegistered)
+                    return null;
+                ActorProfileComponent profile = identity.GetComponent<ActorProfileComponent>();
+                ActorHealthComponent health = identity.GetComponent<ActorHealthComponent>();
+                InventoryComponent inventory = identity.GetComponent<InventoryComponent>();
+                if (profile == null || health == null || inventory == null)
+                {
+                    Failure = $"Actor '{identity.ActorInstanceId}' lacks Profile, Health or Inventory runtime state.";
+                    return null;
+                }
+                if (identity.LifecycleState == ActorLifecycleState.Dead != health.IsDead)
+                {
+                    Failure = $"Actor '{identity.ActorInstanceId}' lifecycle contradicts health {health.CurrentHealth}.";
+                    return null;
+                }
+
+                PersistentSceneObjectId authored = Identity(identity);
+                string ownerId = identity.ActorInstanceId;
+                return new ActorState
+                {
+                    actorInstanceId = ownerId,
+                    actorProfileId = identity.ActorProfileId,
+                    authoredSceneObjectId = identity.OriginKind == ActorOriginKind.Authored ? authored?.PersistentId : null,
+                    originKind = identity.OriginKind == ActorOriginKind.Authored ? AuthoredActorOrigin : RuntimeActorOrigin,
+                    lifecycleState = identity.LifecycleState == ActorLifecycleState.Dead ? DeadLifecycle : AliveLifecycle,
+                    pose = CurrentSliceSnapshotService.Pose(identity.transform),
+                    currentHealth = health.CurrentHealth,
+                    inventoryStorageId = CaptureStorage(InventoryKind, ownerId, inventory),
+                    equipmentStorageId = CaptureEquipment(ownerId, identity.GetComponent<ActorEquipmentComponent>())
+                };
+            }
+
             private Dictionary<string, PersistentSceneObjectId> IndexIdentities()
             {
                 var result = new Dictionary<string, PersistentSceneObjectId>(StringComparer.Ordinal);
                 foreach (PersistentSceneObjectId identity in FindScene<PersistentSceneObjectId>())
                 {
+                    if (!identity.enabled)
+                        continue;
                     if (!PersistentSceneObjectId.IsValidFormat(identity.PersistentId))
                     {
                         Failure = $"Invalid PersistentSceneObjectId on '{identity.name}'.";
@@ -694,6 +816,7 @@ namespace OldScars.Core.Persistence
             private readonly Dictionary<string, ItemState> items = new Dictionary<string, ItemState>(StringComparer.Ordinal);
             private readonly Dictionary<string, StorageState> storages = new Dictionary<string, StorageState>(StringComparer.Ordinal);
             private readonly Dictionary<string, string> locations = new Dictionary<string, string>(StringComparer.Ordinal);
+            private readonly Dictionary<string, ActorState> actorStates = new Dictionary<string, ActorState>(StringComparer.Ordinal);
             private Dictionary<string, PersistentSceneObjectId> sceneIds;
 
             internal SemanticValidator(CurrentSliceSaveData snapshot, GameDatabase database)
@@ -724,6 +847,8 @@ namespace OldScars.Core.Persistence
                 sceneIds = new Dictionary<string, PersistentSceneObjectId>(StringComparer.Ordinal);
                 foreach (PersistentSceneObjectId identity in FindScene<PersistentSceneObjectId>())
                 {
+                    if (!identity.enabled)
+                        continue;
                     if (!PersistentSceneObjectId.IsValidFormat(identity.PersistentId))
                         errors.Add($"Scene object '{identity.name}' has invalid persistent identity.");
                     else if (!sceneIds.TryAdd(identity.PersistentId, identity))
@@ -773,6 +898,104 @@ namespace OldScars.Core.Persistence
                     string[] runtimeNeedIds = needs == null ? Array.Empty<string>() : Items(needs.RuntimeStates?.ToArray())
                         .Where(state => state != null).Select(state => state.needId).ToArray();
                     if (!needIds.SetEquals(runtimeNeedIds)) errors.Add($"Player '{snapshot.player.persistentId}' needs do not match current runtime state.");
+
+                    bool hasPlayerActorId = !string.IsNullOrWhiteSpace(snapshot.player.actorInstanceId);
+                    bool hasPlayerProfileId = !string.IsNullOrWhiteSpace(snapshot.player.actorProfileId);
+                    if (hasPlayerActorId != hasPlayerProfileId)
+                        errors.Add("Player actor identity and profile must both be present or both be absent for legacy schema-v1 compatibility.");
+                    if (hasPlayerActorId)
+                    {
+                        if (!ActorRuntimeIdentity.IsValidFormat(snapshot.player.actorInstanceId))
+                            errors.Add($"Player ActorInstanceId '{snapshot.player.actorInstanceId}' is invalid.");
+                        if (database?.GetActorProfile(snapshot.player.actorProfileId) == null)
+                            errors.Add($"Player ActorProfileId '{snapshot.player.actorProfileId}' does not resolve.");
+                        if (sceneIds.TryGetValue(snapshot.player.persistentId ?? string.Empty, out PersistentSceneObjectId playerRoot))
+                        {
+                            ActorRuntimeIdentity runtimeIdentity = playerRoot.GetComponent<ActorRuntimeIdentity>();
+                            string expectedId = !string.IsNullOrWhiteSpace(runtimeIdentity?.AuthoredActorInstanceId)
+                                ? runtimeIdentity.AuthoredActorInstanceId
+                                : ActorRuntimeIdentity.DeriveAuthoredActorInstanceId(snapshot.player.persistentId);
+                            if (snapshot.player.actorInstanceId != expectedId)
+                                errors.Add($"Player '{snapshot.player.persistentId}' expects ActorInstanceId '{expectedId}'.");
+                            ActorInteractionContext context = playerRoot.GetComponent<ActorInteractionContext>();
+                            ActorProfileDefinition[] profiles = database?.GetAllActorProfiles()
+                                .Where(profile => profile != null && !string.IsNullOrWhiteSpace(profile.inventory_seed_actor_tag) &&
+                                                  Items(context?.ActorTags).Contains(profile.inventory_seed_actor_tag)).ToArray()
+                                ?? Array.Empty<ActorProfileDefinition>();
+                            if (profiles.Length != 1 || profiles[0].id != snapshot.player.actorProfileId)
+                                errors.Add($"Player '{snapshot.player.persistentId}' ActorProfileId does not match its unique bootstrap profile.");
+                        }
+                    }
+                }
+                var actorIds = new HashSet<string>(StringComparer.Ordinal);
+                if (!string.IsNullOrWhiteSpace(snapshot.player?.actorInstanceId))
+                    actorIds.Add(snapshot.player.actorInstanceId);
+                var authoredActorLocators = new HashSet<string>(StringComparer.Ordinal);
+                foreach (ActorState actor in Items(snapshot.actors))
+                {
+                    if (actor == null || !actorIds.Add(actor?.actorInstanceId))
+                    {
+                        errors.Add("Actors contain null or duplicate ActorInstanceId.");
+                        continue;
+                    }
+                    actorStates[actor.actorInstanceId] = actor;
+                    if (!ActorRuntimeIdentity.IsValidFormat(actor.actorInstanceId))
+                        errors.Add($"ActorInstanceId '{actor.actorInstanceId}' is invalid.");
+                    ActorProfileDefinition profile = database?.GetActorProfile(actor.actorProfileId);
+                    if (profile == null)
+                        errors.Add($"Actor '{actor.actorInstanceId}' references missing ActorProfileId '{actor.actorProfileId}'.");
+                    if (actor.originKind != AuthoredActorOrigin && actor.originKind != RuntimeActorOrigin)
+                        errors.Add($"Actor '{actor.actorInstanceId}' has unsupported origin '{actor.originKind}'.");
+                    if (actor.lifecycleState != AliveLifecycle && actor.lifecycleState != DeadLifecycle)
+                        errors.Add($"Actor '{actor.actorInstanceId}' has unsupported lifecycle '{actor.lifecycleState}'.");
+                    if (!ValidPose(actor.pose))
+                        errors.Add($"Actor '{actor.actorInstanceId}' has invalid pose.");
+                    float maxHealth = profile?.health?.max_health ?? 0f;
+                    bool healthValid = Finite(actor.currentHealth) && actor.currentHealth >= 0f && actor.currentHealth <= maxHealth;
+                    if (!healthValid || actor.lifecycleState == AliveLifecycle && actor.currentHealth <= 0f ||
+                        actor.lifecycleState == DeadLifecycle && actor.currentHealth != 0f)
+                        errors.Add($"Actor '{actor.actorInstanceId}' lifecycle '{actor.lifecycleState}' contradicts health {actor.currentHealth}.");
+
+                    if (actor.originKind == AuthoredActorOrigin)
+                    {
+                        if (!authoredActorLocators.Add(actor.authoredSceneObjectId))
+                            errors.Add($"Authored actor locator '{actor.authoredSceneObjectId}' is duplicated.");
+                        AddEntity(entityKinds, actor.authoredSceneObjectId, "actor", typeof(ActorProfileComponent));
+                        if (actor.authoredSceneObjectId == snapshot.player?.persistentId)
+                            errors.Add($"Actor '{actor.actorInstanceId}' duplicates the player authored root.");
+                        if (sceneIds.TryGetValue(actor.authoredSceneObjectId ?? string.Empty, out PersistentSceneObjectId root))
+                        {
+                            ActorProfileComponent component = root.GetComponent<ActorProfileComponent>();
+                            ActorRuntimeIdentity runtimeIdentity = root.GetComponent<ActorRuntimeIdentity>();
+                            string expectedId = !string.IsNullOrWhiteSpace(runtimeIdentity?.AuthoredActorInstanceId)
+                                ? runtimeIdentity.AuthoredActorInstanceId
+                                : ActorRuntimeIdentity.DeriveAuthoredActorInstanceId(actor.authoredSceneObjectId);
+                            if (expectedId != actor.actorInstanceId)
+                                errors.Add($"Authored actor '{actor.authoredSceneObjectId}' expects ActorInstanceId '{expectedId}', not '{actor.actorInstanceId}'.");
+                            ActorProfileDefinition resolved = database?.GetActorProfile(component?.ActorProfileId);
+                            if (resolved == null || resolved.id != actor.actorProfileId)
+                                errors.Add($"Authored actor '{actor.authoredSceneObjectId}' profile does not match '{actor.actorProfileId}'.");
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(actor.authoredSceneObjectId))
+                            errors.Add($"Runtime actor '{actor.actorInstanceId}' cannot carry an authored locator.");
+                        if (!ActorSpawnService.CanSpawn(actor.actorProfileId, out _, out string spawnError))
+                            errors.Add($"Runtime actor '{actor.actorInstanceId}' cannot be recreated: {spawnError}");
+                        if (ActorRuntimeRegistry.TryGet(actor.actorInstanceId, out ActorRuntimeIdentity existing) &&
+                            (existing.OriginKind != ActorOriginKind.Runtime || existing.ActorProfileId != actor.actorProfileId))
+                            errors.Add($"Runtime actor '{actor.actorInstanceId}' conflicts with its active representation.");
+                    }
+                }
+                if (Items(snapshot.actors).Length > 0)
+                {
+                    string[] expectedAuthored = FindScene<ActorProfileComponent>()
+                        .Where(component => component.gameObject.activeInHierarchy && Identity(component) != null &&
+                                            Identity(component).PersistentId != snapshot.player?.persistentId)
+                        .Select(component => Identity(component).PersistentId).Distinct(StringComparer.Ordinal).ToArray();
+                    if (!authoredActorLocators.SetEquals(expectedAuthored))
+                        errors.Add("Actor records do not cover every non-player authored actor exactly once.");
                 }
                 var containerIds = new HashSet<string>(StringComparer.Ordinal);
                 foreach (ContainerState container in Items(snapshot.containers))
@@ -845,7 +1068,9 @@ namespace OldScars.Core.Persistence
             {
                 if (storage.kind == InventoryKind || storage.kind == EquipmentKind)
                 {
-                    bool actor = snapshot.player?.persistentId == storage.ownerId || Items(snapshot.corpses).Any(corpse => corpse?.persistentId == storage.ownerId);
+                    bool actor = snapshot.player?.persistentId == storage.ownerId ||
+                                 actorStates.ContainsKey(storage.ownerId ?? string.Empty) ||
+                                 Items(snapshot.corpses).Any(corpse => corpse?.persistentId == storage.ownerId);
                     if (!actor) errors.Add($"Storage '{storage.storageId}' references unsupported actor owner '{storage.ownerId}'.");
                 }
                 else if (storage.kind == ContainerKind)
@@ -893,6 +1118,12 @@ namespace OldScars.Core.Persistence
                     RequireStorage(snapshot.player.inventoryStorageId, InventoryKind, snapshot.player.persistentId);
                     if (!string.IsNullOrWhiteSpace(snapshot.player.equipmentStorageId)) RequireStorage(snapshot.player.equipmentStorageId, EquipmentKind, snapshot.player.persistentId);
                 }
+                foreach (ActorState actor in Items(snapshot.actors)) if (actor != null)
+                {
+                    RequireStorage(actor.inventoryStorageId, InventoryKind, actor.actorInstanceId);
+                    if (!string.IsNullOrWhiteSpace(actor.equipmentStorageId))
+                        RequireStorage(actor.equipmentStorageId, EquipmentKind, actor.actorInstanceId);
+                }
                 foreach (ContainerState container in Items(snapshot.containers)) if (container != null) RequireStorage(container.storageId, ContainerKind, container.persistentId);
                 foreach (CorpseState corpse in Items(snapshot.corpses)) if (corpse != null)
                 {
@@ -921,9 +1152,12 @@ namespace OldScars.Core.Persistence
                     if (state == null || !owners.Add(state?.ownerPersistentId)) { errors.Add("Equipment contains null or duplicate owner."); continue; }
                     RequireStorage(state.storageId, EquipmentKind, state.ownerPersistentId);
                     bool referencedByOwner = snapshot.player?.persistentId == state.ownerPersistentId && snapshot.player.equipmentStorageId == state.storageId ||
+                        actorStates.TryGetValue(state.ownerPersistentId ?? string.Empty, out ActorState actor) && actor.equipmentStorageId == state.storageId ||
                         Items(snapshot.corpses).Any(corpse => corpse?.persistentId == state.ownerPersistentId && corpse.equipmentStorageId == state.storageId);
                     if (!referencedByOwner) errors.Add($"Equipment '{state.ownerPersistentId}' is not referenced by its actor state.");
-                    if (SceneComponent<ActorEquipmentComponent>(state.ownerPersistentId) == null)
+                    if (ActorEquipmentComponent(state.ownerPersistentId) == null &&
+                        (!actorStates.TryGetValue(state.ownerPersistentId ?? string.Empty, out ActorState equipmentActor) ||
+                         equipmentActor.originKind == AuthoredActorOrigin))
                         errors.Add($"Equipment owner '{state.ownerPersistentId}' has no ActorEquipmentComponent.");
                     StorageState storage = storages.TryGetValue(state.storageId ?? string.Empty, out StorageState found) ? found : null;
                     EquipmentLayoutDefinition layout = database?.GetEquipmentLayout(state.layoutId);
@@ -954,6 +1188,9 @@ namespace OldScars.Core.Persistence
                 }
                 if (!string.IsNullOrWhiteSpace(snapshot.player?.equipmentStorageId) && !owners.Contains(snapshot.player.persistentId))
                     errors.Add($"Player '{snapshot.player.persistentId}' is missing EquipmentState.");
+                foreach (ActorState actor in Items(snapshot.actors))
+                    if (actor != null && !string.IsNullOrWhiteSpace(actor.equipmentStorageId) && !owners.Contains(actor.actorInstanceId))
+                        errors.Add($"Actor '{actor.actorInstanceId}' is missing EquipmentState.");
                 foreach (CorpseState corpse in Items(snapshot.corpses))
                     if (corpse != null && !string.IsNullOrWhiteSpace(corpse.equipmentStorageId) && !owners.Contains(corpse.persistentId))
                         errors.Add($"Corpse '{corpse.persistentId}' is missing EquipmentState.");
@@ -1006,6 +1243,21 @@ namespace OldScars.Core.Persistence
             private T SceneComponent<T>(string id) where T : Component
             {
                 return sceneIds.TryGetValue(id ?? string.Empty, out PersistentSceneObjectId identity) ? identity.GetComponent<T>() : null;
+            }
+
+            private ActorEquipmentComponent ActorEquipmentComponent(string ownerId)
+            {
+                if (snapshot.player?.persistentId == ownerId)
+                    return SceneComponent<ActorEquipmentComponent>(ownerId);
+                if (actorStates.TryGetValue(ownerId ?? string.Empty, out ActorState actor))
+                {
+                    if (actor.originKind == AuthoredActorOrigin)
+                        return SceneComponent<ActorEquipmentComponent>(actor.authoredSceneObjectId);
+                    return ActorRuntimeRegistry.TryGet(ownerId, out ActorRuntimeIdentity identity)
+                        ? identity.GetComponent<ActorEquipmentComponent>()
+                        : null;
+                }
+                return SceneComponent<ActorEquipmentComponent>(ownerId);
             }
 
             private void RequireStorage(string storageId, string kind, string owner)
