@@ -53,6 +53,17 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `ActorSpawnService` construye una cápsula lógica visible con tags/debug info, identity, Inventory, ownership, Equipment, health, lootable y profile. New spawn bootstrappea el profile; restore exige un ID existente y omite seeds. No hay prefab humano genérico ni visual rig: los bindings de `EntityVisualRigRuntime` requieren transforms authored y quedan fuera de este lifecycle seam.
 - Retirar una representación runtime no equivale a muerte: libera actor registry, storages, ownership/item identities contenidas y destruye sólo el GameObject representativo. Persistencia decide después qué actores lógicos deben tener representación; no existe world streaming, pooling ni desaparición permanente.
 
+## Needs, World Clock & Recovery V1
+
+- `WorldClock` es la autoridad runtime única de tiempo jugable para el Current Slice. Conserva `elapsedGameSeconds` como `double` monotónico, independiente de fecha del sistema, zona horaria, frame count y `writtenUtc`; deriva `Day = floor(seconds / 86400) + 1`, hora y minuto.
+- El bootstrap y los saves schema-v1 legacy sin campo de clock usan `0` segundos, presentado como `Day 1 00:00`. Se rechazan NaN, Infinity, negativos y valores mayores a 3.660.000 días antes de mutar.
+- La escala provisional configurable es `60 game seconds / real second`. Progreso normal usa `Time.deltaTime`, por lo que una futura pausa `timeScale == 0` detiene clock/needs sin que M38.1 posea `Time.timeScale`. Avance explícito de rest/sleep no depende de frames ni simula ticks pequeños.
+- `ActorNeedsComponent` ya no posee un `Update()` temporal. Se suscribe al clock y aplica `AdvanceNeeds(elapsedGameSeconds)` directamente. Un actor Dead según `ActorHealthComponent`/`ActorRuntimeIdentity` ignora el delta; no se cambia death semantics.
+- Los campos serializados `decayPerSecond` se conservan por compatibilidad con `SampleScene`, pero M38.1 deriva una tasa explícita por game hour desde el pacing legacy: Hunger `1.8/game hour`, Thirst `3.0/game hour`. Con la escala default se conserva el drain real previo; sleep de 8h drena `14.4/24`.
+- `ActorRestService.TryRest` exige actor activo con needs + health, rechaza disabled/Dead/duración inválida/clock ausente, avanza el mismo clock una sola vez y devuelve un resultado explicable. No llama a `Heal`, no revive y no implementa heridas, sangrado, dolor ni medicina.
+- El Current Slice real posee `ActorNeedsComponent` solamente en el player. M38.1 no agrega needs a NPCs authored/runtime ni extiende `ActorState` preventivamente. Fatigue queda `DEFERRED — SHOULD`: no existe un modelo previo y forzar su semántica dentro de Hunger/Thirst abriría una expansión desproporcionada.
+- `ActorNeedsDebugPanel` muestra `Day / HH:MM`, Hunger, Thirst y Health, y reutiliza la misma operación runtime mediante `Rest 1h` / `Sleep 8h`. Continúa siendo tooling OnGUI de desarrollo, no HUD/UI final.
+
 ## Persistence Core V1
 
 - `PersistenceSerializer.CurrentFormatVersion` vale `1`. El envelope JSON conserva los nombres estables `formatVersion`, `writtenUtc` y `payload`; `payload` debe estar presente y no ser null.
@@ -69,11 +80,11 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Current Slice Snapshot V1
 
-- `CurrentSliceSaveData` conserva el envelope/schema V1 aditivo. Contiene player, tabla única de items, storages, Equipment, containers, actors, doors y world items; `corpses` queda sólo como lectura compatible de saves pre-M38. No serializa `MonoBehaviour`, `Transform`, referencias runtime ni definiciones estáticas.
+- `CurrentSliceSaveData` conserva el envelope/schema V1 aditivo. Contiene `WorldClockState` top-level, player, tabla única de items, storages, Equipment, containers, actors, doors y world items; `corpses` queda sólo como lectura compatible de saves pre-M38. No serializa `MonoBehaviour`, `Transform`, referencias runtime ni definiciones estáticas.
 - `ItemState` define cada identidad una sola vez mediante `InstanceId`, `DefinitionId` y `Condition`. `DefinitionId` es Global Content ID; `InstanceId` no lo es. `StorageEntryState`, Equipment y world representations referencian la instancia; quantity permanece en la entry/representación y no crea IDs por unidad fungible.
 - Antes del semantic preflight, la compatibilidad schema v1 normaliza en memoria las referencias globales persistidas: item definition, equipment layout/slots y actor profile. Un valor legacy sin namespace sólo se interpreta como Core; no cambia `schemaVersion` y el siguiente capture escribe identidad canónica.
 - `StorageState` usa claves derivadas de `kind + ownerId`: player/container por `PersistentSceneObjectId`, NPC por `ActorInstanceId` e item-owned storage por el `InstanceId` del item owner. Entries grid conservan x/y, rotación y footprint efectivo exactos.
-- player captura pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Health tags, carry weight, stats y visuales son derivados y no se duplican en el save.
+- `WorldClockState` captura segundos absolutos. Su ausencia en un payload schema-v1 se normaliza en memoria al bootstrap default; un campo presente null o inválido se rechaza. Player captura pose mundial, health escalar, hunger/thirst, Inventory, Equipment y owned storages. Health tags, carry weight, stats y visuales son derivados y no se duplican en el save.
 - containers se incluyen aunque su storage autoritativo esté vacío. Un container runtime no inicializado aborta capture; Pass 1 no ejecuta loot tables ni agrega un restore seam anticipado.
 - `ActorState[]` es la autoridad NPC viva/muerta para nuevos captures y referencia Inventory/Equipment sin duplicar `ItemState`. `CorpseState[]` no se vuelve a escribir y existe únicamente para cargar payloads V1 anteriores.
 - cada world item authored posee un marker `present/absent` por su item ID. Un authored lazy se proyecta desde authored ID + definition sin reservar identidad; uno recogido queda absent y su item debe resolver en otro owner. Drops runtime presentes conservan quantity y pose.
@@ -92,10 +103,11 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Root storages se reemplazan atómicamente después de validar quantities, footprints, bounds y overlap. Equipment restaura layout, una entry por item y slot IDs sin duplicar items multi-slot; ownership se reconstruye después de publicar storages válidos.
 - Authored world markers restauran present/absent de forma autoritativa; absent marca la fuente inicializada y evita lazy respawn. Runtime drops se crean desde la `ItemInstance` ya rehidratada, conservando quantity y pose, sin split, transfer ni ID nuevo.
 - Containers quedan inicializados con contenido autoritativo incluso vacío, por lo que load nunca ejecuta loot tables. Un authored actor puede bootstrappear Alive y luego recibir un target Dead; termina como el mismo actor/corpse sin seed adicional ni representación duplicada. La regla antigua de corpse ya muerto se conserva sólo para payloads pre-M38.
-- Doors restauran el tag lógico y sincronizan visual si exponen `DoorSwingController`. Player health/needs se aplican exactamente y la pose se restaura al final, cancelando movimiento y deshabilitando temporalmente `CharacterController`.
-- Ante fallo posterior a mutación, el mismo `ApplyCore` recibe el snapshot pre-load sin recursión. Los fault points one-shot post-actor-reconciliation y post-storage validan existencia, lifecycle, representación, pose, storages y ownership; sólo rollback recapturado equivalente produce `ApplyFailed` seguro.
+- Doors restauran el tag lógico y sincronizan visual si exponen `DoorSwingController`. World Clock usa un setter absoluto silencioso durante apply/rollback; luego player health/needs se aplican exactamente y la pose se restaura al final, cancelando movimiento y deshabilitando temporalmente `CharacterController`.
+- Ante fallo posterior a mutación, el mismo `ApplyCore` recibe el snapshot pre-load sin recursión. Los fault points one-shot post-actor-reconciliation, post-storage y post-runtime-state validan existencia, lifecycle, representación, pose, storages, ownership, World Clock y needs; sólo rollback recapturado equivalente produce `ApplyFailed` seguro.
 - `M37.1 Current Slice Persistent Round-Trip Diagnostics` usa `SampleScene` y root temporal, prepara State A mediante rutas runtime, muta State B, carga A y compara A/C. Un único fault point `UNITY_EDITOR` posterior a storages demuestra rollback equivalente; el diagnóstico sale sin guardar la escena ni dejar archivos.
 - `M38.0 Actor Runtime & Lifecycle Diagnostics` usa dos Play sessions sobre `SampleScene`: guarda authored Alive/Dead y runtime actor en A; en B comprueba bootstrap Alive previo al load, aplica Dead/corpse, recrea runtime con mismo ID, vuelve a Alive selectivamente y prueba rollback post-reconciliation. Sale sin guardar escena ni dejar saves temporales.
+- `M38.1 Needs, World Clock & Recovery Diagnostics` usa dos Play sessions: valida clock/derivación, needs sin double tick, food/water real, rest/sleep, Dead, save/load fresh-session, payload legacy sin clock, preflight inválido sin mutación y fault post-clock/needs con rollback equivalente. Sale sin guardar `SampleScene` ni dejar saves temporales.
 
 ## Persistence Ready — Current Slice Aprobado
 
@@ -164,7 +176,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Limites Tecnicos Del Slice
 
-- Actor needs avanza con `Time.deltaTime`; no existe world clock persistente ni offline progression.
+- World Clock y needs/rest M38.1 están implementados para el Current Slice; no existe offline progression, calendario amplio, clima, iluminación temporal, beds system ni fatigue.
 - Health es un valor escalar con tags derivados; no existe daño localizado, heridas, sangrado, dolor, armadura ni penetracion integrados.
 - `FirearmDebugController` es un prototipo debug de arma de fuego, no el contrato final de combate.
 - Existe actor registry/spawn/lifecycle durable acotado a M38.0; no existen IA, navegación de NPCs, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.

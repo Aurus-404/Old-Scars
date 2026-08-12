@@ -9,40 +9,56 @@ namespace OldScars.Core.Actors
         [SerializeField] private ActorNeedProfile profile = new ActorNeedProfile();
         [SerializeField] private ActorNeedState[] runtimeStates;
 
+        private WorldClock connectedClock;
+        private ActorHealthComponent actorHealth;
+        private ActorRuntimeIdentity actorIdentity;
+
         public ActorNeedProfile Profile => profile;
         public IReadOnlyList<ActorNeedState> RuntimeStates => runtimeStates;
 
         private void Awake()
         {
             InitializeRuntimeState();
+            ResolveLifecycle();
         }
 
-        private void Update()
+        private void OnEnable()
         {
-            if (runtimeStates == null || runtimeStates.Length == 0 || profile?.needs == null)
-            {
-                return;
-            }
+            ConnectWorldClock(WorldClock.Current);
+        }
 
-            float deltaTime = Time.deltaTime;
-            for (int i = 0; i < runtimeStates.Length; i++)
-            {
-                ActorNeedState state = runtimeStates[i];
-                if (state == null)
-                {
-                    continue;
-                }
+        private void Start()
+        {
+            ConnectWorldClock(WorldClock.Current);
+        }
 
-                ActorNeedConfig config = profile.GetNeed(state.needId);
-                if (config == null)
-                {
+        private void OnDisable()
+        {
+            ConnectWorldClock(null);
+        }
+
+        public bool AdvanceNeeds(double elapsedGameSeconds)
+        {
+            if (double.IsNaN(elapsedGameSeconds) || double.IsInfinity(elapsedGameSeconds) || elapsedGameSeconds <= 0d ||
+                runtimeStates == null || runtimeStates.Length == 0 || profile?.needs == null || IsDead())
+                return false;
+
+            bool changed = false;
+            double elapsedGameHours = elapsedGameSeconds / WorldClock.SecondsPerHour;
+            for (int index = 0; index < runtimeStates.Length; index++)
+            {
+                ActorNeedState state = runtimeStates[index];
+                ActorNeedConfig config = state != null ? profile.GetNeed(state.needId) : null;
+                if (state == null || config == null)
                     continue;
-                }
 
                 float maxValue = Mathf.Max(0f, config.maxValue);
-                float nextValue = state.currentValue - Mathf.Max(0f, config.decayPerSecond) * deltaTime;
-                state.currentValue = Mathf.Clamp(nextValue, 0f, maxValue);
+                float nextValue = (float)(state.currentValue - config.DecayPerGameHour * elapsedGameHours);
+                nextValue = Mathf.Clamp(nextValue, 0f, maxValue);
+                changed |= nextValue < state.currentValue;
+                state.currentValue = nextValue;
             }
+            return changed;
         }
 
         public void RestoreNeed(string needId, float amount)
@@ -134,6 +150,41 @@ namespace OldScars.Core.Actors
             for (int index = 0; index < runtimeStates.Length; index++)
                 runtimeStates[index].currentValue = values[runtimeStates[index].needId];
             return true;
+        }
+
+        internal void ConnectWorldClock(WorldClock clock)
+        {
+            if (connectedClock != clock)
+            {
+                if (connectedClock != null)
+                    connectedClock.GameTimeAdvanced -= OnGameTimeAdvanced;
+                connectedClock = clock;
+            }
+            if (connectedClock != null && isActiveAndEnabled)
+            {
+                connectedClock.GameTimeAdvanced -= OnGameTimeAdvanced;
+                connectedClock.GameTimeAdvanced += OnGameTimeAdvanced;
+            }
+        }
+
+        private void OnGameTimeAdvanced(double elapsedGameSeconds)
+        {
+            AdvanceNeeds(elapsedGameSeconds);
+        }
+
+        private bool IsDead()
+        {
+            ResolveLifecycle();
+            return actorHealth != null && actorHealth.IsDead ||
+                   actorIdentity != null && actorIdentity.LifecycleState == ActorLifecycleState.Dead;
+        }
+
+        private void ResolveLifecycle()
+        {
+            if (actorHealth == null)
+                actorHealth = GetComponent<ActorHealthComponent>();
+            if (actorIdentity == null)
+                actorIdentity = GetComponent<ActorRuntimeIdentity>();
         }
 
         private void InitializeRuntimeState()

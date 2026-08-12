@@ -66,6 +66,7 @@ namespace OldScars.Core.Persistence
 #if UNITY_EDITOR
         public static bool DiagnosticInjectFailureAfterStorageRestore { get; set; }
         public static bool DiagnosticInjectFailureAfterActorReconciliation { get; set; }
+        public static bool DiagnosticInjectFailureAfterRuntimeStateRestore { get; set; }
 #endif
 
         public static CurrentSliceLoadResult Load(string slotId, PersistenceFileStore store = null)
@@ -127,9 +128,11 @@ namespace OldScars.Core.Persistence
             teardownIds.UnionWith(Items(preflight.Snapshot.items).Select(item => item.instanceId));
             bool injectActorFailure = ShouldInjectActorDiagnosticFailure();
             bool injectStorageFailure = ShouldInjectStorageDiagnosticFailure();
+            bool injectRuntimeStateFailure = ShouldInjectRuntimeStateDiagnosticFailure();
             bool mutationStarted;
             if (TryApplyCore(preflight.Snapshot, targetScene, rollbackScene, teardownIds, external,
-                    injectActorFailure, injectStorageFailure, out mutationStarted, out string applyFailure))
+                    injectActorFailure, injectStorageFailure, injectRuntimeStateFailure,
+                    out mutationStarted, out string applyFailure))
             {
                 CurrentSliceLoadResult success = new CurrentSliceLoadResult(
                     CurrentSliceLoadFailureCode.Success, "Complete", null, mutationStarted, false, false);
@@ -153,6 +156,7 @@ namespace OldScars.Core.Persistence
                 external,
                 false,
                 false,
+                false,
                 out rollbackMutationStarted,
                 out string rollbackFailure);
             CurrentSliceLoadResult result = rollbackSucceeded
@@ -171,6 +175,7 @@ namespace OldScars.Core.Persistence
             ExternalBindings external,
             bool injectActorFailure,
             bool injectStorageFailure,
+            bool injectRuntimeStateFailure,
             out bool mutationStarted,
             out string failure)
         {
@@ -200,6 +205,8 @@ namespace OldScars.Core.Persistence
 
                 RestoreWorld(snapshot, scene, items);
                 RestoreRuntimeState(snapshot, scene);
+                if (injectRuntimeStateFailure)
+                    throw new InvalidOperationException("Injected diagnostic failure after World Clock and needs restore.");
                 ValidateOwnership(scene, external);
                 RestorePlayerPose(snapshot.player.pose, scene.Player.transform);
 
@@ -481,6 +488,12 @@ namespace OldScars.Core.Persistence
 
         private static void RestoreRuntimeState(CurrentSliceSaveData snapshot, ResolvedScene scene)
         {
+            WorldClock worldClock = WorldClock.Current;
+            if (worldClock == null)
+                throw new InvalidOperationException("World Clock restore failed: authority unavailable.");
+            if (!worldClock.TryRestoreElapsedGameSeconds(snapshot.worldClock.elapsedGameSeconds, out string clockError))
+                throw new InvalidOperationException($"World Clock restore failed: {clockError}");
+
             ActorRuntime player = scene.Actors[snapshot.player.persistentId];
             player.Health.ApplyInitialHealth(player.Health.MaxHealth, snapshot.player.currentHealth);
             var needs = Items(snapshot.player.needs).ToDictionary(value => value.needId, value => value.currentValue, StringComparer.Ordinal);
@@ -633,6 +646,17 @@ namespace OldScars.Core.Persistence
 #if UNITY_EDITOR
             bool inject = DiagnosticInjectFailureAfterActorReconciliation;
             DiagnosticInjectFailureAfterActorReconciliation = false;
+            return inject;
+#else
+            return false;
+#endif
+        }
+
+        private static bool ShouldInjectRuntimeStateDiagnosticFailure()
+        {
+#if UNITY_EDITOR
+            bool inject = DiagnosticInjectFailureAfterRuntimeStateRestore;
+            DiagnosticInjectFailureAfterRuntimeStateRestore = false;
             return inject;
 #else
             return false;

@@ -2494,3 +2494,50 @@ Persistence Ready: `APPROVED`.
 M38.1: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. No se inicia M38.1 en este commit.
 
 Fuera de M38.0: AI, combat, needs/world clock, world-scale spawning, streaming y playable exploration prototype.
+
+### M38.1 — Needs, World Clock & Recovery V1 — Functional Implementation Pass 1
+
+Fecha: 2026-08-12
+
+Milestone: `M38.1 — Needs, World Clock & Recovery V1`.
+
+Versión: `World Time, Needs Progression & Rest Integration — Functional Implementation Pass 1`.
+
+Estado anterior: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+
+Estado posterior: `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Objetivo: establecer una autoridad temporal única y persistente, conectar Hunger/Thirst al tiempo de juego, integrar Rest/Sleep sin recovery médico implícito y demostrar fresh-session/rollback sin reabrir M37 ni romper M38.0.
+
+Implementación:
+
+- `WorldClock` es la única autoridad runtime: bootstrap Day 1 00:00, segundos de juego acumulados, Day/HH:MM derivados y escala explícita de 60 segundos de juego por segundo real. Gameplay normal usa `Time.deltaTime`; saltos controlados usan el mismo delta temporal; restore/rollback usa un setter absoluto silencioso.
+- `ActorNeedsComponent` deja de drenar por `Update` propio, consume exactamente una vez cada delta del reloj y omite actores Dead. La configuración serializada existente se conserva y se expresa como 1.8 Hunger y 3.0 Thirst por hora de juego.
+- `ActorRestService` implementa Rest/Sleep como avance del mismo reloj. Rechaza duración no finita/no positiva, actor disabled, health ausente, lifecycle Dead o reloj ausente sin mutar. No cura health, wounds ni revive.
+- `ActorNeedsDebugPanel` expone Day/HH:MM, Rest 1h y Sleep 8h como superficie debug acotada.
+- Fatigue queda `SHOULD — DEFERRED`: no existe definición ni consumidor jugable aprobado; agregar una barra aislada no cumpliría el filtro de sistemas conectados.
+- `CurrentSliceSaveData` agrega `worldClock` top-level sin schema bump. Saves schema-v1 que omiten el miembro normalizan a Day 1 00:00; `worldClock: null`, no finito, negativo o fuera de cota falla preflight. Capture/compare/apply/rollback incluyen reloj y Player needs; M38 ActorState no se amplía porque los NPC actuales no tienen needs.
+- El fault one-shot posterior a restaurar reloj/needs demuestra que el snapshot pre-load recupera exactamente ambos estados mediante la transacción M37.1 existente.
+
+Validación automatizada:
+
+- Runtime compile: `PASS`.
+- Editor compile: `PASS`.
+- `Global Content ID Namespace Foundation: PASS`.
+- `M36.1 Foundation Identity Validation: PASS`.
+- `M37.0 Persistence Core Diagnostics: PASS`.
+- `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS`.
+- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS` con rollback transaccional preservado.
+- `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS`.
+- `Inventory Interaction UX Correction Diagnostics: PASS`.
+- `M38.1 Needs, World Clock & Recovery Diagnostics: PASS` en dos Play sessions: bootstrap y derivación temporal, avance único/reconexión de needs, consumibles reales, Rest/Sleep, rechazos inválidos/disabled/Dead, round-trip fresh-session, legacy sin clock, preflight sin mutación y rollback post-runtime-state canónicamente equivalente.
+- Recompilación final posterior a revisión: `PASS`; no hubo warnings nuevos. Permanecen cuatro `CS0618` en `BuildingVisibilityManager` y dos `CS0414` en `ItemStorageDebugPanel`.
+- `SampleScene` no se guardó y conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
+
+Alcance y secuencia:
+
+- ocho archivos C# tocados/creados y 884 líneas C# agregadas, dentro del presupuesto; Unity generó tres `.meta` nuevos;
+- no se modificaron `SampleScene`, prefabs, JSON, Packages, ProjectSettings ni asmdefs;
+- M36.1, M37.1, `Persistence Ready — APPROVED` y M38.0 se preservaron;
+- fuera: health/wound recovery, Fatigue implementada, AI, combat, weather/exposure, world-scale spawn/streaming, UI final y playable exploration prototype;
+- M39 queda bloqueado hasta `M38.1 — Manual Unity Validation & Closeout` y autorización separada.

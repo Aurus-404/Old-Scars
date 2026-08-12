@@ -8,10 +8,11 @@ namespace OldScars.Core.Actors
     public sealed class ActorNeedsDebugPanel : MonoBehaviour
     {
         private const float PanelWidth = 220f;
-        private const float PanelHeight = 138f;
+        private const float PanelHeight = 230f;
 
         [SerializeField] private ActorNeedsComponent actorNeeds;
         [SerializeField] private ActorHealthComponent actorHealth;
+        [SerializeField] private WorldClock worldClock;
         [SerializeField] private InventoryUISessionController inventorySessionController;
         [SerializeField] private float debugDamageAmount = 25f;
         [SerializeField] private bool visible = true;
@@ -43,6 +44,7 @@ namespace OldScars.Core.Actors
         {
             ResolveActorNeeds();
             ResolveActorHealth();
+            ResolveWorldClock();
             ResolveInventorySessionController();
         }
 
@@ -50,6 +52,7 @@ namespace OldScars.Core.Actors
         {
             ResolveActorNeeds();
             ResolveActorHealth();
+            ResolveWorldClock();
             ResolveInventorySessionController();
         }
 
@@ -75,8 +78,13 @@ namespace OldScars.Core.Actors
                 ResolveActorHealth();
             }
 
+            if (worldClock == null)
+                ResolveWorldClock();
+
             GUILayout.BeginArea(GetPanelRect(), GUI.skin.box);
             GUILayout.Label("Needs (Debug)");
+
+            GUILayout.Label(worldClock != null ? worldClock.DisplayTime : "World Clock: <NONE>");
 
             if (actorNeeds == null && actorHealth == null)
             {
@@ -113,6 +121,13 @@ namespace OldScars.Core.Actors
             {
                 ApplyDebugDamageToPlayer();
             }
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Rest 1h", GUILayout.Height(24f)))
+                ApplyDebugRest(WorldClock.SecondsPerHour);
+            if (GUILayout.Button("Sleep 8h", GUILayout.Height(24f)))
+                ApplyDebugRest(WorldClock.SecondsPerHour * 8d);
+            GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
         }
@@ -169,6 +184,26 @@ namespace OldScars.Core.Actors
                 debugOnly: true));
         }
 
+        private void ApplyDebugRest(double durationGameSeconds)
+        {
+            ActorRestResult result = ActorRestService.TryRest(actorNeeds, durationGameSeconds);
+            string actorName = actorNeeds != null ? actorNeeds.name : "<NONE>";
+            string actorId = actorNeeds != null
+                ? actorNeeds.GetComponent<ActorRuntimeIdentity>()?.ActorInstanceId ?? actorName
+                : "<NONE>";
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.Info,
+                result.Message,
+                actorId: actorId,
+                actorDisplayName: actorName,
+                debugOnly: true));
+
+            if (!result.Success)
+                Debug.LogWarning("[Rest][DEBUG_REST_REJECTED]" +
+                    $"\nActorId: {actorId}\nDurationGameSeconds: {durationGameSeconds:R}" +
+                    $"\nFailureCode: {result.FailureCode}\nFailure: {result.Message}\nActionTaken: world time was not advanced");
+        }
+
         private void ResolveActorNeeds()
         {
             if (actorNeeds != null)
@@ -191,6 +226,12 @@ namespace OldScars.Core.Actors
 
             if (actorHealth == null)
                 actorHealth = FindAnyObjectByType<ActorHealthComponent>();
+        }
+
+        private void ResolveWorldClock()
+        {
+            if (worldClock == null)
+                worldClock = WorldClock.Current;
         }
 
         private void ResolveInventorySessionController()

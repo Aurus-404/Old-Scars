@@ -18,6 +18,7 @@ namespace OldScars.Core.Persistence
     [Serializable] public sealed class Float4State { public float x; public float y; public float z; public float w; }
     [Serializable] public sealed class PoseState { public Float3State position; public Float4State rotation; }
     [Serializable] public sealed class NeedState { public string needId; public float currentValue; }
+    [Serializable] public sealed class WorldClockState { public double elapsedGameSeconds; }
     [Serializable] public sealed class ItemState { public string instanceId; public string definitionId; public int condition; }
     [Serializable] public sealed class GridPlacementState { public int x; public int y; public bool rotated; public int width; public int height; }
     [Serializable] public sealed class StorageEntryState { public string instanceId; public int quantity; public GridPlacementState placement; }
@@ -98,6 +99,7 @@ namespace OldScars.Core.Persistence
         public const int CurrentSchemaVersion = 1;
         public string snapshotType = "current_slice_v1";
         public int schemaVersion = CurrentSchemaVersion;
+        public WorldClockState worldClock;
         public PlayerState player;
         public ItemState[] items = Array.Empty<ItemState>();
         public StorageState[] storages = Array.Empty<StorageState>();
@@ -322,7 +324,16 @@ namespace OldScars.Core.Persistence
                 return Failed("Current Slice payload is missing.");
             try
             {
+                bool legacyWorldClockMissing = payload is JObject payloadObject &&
+                    !payloadObject.Properties().Any(property => property.Name == "worldClock");
                 CurrentSliceSaveData snapshot = payload.ToObject<CurrentSliceSaveData>(PayloadSerializer);
+                if (legacyWorldClockMissing && snapshot != null)
+                {
+                    snapshot.worldClock = new WorldClockState
+                    {
+                        elapsedGameSeconds = WorldClock.DefaultElapsedGameSeconds
+                    };
+                }
                 GameDatabase database = GameDataManager.Instance != null ? GameDataManager.Instance.Database : null;
                 if (!CurrentSliceContentIdCompatibility.TryNormalizeLegacyCoreReferences(snapshot, database, out string migrationError))
                     return Failed("Current Slice legacy Content ID migration failed: " + migrationError);
@@ -367,12 +378,15 @@ namespace OldScars.Core.Persistence
                    $"\nSlot: {slot}\nItems: {snapshot.items.Length}\nStorages: {snapshot.storages.Length}" +
                    $"\nWorldItems: {snapshot.worldItems.Length}\nContainers: {snapshot.containers.Length}" +
                    $"\nActors: {Items(snapshot.actors).Length}\nCorpsesLegacy: {Items(snapshot.corpses).Length}" +
-                   $"\nDoors: {snapshot.doors.Length}\nResult: Success";
+                   $"\nDoors: {snapshot.doors.Length}" +
+                   $"\nElapsedGameSeconds: {snapshot.worldClock?.elapsedGameSeconds.ToString("R", CultureInfo.InvariantCulture) ?? "<NONE>"}" +
+                   "\nResult: Success";
         }
 
         private static CurrentSliceResult Failed(string failure) => new CurrentSliceResult(null, failure ?? "Unknown failure.");
         private static T[] Items<T>(T[] source) => source ?? Array.Empty<T>();
         private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+        private static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
         private static string StorageId(string kind, string ownerId) => kind + ":" + ownerId;
 
         private static T[] FindScene<T>() where T : Component
@@ -463,6 +477,9 @@ namespace OldScars.Core.Persistence
                 Dictionary<string, PersistentSceneObjectId> identities = IndexIdentities();
                 if (identities == null)
                     return null;
+                WorldClock worldClock = WorldClock.Current;
+                if (worldClock == null || !WorldClock.IsValidElapsedGameSeconds(worldClock.ElapsedGameSeconds))
+                    return Fail("World Clock authority is missing or outside its supported range.");
                 ActorInteractionContext[] players = FindScene<ActorInteractionContext>()
                     .Where(actor => Identity(actor) != null && Items(actor.ActorTags).Contains("player"))
                     .ToArray();
@@ -482,7 +499,13 @@ namespace OldScars.Core.Persistence
                 if (playerInventory == null || playerHealth == null || playerNeeds == null)
                     return Fail($"Player '{playerId}' is missing Inventory, Health or Needs runtime state.");
 
-                var snapshot = new CurrentSliceSaveData();
+                var snapshot = new CurrentSliceSaveData
+                {
+                    worldClock = new WorldClockState
+                    {
+                        elapsedGameSeconds = worldClock.ElapsedGameSeconds
+                    }
+                };
                 string playerInventoryId = CaptureStorage(InventoryKind, playerId, playerInventory);
                 if (Failure != null) return null;
                 string playerEquipmentId = CaptureEquipment(playerId, player.GetComponent<ActorEquipmentComponent>());
@@ -831,6 +854,7 @@ namespace OldScars.Core.Persistence
                 if (snapshot.snapshotType != "current_slice_v1" || snapshot.schemaVersion != CurrentSliceSaveData.CurrentSchemaVersion)
                     errors.Add($"Unsupported Current Slice contract '{snapshot.snapshotType}' schema {snapshot.schemaVersion}.");
                 if (database == null) errors.Add("Semantic preflight requires a ready GameDatabase.");
+                ValidateWorldClock();
                 IndexScene();
                 ValidateItems();
                 ValidateTopLevelEntities();
@@ -840,6 +864,19 @@ namespace OldScars.Core.Persistence
                 foreach (string instanceId in items.Keys)
                     if (!locations.ContainsKey(instanceId)) errors.Add($"Item '{instanceId}' has no authoritative location.");
                 return new CurrentSliceValidationResult(errors);
+            }
+
+            private void ValidateWorldClock()
+            {
+                if (snapshot.worldClock == null)
+                {
+                    errors.Add("World Clock state is missing. Legacy saves must omit the field rather than store null.");
+                    return;
+                }
+
+                double elapsed = snapshot.worldClock.elapsedGameSeconds;
+                if (!Finite(elapsed) || !WorldClock.IsValidElapsedGameSeconds(elapsed))
+                    errors.Add($"World Clock elapsedGameSeconds '{elapsed:R}' is outside the supported range.");
             }
 
             private void IndexScene()

@@ -34,11 +34,18 @@ namespace OldScars.Core.Actors
     [Serializable]
     public sealed class ActorNeedConfig
     {
+        // The serialized field name is retained because SampleScene authors the pre-M38 real-time rates.
+        // M38.1 converts that legacy baseline to an explicit per-game-hour rate without editing the scene.
+        public const double LegacyRealSecondsPerGameHour =
+            WorldClock.SecondsPerHour / WorldClock.DefaultGameSecondsPerRealSecond;
+
         public string needId;
         public string displayName;
         public float maxValue = 100f;
         public float initialValue = 100f;
         public float decayPerSecond;
+
+        public double DecayPerGameHour => Math.Max(0d, decayPerSecond) * LegacyRealSecondsPerGameHour;
 
         public ActorNeedConfig()
         {

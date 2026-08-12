@@ -4,26 +4,27 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximos Tres Trabajos
 
-### 1. M38.1 — Needs, World Clock & Recovery V1
+### 1. M38.1 — Manual Unity Validation & Closeout
 
-Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+Estado: `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
 
 Objetivo:
 
-- needs/world clock conectados sobre el lifecycle validado de M38.0;
-- sueño/descanso MUST y fatiga SHOULD.
+- verificar visualmente `Day / HH:MM`, progresión normal de Hunger/Thirst y consumibles;
+- ejecutar `Rest 1h` / `Sleep 8h` y confirmar que clock y needs usan exactamente el mismo delta;
+- guardar, salir completamente de Play Mode, entrar en fresh Play, cargar y comprobar clock/needs exactos sin errores en Console.
 
 Fuera de alcance:
 
 - AI, combat, world-scale spawning y streaming;
 - playable exploration prototype;
-- cualquier implementación antes de autorización explícita.
+- fatigue deferred SHOULD, health/medicine M39, beds system, UI final y cualquier expansión del scope implementado.
 
 ### 2. M39.0 — Localized Health & Medicine V1
 
-Estado: `PLANNED`.
+Estado: `PLANNED — BLOCKED BY M38.1 MANUAL CLOSEOUT`.
 
-Objetivo: regiones, heridas, sangrado, dolor y tratamientos después de M38.1.
+Objetivo: regiones, heridas, sangrado, dolor y tratamientos sólo después del closeout manual de M38.1 y una autorización separada.
 
 ## Dirección De Producción
 
