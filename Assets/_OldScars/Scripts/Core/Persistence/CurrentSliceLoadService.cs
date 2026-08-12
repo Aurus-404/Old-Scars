@@ -546,8 +546,8 @@ namespace OldScars.Core.Persistence
 
         private static void RestorePlayerPose(PoseState pose, Transform player)
         {
-            PointClickMovementController movement = player.GetComponent<PointClickMovementController>();
-            movement?.ClearTarget();
+            PlayerMovementController movement = player.GetComponent<PlayerMovementController>();
+            movement?.ClearMovement();
             CharacterController controller = player.GetComponent<CharacterController>();
             bool wasEnabled = controller != null && controller.enabled;
             if (wasEnabled) controller.enabled = false;
@@ -1129,7 +1129,7 @@ namespace OldScars.Core.Persistence
 
         private static void SetPlayerPose(Transform transform, Vector3 position, Quaternion rotation)
         {
-            transform.GetComponent<PointClickMovementController>()?.ClearTarget();
+            transform.GetComponent<PlayerMovementController>()?.ClearMovement();
             CharacterController controller = transform.GetComponent<CharacterController>();
             bool enabled = controller != null && controller.enabled;
             if (enabled) controller.enabled = false;

@@ -2,19 +2,18 @@ using System.Collections.Generic;
 using OldScars.Core.Feedback;
 using OldScars.Core.Items;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace OldScars.Core.Actors
 {
     public sealed class ActorNeedsDebugPanel : MonoBehaviour
     {
         private const float PanelWidth = 220f;
-        private const float PanelHeight = 230f;
+        private const float PanelHeight = 170f;
 
         [SerializeField] private ActorNeedsComponent actorNeeds;
-        [SerializeField] private ActorHealthComponent actorHealth;
         [SerializeField] private WorldClock worldClock;
         [SerializeField] private InventoryUISessionController inventorySessionController;
-        [SerializeField] private float debugDamageAmount = 25f;
         [SerializeField] private bool visible = true;
 
         public bool IsVisible => visible && (inventorySessionController == null || !inventorySessionController.IsOpen);
@@ -36,14 +35,12 @@ namespace OldScars.Core.Actors
             var panelObject = new GameObject("ActorNeedsDebugPanel_Runtime");
             ActorNeedsDebugPanel panel = panelObject.AddComponent<ActorNeedsDebugPanel>();
             panel.actorNeeds = actorNeeds;
-            panel.actorHealth = actorNeeds.GetComponent<ActorHealthComponent>();
             panel.visible = true;
         }
 
         private void Awake()
         {
             ResolveActorNeeds();
-            ResolveActorHealth();
             ResolveWorldClock();
             ResolveInventorySessionController();
         }
@@ -51,7 +48,6 @@ namespace OldScars.Core.Actors
         private void OnEnable()
         {
             ResolveActorNeeds();
-            ResolveActorHealth();
             ResolveWorldClock();
             ResolveInventorySessionController();
         }
@@ -73,11 +69,6 @@ namespace OldScars.Core.Actors
                 ResolveActorNeeds();
             }
 
-            if (actorHealth == null)
-            {
-                ResolveActorHealth();
-            }
-
             if (worldClock == null)
                 ResolveWorldClock();
 
@@ -86,9 +77,9 @@ namespace OldScars.Core.Actors
 
             GUILayout.Label(worldClock != null ? worldClock.DisplayTime : "World Clock: <NONE>");
 
-            if (actorNeeds == null && actorHealth == null)
+            if (actorNeeds == null)
             {
-                GUILayout.Label("No ActorNeeds/Health component.");
+                GUILayout.Label("No ActorNeeds component.");
                 GUILayout.EndArea();
                 return;
             }
@@ -113,13 +104,6 @@ namespace OldScars.Core.Actors
                         DrawNeed(state.needId, state.currentValue);
                     }
                 }
-            }
-
-            DrawHealth();
-
-            if (actorHealth != null && GUILayout.Button("Debug Damage Player", GUILayout.Height(24f)))
-            {
-                ApplyDebugDamageToPlayer();
             }
 
             GUILayout.BeginHorizontal();
@@ -149,39 +133,6 @@ namespace OldScars.Core.Actors
             float maxValue = actorNeeds.GetNeedMaxValue(needId);
             float percent = maxValue > 0f ? Mathf.Clamp01(currentValue / maxValue) * 100f : 0f;
             GUILayout.Label($"{displayName}: {currentValue:0.#}/{maxValue:0.#} ({percent:0}%)");
-        }
-
-        private void DrawHealth()
-        {
-            if (actorHealth == null)
-                return;
-
-            float maxHealth = actorHealth.MaxHealth;
-            float percent = maxHealth > 0f ? Mathf.Clamp01(actorHealth.CurrentHealth / maxHealth) * 100f : 0f;
-            GUILayout.Label($"Health: {actorHealth.CurrentHealth:0.#}/{maxHealth:0.#} ({percent:0}%)");
-        }
-
-        private void ApplyDebugDamageToPlayer()
-        {
-            if (actorHealth == null)
-                return;
-
-            float beforeHealth = actorHealth.CurrentHealth;
-            float amount = Mathf.Max(0f, debugDamageAmount);
-            bool applied = actorHealth.ApplyDamage(amount);
-            float afterHealth = actorHealth.CurrentHealth;
-
-            string actorName = actorHealth.name;
-            string message = applied
-                ? $"{actorName} debug damage: {amount:0.#}. Health {beforeHealth:0.#}->{afterHealth:0.#}/{actorHealth.MaxHealth:0.#}."
-                : $"{actorName} debug damage not applied. Health {afterHealth:0.#}/{actorHealth.MaxHealth:0.#}.";
-
-            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
-                GameplayFeedbackEntryType.Info,
-                message,
-                actorId: actorName,
-                actorDisplayName: actorName,
-                debugOnly: true));
         }
 
         private void ApplyDebugRest(double durationGameSeconds)
@@ -214,20 +165,6 @@ namespace OldScars.Core.Actors
             actorNeeds = FindAnyObjectByType<ActorNeedsComponent>();
         }
 
-        private void ResolveActorHealth()
-        {
-            if (actorHealth != null)
-            {
-                return;
-            }
-
-            if (actorNeeds != null)
-                actorHealth = actorNeeds.GetComponent<ActorHealthComponent>();
-
-            if (actorHealth == null)
-                actorHealth = FindAnyObjectByType<ActorHealthComponent>();
-        }
-
         private void ResolveWorldClock()
         {
             if (worldClock == null)
@@ -243,6 +180,166 @@ namespace OldScars.Core.Actors
         private static Rect GetPanelRect()
         {
             return new Rect(16f, 16f, PanelWidth, PanelHeight);
+        }
+
+        private static Vector2 ToGuiPosition(Vector2 mousePosition)
+        {
+            return new Vector2(mousePosition.x, Screen.height - mousePosition.y);
+        }
+    }
+
+    public sealed class ActorHealthDebugWindow : MonoBehaviour
+    {
+        private const int WindowId = 39041;
+        private const float WindowWidth = 300f;
+        private const float WindowHeight = 180f;
+
+        [SerializeField] private ActorHealthComponent actorHealth;
+        [SerializeField] private InventoryUISessionController inventorySessionController;
+        [SerializeField] private float debugDamageAmount = 25f;
+        [SerializeField] private bool isOpen;
+
+        private Rect windowRect = new Rect(252f, 16f, WindowWidth, WindowHeight);
+
+        public bool IsOpen => isOpen;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void EnsureRuntimeWindow()
+        {
+            if (FindAnyObjectByType<ActorHealthDebugWindow>() != null)
+                return;
+
+            ActorNeedsComponent playerNeeds = FindAnyObjectByType<ActorNeedsComponent>();
+            ActorHealthComponent health = playerNeeds != null
+                ? playerNeeds.GetComponent<ActorHealthComponent>()
+                : FindAnyObjectByType<ActorHealthComponent>();
+            if (health == null)
+                return;
+
+            var windowObject = new GameObject("ActorHealthDebugWindow_Runtime");
+            ActorHealthDebugWindow window = windowObject.AddComponent<ActorHealthDebugWindow>();
+            window.actorHealth = health;
+        }
+
+        private void Awake()
+        {
+            ResolveReferences();
+        }
+
+        private void Update()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            if (isOpen && keyboard.escapeKey.wasPressedThisFrame)
+            {
+                Close();
+                return;
+            }
+
+            if (keyboard.hKey.wasPressedThisFrame &&
+                (inventorySessionController == null || !inventorySessionController.IsOpen))
+                Toggle();
+        }
+
+        private void OnGUI()
+        {
+            if (!isOpen)
+                return;
+
+            ResolveReferences();
+            windowRect = GUI.Window(WindowId, windowRect, DrawWindowContents, "SALUD");
+        }
+
+        public void Toggle()
+        {
+            isOpen = !isOpen;
+        }
+
+        public void Open()
+        {
+            isOpen = true;
+        }
+
+        public void Close()
+        {
+            isOpen = false;
+        }
+
+        public void SetActorHealth(ActorHealthComponent health)
+        {
+            actorHealth = health;
+        }
+
+        public bool ContainsScreenPosition(Vector2 screenPosition)
+        {
+            return isOpen && windowRect.Contains(ToGuiPosition(screenPosition));
+        }
+
+        public string GetQualitativeStatus()
+        {
+            if (actorHealth == null)
+                return "<NONE>";
+            if (actorHealth.IsDead)
+                return "Dead";
+            if (actorHealth.MaxHealth > 0f && actorHealth.CurrentHealth / actorHealth.MaxHealth <= actorHealth.LowHealthThreshold)
+                return "Critical";
+            if (actorHealth.CurrentHealth < actorHealth.MaxHealth)
+                return "Injured";
+            return "Healthy";
+        }
+
+        private void DrawWindowContents(int windowId)
+        {
+            if (GUI.Button(new Rect(WindowWidth - 28f, 2f, 24f, 20f), "X"))
+                Close();
+
+            if (actorHealth == null)
+            {
+                GUILayout.Label("ActorHealthComponent: <NONE>");
+            }
+            else
+            {
+                GUILayout.Label("Estado general: " + GetQualitativeStatus());
+                GUILayout.Label($"Health: {actorHealth.CurrentHealth:0.#}/{actorHealth.MaxHealth:0.#}");
+                if (GUILayout.Button("Debug Damage Player", GUILayout.Height(24f)))
+                    ApplyDebugDamageToPlayer();
+            }
+
+            GUI.DragWindow(new Rect(0f, 0f, WindowWidth - 32f, 24f));
+        }
+
+        private void ApplyDebugDamageToPlayer()
+        {
+            float beforeHealth = actorHealth.CurrentHealth;
+            float amount = Mathf.Max(0f, debugDamageAmount);
+            bool applied = actorHealth.ApplyDamage(amount);
+            float afterHealth = actorHealth.CurrentHealth;
+            string actorName = actorHealth.name;
+            string message = applied
+                ? $"{actorName} debug damage: {amount:0.#}. Health {beforeHealth:0.#}->{afterHealth:0.#}/{actorHealth.MaxHealth:0.#}."
+                : $"{actorName} debug damage not applied. Health {afterHealth:0.#}/{actorHealth.MaxHealth:0.#}.";
+
+            GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                GameplayFeedbackEntryType.Info,
+                message,
+                actorId: actorName,
+                actorDisplayName: actorName,
+                debugOnly: true));
+        }
+
+        private void ResolveReferences()
+        {
+            if (actorHealth == null)
+            {
+                ActorNeedsComponent playerNeeds = FindAnyObjectByType<ActorNeedsComponent>();
+                actorHealth = playerNeeds != null
+                    ? playerNeeds.GetComponent<ActorHealthComponent>()
+                    : FindAnyObjectByType<ActorHealthComponent>();
+            }
+            if (inventorySessionController == null)
+                inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
         }
 
         private static Vector2 ToGuiPosition(Vector2 mousePosition)

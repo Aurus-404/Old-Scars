@@ -20,7 +20,7 @@ namespace OldScars.Core.Combat
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private Camera inputCamera;
         [SerializeField] private DebugWorldUiInputBlocker uiInputBlocker;
-        [SerializeField] private PointClickMovementInputController movementInput;
+        [SerializeField] private PlayerMovementInputController movementInput;
         [SerializeField] private LayerMask hitLayerMask;
         [SerializeField] private float muzzleHeight;
         [SerializeField] private float tracerDuration = 0.12f;
@@ -138,9 +138,9 @@ namespace OldScars.Core.Combat
             aimedFirearmInstanceId = equippedItem != null ? equippedItem.InstanceId : null;
             isAimActive = true;
 
-            PointClickMovementController movementController = GetComponent<PointClickMovementController>();
+            PlayerMovementController movementController = GetComponent<PlayerMovementController>();
             if (movementController != null)
-                movementController.ClearTarget();
+                movementController.ClearMovement();
 
             if (movementInput != null)
             {
@@ -403,7 +403,7 @@ namespace OldScars.Core.Combat
                 uiInputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
 
             if (movementInput == null)
-                movementInput = FindAnyObjectByType<PointClickMovementInputController>();
+                movementInput = FindAnyObjectByType<PlayerMovementInputController>();
         }
 
         private void EnsureDebugLines()

@@ -11,6 +11,7 @@ namespace OldScars.Core.Interactions
         [SerializeField] private InventoryDebugPanel inventoryPanel;
         [SerializeField] private ItemStorageDebugPanel storagePanel;
         [SerializeField] private ActorNeedsDebugPanel actorNeedsPanel;
+        [SerializeField] private ActorHealthDebugWindow actorHealthWindow;
         [SerializeField] private InventoryUISessionController inventorySessionController;
 
         public bool BlocksWorldInput
@@ -39,6 +40,9 @@ namespace OldScars.Core.Interactions
             if (actorNeedsPanel == null)
                 actorNeedsPanel = FindAnyObjectByType<ActorNeedsDebugPanel>();
 
+            if (actorHealthWindow == null)
+                actorHealthWindow = FindAnyObjectByType<ActorHealthDebugWindow>();
+
             if (inventorySessionController == null)
                 inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
         }
@@ -51,6 +55,9 @@ namespace OldScars.Core.Interactions
                 return true;
 
             if (actorNeedsPanel != null && actorNeedsPanel.ContainsScreenPosition(screenPosition))
+                return true;
+
+            if (actorHealthWindow != null && actorHealthWindow.ContainsScreenPosition(screenPosition))
                 return true;
 
             bool actionPanelOpen = actionPanel != null && actionPanel.IsVisible;
@@ -93,6 +100,7 @@ namespace OldScars.Core.Interactions
                 return true;
 
             return (actorNeedsPanel != null && actorNeedsPanel.ContainsScreenPosition(screenPosition)) ||
+                   (actorHealthWindow != null && actorHealthWindow.ContainsScreenPosition(screenPosition)) ||
                    (actionPanel != null && actionPanel.IsVisible && actionPanel.ContainsScreenPosition(screenPosition)) ||
                    (resultPanel != null && resultPanel.IsVisible && resultPanel.ContainsScreenPosition(screenPosition)) ||
                    (inventoryPanel != null && inventoryPanel.IsVisible && inventoryPanel.ContainsScreenPosition(screenPosition)) ||
@@ -115,6 +123,9 @@ namespace OldScars.Core.Interactions
 
             if (actorNeedsPanel == null)
                 actorNeedsPanel = FindAnyObjectByType<ActorNeedsDebugPanel>();
+
+            if (actorHealthWindow == null)
+                actorHealthWindow = FindAnyObjectByType<ActorHealthDebugWindow>();
 
             if (inventorySessionController == null)
                 inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();

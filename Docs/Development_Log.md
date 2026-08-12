@@ -2571,3 +2571,36 @@ Fatigue: `DEFERRED — SHOULD`.
 Fuera de alcance: localized wounds, bleeding, pain, medicine, fatigue completa, combat, AI, weather, temperature, world streaming, beds/camping/shelters completos, UI final y playable exploration prototype.
 
 M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. No se inicia M39.0 ni el playable exploration prototype en este commit.
+
+### ID TBD — Player Controls & Health Window Foundation
+
+Fecha: 2026-08-12
+
+Parent: `Post-M38.1 / Pre-M39.0 UX & Controls Foundation`.
+
+Estado: `IMPLEMENTED — AUTOMATED VALIDATION PASSED; MANUAL UNITY RECHECK PENDING`.
+
+Objetivo: reemplazar point-and-click por movimiento WASD camera-relative estilo Project Zomboid y separar Health en una ventana debug no modal antes de M39.0, sin iniciar health localizado ni medicina.
+
+Implementación:
+
+- `PlayerMovementController` / `PlayerMovementInputController` reemplazan los scripts `PointClick*` conservando sus GUID. WASD proyecta forward/right de cámara sobre XZ, normaliza diagonales, conserva `CharacterController` + gravity y rota suavemente al player; click izquierdo ya no genera targets ni órdenes de movimiento.
+- Un inicio de WASD válido cancela la acción temporal activa una vez; `InventoryUISessionController.BlocksWorldInput` bloquea movimiento. El pan manual de `CameraRigController` pasa a flechas y conserva RMB rotation, wheel zoom, MMB recenter y screen-edge pan.
+- `ActorNeedsDebugPanel` conserva Day/HH:MM, Hunger, Thirst, Rest 1h y Sleep 8h. `ActorHealthDebugWindow` abre/cierra con H, X o Escape, expone Health real/cualitativo y Debug Damage Player, no pausa WorldClock ni bloquea WASD.
+- `DebugWorldUiInputBlocker` absorbe clicks dentro de Health Window sin activar `BlocksWorldInput` global. No se modificaron JSON/Core data, Packages ni ProjectSettings.
+
+Validación automatizada:
+
+- Runtime/Editor compile: `PASS`.
+- `Player Controls & Health Window Diagnostics: PASS` (math camera-relative, diagonal normalizada, ausencia de tipos PointClick, Health real, H-window state y bloqueo local de clicks sin bloqueo global).
+- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS`.
+- `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS`.
+- `M38.1 Needs, World Clock & Recovery Diagnostics: PASS`.
+- `Inventory Interaction UX Correction Diagnostics: PASS`.
+- `SampleScene` unchanged; no se guardó ni cambió en el diff.
+
+Manual: `PENDING — Mauro controls + Health Window recheck` en Play Mode: WASD/diagonales y yaw de cámara, inventario bloqueando movimiento, flechas de cámara, H/X/Escape, drag de ventana, clicks internos, Debug Damage y continuidad de WorldClock/needs.
+
+Fuera de alcance: M39.0, regiones, wounds, bleeding, pain, bandages, medicine, NavMesh, rebinding, input manager, locomotion framework, UI final y cambios de persistencia/JSON.
+
+Siguiente: `M39.0 — Localized Health & Medicine V1` continúa `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.

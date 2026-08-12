@@ -171,7 +171,7 @@ namespace OldScars.Core.Items
         [SerializeField] private InventoryDebugPanel inventoryPanel;
         [SerializeField] private ItemStorageDebugPanel storagePanel;
         [SerializeField] private InventoryComponent playerInventory;
-        [SerializeField] private PointClickMovementController movementController;
+        [SerializeField] private PlayerMovementController movementController;
 
         private readonly InventoryUISessionSelection selection = new InventoryUISessionSelection();
         private readonly InventoryContextMenuState contextMenuState = new InventoryContextMenuState();
@@ -525,7 +525,7 @@ namespace OldScars.Core.Items
         private void BeginSession()
         {
             if (!IsOpen)
-                movementController?.ClearTarget();
+                movementController?.ClearMovement();
 
             contextMenuState.CloseAll();
             inventoryPanel?.BindSessionController(this);
@@ -541,7 +541,7 @@ namespace OldScars.Core.Items
             if (playerInventory == null && inventoryPanel != null)
                 playerInventory = inventoryPanel.Inventory;
             if (movementController == null && playerInventory != null)
-                movementController = playerInventory.GetComponent<PointClickMovementController>();
+                movementController = playerInventory.GetComponent<PlayerMovementController>();
 
             inventoryPanel?.BindSessionController(this);
             storagePanel?.BindSessionController(this);

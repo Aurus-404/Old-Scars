@@ -85,13 +85,13 @@ namespace OldScars.Core.Interactions
             right.y = 0f;
             right.Normalize();
 
-            if (Keyboard.current.wKey.isPressed)
+            if (Keyboard.current.upArrowKey.isPressed)
                 move += forward;
-            if (Keyboard.current.sKey.isPressed)
+            if (Keyboard.current.downArrowKey.isPressed)
                 move -= forward;
-            if (Keyboard.current.dKey.isPressed)
+            if (Keyboard.current.rightArrowKey.isPressed)
                 move += right;
-            if (Keyboard.current.aKey.isPressed)
+            if (Keyboard.current.leftArrowKey.isPressed)
                 move -= right;
 
             if (enableScreenEdgePan && Mouse.current != null)

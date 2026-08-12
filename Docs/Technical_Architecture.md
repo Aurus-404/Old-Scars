@@ -62,7 +62,15 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Los campos serializados `decayPerSecond` se conservan por compatibilidad con `SampleScene`, pero M38.1 deriva una tasa explícita por game hour desde el pacing legacy: Hunger `1.8/game hour`, Thirst `3.0/game hour`. Con la escala default se conserva el drain real previo; sleep de 8h drena `14.4/24`.
 - `ActorRestService.TryRest` exige actor activo con needs + health, rechaza disabled/Dead/duración inválida/clock ausente, avanza el mismo clock una sola vez y devuelve un resultado explicable. No llama a `Heal`, no revive y no implementa heridas, sangrado, dolor ni medicina.
 - El Current Slice real posee `ActorNeedsComponent` solamente en el player. M38.1 no agrega needs a NPCs authored/runtime ni extiende `ActorState` preventivamente. Fatigue queda `DEFERRED — SHOULD`: no existe un modelo previo y forzar su semántica dentro de Hunger/Thirst abriría una expansión desproporcionada.
-- `ActorNeedsDebugPanel` muestra `Day / HH:MM`, Hunger, Thirst y Health, y reutiliza la misma operación runtime mediante `Rest 1h` / `Sleep 8h`. Continúa siendo tooling OnGUI de desarrollo, no HUD/UI final.
+- `ActorNeedsDebugPanel` muestra `Day / HH:MM`, Hunger y Thirst, y reutiliza la misma operación runtime mediante `Rest 1h` / `Sleep 8h`. Continúa siendo tooling OnGUI de desarrollo, no HUD/UI final.
+
+## Player Controls & Health Window Foundation
+
+- `PlayerMovementInputController` interpreta solamente `WASD`; proyecta forward/right de `Camera.main` sobre XZ, normaliza diagonales y entrega la dirección a `PlayerMovementController`. `CharacterController` conserva gravedad y colisión, y el player rota suavemente hacia la dirección real. No existe target, raycast de suelo, NavMesh ni orden de movimiento por click izquierdo.
+- Un comienzo válido de movimiento cancela una acción temporal activa una sola vez. `InventoryUISessionController.BlocksWorldInput` mantiene el bloqueo de movimiento; abrir Health no lo activa.
+- `CameraRigController` reserva `WASD` para el player y mueve su pan manual con flechas; conserva rotación RMB, zoom wheel, recenter MMB y screen-edge pan configurado.
+- `ActorHealthDebugWindow` es una ventana OnGUI no modal con toggle `H`, cierre `X`/Escape, estado cualitativo derivado de `ActorHealthComponent` y `Debug Damage Player`. `DebugWorldUiInputBlocker` consume los clicks dentro de ella sin convertir la ventana abierta en bloqueo global de world input.
+- La ventana es una foundation debug reutilizable para M39.0; no implementa health localizado, wounds, bleeding, pain, bandages ni medicine.
 
 ## Persistence Core V1
 
