@@ -221,8 +221,9 @@
         "icon_id": "bandage_01"
       },
       "consumable": {
-        "restore_health": {
-          "amount": 25
+        "wound_treatment": {
+          "type": "bandage",
+          "bleeding_multiplier": 0.1
         }
       }
     },

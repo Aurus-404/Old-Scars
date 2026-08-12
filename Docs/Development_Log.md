@@ -2655,3 +2655,44 @@ Validación manual confirmada por Mauro:
 Contratos cerrados: WASD camera-relative con `CharacterController`; cámara follow continua del player; RMB orbit, wheel zoom y MMB recenter sin pan libre; Health en H no modal; Inventory modal; ventanas Health/Inventory exclusivas.
 
 Siguiente: cerrar esta unidad sin milestone adicional; `M39.0 — Localized Health & Medicine V1` permanece `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+
+### M39.0 — Localized Health & Medicine V1 — Functional Pass 1
+
+Fecha: 2026-08-12
+
+Versión: `Localized Body Regions, Wounds, Bleeding, Pain & Treatment — Functional Pass 1`.
+
+Estado anterior: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+
+Estado posterior: `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Implementación:
+
+- `ActorMedicalStateComponent` agrega el dominio humano V1 `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg` y heridas durables `Laceration/Puncture/Blunt` con WoundId, severity, bleeding, pain y `Unbandaged/Bandaged`.
+- `WorldClock.GameTimeAdvanced` gobierna bleeding normal y de Rest/Sleep mediante el mismo delta directo. `ActorHealthComponent` conserva la reserva vital escalar, tags, muerte y lifecycle M38; Dead deja de progresar y no existe segunda autoridad/lifecycle.
+- `core:bandage_01` reemplaza `restore_health` por `consumable.wound_treatment`. El servicio real consume exactamente x1, reduce bleeding de la herida elegida, conserva herida/pain y revierte estado médico si falla el retiro. El contrato es data-driven y compartido por Core/mods.
+- La ventana H existente se convirtió en superficie regional cualitativa con cuerpo esquemático, hover/selección, heridas, bleeding/pain/treatment, aplicación de venda y controles DEBUG separados. H/X/Escape, WASD y exclusividad con Inventory se preservaron; input de cámara se ignora sobre panels debug.
+- `PlayerState` y `ActorState` guardan DTOs médicos planos en schema/envelope V1. Un save pre-M39 que omite el bloque deriva baseline sin heridas conservando health legacy; null/objeto inválido falla preflight. El apply/rollback M37/M38 existente restaura medical state de player, authored y runtime actors, incluido corpse legacy sin etiología fabricada.
+
+Validación automatizada:
+
+- Runtime compile: `PASS`.
+- Editor compile: `PASS`.
+- `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- `M36.1 Foundation Identity Validation: PASS`.
+- `M37.0 Persistence Core Diagnostics: PASS`.
+- `M37.1 Snapshot & Semantic Preflight Diagnostics: PASS`.
+- `M37.1 Current Slice Persistent Round-Trip Diagnostics: PASS`.
+- `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS`.
+- `M38.1 Needs, World Clock & Recovery Diagnostics: PASS`.
+- `Player Controls & Health Window Diagnostics: PASS`.
+- `Inventory Interaction UX Correction Diagnostics: PASS`.
+- `M39.0 Localized Health & Medicine Diagnostics: PASS` en dos Play sessions, incluido actor runtime herido/Dead, exact round-trip, legacy omission, null/casing/enum/severity inválidos sin mutación y rollback post-medical-state equivalente.
+- M38.0/M38.1 alcanzaron PASS y cleanup, aunque Unity batch quedó detenido después de `Cleanup mono`; se cerraron únicamente esas instancias post-PASS para liberar el project lock.
+- `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; Packages y ProjectSettings intactos. Permanecen seis warnings C# preexistentes y no hay warnings nuevos atribuibles a M39.0.
+
+Manual: `PENDING — Mauro localized health / medicine fresh-session recheck`.
+
+Fuera de alcance: tissue healing, infection, diseases, fractures, organs, surgery, projectiles, ballistics, armor, regional penalties, AI, UI final y M40.
+
+Siguiente: `M39.0 — Manual Unity Validation & Closeout`; M40.0 queda `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.

@@ -9,6 +9,7 @@ namespace OldScars.Core.Interactions
         [Header("References")]
         [SerializeField] private Transform recenterTarget;
         [SerializeField] private InventoryUISessionController inventorySessionController;
+        [SerializeField] private DebugWorldUiInputBlocker uiInputBlocker;
 
         [Header("Follow")]
         [SerializeField] private bool snapToTargetOnStart = true;
@@ -39,6 +40,8 @@ namespace OldScars.Core.Interactions
             mainCamera = Camera.main;
             if (inventorySessionController == null)
                 inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
+            if (uiInputBlocker == null)
+                uiInputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
             if (snapToTargetOnStart)
                 FollowTargetNow();
         }
@@ -52,9 +55,19 @@ namespace OldScars.Core.Interactions
                 return;
             }
 
-            HandleZoomInput();
-            HandleRightMouseRotation();
-            HandleRecenterInput();
+            bool pointerOverUi = Mouse.current != null && uiInputBlocker != null &&
+                uiInputBlocker.IsPointerOverBlockingPanel(Mouse.current.position.ReadValue());
+            if (pointerOverUi)
+            {
+                rightMouseIsDown = false;
+                isRotating = false;
+            }
+            else
+            {
+                HandleZoomInput();
+                HandleRightMouseRotation();
+                HandleRecenterInput();
+            }
         }
 
         private void LateUpdate()

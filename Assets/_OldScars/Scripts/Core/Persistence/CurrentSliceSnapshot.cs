@@ -50,6 +50,7 @@ namespace OldScars.Core.Persistence
         public string actorProfileId;
         public PoseState pose;
         public float currentHealth;
+        public ActorMedicalStateData medicalState;
         public NeedState[] needs = Array.Empty<NeedState>();
         public string inventoryStorageId;
         public string equipmentStorageId;
@@ -80,6 +81,7 @@ namespace OldScars.Core.Persistence
         public string lifecycleState;
         public PoseState pose;
         public float currentHealth;
+        public ActorMedicalStateData medicalState;
         public string inventoryStorageId;
         public string equipmentStorageId;
     }
@@ -324,8 +326,23 @@ namespace OldScars.Core.Persistence
                 return Failed("Current Slice payload is missing.");
             try
             {
-                bool legacyWorldClockMissing = payload is JObject payloadObject &&
-                    !payloadObject.Properties().Any(property => property.Name == "worldClock");
+                JObject payloadObject = payload as JObject;
+                bool legacyWorldClockMissing = payloadObject != null &&
+                    !HasProperty(payloadObject, "worldClock");
+                bool legacyPlayerMedicalMissing = payloadObject?["player"] is JObject playerObject &&
+                    !HasProperty(playerObject, "medicalState");
+                var legacyActorMedicalMissing = new HashSet<int>();
+                if (payloadObject?["actors"] is JArray actorArray)
+                {
+                    for (int index = 0; index < actorArray.Count; index++)
+                    {
+                        if (actorArray[index] is JObject actorObject &&
+                            !HasProperty(actorObject, "medicalState"))
+                        {
+                            legacyActorMedicalMissing.Add(index);
+                        }
+                    }
+                }
                 CurrentSliceSaveData snapshot = payload.ToObject<CurrentSliceSaveData>(PayloadSerializer);
                 if (legacyWorldClockMissing && snapshot != null)
                 {
@@ -333,6 +350,14 @@ namespace OldScars.Core.Persistence
                     {
                         elapsedGameSeconds = WorldClock.DefaultElapsedGameSeconds
                     };
+                }
+                if (legacyPlayerMedicalMissing && snapshot?.player != null)
+                    snapshot.player.medicalState = ActorMedicalStateComponent.HealthyBaseline();
+                ActorState[] actors = snapshot?.actors ?? Array.Empty<ActorState>();
+                foreach (int index in legacyActorMedicalMissing)
+                {
+                    if (index >= 0 && index < actors.Length && actors[index] != null)
+                        actors[index].medicalState = ActorMedicalStateComponent.HealthyBaseline();
                 }
                 GameDatabase database = GameDataManager.Instance != null ? GameDataManager.Instance.Database : null;
                 if (!CurrentSliceContentIdCompatibility.TryNormalizeLegacyCoreReferences(snapshot, database, out string migrationError))
@@ -384,6 +409,8 @@ namespace OldScars.Core.Persistence
         }
 
         private static CurrentSliceResult Failed(string failure) => new CurrentSliceResult(null, failure ?? "Unknown failure.");
+        private static bool HasProperty(JObject value, string propertyName) => value != null &&
+            value.Properties().Any(property => string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase));
         private static T[] Items<T>(T[] source) => source ?? Array.Empty<T>();
         private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
         private static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
@@ -495,9 +522,10 @@ namespace OldScars.Core.Persistence
                     return Fail($"Player '{playerId}' actor identity failed: {playerIdentityError}");
                 InventoryComponent playerInventory = player.GetInventoryComponent();
                 ActorHealthComponent playerHealth = player.GetComponent<ActorHealthComponent>();
+                ActorMedicalStateComponent playerMedical = player.GetComponent<ActorMedicalStateComponent>();
                 ActorNeedsComponent playerNeeds = player.GetComponent<ActorNeedsComponent>();
-                if (playerInventory == null || playerHealth == null || playerNeeds == null)
-                    return Fail($"Player '{playerId}' is missing Inventory, Health or Needs runtime state.");
+                if (playerInventory == null || playerHealth == null || playerMedical == null || playerNeeds == null)
+                    return Fail($"Player '{playerId}' is missing Inventory, Health, Medical or Needs runtime state.");
 
                 var snapshot = new CurrentSliceSaveData
                 {
@@ -517,6 +545,7 @@ namespace OldScars.Core.Persistence
                     actorProfileId = playerProfile.id,
                     pose = CurrentSliceSnapshotService.Pose(player.transform),
                     currentHealth = playerHealth.CurrentHealth,
+                    medicalState = playerMedical.CaptureState(),
                     needs = playerNeeds.RuntimeStates.Where(state => state != null)
                         .Select(state => new NeedState { needId = state.needId, currentValue = state.currentValue })
                         .OrderBy(state => state.needId, StringComparer.Ordinal).ToArray(),
@@ -575,10 +604,11 @@ namespace OldScars.Core.Persistence
                     return null;
                 ActorProfileComponent profile = identity.GetComponent<ActorProfileComponent>();
                 ActorHealthComponent health = identity.GetComponent<ActorHealthComponent>();
+                ActorMedicalStateComponent medical = identity.GetComponent<ActorMedicalStateComponent>();
                 InventoryComponent inventory = identity.GetComponent<InventoryComponent>();
-                if (profile == null || health == null || inventory == null)
+                if (profile == null || health == null || medical == null || inventory == null)
                 {
-                    Failure = $"Actor '{identity.ActorInstanceId}' lacks Profile, Health or Inventory runtime state.";
+                    Failure = $"Actor '{identity.ActorInstanceId}' lacks Profile, Health, Medical or Inventory runtime state.";
                     return null;
                 }
                 if (identity.LifecycleState == ActorLifecycleState.Dead != health.IsDead)
@@ -598,6 +628,7 @@ namespace OldScars.Core.Persistence
                     lifecycleState = identity.LifecycleState == ActorLifecycleState.Dead ? DeadLifecycle : AliveLifecycle,
                     pose = CurrentSliceSnapshotService.Pose(identity.transform),
                     currentHealth = health.CurrentHealth,
+                    medicalState = medical.CaptureState(),
                     inventoryStorageId = CaptureStorage(InventoryKind, ownerId, inventory),
                     equipmentStorageId = CaptureEquipment(ownerId, identity.GetComponent<ActorEquipmentComponent>())
                 };
@@ -924,6 +955,7 @@ namespace OldScars.Core.Persistence
                     ActorHealthComponent health = SceneComponent<ActorHealthComponent>(snapshot.player.persistentId);
                     if (!Finite(snapshot.player.currentHealth) || health == null || snapshot.player.currentHealth < 0f || snapshot.player.currentHealth > health.MaxHealth)
                         errors.Add($"Player '{snapshot.player.persistentId}' has invalid health {snapshot.player.currentHealth}.");
+                    ValidateMedical(snapshot.player.medicalState, $"Player '{snapshot.player.persistentId}'");
                     ActorNeedsComponent needs = SceneComponent<ActorNeedsComponent>(snapshot.player.persistentId);
                     var needIds = new HashSet<string>(StringComparer.Ordinal);
                     foreach (NeedState need in Items(snapshot.player.needs))
@@ -992,6 +1024,7 @@ namespace OldScars.Core.Persistence
                     if (!healthValid || actor.lifecycleState == AliveLifecycle && actor.currentHealth <= 0f ||
                         actor.lifecycleState == DeadLifecycle && actor.currentHealth != 0f)
                         errors.Add($"Actor '{actor.actorInstanceId}' lifecycle '{actor.lifecycleState}' contradicts health {actor.currentHealth}.");
+                    ValidateMedical(actor.medicalState, $"Actor '{actor.actorInstanceId}'");
 
                     if (actor.originKind == AuthoredActorOrigin)
                     {
@@ -1070,6 +1103,12 @@ namespace OldScars.Core.Persistence
                 if (FindScene<ActorInteractionContext>().Count(actor =>
                         Identity(actor) != null && Items(actor.ActorTags).Contains("player")) != 1)
                     errors.Add("Current scene must expose exactly one persistent player.");
+            }
+
+            private void ValidateMedical(ActorMedicalStateData medicalState, string context)
+            {
+                if (!ActorMedicalStateComponent.TryValidatePersistenceState(medicalState, out string failure))
+                    errors.Add($"{context} has invalid localized medical state: {failure}");
             }
 
             private void ValidateStorages()

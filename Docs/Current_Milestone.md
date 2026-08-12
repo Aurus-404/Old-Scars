@@ -4,43 +4,42 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ## Estado Actual
 
-### M38.1 — Needs, World Clock & Recovery V1
+### M39.0 — Localized Health & Medicine V1
 
 Estado actual:
 
-`DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`
+`IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
 
-Validation — `AUTOMATED + MANUAL FRESH-SESSION PASSED`
+Validation — `AUTOMATED PASS; MANUAL FRESH-SESSION PENDING`
 
-Pass 1 implementa `WorldClock` como autoridad runtime única sobre segundos absolutos de game time, deriva `Day N / HH:MM`, gobierna Hunger/Thirst mediante el mismo delta normal o explícito y agrega `ActorRestService.TryRest` más acciones debug `Rest 1h` / `Sleep 8h`. M38.0 continúa `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`; M37.1 continúa `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` continúa `APPROVED`.
+Functional Pass 1 implementa seis regiones humanas V1, heridas durables localizadas, severidad, sangrado por `WorldClock`, dolor derivado y tratamiento data-driven con venda. `ActorHealthComponent` conserva la reserva vital escalar y la autoridad Alive/Dead de M38; el estado médico manda sobre heridas, bleeding, pain y bandage. M38.1 continúa `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`; `Persistence Ready` continúa `APPROVED`.
 
 ## Implementación Y Automatización
 
-- Runtime/Editor compilation, Content ID Foundation, M36.1 Checkpoint A/Foundation, M37.0, ambos M37.1, M38.0 e Inventory Interaction UX: `PASS`.
-- `M38.1 Needs, World Clock & Recovery Diagnostics: PASS` en dos Play sessions, incluido Day/HH:MM, progresión exacta, food/water, rest/sleep, actor Dead, save/load fresh-session, compatibilidad V1 sin clock, preflight sin mutación y rollback post-clock/needs.
-- Fault post-runtime-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback equivalentes.
+- Runtime/Editor compilation, M36.1 Checkpoint A/Foundation, M37.0, ambos M37.1, M38.0, M38.1, Player Controls & Health Window e Inventory Interaction UX: `PASS`.
+- `M39.0 Localized Health & Medicine Diagnostics: PASS` en dos Play sessions: baseline, localización, bleeding sin double tick, rest, pain, venda x1, aislamiento regional, muerte/corpse, actor runtime, save/load, legacy V1, preflight y rollback.
+- Fault post-medical-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback canónicamente equivalentes.
 - `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
-- Cero warnings nuevos atribuibles a M38.1; permanecen los seis warnings C# preexistentes documentados.
-- Mauro confirmó manualmente World Clock, bootstrap Day 1, progresión Day/HH:MM y Hunger/Thirst, Rest 1h, Sleep 8h, consumibles, Save Current Slice, fresh Play, Load y continuidad posterior al load sin errores runtime atribuibles a M38.1.
+- Cero warnings nuevos atribuibles a M39.0; permanecen los seis warnings C# preexistentes documentados.
+- La validación manual de M39.0 permanece pendiente y el milestone no está `DONE`.
 
 ## Contrato Funcional
 
-- `elapsedGameSeconds` monotónico y durable; bootstrap/legacy default `Day 1 00:00`; límite finito/no negativo; `writtenUtc` permanece metadata separada.
-- Escala provisional configurable: `60 game seconds / real second`; `Time.deltaTime` conserva pausa futura por `timeScale == 0`, mientras rest/sleep avanza directamente sin loops.
-- Las tasas serializadas legacy se preservan y se interpretan como `1.8 Hunger` y `3.0 Thirst` por game hour. Sleep 8h consume `14.4/24` respectivamente.
-- Sólo el player posee `ActorNeedsComponent` en el Current Slice real. No se agregaron needs ficticios a NPCs/runtime actors ni se amplió `ActorState`.
-- Rest/sleep rechaza Dead, no revive y no cura health, heridas, sangrado, dolor ni medicina.
-- Fatigue: `DEFERRED — SHOULD, NOT REQUIRED FOR M38.1 FUNCTIONAL CLOSEOUT`; no existe un modelo previo coherente y forzarla ampliaría desproporcionadamente el contrato.
+- Regiones: `Head`, `Torso`, `LeftArm`, `RightArm`, `LeftLeg`, `RightLeg`; son un dominio técnico cerrado V1, no Content IDs.
+- Cada herida conserva `WoundId`, región, tipo `Laceration/Puncture/Blunt`, severidad, tasa de sangrado, contribución de dolor y estado `Unbandaged/Bandaged`.
+- El mismo evento `WorldClock.GameTimeAdvanced` procesa directamente el delta normal o de Rest/Sleep. Sangrar reduce la reserva vital de `ActorHealthComponent`; al agotarla conserva lifecycle Dead/corpse de M38 y no progresa después de muerte.
+- La venda Core usa `consumable.wound_treatment`, consume exactamente x1 y reduce el sangrado de una herida concreta sin `Heal(+X)` ni borrar la herida. Core y mods usan el mismo loader/validator/servicio.
+- La ventana H existente muestra cuerpo esquemático, regiones, heridas y evaluaciones cualitativas; los números escalares quedan confinados al área DEBUG. Mantiene H/X/Escape, WASD, bloqueo local de input y exclusividad con Inventory.
 
 ## Persistence Y Compatibilidad
 
-`WorldClockState` es un DTO plano top-level de Current Slice schema V1. Capture, semantic preflight, canonical comparison, apply silencioso y rollback usan la transacción M37/M38 existente. Un save V1 que omite `worldClock` carga con `Day 1 00:00`; un campo presente null, no finito, negativo o fuera de rango se rechaza antes de mutar. Player Hunger/Thirst conserva su DTO y restore atómico existente.
+`PlayerState` y `ActorState` agregan DTOs médicos planos dentro del Current Slice schema/envelope V1. Capture, preflight, canonical compare, apply y rollback reutilizan la transacción M37/M38. Un save V1 anterior que omite `medicalState` deriva baseline sin heridas desde su health escalar, sin inventar etiología; un objeto presente null o inválido se rechaza antes de mutar. Los legacy `CorpseState[]` reciben baseline médico sano conservando health 0.
 
 ## Deuda Y Fuera De Alcance
 
-Quedan fuera fatigue, UI final, beds/camping/shelters, health/medicine M39, heridas, combate, IA, clima, schedules, streaming, autosave y playable exploration prototype. La deuda Content ID authored preexistente permanece sin cambios.
+Quedan fuera healing de tejido, vendajes saturados, infección, enfermedades, fracturas, cirugía, órganos, balística, armor, penalizaciones regionales, combate M40, IA, UI final y fisiología avanzada. La deuda Content ID authored preexistente permanece sin cambios.
 
 ## Próximo Trabajo
 
-- M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
-- No iniciar M39.0 ni el playable exploration prototype en este commit.
+- M39.0: `Manual Unity Validation & Closeout` pendiente.
+- M40.0 queda `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.

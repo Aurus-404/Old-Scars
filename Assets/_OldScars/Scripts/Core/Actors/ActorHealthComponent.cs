@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace OldScars.Core.Actors
 {
+    [RequireComponent(typeof(ActorMedicalStateComponent))]
     public sealed class ActorHealthComponent : MonoBehaviour
     {
         public const string AliveActorTag = "alive_actor";
@@ -27,6 +28,8 @@ namespace OldScars.Core.Actors
 
         private void Awake()
         {
+            if (GetComponent<ActorMedicalStateComponent>() == null)
+                gameObject.AddComponent<ActorMedicalStateComponent>();
             ResolveWorldObjectTags();
             ClampHealth();
 
@@ -38,7 +41,7 @@ namespace OldScars.Core.Actors
 
         public bool ApplyDamage(float amount)
         {
-            if (amount <= 0f || IsDead)
+            if (!Finite(amount) || amount <= 0f || IsDead)
                 return false;
 
             float previousHealth = currentHealth;
@@ -54,7 +57,7 @@ namespace OldScars.Core.Actors
 
         public bool Heal(float amount)
         {
-            if (amount <= 0f || (IsDead && !canHealFromZero))
+            if (!Finite(amount) || amount <= 0f || (IsDead && !canHealFromZero))
                 return false;
 
             float previousHealth = currentHealth;
@@ -69,7 +72,7 @@ namespace OldScars.Core.Actors
 
         public bool CanHeal(float amount)
         {
-            return amount > 0f && currentHealth < maxHealth && (!IsDead || canHealFromZero);
+            return Finite(amount) && amount > 0f && currentHealth < maxHealth && (!IsDead || canHealFromZero);
         }
 
         public void Kill()
@@ -128,6 +131,11 @@ namespace OldScars.Core.Actors
         private bool IsLowHealth()
         {
             return maxHealth > 0f && currentHealth / maxHealth <= lowHealthThreshold;
+        }
+
+        private static bool Finite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         private void ProcessDeath()

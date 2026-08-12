@@ -152,7 +152,25 @@ Evidencia automatizada: Runtime/Editor compile, Global Content ID Namespace Foun
 
 Contrato acotado: el reloj guarda segundos de juego desde Day 1 00:00 y avanza a 60 segundos de juego por segundo real; la configuración existente equivale a 1.8 Hunger y 3.0 Thirst por hora de juego. Rest/Sleep no curan health ni wounds. Fatigue permanece `SHOULD — DEFERRED`: no hay todavía definición ni consumidor jugable aprobado que justifique una barra aislada.
 
-M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. Esto no adelanta AI, combat, weather/exposure, recovery médico, world streaming, UI final ni playable exploration prototype.
+M39.0 fue implementado después de este closeout y su gate manual se controla a continuación. Esto no adelanta AI, combat, weather/exposure, world streaming, UI final ni playable exploration prototype.
+
+### M39.0 Localized Health & Medicine Closeout
+
+Estado: `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Validación manual requerida:
+
+- H muestra las seis regiones y describe cualitativamente el baseline y las heridas localizadas;
+- una herida sangrante deteriora la reserva vital con gameplay time y con Rest/Sleep, sin double tick ni healing mágico;
+- aplicar una venda consume exactamente x1, conserva la herida, reduce sólo su bleeding y no altera otra región;
+- death por sangrado conserva lifecycle/corpse de M38 y no progresa post-death;
+- Save, salida completa de Play, fresh Play y Load restauran los mismos WoundIds, regiones, pain, treatment y reserva vital;
+- Health/Inventory conservan exclusividad, Health permite WASD y sus inputs internos no atraviesan a mundo/cámara;
+- Console sin errores runtime atribuibles a M39.0.
+
+Evidencia automatizada: Runtime/Editor compile y las suites M36.1, M37.0, ambos M37.1, M38.0, M38.1, Player Controls & Health Window e Inventory Interaction UX dieron `PASS`. `M39.0 Localized Health & Medicine Diagnostics: PASS` cubrió dos Play sessions, actor runtime herido/muerto, legacy V1, preflight sin mutación y rollback post-medical-state equivalente. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; no hubo warnings nuevos.
+
+Bloquea el closeout: consumo incorrecto, curación global por venda, double tick, pérdida/cambio de WoundId, datos médicos inválidos aplicados, rollback no equivalente, ruptura de corpse continuity o fallos fresh-session. M40.0 permanece `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.
 
 ### Combat Ready - M40.1
 

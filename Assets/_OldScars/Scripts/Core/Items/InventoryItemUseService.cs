@@ -88,6 +88,83 @@ namespace OldScars.Core.Items
                 actorHealth);
         }
 
+        public static int GetAvailableWoundTreatmentQuantity(ActorItemOwnershipComponent ownership)
+        {
+            if (ownership == null || ownership.PersonalInventory == null)
+                return 0;
+
+            int total = 0;
+            IReadOnlyList<ItemStorageEntry> entries = ownership.GetAllOwnedEntries();
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (!TryResolveOwnedTreatment(ownership, entry, out _, out _, out _))
+                    continue;
+                total += entry.Quantity;
+            }
+            return total;
+        }
+
+        public static InventoryItemUseResult TryApplyWoundTreatment(
+            ActorItemOwnershipComponent ownership,
+            ActorMedicalStateComponent medicalState,
+            string woundId)
+        {
+            if (ownership == null || ownership.PersonalInventory == null)
+                return InventoryItemUseResult.Failed("Actor item ownership is unavailable.");
+            if (medicalState == null)
+                return InventoryItemUseResult.Failed("Actor medical state is unavailable.");
+
+            IReadOnlyList<ItemStorageEntry> entries = ownership.GetAllOwnedEntries();
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (!TryResolveOwnedTreatment(
+                        ownership,
+                        entry,
+                        out ItemDefinition item,
+                        out IGridStorageOwner owner,
+                        out IGridStorageTransferEndpoint endpoint))
+                {
+                    continue;
+                }
+
+                ItemWoundTreatment treatment = item.consumable.wound_treatment;
+                if (!medicalState.CanApplyBandage(woundId, treatment.bleeding_multiplier, out string failure))
+                    return InventoryItemUseResult.Failed(failure);
+
+                ActorMedicalStateData rollback = medicalState.CaptureState();
+                int rollbackRevision = medicalState.Revision;
+                if (!medicalState.TryApplyBandage(woundId, treatment.bleeding_multiplier, out failure))
+                    return InventoryItemUseResult.Failed(failure);
+
+                if (!RemoveOne(endpoint, owner, entry.Item.InstanceId, entry.DefinitionId, default))
+                {
+                    if (!medicalState.TryRestoreTransactionState(rollback, rollbackRevision, out string rollbackFailure))
+                    {
+                        UnityEngine.Debug.LogError(
+                            $"[Medicine][ROLLBACK_FAILED] Actor: {medicalState.name}; WoundId: {woundId}; " +
+                            $"ItemInstanceId: {entry.Item.InstanceId}; Failure: {rollbackFailure ?? "<UNKNOWN>"}");
+                    }
+                    return InventoryItemUseResult.Failed("Could not consume one treatment item; wound treatment was rolled back.");
+                }
+
+                string displayName = GetItemDisplayName(item);
+                GameplayFeedbackLog.TryRecord(new GameplayFeedbackEntry(
+                    GameplayFeedbackEntryType.ItemUsed,
+                    $"Aplicaste {displayName} a una herida.",
+                    actorId: ownership.name,
+                    actorDisplayName: ownership.name,
+                    itemId: item.id,
+                    itemDisplayName: displayName,
+                    quantity: 1,
+                    debugOnly: false));
+                return InventoryItemUseResult.Succeeded($"Applied {displayName}; bleeding reduced.");
+            }
+
+            return InventoryItemUseResult.Failed("No compatible wound-treatment item is owned by the actor.");
+        }
+
         private static bool RemoveOne(
             IGridStorageTransferEndpoint endpoint,
             IGridStorageOwner owner,
@@ -131,6 +208,9 @@ namespace OldScars.Core.Items
 
             ItemNeedRestore[] restoreNeeds = item.consumable != null ? item.consumable.restore_needs : null;
             ItemHealthRestore restoreHealth = item.consumable != null ? item.consumable.restore_health : null;
+            ItemWoundTreatment woundTreatment = item.consumable != null ? item.consumable.wound_treatment : null;
+            if (woundTreatment != null)
+                return InventoryItemUseResult.Failed("Select a bleeding wound in the Health window before applying this treatment.");
             var restorableEffects = new List<RestorableNeedEffect>();
 
             if (actorNeeds != null && restoreNeeds != null)
@@ -242,6 +322,34 @@ namespace OldScars.Core.Items
             return database != null ? database.GetItem(entry.DefinitionId) : null;
         }
 
+        private static bool TryResolveOwnedTreatment(
+            ActorItemOwnershipComponent ownership,
+            ItemStorageEntry entry,
+            out ItemDefinition item,
+            out IGridStorageOwner owner,
+            out IGridStorageTransferEndpoint endpoint)
+        {
+            item = GetItemDefinition(entry);
+            owner = null;
+            endpoint = null;
+            if (entry?.Item == null || entry.Quantity < 1 ||
+                item?.consumable?.wound_treatment == null ||
+                item.consumable.wound_treatment.type != ItemWoundTreatmentTypes.Bandage ||
+                !ItemOwnedStorageRegistry.Instance.TryGetDirectOwner(entry.Item.InstanceId, out object directOwner) ||
+                !(directOwner is IGridStorageOwner directStorage) ||
+                !(directOwner is IGridStorageTransferEndpoint directEndpoint) ||
+                !directStorage.TryGetEntryByInstanceId(entry.Item.InstanceId, out _, out ItemStorageEntry ownedEntry) ||
+                !ReferenceEquals(ownedEntry, entry) ||
+                !ItemOwnedStorageRegistry.Instance.ShareRootOwner(directStorage, ownership.PersonalInventory))
+            {
+                return false;
+            }
+
+            owner = directStorage;
+            endpoint = directEndpoint;
+            return true;
+        }
+
         private static bool HasConsumableEffects(ItemDefinition item)
         {
             if (item?.consumable == null)
@@ -249,7 +357,8 @@ namespace OldScars.Core.Items
 
             bool hasNeedRestore = item.consumable.restore_needs != null && item.consumable.restore_needs.Length > 0;
             bool hasHealthRestore = item.consumable.restore_health != null && item.consumable.restore_health.amount > 0f;
-            return hasNeedRestore || hasHealthRestore;
+            bool hasWoundTreatment = item.consumable.wound_treatment != null;
+            return hasNeedRestore || hasHealthRestore || hasWoundTreatment;
         }
 
         private static void RecordItemUsed(InventoryComponent inventory, ItemDefinition item, RestorableNeedEffect restore, float afterValue)

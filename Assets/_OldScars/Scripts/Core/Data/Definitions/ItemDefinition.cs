@@ -107,6 +107,7 @@ namespace OldScars.Core.Data.Definitions
     {
         public ItemNeedRestore[] restore_needs;
         public ItemHealthRestore restore_health;
+        public ItemWoundTreatment wound_treatment;
     }
 
     [System.Serializable]
@@ -120,6 +121,18 @@ namespace OldScars.Core.Data.Definitions
     public sealed class ItemHealthRestore
     {
         public float amount;
+    }
+
+    [System.Serializable]
+    public sealed class ItemWoundTreatment
+    {
+        public string type;
+        public float bleeding_multiplier = float.NaN;
+    }
+
+    public static class ItemWoundTreatmentTypes
+    {
+        public const string Bandage = "bandage";
     }
 
     [System.Serializable]

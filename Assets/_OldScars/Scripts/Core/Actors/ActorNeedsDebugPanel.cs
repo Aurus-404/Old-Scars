@@ -191,8 +191,8 @@ namespace OldScars.Core.Actors
     public sealed class ActorHealthDebugWindow : MonoBehaviour
     {
         private const int WindowId = 39041;
-        private const float WindowWidth = 300f;
-        private const float WindowHeight = 180f;
+        private const float WindowWidth = 700f;
+        private const float WindowHeight = 530f;
 
         [SerializeField] private ActorHealthComponent actorHealth;
         [SerializeField] private InventoryUISessionController inventorySessionController;
@@ -200,6 +200,12 @@ namespace OldScars.Core.Actors
         [SerializeField] private bool isOpen;
 
         private Rect windowRect = new Rect(252f, 16f, WindowWidth, WindowHeight);
+        private ActorMedicalStateComponent medicalState;
+        private ActorItemOwnershipComponent itemOwnership;
+        private BodyRegion selectedRegion = BodyRegion.Torso;
+        private string selectedWoundId;
+        private string feedback;
+        private Vector2 woundScroll;
 
         public bool IsOpen => isOpen;
 
@@ -258,7 +264,10 @@ namespace OldScars.Core.Actors
 
         public void Toggle()
         {
-            isOpen = !isOpen;
+            if (isOpen)
+                Close();
+            else
+                Open();
         }
 
         public void Open()
@@ -277,6 +286,9 @@ namespace OldScars.Core.Actors
         public void SetActorHealth(ActorHealthComponent health)
         {
             actorHealth = health;
+            medicalState = actorHealth != null ? actorHealth.GetComponent<ActorMedicalStateComponent>() : null;
+            itemOwnership = actorHealth != null ? actorHealth.GetComponent<ActorItemOwnershipComponent>() : null;
+            selectedWoundId = null;
         }
 
         public bool ContainsScreenPosition(Vector2 screenPosition)
@@ -290,11 +302,46 @@ namespace OldScars.Core.Actors
                 return "<NONE>";
             if (actorHealth.IsDead)
                 return "Dead";
+            if (medicalState != null && medicalState.EffectiveBleedingRatePerGameHour > 0.35f)
+                return "Critical";
             if (actorHealth.MaxHealth > 0f && actorHealth.CurrentHealth / actorHealth.MaxHealth <= actorHealth.LowHealthThreshold)
                 return "Critical";
-            if (actorHealth.CurrentHealth < actorHealth.MaxHealth)
+            if (actorHealth.CurrentHealth < actorHealth.MaxHealth || (medicalState != null && medicalState.WoundCount > 0))
                 return "Injured";
             return "Healthy";
+        }
+
+        public string GetRegionAssessment(BodyRegion region)
+        {
+            if (medicalState == null)
+                return "Sin datos";
+
+            ActorMedicalWoundState[] wounds = medicalState.GetWounds(region);
+            if (wounds.Length == 0)
+                return "Se ve bien.";
+
+            float effectiveBleeding = 0f;
+            float maximumSeverity = 0f;
+            float pain = 0f;
+            bool allBleedingControlled = true;
+            for (int index = 0; index < wounds.Length; index++)
+            {
+                effectiveBleeding += ActorMedicalStateComponent.EffectiveBleedingRate(wounds[index]);
+                maximumSeverity = Mathf.Max(maximumSeverity, wounds[index].severity);
+                pain += wounds[index].painContribution;
+                if (wounds[index].bleedingRatePerGameHour > 0f &&
+                    wounds[index].treatmentState != WoundTreatmentState.Bandaged.ToString())
+                {
+                    allBleedingControlled = false;
+                }
+            }
+
+            string severity = ActorMedicalStateComponent.SeverityLabel(maximumSeverity);
+            string bleeding = effectiveBleeding <= 0f ? "No está sangrando." :
+                allBleedingControlled ? "La herida parece estable bajo el vendaje." :
+                effectiveBleeding < 0.15f ? "Está sangrando un poco." : "Está sangrando bastante.";
+            string painText = pain < 0.3f ? "Duele un poco." : pain < 0.7f ? "Me duele." : "Me duele bastante.";
+            return $"Tengo {wounds.Length} herida(s), gravedad {severity}. {bleeding} {painText}";
         }
 
         private void DrawWindowContents(int windowId)
@@ -302,19 +349,124 @@ namespace OldScars.Core.Actors
             if (GUI.Button(new Rect(WindowWidth - 28f, 2f, 24f, 20f), "X"))
                 Close();
 
-            if (actorHealth == null)
+            if (actorHealth == null || medicalState == null)
             {
-                GUILayout.Label("ActorHealthComponent: <NONE>");
+                GUI.Label(new Rect(20f, 42f, WindowWidth - 40f, 24f), "Estado médico del actor: <NONE>");
             }
             else
             {
-                GUILayout.Label("Estado general: " + GetQualitativeStatus());
-                GUILayout.Label($"Health: {actorHealth.CurrentHealth:0.#}/{actorHealth.MaxHealth:0.#}");
-                if (GUILayout.Button("Debug Damage Player", GUILayout.Height(24f)))
-                    ApplyDebugDamageToPlayer();
+                GUI.Label(new Rect(20f, 32f, 215f, 24f), "REGIONES DEL CUERPO");
+                DrawBodyRegion(BodyRegion.Head, new Rect(84f, 58f, 72f, 32f));
+                DrawBodyRegion(BodyRegion.Torso, new Rect(70f, 96f, 100f, 56f));
+                DrawBodyRegion(BodyRegion.LeftArm, new Rect(18f, 101f, 46f, 90f));
+                DrawBodyRegion(BodyRegion.RightArm, new Rect(176f, 101f, 46f, 90f));
+                DrawBodyRegion(BodyRegion.LeftLeg, new Rect(70f, 159f, 46f, 108f));
+                DrawBodyRegion(BodyRegion.RightLeg, new Rect(124f, 159f, 46f, 108f));
+                GUI.Label(new Rect(20f, 285f, 210f, 48f), $"Estado general: {GetQualitativeStatus()}\nDolor: {PainLabel(medicalState.TotalPain)}");
+
+                DrawSelectedRegionPanel();
+                DrawDebugArea();
             }
 
             GUI.DragWindow(new Rect(0f, 0f, WindowWidth - 32f, 24f));
+        }
+
+        private void DrawBodyRegion(BodyRegion region, Rect rect)
+        {
+            Color previous = GUI.color;
+            bool hovered = rect.Contains(Event.current.mousePosition);
+            if (region == selectedRegion)
+                GUI.color = new Color(1f, 0.72f, 0.35f);
+            else if (hovered)
+                GUI.color = new Color(1f, 0.9f, 0.65f);
+
+            if (GUI.Button(rect, RegionLabel(region)))
+                SelectRegion(region);
+            GUI.color = previous;
+
+            if (hovered)
+                GUI.Label(new Rect(20f, 340f, 210f, 42f), GetRegionAssessment(region));
+        }
+
+        private void DrawSelectedRegionPanel()
+        {
+            ActorMedicalWoundState[] wounds = medicalState.GetWounds(selectedRegion);
+            if (!ContainsWound(wounds, selectedWoundId))
+                selectedWoundId = wounds.Length > 0 ? wounds[0].woundId : null;
+
+            GUILayout.BeginArea(new Rect(245f, 35f, 435f, 382f), GUI.skin.box);
+            GUILayout.Label(RegionLabel(selectedRegion).ToUpperInvariant());
+            GUILayout.Label(GetRegionAssessment(selectedRegion));
+            GUILayout.Space(6f);
+            GUILayout.Label("HERIDAS DURABLES");
+
+            woundScroll = GUILayout.BeginScrollView(woundScroll, GUILayout.Height(205f));
+            if (wounds.Length == 0)
+            {
+                GUILayout.Label("No hay heridas registradas en esta región.");
+            }
+            else
+            {
+                for (int index = 0; index < wounds.Length; index++)
+                {
+                    ActorMedicalWoundState wound = wounds[index];
+                    string marker = wound.woundId == selectedWoundId ? "> " : string.Empty;
+                    string treatment = wound.treatmentState == WoundTreatmentState.Bandaged.ToString()
+                        ? "vendada"
+                        : "sin tratar";
+                    if (GUILayout.Button(
+                            $"{marker}{WoundLabel(wound)} · {ActorMedicalStateComponent.SeverityLabel(wound.severity)} · {treatment}",
+                            GUILayout.Height(28f)))
+                    {
+                        selectedWoundId = wound.woundId;
+                        feedback = null;
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+
+            ActorMedicalWoundState selected = medicalState.GetWound(selectedWoundId);
+            if (selected != null)
+            {
+                GUILayout.Label($"Sangrado: {BleedingLabel(ActorMedicalStateComponent.EffectiveBleedingRate(selected))}");
+                GUILayout.Label($"Dolor: {PainLabel(selected.painContribution)}");
+            }
+
+            int treatmentQuantity = InventoryItemUseService.GetAvailableWoundTreatmentQuantity(itemOwnership);
+            GUI.enabled = selected != null;
+            if (GUILayout.Button($"Aplicar vendaje (disponibles: {treatmentQuantity})", GUILayout.Height(30f)))
+            {
+                InventoryItemUseResult result = InventoryItemUseService.TryApplyWoundTreatment(
+                    itemOwnership,
+                    medicalState,
+                    selectedWoundId);
+                feedback = result.Message;
+            }
+            GUI.enabled = true;
+            if (!string.IsNullOrWhiteSpace(feedback))
+                GUILayout.Label(feedback);
+            GUILayout.EndArea();
+        }
+
+        private void DrawDebugArea()
+        {
+            GUI.Box(new Rect(20f, 430f, 660f, 76f), "DEBUG — controles de prueba");
+            if (GUI.Button(new Rect(35f, 458f, 245f, 30f), $"Crear laceración moderada: {RegionLabel(selectedRegion)}"))
+            {
+                bool applied = medicalState.ApplyWound(
+                    selectedRegion,
+                    WoundType.Laceration,
+                    0.5f,
+                    out string woundId,
+                    out string failure);
+                selectedWoundId = applied ? woundId : selectedWoundId;
+                feedback = applied ? "Herida debug creada." : failure;
+            }
+            if (GUI.Button(new Rect(292f, 458f, 180f, 30f), "Daño sistémico debug"))
+                ApplyDebugDamageToPlayer();
+            GUI.Label(
+                new Rect(484f, 454f, 180f, 42f),
+                $"Reserva vital debug:\n{actorHealth.CurrentHealth:0.#}/{actorHealth.MaxHealth:0.#}");
         }
 
         private void ApplyDebugDamageToPlayer()
@@ -345,8 +497,77 @@ namespace OldScars.Core.Actors
                     ? playerNeeds.GetComponent<ActorHealthComponent>()
                     : FindAnyObjectByType<ActorHealthComponent>();
             }
+            if (medicalState == null && actorHealth != null)
+                medicalState = actorHealth.GetComponent<ActorMedicalStateComponent>();
+            if (itemOwnership == null && actorHealth != null)
+                itemOwnership = actorHealth.GetComponent<ActorItemOwnershipComponent>();
             if (inventorySessionController == null)
                 inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
+        }
+
+        private void SelectRegion(BodyRegion region)
+        {
+            selectedRegion = region;
+            ActorMedicalWoundState[] wounds = medicalState != null
+                ? medicalState.GetWounds(region)
+                : new ActorMedicalWoundState[0];
+            selectedWoundId = wounds.Length > 0 ? wounds[0].woundId : null;
+            feedback = null;
+        }
+
+        private static bool ContainsWound(ActorMedicalWoundState[] wounds, string woundId)
+        {
+            if (string.IsNullOrWhiteSpace(woundId))
+                return false;
+            for (int index = 0; index < wounds.Length; index++)
+            {
+                if (wounds[index].woundId == woundId)
+                    return true;
+            }
+            return false;
+        }
+
+        private static string RegionLabel(BodyRegion region)
+        {
+            switch (region)
+            {
+                case BodyRegion.Head: return "Cabeza";
+                case BodyRegion.Torso: return "Torso";
+                case BodyRegion.LeftArm: return "Brazo izq.";
+                case BodyRegion.RightArm: return "Brazo der.";
+                case BodyRegion.LeftLeg: return "Pierna izq.";
+                case BodyRegion.RightLeg: return "Pierna der.";
+                default: return region.ToString();
+            }
+        }
+
+        private static string WoundLabel(ActorMedicalWoundState wound)
+        {
+            if (wound == null)
+                return "<NONE>";
+            if (wound.woundType == WoundType.Laceration.ToString())
+                return "Laceración";
+            if (wound.woundType == WoundType.Puncture.ToString())
+                return "Punción";
+            if (wound.woundType == WoundType.Blunt.ToString())
+                return "Contusión";
+            return wound.woundType;
+        }
+
+        private static string BleedingLabel(float rate)
+        {
+            if (rate <= 0f) return "Sin sangrado";
+            if (rate < 0.15f) return "Leve";
+            if (rate < 0.35f) return "Moderado";
+            return "Grave";
+        }
+
+        private static string PainLabel(float pain)
+        {
+            if (pain <= 0f) return "Sin dolor";
+            if (pain < 0.3f) return "Leve";
+            if (pain < 0.7f) return "Moderado";
+            return "Intenso";
         }
 
         private static Vector2 ToGuiPosition(Vector2 mousePosition)

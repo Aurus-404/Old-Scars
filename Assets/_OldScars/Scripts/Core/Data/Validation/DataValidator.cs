@@ -1252,15 +1252,30 @@ namespace OldScars.Core.Data.Validation
         {
             bool hasRestoreNeeds = item.consumable.restore_needs != null && item.consumable.restore_needs.Length > 0;
             bool hasRestoreHealth = item.consumable.restore_health != null && item.consumable.restore_health.amount > 0f;
+            bool hasWoundTreatment = item.consumable.wound_treatment != null;
 
-            if (!hasRestoreNeeds && !hasRestoreHealth)
+            if (!hasRestoreNeeds && !hasRestoreHealth && !hasWoundTreatment)
             {
-                report.Error($"{ctx}: 'consumable' must declare 'restore_needs' or 'restore_health.amount'.");
+                report.Error($"{ctx}: 'consumable' must declare 'restore_needs', 'restore_health.amount' or 'wound_treatment'.");
                 return;
             }
 
             if (item.consumable.restore_health != null && item.consumable.restore_health.amount <= 0f)
                 report.Error($"{ctx}: 'consumable.restore_health.amount' must be > 0 when 'restore_health' is present.");
+
+            if (hasWoundTreatment)
+            {
+                ItemWoundTreatment treatment = item.consumable.wound_treatment;
+                if (treatment.type != ItemWoundTreatmentTypes.Bandage)
+                    report.Error($"{ctx}: 'consumable.wound_treatment.type' must be '{ItemWoundTreatmentTypes.Bandage}'.");
+                if (float.IsNaN(treatment.bleeding_multiplier) || float.IsInfinity(treatment.bleeding_multiplier) ||
+                    treatment.bleeding_multiplier < 0f || treatment.bleeding_multiplier >= 1f)
+                {
+                    report.Error($"{ctx}: 'consumable.wound_treatment.bleeding_multiplier' must be finite and in [0, 1).");
+                }
+                if (hasRestoreNeeds || item.consumable.restore_health != null)
+                    report.Error($"{ctx}: 'wound_treatment' cannot be combined with restore effects in V1.");
+            }
 
             if (item.consumable.restore_needs == null)
                 return;
