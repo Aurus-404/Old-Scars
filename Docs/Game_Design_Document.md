@@ -297,7 +297,7 @@ El contenido de lore debe distinguir hecho confirmado, rumor dentro del mundo, v
 ### UI Y Accesibilidad
 
 - Las superficies OnGUI actuales son instrumentación debug.
-- El control de movimiento actual del player es `WASD` relativo a la pantalla/cámara sobre XZ: W siempre avanza hacia la parte superior de pantalla, incluso tras rotar el yaw de cámara. El click izquierdo no crea órdenes de movimiento; las flechas quedan reservadas para pan manual de la cámara debug.
+- El control de movimiento actual del player es `WASD` relativo a la pantalla/cámara sobre XZ: W siempre avanza hacia la parte superior de pantalla, incluso tras rotar el yaw de cámara. El click izquierdo no crea órdenes de movimiento. La cámara debug sigue continuamente al player; no tiene pan libre por flechas ni borde de pantalla, y conserva órbita RMB, zoom wheel y recenter MMB alrededor del pivot del player.
 - La salud escalar actual se consulta en una ventana debug independiente con `H`; no es HUD permanente, no pausa el tiempo ni bloquea el movimiento. Heridas localizadas, medicina y la UI de producción siguen fuera de este contrato.
 - La UI de producto debe preservar la autoridad de los backends en vez de duplicar lógica.
 - Los resultados y la presentación se actualizan después del estado confirmado.

@@ -68,8 +68,8 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 - `PlayerMovementInputController` interpreta solamente `WASD`; proyecta forward/right de `Camera.main` sobre XZ, normaliza diagonales y entrega la dirección a `PlayerMovementController`. `CharacterController` conserva gravedad y colisión, y el player rota suavemente hacia la dirección real. No existe target, raycast de suelo, NavMesh ni orden de movimiento por click izquierdo.
 - Un comienzo válido de movimiento cancela una acción temporal activa una sola vez. `InventoryUISessionController.BlocksWorldInput` mantiene el bloqueo de movimiento; abrir Health no lo activa.
-- `CameraRigController` reserva `WASD` para el player y mueve su pan manual con flechas; conserva rotación RMB, zoom wheel, recenter MMB y screen-edge pan configurado.
-- `ActorHealthDebugWindow` es una ventana OnGUI no modal con toggle `H`, cierre `X`/Escape, estado cualitativo derivado de `ActorHealthComponent` y `Debug Damage Player`. `DebugWorldUiInputBlocker` consume los clicks dentro de ella sin convertir la ventana abierta en bloqueo global de world input.
+- `CameraRigController` sigue en `LateUpdate` al `recenterTarget` como pivot continuo: no hay pan por flechas ni screen-edge pan. RMB órbita el rig alrededor del player, wheel cambia la distancia local de `Camera.main` y MMB reaplica el pivot sin desacoplar yaw ni zoom.
+- `ActorHealthDebugWindow` es una ventana OnGUI no modal con toggle `H`, cierre `X`/Escape, estado cualitativo derivado de `ActorHealthComponent` y `Debug Damage Player`. Health e Inventory son mutuamente excluyentes: abrir uno cierra el otro. `DebugWorldUiInputBlocker` consume los clicks dentro de Health sin convertir la ventana abierta en bloqueo global de world input.
 - La ventana es una foundation debug reutilizable para M39.0; no implementa health localizado, wounds, bleeding, pain, bandages ni medicine.
 
 ## Persistence Core V1

@@ -172,6 +172,7 @@ namespace OldScars.Core.Items
         [SerializeField] private ItemStorageDebugPanel storagePanel;
         [SerializeField] private InventoryComponent playerInventory;
         [SerializeField] private PlayerMovementController movementController;
+        [SerializeField] private ActorHealthDebugWindow actorHealthWindow;
 
         private readonly InventoryUISessionSelection selection = new InventoryUISessionSelection();
         private readonly InventoryContextMenuState contextMenuState = new InventoryContextMenuState();
@@ -270,6 +271,7 @@ namespace OldScars.Core.Items
             }
 
             CloseFloatingStorageWindowInternal(true);
+            CloseHealthWindow();
             BeginSession();
             storagePanel?.HideFromSession();
             inventoryPanel.ShowFromSession();
@@ -293,6 +295,7 @@ namespace OldScars.Core.Items
                 playerInventory = inventory;
 
             CloseFloatingStorageWindowInternal(true);
+            CloseHealthWindow();
             BeginSession();
             inventoryPanel?.HideFromSession();
             storagePanel.ShowFromSession(source, playerInventory, context, action);
@@ -542,9 +545,18 @@ namespace OldScars.Core.Items
                 playerInventory = inventoryPanel.Inventory;
             if (movementController == null && playerInventory != null)
                 movementController = playerInventory.GetComponent<PlayerMovementController>();
+            if (actorHealthWindow == null)
+                actorHealthWindow = FindAnyObjectByType<ActorHealthDebugWindow>();
 
             inventoryPanel?.BindSessionController(this);
             storagePanel?.BindSessionController(this);
+        }
+
+        private void CloseHealthWindow()
+        {
+            if (actorHealthWindow == null)
+                actorHealthWindow = FindAnyObjectByType<ActorHealthDebugWindow>();
+            actorHealthWindow?.Close();
         }
     }
 }

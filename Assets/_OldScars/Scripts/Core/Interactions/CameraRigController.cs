@@ -1,6 +1,6 @@
+using OldScars.Core.Items;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using OldScars.Core.Items;
 
 namespace OldScars.Core.Interactions
 {
@@ -10,14 +10,9 @@ namespace OldScars.Core.Interactions
         [SerializeField] private Transform recenterTarget;
         [SerializeField] private InventoryUISessionController inventorySessionController;
 
-        [Header("Movement")]
-        [SerializeField] private float panSpeed = 10f;
+        [Header("Follow")]
         [SerializeField] private bool snapToTargetOnStart = true;
         [SerializeField] private Vector3 targetOffset;
-
-        [Header("Screen Edge Pan")]
-        [SerializeField] private bool enableScreenEdgePan;
-        [SerializeField] private float screenEdgeSize = 20f;
 
         [Header("Zoom")]
         [SerializeField] private float zoomSpeed = 0.02f;
@@ -36,15 +31,16 @@ namespace OldScars.Core.Interactions
         private bool isRotating;
         private Camera mainCamera;
 
+        public bool HasContinuousFollow => recenterTarget != null;
+        public bool AllowsIndependentPan => false;
+
         private void Start()
         {
             mainCamera = Camera.main;
-
             if (inventorySessionController == null)
                 inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
-
             if (snapToTargetOnStart)
-                RecenterOnTarget();
+                FollowTargetNow();
         }
 
         private void Update()
@@ -56,80 +52,41 @@ namespace OldScars.Core.Interactions
                 return;
             }
 
-            HandlePanInput();
             HandleZoomInput();
             HandleRightMouseRotation();
             HandleRecenterInput();
         }
 
+        private void LateUpdate()
+        {
+            FollowTargetNow();
+        }
+
+        public void SetFollowTarget(Transform target)
+        {
+            recenterTarget = target;
+            FollowTargetNow();
+        }
+
         public void RecenterOnTarget()
         {
-            if (recenterTarget == null)
-                return;
-
-            transform.position = recenterTarget.position + targetOffset;
+            FollowTargetNow();
         }
 
-        private void HandlePanInput()
+        public void FollowTargetNow()
         {
-            if (Keyboard.current == null)
-                return;
-
-            Vector3 move = Vector3.zero;
-
-            Vector3 forward = transform.forward;
-            forward.y = 0f;
-            forward.Normalize();
-
-            Vector3 right = transform.right;
-            right.y = 0f;
-            right.Normalize();
-
-            if (Keyboard.current.upArrowKey.isPressed)
-                move += forward;
-            if (Keyboard.current.downArrowKey.isPressed)
-                move -= forward;
-            if (Keyboard.current.rightArrowKey.isPressed)
-                move += right;
-            if (Keyboard.current.leftArrowKey.isPressed)
-                move -= right;
-
-            if (enableScreenEdgePan && Mouse.current != null)
-                move += GetScreenEdgeMove(forward, right);
-
-            if (move.sqrMagnitude <= 0f)
-                return;
-
-            transform.position += move.normalized * panSpeed * Time.deltaTime;
+            if (recenterTarget != null)
+                transform.position = recenterTarget.position + targetOffset;
         }
 
-        private Vector3 GetScreenEdgeMove(Vector3 forward, Vector3 right)
+        public void OrbitAroundTarget(float yawDelta)
         {
-            Vector2 position = Mouse.current.position.ReadValue();
-            Vector3 move = Vector3.zero;
-
-            if (position.x <= screenEdgeSize)
-                move -= right;
-            else if (position.x >= Screen.width - screenEdgeSize)
-                move += right;
-
-            if (position.y <= screenEdgeSize)
-                move -= forward;
-            else if (position.y >= Screen.height - screenEdgeSize)
-                move += forward;
-
-            return move;
+            if (!Mathf.Approximately(yawDelta, 0f))
+                transform.Rotate(Vector3.up, yawDelta, Space.World);
         }
 
-        private void HandleZoomInput()
+        public void ApplyZoom(float scrollDelta)
         {
-            if (Mouse.current == null)
-                return;
-
-            float scrollDelta = Mouse.current.scroll.ReadValue().y;
-            if (Mathf.Approximately(scrollDelta, 0f))
-                return;
-
             Camera cameraToZoom = GetMainCamera();
             if (cameraToZoom == null)
             {
@@ -150,20 +107,24 @@ namespace OldScars.Core.Interactions
 
             float minDistance = Mathf.Max(0.01f, Mathf.Min(minZoomDistance, maxZoomDistance));
             float maxDistance = Mathf.Max(minDistance, Mathf.Max(minZoomDistance, maxZoomDistance));
-            float currentDistance = localPosition.magnitude;
-            float targetDistance = Mathf.Clamp(
-                currentDistance - scrollDelta * zoomSpeed,
-                minDistance,
-                maxDistance);
-
+            float targetDistance = Mathf.Clamp(localPosition.magnitude - scrollDelta * zoomSpeed, minDistance, maxDistance);
             cameraTransform.localPosition = localPosition.normalized * targetDistance;
+        }
+
+        private void HandleZoomInput()
+        {
+            if (Mouse.current == null)
+                return;
+
+            float scrollDelta = Mouse.current.scroll.ReadValue().y;
+            if (!Mathf.Approximately(scrollDelta, 0f))
+                ApplyZoom(scrollDelta);
         }
 
         private Camera GetMainCamera()
         {
             if (mainCamera == null)
                 mainCamera = Camera.main;
-
             return mainCamera;
         }
 
@@ -173,7 +134,6 @@ namespace OldScars.Core.Interactions
                 return;
 
             Vector2 mousePosition = Mouse.current.position.ReadValue();
-
             if (Mouse.current.rightButton.wasPressedThisFrame)
             {
                 rightMouseDownPosition = mousePosition;
@@ -185,12 +145,8 @@ namespace OldScars.Core.Interactions
             {
                 if (!isRotating && (mousePosition - rightMouseDownPosition).sqrMagnitude >= rightDragThresholdPixels * rightDragThresholdPixels)
                     isRotating = true;
-
                 if (isRotating)
-                {
-                    float yawDelta = Mouse.current.delta.ReadValue().x * yawDegreesPerMousePixel;
-                    transform.Rotate(Vector3.up, yawDelta, Space.World);
-                }
+                    OrbitAroundTarget(Mouse.current.delta.ReadValue().x * yawDegreesPerMousePixel);
             }
 
             if (Mouse.current.rightButton.wasReleasedThisFrame)
@@ -202,10 +158,7 @@ namespace OldScars.Core.Interactions
 
         private void HandleRecenterInput()
         {
-            if (!enableRecenterInput || Mouse.current == null)
-                return;
-
-            if (Mouse.current.middleButton.wasPressedThisFrame)
+            if (enableRecenterInput && Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame)
                 RecenterOnTarget();
         }
     }

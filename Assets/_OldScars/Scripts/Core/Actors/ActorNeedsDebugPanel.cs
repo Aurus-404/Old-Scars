@@ -238,9 +238,13 @@ namespace OldScars.Core.Actors
                 return;
             }
 
-            if (keyboard.hKey.wasPressedThisFrame &&
-                (inventorySessionController == null || !inventorySessionController.IsOpen))
-                Toggle();
+            if (!keyboard.hKey.wasPressedThisFrame)
+                return;
+
+            if (isOpen)
+                Close();
+            else
+                Open();
         }
 
         private void OnGUI()
@@ -259,6 +263,9 @@ namespace OldScars.Core.Actors
 
         public void Open()
         {
+            ResolveReferences();
+            if (inventorySessionController != null && inventorySessionController.IsOpen)
+                inventorySessionController.CloseSession();
             isOpen = true;
         }
 

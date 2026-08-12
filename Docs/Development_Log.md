@@ -2604,3 +2604,54 @@ Manual: `PENDING — Mauro controls + Health Window recheck` en Play Mode: WASD/
 Fuera de alcance: M39.0, regiones, wounds, bleeding, pain, bandages, medicine, NavMesh, rebinding, input manager, locomotion framework, UI final y cambios de persistencia/JSON.
 
 Siguiente: `M39.0 — Localized Health & Medicine V1` continúa `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+
+### ID TBD — Player Controls & Health Window Foundation — Correction Pass 1
+
+Fecha: 2026-08-12
+
+Pass: `Correction Pass 1 — Follow Camera & Exclusive Windows`.
+
+Manual findings:
+
+- el pan libre por flechas contradecía la cámara follow esperada;
+- órbita RMB, zoom wheel y recenter MMB no funcionaban correctamente en el recheck manual;
+- Health e Inventory podían quedar abiertas a la vez.
+
+Corrección:
+
+- `CameraRigController` sigue continuamente a `recenterTarget` en `LateUpdate`; se retiraron pan por flechas y screen-edge pan. RMB conserva órbita, wheel conserva zoom limitado y MMB reaplica el pivot sin desacoplar cámara del player.
+- Abrir Inventory personal o externo cierra Health; abrir Health cierra la sesión Inventory activa. Health mantiene WASD y bloqueo local de clicks; Inventory mantiene `BlocksWorldInput`.
+- El diagnóstico de Player Controls & Health Window cubre follow, ausencia de pan independiente, órbita/zoom/recenter, WASD camera-relative y exclusividad Health–Inventory.
+
+Validación automatizada: `PENDING` hasta runtime/editor compile y diagnóstico actualizado. `Inventory Interaction UX` se repetirá como regresión directa.
+
+Manual recheck: `PENDING — Mauro follow/orbit/zoom/window exclusivity recheck`.
+
+M39.0 continúa `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+
+### ID TBD — Player Controls & Health Window Foundation — Correction Pass 1 Closeout
+
+Fecha: 2026-08-12
+
+Estado final: `VALIDATED — AUTOMATED + MANUAL PASSED`.
+
+Validación automatizada:
+
+- Runtime compile: `PASS`.
+- Editor compile: `PASS`.
+- `Player Controls & Health Window Diagnostics: PASS`.
+- `Inventory Interaction UX Correction Diagnostics: PASS`.
+- No se repitieron M37/M38: este pass no modificó persistence, actor lifecycle ni sus seams.
+- `SampleScene`, JSON, Packages y ProjectSettings permanecieron sin cambios.
+
+Validación manual confirmada por Mauro:
+
+- WASD camera-relative, diagonales, left-click sin movimiento y cancelación de acción: `PASS`.
+- Cámara follow continua, órbita RMB, wheel zoom, MMB recenter y ausencia de free pan por flechas: `PASS`.
+- Inventory bloquea WASD; Health permite WASD, bloquea sólo sus clicks y conserva Debug Damage/H/X/Escape: `PASS`.
+- Health e Inventory son mutuamente excluyentes en ambas direcciones: `PASS`.
+- No se observaron errores runtime atribuibles a la unidad.
+
+Contratos cerrados: WASD camera-relative con `CharacterController`; cámara follow continua del player; RMB orbit, wheel zoom y MMB recenter sin pan libre; Health en H no modal; Inventory modal; ventanas Health/Inventory exclusivas.
+
+Siguiente: cerrar esta unidad sin milestone adicional; `M39.0 — Localized Health & Medicine V1` permanece `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
