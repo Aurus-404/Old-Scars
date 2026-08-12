@@ -8,9 +8,9 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 Estado actual:
 
-`IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
+`DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`
 
-Validation — `AUTOMATED PASS; MANUAL FRESH-SESSION PENDING`
+Validation — `AUTOMATED + MANUAL FRESH-SESSION PASSED`
 
 Pass 1 implementa `WorldClock` como autoridad runtime única sobre segundos absolutos de game time, deriva `Day N / HH:MM`, gobierna Hunger/Thirst mediante el mismo delta normal o explícito y agrega `ActorRestService.TryRest` más acciones debug `Rest 1h` / `Sleep 8h`. M38.0 continúa `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`; M37.1 continúa `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` continúa `APPROVED`.
 
@@ -21,6 +21,7 @@ Pass 1 implementa `WorldClock` como autoridad runtime única sobre segundos abso
 - Fault post-runtime-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback equivalentes.
 - `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
 - Cero warnings nuevos atribuibles a M38.1; permanecen los seis warnings C# preexistentes documentados.
+- Mauro confirmó manualmente World Clock, bootstrap Day 1, progresión Day/HH:MM y Hunger/Thirst, Rest 1h, Sleep 8h, consumibles, Save Current Slice, fresh Play, Load y continuidad posterior al load sin errores runtime atribuibles a M38.1.
 
 ## Contrato Funcional
 
@@ -41,6 +42,5 @@ Quedan fuera fatigue, UI final, beds/camping/shelters, health/medicine M39, heri
 
 ## Próximo Trabajo
 
-- M38.1 requiere validación manual de Mauro en Play Mode y fresh-session antes de `DONE`.
-- M39.0 queda `PLANNED — BLOCKED BY M38.1 MANUAL CLOSEOUT`.
+- M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 - No iniciar M39.0 ni el playable exploration prototype en este commit.

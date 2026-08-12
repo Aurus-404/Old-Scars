@@ -134,25 +134,25 @@ Deuda aceptada: representation visual genérica es cápsula lógica sin rig huma
 
 No quedan bloqueos de closeout. M38.1 fue autorizado e implementado con validación automatizada; su cierre manual se controla por separado a continuación.
 
-### M38.1 Manual Needs, World Clock & Recovery Closeout
+### M38.1 Needs, World Clock & Recovery Closeout
 
-Estado: `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`.
 
-Validación manual requerida para M38.1:
+Evidencia manual confirmada por Mauro:
 
-- bootstrap fresh-session en Day 1 00:00 y avance coherente de Day/HH:MM;
-- progresión visible de Hunger/Thirst durante gameplay sin doble tick, pause leaks ni avance en actores Dead;
-- comida y agua restauran el need correcto, consumen exactamente una unidad y preservan ownership/quantity;
-- Rest 1h y Sleep 8h avanzan el mismo reloj y los mismos needs; duración inválida, actor disabled y actor Dead se rechazan sin mutación ni revival;
-- Save → salida completa de Play Mode → fresh Play session → Load restaura exactamente World Clock, Hunger/Thirst y lifecycle M38.0;
-- carga legacy schema-v1 sin `worldClock` usa Day 1 00:00; reloj inválido falla en preflight sin mutar;
-- Console sin errores de time, needs, actor lifecycle, ownership o persistence.
+- World Clock visible y progresando; bootstrap Day 1; Day/HH:MM y Hunger/Thirst avanzaron con el mismo tiempo del mundo;
+- Rest 1h y Sleep 8h avanzaron el reloj y las necesidades coherentemente sin curar ni revivir;
+- comida y agua restauraron Hunger/Thirst por las rutas existentes;
+- Save Current Slice terminó `Success` con `ElapsedGameSeconds: 100052.668084139`;
+- fresh Play session volvió al bootstrap y Load Current Slice terminó `Success`, restaurando World Clock y needs;
+- tras el load el reloj y las necesidades continuaron progresando normalmente;
+- no se observaron errores runtime atribuibles a M38.1.
 
-Evidencia automatizada: Runtime/Editor compile, Global Content ID Namespace Foundation, M36.1 Foundation Identity, M37.0, ambos M37.1, M38.0 e Inventory Interaction UX Correction dieron `PASS`. `M38.1 Needs, World Clock & Recovery Diagnostics: PASS` usó dos Play sessions y cubrió bootstrap/derivación temporal, avance único de Hunger/Thirst, reactivación del componente, consumibles reales, rest/sleep, rechazos inválidos/disabled/Dead, round-trip fresh-session, compatibilidad legacy, preflight sin mutación y fault posterior al restore de reloj/needs con rollback canónico equivalente. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; sólo permanecen seis warnings preexistentes.
+Evidencia automatizada: Runtime/Editor compile, Global Content ID Namespace Foundation, M36.1 Foundation Identity, M37.0, ambos M37.1, M38.0 e Inventory Interaction UX Correction dieron `PASS`. `M38.1 Needs, World Clock & Recovery Diagnostics: PASS` cubrió bootstrap/derivación temporal, avance único de Hunger/Thirst, reactivación, consumibles, rest/sleep, rechazos inválidos/disabled/Dead, round-trip fresh-session, compatibilidad legacy, preflight sin mutación y rollback post-runtime-state equivalente. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; sólo permanecen seis warnings preexistentes.
 
 Contrato acotado: el reloj guarda segundos de juego desde Day 1 00:00 y avanza a 60 segundos de juego por segundo real; la configuración existente equivale a 1.8 Hunger y 3.0 Thirst por hora de juego. Rest/Sleep no curan health ni wounds. Fatigue permanece `SHOULD — DEFERRED`: no hay todavía definición ni consumidor jugable aprobado que justifique una barra aislada.
 
-M39 queda bloqueado hasta closeout manual M38.1 y autorización separada. Esto no adelanta AI, combat, weather/exposure, recovery médico, world streaming, UI final ni playable exploration prototype.
+M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. Esto no adelanta AI, combat, weather/exposure, recovery médico, world streaming, UI final ni playable exploration prototype.
 
 ### Combat Ready - M40.1
 

@@ -2541,3 +2541,33 @@ Alcance y secuencia:
 - M36.1, M37.1, `Persistence Ready — APPROVED` y M38.0 se preservaron;
 - fuera: health/wound recovery, Fatigue implementada, AI, combat, weather/exposure, world-scale spawn/streaming, UI final y playable exploration prototype;
 - M39 queda bloqueado hasta `M38.1 — Manual Unity Validation & Closeout` y autorización separada.
+
+### M38.1 — Manual Fresh-Session Closeout
+
+Fecha: 2026-08-12
+
+Milestone: `M38.1 — Needs, World Clock & Recovery V1`.
+
+Estado anterior: `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Estado posterior: `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`.
+
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
+
+Evidencia manual confirmada por Mauro:
+
+- World Clock visible y progresando normalmente; bootstrap en Day 1; Day/HH:MM avanzaron durante gameplay.
+- Hunger/Thirst progresaron con el mismo tiempo del mundo; Rest 1h y Sleep 8h funcionaron y afectaron las necesidades coherentemente.
+- Food/Water restauraron Hunger/Thirst mediante las rutas existentes y el consumo se mantuvo correcto.
+- Save Current Slice terminó `Success`: 27 items, 15 storages, 2 world items, 8 containers, 2 actors, 0 legacy corpses, 3 doors y `ElapsedGameSeconds: 100052.668084139`.
+- Mauro salió completamente de Play Mode, ejecutó fresh Play y confirmó bootstrap inicial; Load Current Slice terminó `Success` con `MutationStarted: True`, sin rollback requerido, restaurando World Clock y needs.
+- Después del load, el reloj y las necesidades continuaron progresando normalmente; no se observaron errores runtime atribuibles a M38.1.
+- Los warnings `Legacy unqualified Global Content ID lookup ...` y `Legacy EquipmentSlot reference ...` permanecen como deuda Core-only conocida y aceptada. `Use failed: Matching needs or health are already full.` fue comportamiento esperado con el efecto ya lleno.
+
+Contratos cerrados: `WorldClock` como autoridad temporal única; `elapsedGameSeconds` durable; Day/HH:MM derivados; escala provisional de 60 game seconds por real second; Hunger/Thirst gobernados por game time sin autoridad temporal independiente; Rest/Sleep usando el mismo reloj sin curar ni revivir; actores Dead sin progresión; consumibles preservados; World Clock integrado al Current Slice; legacy schema-v1 sin `worldClock` normalizado a Day 1 00:00; clock inválido rechazado en semantic preflight sin mutación; World Clock y needs incluidos en rollback; fresh-session persistence validada manualmente.
+
+Fatigue: `DEFERRED — SHOULD`.
+
+Fuera de alcance: localized wounds, bleeding, pain, medicine, fatigue completa, combat, AI, weather, temperature, world streaming, beds/camping/shelters completos, UI final y playable exploration prototype.
+
+M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. No se inicia M39.0 ni el playable exploration prototype en este commit.

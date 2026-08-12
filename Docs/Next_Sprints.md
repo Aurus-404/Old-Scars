@@ -4,27 +4,25 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximos Tres Trabajos
 
-### 1. M38.1 — Manual Unity Validation & Closeout
+### 1. M39.0 — Localized Health & Medicine V1
 
-Estado: `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 
 Objetivo:
 
-- verificar visualmente `Day / HH:MM`, progresión normal de Hunger/Thirst y consumibles;
-- ejecutar `Rest 1h` / `Sleep 8h` y confirmar que clock y needs usan exactamente el mismo delta;
-- guardar, salir completamente de Play Mode, entrar en fresh Play, cargar y comprobar clock/needs exactos sin errores en Console.
+- regiones, heridas, sangrado, dolor y tratamientos sobre las foundations validadas de health, persistence y necesidades.
 
 Fuera de alcance:
 
-- AI, combat, world-scale spawning y streaming;
-- playable exploration prototype;
-- fatigue deferred SHOULD, health/medicine M39, beds system, UI final y cualquier expansión del scope implementado.
+- combat, AI, weather, world-scale spawning y streaming;
+- fatigue completa, beds/camping/shelters completos, UI final y playable exploration prototype;
+- cualquier implementación antes de autorización explícita.
 
-### 2. M39.0 — Localized Health & Medicine V1
+### 2. M40.0 — Combat Resolution & Weapons V1
 
-Estado: `PLANNED — BLOCKED BY M38.1 MANUAL CLOSEOUT`.
+Estado: `PLANNED`.
 
-Objetivo: regiones, heridas, sangrado, dolor y tratamientos sólo después del closeout manual de M38.1 y una autorización separada.
+Objetivo: damage contract, melee/firearms, ammo y reload después de M39.0 y sus gates aplicables.
 
 ## Dirección De Producción
 

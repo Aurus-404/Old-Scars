@@ -29,9 +29,9 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
-| Siguientes | M38.1 validación manual fresh-session; después M39.0 |
+| Siguientes | M39.0 listo para autorización de implementación; después M40.0 |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED` tras diagnóstico automatizado y round-trip fresh-session manual. `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`; no implementa manifests, provenance completa, dependency resolution ni patches/load-order. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`. M38.1 queda `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; M39.0 permanece bloqueado hasta ese closeout manual.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED` tras diagnóstico automatizado y round-trip fresh-session manual. `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`; no implementa manifests, provenance completa, dependency resolution ni patches/load-order. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`. M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED` con validación automatizada y manual fresh-session; M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 
 ## Estados Canonicos
 
@@ -128,8 +128,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | ID TBD — Global Content ID Namespace Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | M37.0 | `ContentId`, namespace `core`, referencias globales canónicas, compatibilidad legacy acotada, normalización schema-v1 y diagnósticos. Excluye manifests, provenance completa, dependencies y patches/load-order. |
 | CERRADO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` | M37.0; compatibilidad schema-v1 Core validada | Snapshot, apply transaccional, rollback, diagnóstico y round-trip fresh-session manual validados; `Persistence Ready` aprobado para el Current Slice. |
 | CERRADO | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` | ID TBD y M37.1 cerrados | Identidad durable, Alive/Dead, corpse continuity, spawn/restore runtime y persistencia fresh-session validados con automatización y evidencia manual. |
-| ACTIVO | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | M38.0 | Autoridad temporal, Hunger/Thirst por game time, rest/sleep, persistence/rollback y diagnostics implementados; fatigue queda deferred SHOULD. |
-| DESPUES | M39.0 — Localized Health & Medicine V1 | Jugable | `PLANNED — BLOCKED BY M38.1 MANUAL CLOSEOUT` | M38.1 | Regiones, heridas, sangrado, dolor y tratamientos. |
+| CERRADO | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED` | M38.0 | Autoridad temporal, Hunger/Thirst por game time, rest/sleep, persistence/rollback y diagnostics validados; fatigue queda deferred SHOULD. |
+| SIGUIENTE | M39.0 — Localized Health & Medicine V1 | Jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | M38.1 | Regiones, heridas, sangrado, dolor y tratamientos. |
 | DESPUES | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED` | M39.0 | Damage contract, melee/firearms, ammo y reload. |
 | DESPUES | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. |
 | DESPUES | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `PLANNED` | M38.0 | Navegacion, percepcion y diagnostico. |
@@ -182,7 +182,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 IMPLEMENTED / MANUAL CLOSEOUT PENDING → M39.0`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -273,11 +273,11 @@ M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`. Extiende el Current 
 
 ### M38.1 — Límite Obligatorio
 
-M38.1 queda `IMPLEMENTED — AUTOMATED WORLD TIME / NEEDS / RECOVERY VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. Implementa una autoridad única de segundos absolutos de game time, escala provisional configurable, derivación `Day N / HH:MM`, progreso de Hunger/Thirst mediante el mismo delta normal o explícito, rest/sleep real sin loops y persistencia/rollback aditivos dentro del Current Slice schema V1.
+M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`. Implementa una autoridad única de segundos absolutos de game time, escala provisional configurable, derivación `Day N / HH:MM`, progreso de Hunger/Thirst mediante el mismo delta normal o explícito, rest/sleep real sin loops y persistencia/rollback aditivos dentro del Current Slice schema V1.
 
 El slice real mantiene needs sólo en el player; no agrega componentes ficticios a NPCs ni amplía `ActorState`. Rest/sleep rechaza actores Dead, no revive y no aplica recuperación de health/heridas. Fatigue queda `DEFERRED — SHOULD, NOT REQUIRED FOR M38.1 FUNCTIONAL CLOSEOUT` porque no existe un modelo previo coherente y su incorporación correcta exigiría una expansión desproporcionada.
 
-El diagnóstico automatizado fresh-session, la suite M36–M38 y el diagnóstico UX de inventario pasaron; `SampleScene` permaneció unchanged y no hubo warnings nuevos atribuibles. El closeout manual de Mauro sigue pendiente. M39.0 queda `PLANNED — BLOCKED BY M38.1 MANUAL CLOSEOUT`; no comienzan health/medicine, combate, IA, clima, beds system, UI final ni playable exploration prototype.
+El diagnóstico automatizado fresh-session, la suite M36–M38 y el diagnóstico UX de inventario pasaron. Mauro confirmó visualmente World Clock, progresión de Hunger/Thirst, Rest 1h, Sleep 8h, consumibles, save/load fresh-session y continuidad posterior al load, sin errores runtime atribuibles a M38.1. `SampleScene` permaneció unchanged y no hubo warnings nuevos atribuibles. M39.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no comienzan health/medicine, combate, IA, clima, beds system, UI final ni playable exploration prototype.
 
 ## Trabajo Congelado O Diferido
 

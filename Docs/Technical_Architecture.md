@@ -176,7 +176,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 ## Limites Tecnicos Del Slice
 
-- World Clock y needs/rest M38.1 están implementados para el Current Slice; no existe offline progression, calendario amplio, clima, iluminación temporal, beds system ni fatigue.
+- World Clock y needs/rest M38.1 están validados para el Current Slice; no existe offline progression, calendario amplio, clima, iluminación temporal, beds system ni fatigue completa.
 - Health es un valor escalar con tags derivados; no existe daño localizado, heridas, sangrado, dolor, armadura ni penetracion integrados.
 - `FirearmDebugController` es un prototipo debug de arma de fuego, no el contrato final de combate.
 - Existe actor registry/spawn/lifecycle durable acotado a M38.0; no existen IA, navegación de NPCs, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
