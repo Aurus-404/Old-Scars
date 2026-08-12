@@ -8,18 +8,20 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 Estado actual:
 
-`IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
+`DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`
 
-Pass 1 implementa identidad durable separada para player/NPCs, lifecycle `Alive/Dead`, persistencia de pose/health/storages de actores authored y runtime, spawn/restauración mínima y rollback posterior a reconciliación. M37.1 continúa `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` continúa `APPROVED`. M38.0 no está `DONE` hasta completar la validación manual fresh-session de Mauro.
+Validation — `AUTOMATED + MANUAL FRESH-SESSION PASSED`
+
+Pass 1 implementa identidad durable separada para player/NPCs, lifecycle `Alive/Dead`, persistencia de pose/health/storages de actores authored y runtime, spawn/restauración mínima y rollback posterior a reconciliación. M37.1 continúa `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` continúa `APPROVED`.
 
 ## Closeout Confirmado
 
-- Runtime/Editor compilation, Content ID Namespace Foundation Diagnostics, M36.1, M37.0 y ambos diagnostics M37.1: `PASS`.
-- `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS` en dos entradas reales a Play Mode: bootstrap authored fresco, load Alive/Dead, continuidad de corpse, spawn/restore runtime, unicidad, selectividad y rollback post-reconciliation.
-- `SampleScene` no se guardó y conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; no aparecieron warnings nuevos atribuibles a M38.0.
-- La validación manual fresh-session guardó 23 items, 11 storages, 3 world items, 8 containers, 0 corpses y 3 doors; el load fresh-session terminó `Success`, con `MutationStarted: True` y rollback no requerido.
-- Mauro confirmó visualmente Inventory, Equipment, item-owned storage, containers, world state y ausencia de duplicados, pérdidas, fallos de ownership, rehydration o persistence.
-- Inventory Interaction UX Correction queda `VALIDATED — AUTOMATED + MANUAL RECHECK PASSED`.
+- Runtime/Editor compilation, Content ID Foundation, M36.1, M37.0 y ambos diagnostics M37.1: `PASS`.
+- `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS`, incluido rollback post-reconciliation; `SampleScene` unchanged.
+- Mauro confirmó authored actor Alive → Save → fresh Play session → Load → Alive restaurado correctamente.
+- Mauro confirmó actor Dead → corpse lootable → Save Dead; una fresh Play session mostró bootstrap Alive antes de Load y Load lo reemplazó correctamente por el estado Dead persistido.
+- El corpse conservó Inventory y Equipment; no se observó actor vivo + corpse duplicado ni errores de lifecycle, ownership o persistence.
+- Los warnings visibles son los legacy Content ID ya conocidos y aceptados.
 
 ## Persistence Ready — Alcance Aprobado
 
@@ -37,6 +39,5 @@ Los authored roots aceptan un `authoredActorInstanceId` serializado explícito, 
 
 ## Próximo Trabajo
 
-- ejecutar `M38.0 — Manual Unity Validation & Closeout` con Alive, Dead/corpse y runtime actor en sesiones frescas;
-- mantener M38.1 como `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT`;
-- el pequeño playable exploration prototype no está iniciado; sólo podrá evaluarse después del closeout correspondiente, sin declararlo vertical slice final ni crearle un ID nuevo.
+- M38.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no se inicia en este commit.
+- AI, combat, needs/world clock, world-scale spawning, streaming y el pequeño playable exploration prototype permanecen fuera de M38.0.

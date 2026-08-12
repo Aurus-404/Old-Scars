@@ -117,20 +117,22 @@ Bloquea: perdida o duplicacion, referencias colgantes, reset silencioso, saves s
 
 ### M38.0 Manual Actor Lifecycle Closeout
 
-Estado: `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`.
 
-Debe validar antes de marcar M38.0 `DONE`:
+Validación requerida para M38.0:
 
 - actor authored Alive guardado/cargado en fresh session con mismo ActorInstanceId, profile, pose, Inventory y Equipment;
 - bootstrap authored Alive visible antes de cargar un save Dead y reemplazo por el mismo actor/corpse Dead, health 0 y lootable, sin doble representación;
 - runtime actor spawn/save/fresh-session/load con mismo ActorInstanceId y pose;
 - Console sin errores de actor lifecycle, identity, ownership o persistence.
 
+Evidencia manual confirmada por Mauro: authored actor Alive → Save → fresh Play session → Load → Alive restaurado; actor Dead → corpse lootable → Save Dead; fresh Play session con bootstrap Alive antes de Load; Load reemplazó ese bootstrap por Dead persistido; corpse con Inventory y Equipment; sin actor vivo + corpse duplicado y sin errores de lifecycle, ownership o persistence. Los warnings visibles fueron los legacy Content ID conocidos y aceptados.
+
 Evidencia automatizada: Runtime/Editor compile, M36.1 Foundation Identity, Global Content ID Namespace Foundation, M37.0, M37.1 Snapshot/Preflight, M37.1 Current Slice Round-Trip y `M38.0 Actor Runtime & Lifecycle Diagnostics` dieron `PASS`. El diagnóstico M38 usó dos Play sessions, cubrió Alive/Dead, runtime spawn/restore, unicidad, selectividad y fault post-reconciliation con rollback equivalente. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; sólo permanecen seis warnings preexistentes.
 
-Deuda aceptada: representation visual genérica es cápsula lógica sin rig humano; authored identity usa fallback hash versionado hasta materializar overrides serializados; no existe world streaming, permanent despawn, AI, combat ni M38.1. `Persistence Ready` continúa `APPROVED` y M37 no se reabre.
+Deuda aceptada: representation visual genérica es cápsula lógica sin rig humano; authored identity usa fallback hash versionado hasta materializar overrides serializados; no existe world streaming, permanent despawn, AI, combat ni M38.1. `Persistence Ready` queda `APPROVED` y M37 no se reabre.
 
-Bloquea el closeout: actor authored que reaparece Alive después de load Dead, cambio de ActorInstanceId, pérdida/duplicación de storages/equipment, actor+corpse simultáneos, runtime actor no recreado o errores relacionados en Console. M38.1 permanece `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT`.
+No quedan bloqueos de closeout. M38.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` y no se inicia en este commit.
 
 ### Combat Ready - M40.1
 

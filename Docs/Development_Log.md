@@ -2465,3 +2465,32 @@ Alcance y secuencia:
 - M36.1, M37.1 y `Persistence Ready — APPROVED` se preservaron; no se implementaron M38.1, needs/world clock, AI, combat, world-scale spawn, UI final ni playable exploration prototype;
 - M38.1 queda `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT`;
 - siguiente trabajo: `M38.0 — Manual Unity Validation & Closeout` por Mauro sobre Alive, Dead/corpse y runtime actor fresh-session.
+
+### M38.0 — Actor Runtime & Lifecycle V1 — Manual Fresh-Session Closeout
+
+Fecha: 2026-08-12
+
+Milestone: `M38.0 — Actor Runtime & Lifecycle V1`.
+
+Estado anterior: `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Estado posterior: `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`.
+
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
+
+Evidencia manual confirmada por Mauro:
+
+- authored actor Alive → Save → fresh Play session → Load → Alive restaurado correctamente;
+- actor muerto → corpse lootable; Save del estado Dead; fresh Play session con bootstrap Alive antes de Load; Load reemplazó correctamente ese bootstrap por el estado Dead persistido;
+- corpse conserva Inventory y Equipment;
+- no se observó actor vivo + corpse duplicado;
+- no se observaron errores de lifecycle, ownership o persistence;
+- los warnings visibles son los legacy Content ID ya conocidos y aceptados.
+
+Automated validation: Runtime/Editor compile `PASS`; M36.1 `PASS`; Content ID Foundation `PASS`; M37.0 `PASS`; ambos M37.1 `PASS`; `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS`; rollback post-reconciliation `PASS`; `SampleScene unchanged`.
+
+Persistence Ready: `APPROVED`.
+
+M38.1: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. No se inicia M38.1 en este commit.
+
+Fuera de M38.0: AI, combat, needs/world clock, world-scale spawning, streaming y playable exploration prototype.

@@ -4,29 +4,22 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximos Tres Trabajos
 
-### 1. M38.0 — Actor Runtime & Lifecycle V1
+### 1. M38.1 — Needs, World Clock & Recovery V1
 
-Estado: `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 
 Objetivo:
 
-- completar el closeout manual fresh-session de actor authored Alive;
-- comprobar visualmente Dead/corpse con misma identidad, transform, Inventory y Equipment después de load;
-- comprobar spawn/save/fresh-session/load del actor runtime y Console sin errores de lifecycle/persistence.
+- needs/world clock conectados sobre el lifecycle validado de M38.0;
+- sueño/descanso MUST y fatiga SHOULD.
 
 Fuera de alcance:
 
-- necesidades/world clock de M38.1;
-- combate, IA o UI final;
-- mundo o contenido a escala.
+- AI, combat, world-scale spawning y streaming;
+- playable exploration prototype;
+- cualquier implementación antes de autorización explícita.
 
-### 2. M38.1 — Needs, World Clock & Recovery V1
-
-Estado: `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT`.
-
-Objetivo: reloj y necesidades conectadas; sueño/descanso MUST y fatiga SHOULD, sobre el lifecycle de M38.0.
-
-### 3. M39.0 — Localized Health & Medicine V1
+### 2. M39.0 — Localized Health & Medicine V1
 
 Estado: `PLANNED`.
 

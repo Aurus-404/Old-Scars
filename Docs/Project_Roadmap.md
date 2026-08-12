@@ -18,20 +18,20 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone cerrado mas reciente | M37.1 — Current Slice Persistent Round-Trip |
+| Milestone cerrado mas reciente | M38.0 — Actor Runtime & Lifecycle V1 |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
 | Ultimo milestone funcional cerrado | M35.2 — Lootable Entity Inventory UI V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | M38.0 — Manual Unity Validation & Closeout |
+| Milestone activo | M38.1 — Needs, World Clock & Recovery V1 |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
-| Siguientes | closeout manual M38.0; luego M38.1 bloqueado hasta ese cierre |
+| Siguientes | M38.1 listo para autorizacion de implementacion |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED` tras diagnóstico automatizado y round-trip fresh-session manual. `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`; no implementa manifests, provenance completa, dependency resolution ni patches/load-order. M38.0 está `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; M38.1 no comenzó.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED` tras diagnóstico automatizado y round-trip fresh-session manual. `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`; no implementa manifests, provenance completa, dependency resolution ni patches/load-order. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` con automatización y validación manual fresh-session aprobadas; M38.1 queda planificado y listo para autorización de implementación.
 
 ## Estados Canonicos
 
@@ -127,8 +127,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M37.0 — Save Format & Persistence Core | Arquitectura | `DONE — PERSISTENCE CORE VALIDATED` | M36.1 | Envelope V1, serializacion, safe write, backup/recovery, version policy y migration seam validados sin integrar estado gameplay. |
 | CERRADO | ID TBD — Global Content ID Namespace Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | M37.0 | `ContentId`, namespace `core`, referencias globales canónicas, compatibilidad legacy acotada, normalización schema-v1 y diagnósticos. Excluye manifests, provenance completa, dependencies y patches/load-order. |
 | CERRADO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` | M37.0; compatibilidad schema-v1 Core validada | Snapshot, apply transaccional, rollback, diagnóstico y round-trip fresh-session manual validados; `Persistence Ready` aprobado para el Current Slice. |
-| ACTUAL | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | ID TBD y M37.1 cerrados | Identidad durable, Alive/Dead, corpse continuity, spawn/restore runtime y persistencia fresh-session automatizada; falta closeout manual. |
-| SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED — BLOCKED BY M38.0 MANUAL CLOSEOUT` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
+| CERRADO | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` | ID TBD y M37.1 cerrados | Identidad durable, Alive/Dead, corpse continuity, spawn/restore runtime y persistencia fresh-session validados con automatización y evidencia manual. |
+| SIGUIENTE | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | M38.0 | Reloj y necesidades conectadas; sueño/descanso MUST, fatiga SHOULD. |
 | DESPUES | M39.0 — Localized Health & Medicine V1 | Jugable | `PLANNED` | M38.1 | Regiones, heridas, sangrado, dolor y tratamientos. |
 | DESPUES | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED` | M39.0 | Damage contract, melee/firearms, ammo y reload. |
 | DESPUES | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. |
@@ -182,7 +182,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 manual closeout → M38.1`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -269,7 +269,7 @@ M37.0 está `DONE — PERSISTENCE CORE VALIDATED`. M37.1 queda `DONE — CURRENT
 
 ### M38.0 — Límite Obligatorio
 
-M38.0 está `IMPLEMENTED — AUTOMATED ACTOR LIFECYCLE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. Extiende el Current Slice con identidad durable distinta de profile/locator, lifecycle `Alive/Dead`, pose/health y referencias a storages existentes; reconcilia authored bootstrap y representaciones runtime mediante el apply/rollback de M37.1. No implementa M38.1, AI, combat, world streaming, spawn a escala ni el playable exploration prototype. M38.1 permanece bloqueado hasta el closeout manual de M38.0.
+M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`. Extiende el Current Slice con identidad durable distinta de profile/locator, lifecycle `Alive/Dead`, pose/health y referencias a storages existentes; reconcilia authored bootstrap y representaciones runtime mediante el apply/rollback de M37.1. La validación automatizada y la evidencia manual fresh-session pasaron. No implementa M38.1, AI, combat, needs/world clock, world streaming, spawn a escala ni el playable exploration prototype. M38.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` y no comienza en este cierre.
 
 ## Trabajo Congelado O Diferido
 
