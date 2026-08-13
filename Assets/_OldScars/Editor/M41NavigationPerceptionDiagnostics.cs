@@ -76,8 +76,10 @@ namespace OldScars.Editor
             PlacePlayerNearFixture();
             Require(manualNavigator.GetComponent<ActorNavigationController>().TryNavigate(goal.position, out ActorNavigationResult order),
                 "Manual navigator rejected goal: " + order.Failure + " / " + order.Detail);
+            ResetPerceptionPair(manualObserver, manualTarget);
             Physics.SyncTransforms();
             ActorVisualPerceptionResult sight = manualObserver.GetComponent<ActorVisualPerceptionService>().Evaluate(manualTarget);
+            RequireManualPerceptionContract(barrier, sight);
             Debug.Log(
                 "[M41.0][MANUAL_READY]" +
                 $"\n  Navigator: {manualNavigator.ActorInstanceId}" +
@@ -106,7 +108,10 @@ namespace OldScars.Editor
                 .FirstOrDefault(value => value != null && value.name == "M41 Manual Target");
             Require(manualObserver != null && manualTarget != null,
                 "Run M41.0 Prepare Manual Validation before toggling the blocker.");
+            ResetPerceptionPair(manualObserver, manualTarget);
+            Physics.SyncTransforms();
             ActorVisualPerceptionResult sight = manualObserver.GetComponent<ActorVisualPerceptionService>().Evaluate(manualTarget);
+            RequireManualPerceptionContract(barrier, sight);
             Debug.Log(
                 "[M41.0][MANUAL_PERCEPTION]" +
                 $"\n  BarrierActive: {barrier.activeSelf}" +
@@ -310,12 +315,10 @@ namespace OldScars.Editor
         private static void RunPerceptionAndRestoreCases()
         {
             ActorVisualPerceptionService sight = observer.GetComponent<ActorVisualPerceptionService>();
-            Transform observerMarker = Marker(M41SampleSceneNavigationTools.ObserverName);
             Transform targetMarker = Marker(M41SampleSceneNavigationTools.TargetName);
             GameObject barrier = Barrier();
 
-            Place(observer, observerMarker.position, Quaternion.LookRotation(Vector3.right));
-            Place(target, targetMarker.position, Quaternion.identity);
+            ResetPerceptionPair(observer, target);
             barrier.SetActive(false);
             Physics.SyncTransforms();
             ActorVisualPerceptionResult clear = sight.Evaluate(target);
@@ -434,6 +437,27 @@ namespace OldScars.Editor
                 navigation.ApplyPersistencePose(position, rotation);
             else
                 identity.transform.SetPositionAndRotation(position, rotation);
+        }
+
+        private static void ResetPerceptionPair(ActorRuntimeIdentity perceptionObserver, ActorRuntimeIdentity perceptionTarget)
+        {
+            Place(perceptionObserver, Marker(M41SampleSceneNavigationTools.ObserverName).position,
+                Quaternion.LookRotation(Vector3.right));
+            Place(perceptionTarget, Marker(M41SampleSceneNavigationTools.TargetName).position, Quaternion.identity);
+        }
+
+        private static void RequireManualPerceptionContract(
+            GameObject barrier,
+            ActorVisualPerceptionResult sight)
+        {
+            bool valid = barrier.activeSelf
+                ? !sight.Perceived && sight.Reason == ActorVisualPerceptionReason.Occluded &&
+                  sight.Blocker != null && sight.Blocker.gameObject == barrier
+                : sight.Perceived && sight.Reason == ActorVisualPerceptionReason.Perceived && sight.Blocker == null;
+            Require(valid,
+                $"Manual perception fixture mismatch. BarrierActive={barrier.activeSelf}, " +
+                $"Perceived={sight.Perceived}, Reason={sight.Reason}, " +
+                $"Blocker={(sight.Blocker != null ? sight.Blocker.name : "<NONE>")}.");
         }
 
         private static Transform Marker(string markerName)
