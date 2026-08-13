@@ -4,25 +4,13 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximos Tres Trabajos
 
-### 1. M39.0 — Localized Health & Medicine V1 — Manual Closeout
+### 1. M40.0 — Combat Resolution & Weapons V1
 
-Estado: `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 
-Objetivo:
+Objetivo: damage contract, melee/firearms, ammo y reload sobre M39.0 ya cerrado.
 
-- validar manualmente la ventana H regional, bleeding por tiempo/rest, consumo x1 de venda y round-trip fresh-session;
-- cerrar M39.0 sólo después de evidencia explícita de Mauro.
-
-Fuera de alcance:
-
-- cambios funcionales adicionales salvo corrección de un defecto demostrado durante el recheck;
-- combat, ballistics, armor, infection, fractures, surgery, AI, weather, UI final y playable exploration prototype.
-
-### 2. M40.0 — Combat Resolution & Weapons V1
-
-Estado: `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.
-
-Objetivo: damage contract, melee/firearms, ammo y reload después del cierre manual de M39.0.
+Condición de inicio: autorización explícita de implementación. Este closeout documental no inicia M40.0.
 
 ## Dirección De Producción
 
@@ -38,9 +26,9 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 
 ## No Iniciar Todavía
 
-- nuevas ampliaciones OnGUI fuera del closeout M39;
+- nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
-- combate o IA;
+- M40.0 antes de su autorización, M40.1 y AI;
 - condition, repair o crafting;
 - actores o mundo a escala fuera del seam mínimo implementado por M38.0;
 - facciones amplias;

@@ -8,9 +8,9 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 Estado actual:
 
-`IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
+`DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`
 
-Validation — `AUTOMATED PASS; MANUAL FRESH-SESSION PENDING`
+Validation — `AUTOMATED + MANUAL FRESH-SESSION PASSED`
 
 Functional Pass 1 implementa seis regiones humanas V1, heridas durables localizadas, severidad, sangrado por `WorldClock`, dolor derivado y tratamiento data-driven con venda. `ActorHealthComponent` conserva la reserva vital escalar y la autoridad Alive/Dead de M38; el estado médico manda sobre heridas, bleeding, pain y bandage. M38.1 continúa `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`; `Persistence Ready` continúa `APPROVED`.
 
@@ -21,7 +21,8 @@ Functional Pass 1 implementa seis regiones humanas V1, heridas durables localiza
 - Fault post-medical-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback canónicamente equivalentes.
 - `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
 - Cero warnings nuevos atribuibles a M39.0; permanecen los seis warnings C# preexistentes documentados.
-- La validación manual de M39.0 permanece pendiente y el milestone no está `DONE`.
+- Mauro validó manualmente la ventana regional, la herida localizada, bleeding y pérdida vital, Rest/Sleep sin healing, venda x1 sin eliminar la herida y el round-trip Current Slice después de salir completamente de Play Mode. El load fresh-session terminó `Success`, con `MutationStarted: True` y sin rollback requerido.
+- No se observaron errores runtime atribuibles a M39.0. Los warnings legacy de Global Content ID y EquipmentSlot permanecen como deuda Core-only conocida y aceptada.
 
 ## Contrato Funcional
 
@@ -37,9 +38,11 @@ Functional Pass 1 implementa seis regiones humanas V1, heridas durables localiza
 
 ## Deuda Y Fuera De Alcance
 
-Quedan fuera healing de tejido, vendajes saturados, infección, enfermedades, fracturas, cirugía, órganos, balística, armor, penalizaciones regionales, combate M40, IA, UI final y fisiología avanzada. La deuda Content ID authored preexistente permanece sin cambios.
+La relación entre severity, bleeding rate y tiempo hasta deterioro crítico o muerte requiere balancing posterior: una laceración severa puede tardar demasiado en producir pérdida vital grave. Es deuda de tuning no bloqueante; no es un fallo arquitectónico, no rompe persistence y no modifica valores de gameplay en este closeout.
+
+Quedan fuera combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. También quedan fuera healing de tejido, vendajes saturados, enfermedades generales, UI final y fisiología avanzada. La deuda Content ID authored preexistente permanece sin cambios.
 
 ## Próximo Trabajo
 
-- M39.0: `Manual Unity Validation & Closeout` pendiente.
-- M40.0 queda `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.
+- M40.0 — Combat Resolution & Weapons V1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+- M40.0 no se inicia en este closeout documental.

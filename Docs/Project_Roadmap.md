@@ -18,20 +18,20 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone cerrado mas reciente | M38.1 — Needs, World Clock & Recovery V1 |
+| Milestone cerrado mas reciente | M39.0 — Localized Health & Medicine V1 |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
-| Ultimo milestone funcional cerrado | M35.2 — Lootable Entity Inventory UI V1 |
+| Ultimo milestone funcional cerrado | M39.0 — Localized Health & Medicine V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
-| Commit funcional validado | `27bf438637b621141ca553a39579349a12ff8700` |
+| Commit funcional validado | `1c843961ed72b554f485b86105c443669337e8c0` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | M39.0 — Localized Health & Medicine V1 |
+| Milestone activo | Ninguno; M40.0 no iniciado |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
-| Siguientes | M39.0 manual closeout pendiente; M40.0 bloqueado por ese cierre |
+| Siguientes | M40.0 listo para autorización de implementación |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` y M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`. M39.0 queda `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; no es `DONE`.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` y M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`. M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`. M40.0 queda planificado y listo para autorización, pero no iniciado.
 
 ## Estados Canonicos
 
@@ -129,8 +129,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` | M37.0; compatibilidad schema-v1 Core validada | Snapshot, apply transaccional, rollback, diagnóstico y round-trip fresh-session manual validados; `Persistence Ready` aprobado para el Current Slice. |
 | CERRADO | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` | ID TBD y M37.1 cerrados | Identidad durable, Alive/Dead, corpse continuity, spawn/restore runtime y persistencia fresh-session validados con automatización y evidencia manual. |
 | CERRADO | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED` | M38.0 | Autoridad temporal, Hunger/Thirst por game time, rest/sleep, persistence/rollback y diagnostics validados; fatigue queda deferred SHOULD. |
-| ACTIVO | M39.0 — Localized Health & Medicine V1 | Jugable | `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | M38.1 | Seis regiones, heridas durables, bleeding por WorldClock, pain, venda localizada, UI H y persistence V1; closeout manual pendiente. |
-| DESPUES | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT` | M39.0 | Damage contract, melee/firearms, ammo y reload. |
+| CERRADO | M39.0 — Localized Health & Medicine V1 | Jugable | `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED` | M38.1 | Seis regiones, heridas durables, bleeding por WorldClock, pain, venda localizada, UI H y persistence V1 validados con automatización y fresh-session manual. |
+| SIGUIENTE | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | M39.0 | Damage contract, melee/firearms, ammo y reload; no iniciado. |
 | DESPUES | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. |
 | DESPUES | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `PLANNED` | M38.0 | Navegacion, percepcion y diagnostico. |
 | DESPUES | M41.1 — Human Encounter AI V1 | Jugable | `PLANNED` | M40.0, M41.0 | Evitar, alertarse, huir y luchar; gate `AI Ready`. |
@@ -182,7 +182,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 READY FOR AUTHORIZATION`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -281,11 +281,17 @@ El diagnóstico automatizado fresh-session, la suite M36–M38 y el diagnóstico
 
 ### M39.0 — Límite Obligatorio
 
-M39.0 queda `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. Implementa únicamente `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg`, heridas durables `Laceration/Puncture/Blunt`, severidad acotada, bleeding por el mismo `WorldClock`, pain derivado, tratamiento `Bandaged` data-driven y la ventana H cualitativa existente.
+M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`. Implementa únicamente `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg`, heridas durables `Laceration/Puncture/Blunt`, severity acotada, bleeding por el mismo `WorldClock`, pain derivado, tratamiento localizado `Bandaged` data-driven y la ventana H cualitativa existente.
 
-`ActorMedicalStateComponent` es autoridad de heridas/bleeding/pain/treatment. `ActorHealthComponent` conserva la reserva vital escalar, tags, death y lifecycle M38; una venda no llama `Heal`. Player y actores usan DTOs médicos planos aditivos en Current Slice schema V1. La omisión legacy deriva baseline sin heridas ni etiología; null o datos inválidos fallan preflight sin mutar; el mismo apply transaccional cubre rollback post-medical-state.
+`ActorMedicalStateComponent` es autoridad de wounds/bleeding/pain/treatment. `ActorHealthComponent` conserva la reserva vital escalar como bridge de vitalidad, tags, death y lifecycle M38; su agotamiento produce muerte coherente y una venda nunca llama `Heal(+X)`. El tratamiento consume exactamente x1 venda, no elimina la herida y preserva el WoundId durable. Rest/Sleep procesa el mismo delta médico del `WorldClock`.
 
-Fuera: healing de tejido, infección, enfermedades, fracturas, órganos, cirugía, ballistics, armor, penalizaciones por miembro, combate, IA y UI final. M40.0 queda `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.
+Player y actores usan DTOs médicos planos aditivos en Current Slice schema V1. La omisión legacy de `medicalState` deriva baseline sin heridas ni etiología; null o datos inválidos fallan strict preflight sin mutar; el mismo apply transaccional cubre rollback post-medical-state. La ventana H cualitativa, la exclusividad Health/Inventory y los contratos WASD/camera quedaron preservados y validados.
+
+Mauro confirmó manualmente las seis regiones, baseline `Se ve bien`, laceración severa aislada en LeftArm, estado `Injured`, bleeding con pérdida vital, Rest/Sleep sin healing, venda x1 con herida durable y sangrado controlado, y save/load fresh-session con el mismo estado médico y reserva vital. El load terminó `Success`, sin rollback requerido ni errores runtime atribuibles a M39.0.
+
+Deuda de tuning no bloqueante: revisar posteriormente la relación severity/bleeding rate/tiempo hasta deterioro crítico o muerte, porque una laceración severa puede tardar demasiado en producir pérdida vital grave. No es un fallo arquitectónico ni de persistence.
+
+Fuera: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. M40.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` y no se inicia en este closeout.
 
 ## Trabajo Congelado O Diferido
 

@@ -2696,3 +2696,33 @@ Manual: `PENDING — Mauro localized health / medicine fresh-session recheck`.
 Fuera de alcance: tissue healing, infection, diseases, fractures, organs, surgery, projectiles, ballistics, armor, regional penalties, AI, UI final y M40.
 
 Siguiente: `M39.0 — Manual Unity Validation & Closeout`; M40.0 queda `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.
+
+### M39.0 — Localized Health & Medicine V1 — Manual Fresh-Session Closeout
+
+Fecha: 2026-08-12
+
+Estado anterior: `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Estado posterior: `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`.
+
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
+
+Evidencia manual confirmada por Mauro:
+
+- H abrió la ventana Salud y mostró Cabeza, Torso, Brazo izq., Brazo der., Pierna izq. y Pierna der.; una región sana mostró `Se ve bien`.
+- Una laceración severa debug apareció únicamente en Brazo Izq. con gravedad, pain, bleeding y treatment; el estado general cambió a `Injured` y la reserva vital disminuyó con sangrado activo.
+- Rest 1h y Sleep 8h no curaron la herida.
+- Aplicar vendaje consumió una unidad, mantuvo la herida durable, cambió el estado a vendada y redujo/controló el sangrado.
+- Save Current Slice fue seguido por salida completa de Play Mode, fresh Play y Load Current Slice exitoso. Reaparecieron la misma región, herida durable, estado vendado, pain, bleeding y reserva vital persistida.
+- El load final informó: slot `m37_current_slice_debug`; 26 items; 15 storages; 2 world items; 8 containers; 2 actors; 0 legacy corpses; 3 doors; phase `Complete`; failure code y result `Success`; `MutationStarted: True`; `RollbackAttempted: False`; `RollbackSucceeded: False`. No intentar rollback es correcto para un load exitoso.
+- No se observaron errores runtime atribuibles a M39.0. Los warnings legacy de Global Content ID sin calificar y EquipmentSlot permanecen como deuda Core-only conocida y aceptada.
+
+Contratos cerrados: seis regiones humanas V1; heridas con WoundId durable; tipos `Laceration/Puncture/Blunt`; severity acotada; bleeding conectado al mismo WorldClock; Rest/Sleep sobre el mismo delta médico; pain derivado; tratamiento localizado; venda data-driven con consumo exactamente x1; vendaje sin eliminar la herida ni ejecutar `Heal(+X)`; `ActorMedicalStateComponent` como autoridad de wounds/bleeding/pain/treatment; `ActorHealthComponent` preservado como bridge de vitalidad/lifecycle; muerte coherente por agotamiento vital; persistencia de player y actors; strict preflight; rollback transaccional; compatibilidad con saves V1 sin `medicalState`; ventana H cualitativa; Health/Inventory exclusivity y contratos WASD/camera preservados.
+
+Deuda de tuning no bloqueante: una laceración severa puede tardar demasiado en producir pérdida vital grave. La relación entre wound severity, bleeding rate y tiempo hasta deterioro crítico/muerte deberá balancearse posteriormente. No es un fallo arquitectónico, no rompe persistence y no se modificaron valores de gameplay en este closeout.
+
+Fuera de alcance: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI.
+
+M38.0 permanece `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`; M38.1 permanece `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`; `Persistence Ready` permanece `APPROVED`.
+
+Siguiente: M40.0 — Combat Resolution & Weapons V1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. No se inicia en este closeout documental.

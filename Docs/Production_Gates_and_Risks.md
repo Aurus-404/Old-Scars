@@ -156,21 +156,27 @@ M39.0 fue implementado después de este closeout y su gate manual se controla a 
 
 ### M39.0 Localized Health & Medicine Closeout
 
-Estado: `IMPLEMENTED — AUTOMATED LOCALIZED HEALTH / MEDICINE VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`.
 
-Validación manual requerida:
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
 
-- H muestra las seis regiones y describe cualitativamente el baseline y las heridas localizadas;
-- una herida sangrante deteriora la reserva vital con gameplay time y con Rest/Sleep, sin double tick ni healing mágico;
-- aplicar una venda consume exactamente x1, conserva la herida, reduce sólo su bleeding y no altera otra región;
-- death por sangrado conserva lifecycle/corpse de M38 y no progresa post-death;
-- Save, salida completa de Play, fresh Play y Load restauran los mismos WoundIds, regiones, pain, treatment y reserva vital;
-- Health/Inventory conservan exclusividad, Health permite WASD y sus inputs internos no atraviesan a mundo/cámara;
-- Console sin errores runtime atribuibles a M39.0.
+Evidencia manual confirmada por Mauro:
+
+- H abrió la ventana Salud y mostró las seis regiones; una región sana presentó `Se ve bien`;
+- una laceración severa debug apareció sólo en Brazo Izq. con gravedad, pain, bleeding y treatment, y el estado general cambió a `Injured`;
+- el bleeding redujo la reserva vital; Rest 1h y Sleep 8h no curaron la herida;
+- aplicar una venda consumió exactamente x1, mantuvo la herida durable, cambió su estado a vendada y redujo/controló el sangrado;
+- Save Current Slice, salida completa de Play Mode, fresh Play y Load restauraron la misma región, herida durable, estado vendado, pain, bleeding y reserva vital;
+- el load final informó 26 items, 15 storages, 2 world items, 8 containers, 2 actors, 0 legacy corpses y 3 doors; terminó `Success`, con `MutationStarted: True`, `RollbackAttempted: False` y `RollbackSucceeded: False`, correcto para un load exitoso;
+- no se observaron errores runtime atribuibles a M39.0. Los warnings legacy de Global Content ID y EquipmentSlot son deuda Core-only conocida y aceptada.
 
 Evidencia automatizada: Runtime/Editor compile y las suites M36.1, M37.0, ambos M37.1, M38.0, M38.1, Player Controls & Health Window e Inventory Interaction UX dieron `PASS`. `M39.0 Localized Health & Medicine Diagnostics: PASS` cubrió dos Play sessions, actor runtime herido/muerto, legacy V1, preflight sin mutación y rollback post-medical-state equivalente. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; no hubo warnings nuevos.
 
-Bloquea el closeout: consumo incorrecto, curación global por venda, double tick, pérdida/cambio de WoundId, datos médicos inválidos aplicados, rollback no equivalente, ruptura de corpse continuity o fallos fresh-session. M40.0 permanece `PLANNED — BLOCKED BY M39.0 MANUAL CLOSEOUT`.
+Contratos cerrados: seis regiones humanas V1; WoundId durable; tipos `Laceration/Puncture/Blunt`; severity acotada; bleeding y Rest/Sleep sobre el mismo `WorldClock`; pain derivado; tratamiento localizado y venda data-driven; consumo exactamente x1; vendaje sin eliminar la herida ni ejecutar `Heal(+X)`; `ActorMedicalStateComponent` como autoridad de wounds/bleeding/pain/treatment; `ActorHealthComponent` como bridge de vitalidad/lifecycle; muerte coherente por agotamiento vital; persistencia de player y actors; strict preflight; rollback transaccional; compatibilidad V1 sin `medicalState`; ventana H cualitativa; exclusividad Health/Inventory y contratos WASD/camera preservados.
+
+Deuda aceptada no bloqueante: revisar mediante balancing la relación severity/bleeding rate/tiempo hasta deterioro crítico o muerte, porque una laceración severa puede tardar demasiado en producir pérdida vital grave. No es un fallo arquitectónico, no rompe persistence y no modifica valores en este closeout.
+
+Fuera de alcance: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. M40.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` y no se inicia en este commit.
 
 ### Combat Ready - M40.1
 
