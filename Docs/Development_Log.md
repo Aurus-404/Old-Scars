@@ -2748,7 +2748,7 @@ Evidencia automatizada:
 
 - Runtime/Editor compile `PASS`; permanecen seis warnings C# preexistentes y no hay warnings nuevos atribuibles a M40.0;
 - Global Content ID, M36.1, M37.0, Snapshot/Semantic Preflight M37.1, Current Slice Round-Trip M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX: `PASS`;
-- `M40.0 Combat & Weapons Diagnostics: PASS` en dos Play sessions; el fault post-firearm-state informó `ApplyFailed`, `RollbackAttempted: True`, `RollbackSucceeded: True` y equivalencia canónica;
+- `M40.0 Combat Resolution & Weapons Diagnostics: PASS` en dos Play sessions; el fault post-firearm-state informó `ApplyFailed`, `RollbackAttempted: True`, `RollbackSucceeded: True` y equivalencia canónica;
 - `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; Packages y ProjectSettings intactos;
 - alcance: 13 C# y 1277 líneas C# agregadas, dentro del objetivo autorizado.
 

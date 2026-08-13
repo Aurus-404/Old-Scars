@@ -17,7 +17,7 @@ Functional Pass 1 gradúa el prototipo M29 a un único adaptador de input de com
 ## Implementación Y Automatización
 
 - Runtime/Editor compilation, Global Content ID, M36.1, M37.0, ambos M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX: `PASS`.
-- `M40.0 Combat & Weapons Diagnostics: PASS` en dos Play sessions: seis regiones, melee/range, dry-fire, reload parcial/completo/cancelado, fire/miss/cycle, bleeding-to-Dead, drop/pickup, equipment, fresh-session round-trip, legacy V1, preflight y rollback.
+- `M40.0 Combat Resolution & Weapons Diagnostics: PASS` en dos Play sessions: seis regiones, melee/range, dry-fire, reload parcial/completo/cancelado, fire/miss/cycle, bleeding-to-Dead, drop/pickup, equipment, fresh-session round-trip, legacy V1, preflight y rollback.
 - Fault post-firearm-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback canónicamente equivalentes.
 - `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
 - Cero warnings nuevos atribuibles a M40.0; permanecen los seis warnings C# preexistentes documentados.

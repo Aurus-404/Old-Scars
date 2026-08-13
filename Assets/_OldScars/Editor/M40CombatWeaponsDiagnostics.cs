@@ -19,7 +19,7 @@ namespace OldScars.Editor
     [InitializeOnLoad]
     public static class M40CombatWeaponsDiagnostics
     {
-        private const string Menu = "Old Scars/Diagnostics/Combat/Run M40.0 Combat & Weapons";
+        private const string Menu = "Old Scars/Diagnostics/Combat/Run M40.0 Combat Resolution & Weapons";
         private const string ScenePath = "Assets/Scenes/SampleScene.unity";
         private const string PhaseKey = "OldScars.M40.Combat.Phase";
         private const string RootKey = "OldScars.M40.Combat.Root";
@@ -399,8 +399,8 @@ namespace OldScars.Editor
             catch (Exception exception) { failure = Append(failure, "Temporary cleanup failed: " + exception.Message); }
             bool success = string.IsNullOrWhiteSpace(failure);
             ClearSession();
-            if (success) Debug.Log("M40.0 Combat & Weapons Diagnostics: PASS");
-            else Debug.LogError("M40.0 Combat & Weapons Diagnostics: FAIL\n- " + failure);
+            if (success) Debug.Log("M40.0 Combat Resolution & Weapons Diagnostics: PASS");
+            else Debug.LogError("M40.0 Combat Resolution & Weapons Diagnostics: FAIL\n- " + failure);
             if (Application.isBatchMode) EditorApplication.Exit(success ? 0 : 1);
         }
 
