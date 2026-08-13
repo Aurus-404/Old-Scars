@@ -2902,3 +2902,32 @@ Manual: `PENDING — Mauro M41.0 navigation/perception fresh-session recheck`.
 Fuera: hostility, factions, alert states, investigation/search, chase, flee, combat decisions, weapon selection, shooting/melee AI, cover, flanking, squads, patrol schedules, Behavior Trees, GOAP, Utility AI, strategic/vehicle navigation y animal behavior.
 
 Siguiente: `M41.0 — Manual Unity Validation & Closeout`. M41.1 permanece `PLANNED`, no iniciado y no autorizado por este pass.
+
+### M41.0 — Navigation & Perception Foundation — Manual Unity Closeout
+
+Fecha: 2026-08-13.
+
+Estado anterior: `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Estado final: `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`.
+
+Validation: `AUTOMATED + MANUAL UNITY PASSED`.
+
+Mauro confirmó manualmente:
+
+- el runtime actor recibió destination y comenzó `Moving`;
+- el navigator se desplazó físicamente, rodeó la barrera sin atravesar geometría bloqueante y terminó `Reached`;
+- con observer/target deterministas y barrera activa, Perception informó `Occluded` y blocker exacto `Navigation Perception Barrier`;
+- al retirar la barrera, Perception informó `Perceived: True`, `Reason: Perceived` y `Blocker: <NONE>`.
+
+El primer intento manual detectó que el helper reutilizaba transforms vivos en vez de restablecer la geometría canónica usada por el diagnóstico. El commit `b4345890d9185d439d408cdece211424c88b8b21` corrigió exclusivamente el tooling Editor: `Prepare Manual Validation`, `Toggle Manual Perception Blocker` y el diagnóstico automático comparten restauración segura de poses, sincronización física y assertions exactos para `Occluded`/`Perceived`. Runtime Navigation/Perception, datos, persistencia y contratos M38–M40 permanecieron intactos.
+
+La evidencia automatizada publicada permanece vigente: Runtime/Editor compile, Data validation, `M41.0 Navigation & Perception Diagnostics` y regresión directa M38.0 dieron `PASS`; no se repitió Unity durante este closeout documental.
+
+Persistencia: `NONE`. Orden, path, estado operativo y resultados de percepción siguen siendo efímeros; M41.0 no agrega estado durable ni cambia schema/envelope V1.
+
+El cambio local de `SampleScene.unity` generado durante la prueba manual se auditó antes de restaurarlo: contenía únicamente el desplazamiento accidental de `M41_NavigationFixture` y normalización de campos vacíos producida por Unity, sin contenido funcional nuevo ni cambios intencionales. La escena se restauró desde `b4345890` y el checkout quedó limpio antes de editar documentación.
+
+Gate: `AI Ready — PENDING M41.1`. M41.0 no aprueba ese gate por sí solo.
+
+Siguiente: M41.1 — Human Encounter AI V1 permanece `PLANNED`, disponible para autorización y no iniciado.

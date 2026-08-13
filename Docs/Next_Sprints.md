@@ -4,24 +4,20 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximo Trabajo
 
-### 1. M41.0 — Manual Unity Validation & Closeout
-
-Estado: `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
-
-Checklist pendiente:
-
-1. Abrir `SampleScene` en una sesión Unity fresca y entrar en Play.
-2. Ejecutar `Old Scars/Diagnostics/AI/M41.0 Prepare Manual Validation`.
-3. Verificar que el navigator rodea la barrera, no la atraviesa y queda detenido en `Reached`.
-4. Alternar `M41.0 Toggle Manual Perception Blocker` y confirmar `Occluded` con barrera / `Perceived` sin barrera.
-5. Confirmar ausencia de errores M41.0 y registrar evidencia.
-6. Realizar el closeout documental; no reabrir implementación salvo una regresión funcional real.
-
-### 2. M41.1 — Human Encounter AI V1
+### 1. M41.1 — Human Encounter AI V1
 
 Estado: `PLANNED`.
 
-Permanece posterior al cierre manual de M41.0 y dependiente de sus contratos. No está iniciado ni autorizado; no adelantar hostility, alert states, chase, flee, combat decisions ni otra conducta humana durante el closeout de la foundation.
+M41.0 está `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`. M41.1 queda disponible como siguiente milestone, pero no está iniciado ni autorizado por este closeout.
+
+Alcance previsto por el Roadmap:
+
+- humanos capaces de evitar, alertarse, huir y luchar;
+- reutilización de Navigation, Perception y del contrato de combate existente;
+- transiciones interrumpibles y feedback observable;
+- comportamiento acotado, sin facciones estratégicas ni framework universal de AI.
+
+Antes de implementar se debe congelar un prompt M41.1 conforme a `OldScars_Development_Rules.md` y `Milestone_Template.md`, revisar dependencias reales y obtener autorización explícita de Mauro.
 
 ## Dirección De Producción
 
@@ -37,7 +33,7 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 
 ## No Iniciar Todavía
 
-- M41.1, AI combat o cualquier comportamiento humano antes del closeout manual de M41.0;
+- M41.1 o AI combat sin autorización específica;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;
