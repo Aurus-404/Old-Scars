@@ -18,5 +18,12 @@ namespace OldScars.Core.Data.Definitions
         public bool condition_affects_accuracy;
         public string[] default_actions; // references ActionDefinition.id[]
         public string armor_interaction;
+        public float melee_range;
+        public float attack_duration;
+        public float attack_cooldown;
+        public string wound_type;
+        public float wound_severity;
+        public float bleeding_rate_per_game_hour;
+        public float pain_contribution;
     }
 }

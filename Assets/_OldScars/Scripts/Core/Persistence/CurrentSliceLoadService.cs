@@ -67,6 +67,7 @@ namespace OldScars.Core.Persistence
         public static bool DiagnosticInjectFailureAfterStorageRestore { get; set; }
         public static bool DiagnosticInjectFailureAfterActorReconciliation { get; set; }
         public static bool DiagnosticInjectFailureAfterRuntimeStateRestore { get; set; }
+        public static bool DiagnosticInjectFailureAfterFirearmStateRestore { get; set; }
 #endif
 
         public static CurrentSliceLoadResult Load(string slotId, PersistenceFileStore store = null)
@@ -129,9 +130,10 @@ namespace OldScars.Core.Persistence
             bool injectActorFailure = ShouldInjectActorDiagnosticFailure();
             bool injectStorageFailure = ShouldInjectStorageDiagnosticFailure();
             bool injectRuntimeStateFailure = ShouldInjectRuntimeStateDiagnosticFailure();
+            bool injectFirearmStateFailure = ShouldInjectFirearmStateDiagnosticFailure();
             bool mutationStarted;
             if (TryApplyCore(preflight.Snapshot, targetScene, rollbackScene, teardownIds, external,
-                    injectActorFailure, injectStorageFailure, injectRuntimeStateFailure,
+                    injectActorFailure, injectStorageFailure, injectRuntimeStateFailure, injectFirearmStateFailure,
                     out mutationStarted, out string applyFailure))
             {
                 CurrentSliceLoadResult success = new CurrentSliceLoadResult(
@@ -157,6 +159,7 @@ namespace OldScars.Core.Persistence
                 false,
                 false,
                 false,
+                false,
                 out rollbackMutationStarted,
                 out string rollbackFailure);
             CurrentSliceLoadResult result = rollbackSucceeded
@@ -176,6 +179,7 @@ namespace OldScars.Core.Persistence
             bool injectActorFailure,
             bool injectStorageFailure,
             bool injectRuntimeStateFailure,
+            bool injectFirearmStateFailure,
             out bool mutationStarted,
             out string failure)
         {
@@ -207,18 +211,18 @@ namespace OldScars.Core.Persistence
                 RestoreRuntimeState(snapshot, scene);
                 if (injectRuntimeStateFailure)
                     throw new InvalidOperationException("Injected diagnostic failure after World Clock, needs and medical restore.");
+                RestoreFirearmItemStates(snapshot, items);
+                if (injectFirearmStateFailure)
+                    throw new InvalidOperationException("Injected diagnostic failure after firearm item state restore.");
                 ValidateOwnership(scene, external);
                 RestorePlayerPose(snapshot.player.pose, scene.Player.transform);
 
                 CurrentSliceResult captured = CurrentSliceSnapshotService.Capture();
                 if (!captured.Success)
                     throw new InvalidOperationException($"Post-apply capture failed: {captured.Failure}");
-                if (Items(snapshot.actors).Length > 0)
-                {
-                    CurrentSliceComparisonResult comparison = CurrentSliceSnapshotService.Compare(snapshot, captured.Snapshot);
-                    if (!comparison.Equivalent)
-                        throw new InvalidOperationException($"Post-apply snapshot differs: {comparison.Difference}");
-                }
+                CurrentSliceComparisonResult comparison = CurrentSliceSnapshotService.Compare(snapshot, captured.Snapshot);
+                if (!comparison.Equivalent)
+                    throw new InvalidOperationException($"Post-apply snapshot differs: {comparison.Difference}");
                 return true;
             }
             catch (Exception exception)
@@ -371,6 +375,25 @@ namespace OldScars.Core.Persistence
                     if (ItemInstanceIdRegistry.Instance.IsActive(instanceId))
                         ItemInstanceIdRegistry.Instance.RetireAfterCommit(instanceId);
                 throw;
+            }
+        }
+
+        private static void RestoreFirearmItemStates(CurrentSliceSaveData snapshot, Dictionary<string, ItemInstance> items)
+        {
+            foreach (ItemState state in Items(snapshot.items))
+            {
+                if (state?.firearmState == null)
+                    continue;
+                if (!items.TryGetValue(state.instanceId, out ItemInstance item))
+                    throw new InvalidOperationException($"Firearm state restore failed for '{state.instanceId}': item missing");
+                if (!item.TrySetFirearmState(
+                        state.firearmState.ammoProfileId,
+                        state.firearmState.loadedRounds,
+                        out string failure))
+                {
+                    throw new InvalidOperationException(
+                        $"Firearm state restore failed for '{state.instanceId}': {failure}");
+                }
             }
         }
 
@@ -665,6 +688,17 @@ namespace OldScars.Core.Persistence
 #if UNITY_EDITOR
             bool inject = DiagnosticInjectFailureAfterRuntimeStateRestore;
             DiagnosticInjectFailureAfterRuntimeStateRestore = false;
+            return inject;
+#else
+            return false;
+#endif
+        }
+
+        private static bool ShouldInjectFirearmStateDiagnosticFailure()
+        {
+#if UNITY_EDITOR
+            bool inject = DiagnosticInjectFailureAfterFirearmStateRestore;
+            DiagnosticInjectFailureAfterFirearmStateRestore = false;
             return inject;
 #else
             return false;

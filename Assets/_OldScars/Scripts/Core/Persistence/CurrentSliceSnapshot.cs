@@ -19,7 +19,15 @@ namespace OldScars.Core.Persistence
     [Serializable] public sealed class PoseState { public Float3State position; public Float4State rotation; }
     [Serializable] public sealed class NeedState { public string needId; public float currentValue; }
     [Serializable] public sealed class WorldClockState { public double elapsedGameSeconds; }
-    [Serializable] public sealed class ItemState { public string instanceId; public string definitionId; public int condition; }
+    [Serializable] public sealed class FirearmItemState { public string ammoProfileId; public int loadedRounds; }
+    [Serializable]
+    public sealed class ItemState
+    {
+        public string instanceId;
+        public string definitionId;
+        public int condition;
+        public FirearmItemState firearmState;
+    }
     [Serializable] public sealed class GridPlacementState { public int x; public int y; public bool rotated; public int width; public int height; }
     [Serializable] public sealed class StorageEntryState { public string instanceId; public int quantity; public GridPlacementState placement; }
     [Serializable]
@@ -332,6 +340,7 @@ namespace OldScars.Core.Persistence
                 bool legacyPlayerMedicalMissing = payloadObject?["player"] is JObject playerObject &&
                     !HasProperty(playerObject, "medicalState");
                 var legacyActorMedicalMissing = new HashSet<int>();
+                var legacyFirearmStateMissing = new HashSet<int>();
                 if (payloadObject?["actors"] is JArray actorArray)
                 {
                     for (int index = 0; index < actorArray.Count; index++)
@@ -341,6 +350,14 @@ namespace OldScars.Core.Persistence
                         {
                             legacyActorMedicalMissing.Add(index);
                         }
+                    }
+                }
+                if (payloadObject?["items"] is JArray itemArray)
+                {
+                    for (int index = 0; index < itemArray.Count; index++)
+                    {
+                        if (itemArray[index] is JObject itemObject && !HasProperty(itemObject, "firearmState"))
+                            legacyFirearmStateMissing.Add(index);
                     }
                 }
                 CurrentSliceSaveData snapshot = payload.ToObject<CurrentSliceSaveData>(PayloadSerializer);
@@ -362,6 +379,15 @@ namespace OldScars.Core.Persistence
                 GameDatabase database = GameDataManager.Instance != null ? GameDataManager.Instance.Database : null;
                 if (!CurrentSliceContentIdCompatibility.TryNormalizeLegacyCoreReferences(snapshot, database, out string migrationError))
                     return Failed("Current Slice legacy Content ID migration failed: " + migrationError);
+                ItemState[] itemStates = snapshot?.items ?? Array.Empty<ItemState>();
+                foreach (int index in legacyFirearmStateMissing)
+                {
+                    if (index < 0 || index >= itemStates.Length || itemStates[index] == null)
+                        continue;
+                    ItemDefinition definition = database?.GetItem(itemStates[index].definitionId);
+                    if (definition != null && !string.IsNullOrWhiteSpace(definition.firearm_profile_id))
+                        itemStates[index].firearmState = new FirearmItemState { ammoProfileId = null, loadedRounds = 0 };
+                }
                 CurrentSliceValidationResult validation = Validate(snapshot);
                 return validation.Success ? new CurrentSliceResult(snapshot, null) : Failed(validation.Failure);
             }
@@ -726,7 +752,15 @@ namespace OldScars.Core.Persistence
                         Failure = $"Authored world item '{instanceId}' references missing definition '{pickup.ItemDefinitionId}'.";
                         return null;
                     }
-                    AddItem(new ItemState { instanceId = instanceId, definitionId = definition.id, condition = definition.physical.condition_max });
+                    AddItem(new ItemState
+                    {
+                        instanceId = instanceId,
+                        definitionId = definition.id,
+                        condition = definition.physical.condition_max,
+                        firearmState = !string.IsNullOrWhiteSpace(definition.firearm_profile_id)
+                            ? new FirearmItemState { ammoProfileId = null, loadedRounds = 0 }
+                            : null
+                    });
                 }
                 if (Failure != null) return null;
                 if (present && !AddLocation(instanceId, "world:" + (authored ? AuthoredWorldKind : RuntimeWorldKind)))
@@ -827,7 +861,16 @@ namespace OldScars.Core.Persistence
 
             private bool AddItem(ItemInstance item) => AddItem(new ItemState
             {
-                instanceId = item.InstanceId, definitionId = item.DefinitionId, condition = item.Condition
+                instanceId = item.InstanceId,
+                definitionId = item.DefinitionId,
+                condition = item.Condition,
+                firearmState = item.HasFirearmState
+                    ? new FirearmItemState
+                    {
+                        ammoProfileId = item.LoadedAmmoProfileId,
+                        loadedRounds = item.LoadedRounds
+                    }
+                    : null
             });
 
             private bool AddItem(ItemState item)
@@ -839,13 +882,21 @@ namespace OldScars.Core.Persistence
                 }
                 if (items.TryGetValue(item.instanceId, out ItemState previous))
                 {
-                    if (previous.definitionId == item.definitionId && previous.condition == item.condition)
+                    if (previous.definitionId == item.definitionId && previous.condition == item.condition &&
+                        EquivalentFirearmState(previous.firearmState, item.firearmState))
                         return true;
                     Failure = $"InstanceId '{item.instanceId}' resolves to conflicting item state.";
                     return false;
                 }
                 items.Add(item.instanceId, item);
                 return true;
+            }
+
+            private static bool EquivalentFirearmState(FirearmItemState left, FirearmItemState right)
+            {
+                if (left == null || right == null)
+                    return left == null && right == null;
+                return left.ammoProfileId == right.ammoProfileId && left.loadedRounds == right.loadedRounds;
             }
 
             private bool AddLocation(string instanceId, string location)
@@ -938,7 +989,52 @@ namespace OldScars.Core.Persistence
                         errors.Add($"Item '{item.instanceId}' references missing DefinitionId '{item.definitionId}'.");
                     else if (definition.physical == null || item.condition < 1 || item.condition > definition.physical.condition_max)
                         errors.Add($"Item '{item.instanceId}' has invalid Condition {item.condition}.");
+                    if (definition != null)
+                        ValidateFirearmItemState(item, definition);
                 }
+            }
+
+            private void ValidateFirearmItemState(ItemState item, ItemDefinition definition)
+            {
+                bool isFirearm = !string.IsNullOrWhiteSpace(definition.firearm_profile_id);
+                if (!isFirearm)
+                {
+                    if (item.firearmState != null)
+                        errors.Add($"Non-firearm item '{item.instanceId}' carries firearm state.");
+                    return;
+                }
+                if (item.firearmState == null)
+                {
+                    errors.Add($"Firearm item '{item.instanceId}' is missing required firearm state.");
+                    return;
+                }
+
+                FirearmProfileDefinition firearm = database?.GetFirearmProfile(definition.firearm_profile_id);
+                if (firearm == null)
+                {
+                    errors.Add($"Firearm item '{item.instanceId}' references unavailable profile '{definition.firearm_profile_id}'.");
+                    return;
+                }
+                FirearmItemState state = item.firearmState;
+                if (state.loadedRounds < 0 || state.loadedRounds > firearm.magazine_capacity)
+                    errors.Add($"Firearm item '{item.instanceId}' has loadedRounds {state.loadedRounds} outside 0..{firearm.magazine_capacity}.");
+                if (state.loadedRounds == 0)
+                {
+                    if (state.ammoProfileId != null)
+                        errors.Add($"Unloaded firearm item '{item.instanceId}' must use null ammoProfileId.");
+                    return;
+                }
+                if (!ContentId.TryParse(state.ammoProfileId, out ContentId ammoId, out string idError) ||
+                    ammoId.ToString() != state.ammoProfileId)
+                {
+                    errors.Add($"Firearm item '{item.instanceId}' has non-canonical ammoProfileId '{state.ammoProfileId ?? "<NONE>"}': {idError}.");
+                    return;
+                }
+                if (database.GetAmmoProfile(state.ammoProfileId) == null)
+                    errors.Add($"Firearm item '{item.instanceId}' references missing ammo profile '{state.ammoProfileId}'.");
+                if (firearm.accepted_ammo_profile_ids == null ||
+                    !firearm.accepted_ammo_profile_ids.Contains(state.ammoProfileId, StringComparer.Ordinal))
+                    errors.Add($"Firearm item '{item.instanceId}' contains ammo '{state.ammoProfileId}' incompatible with '{firearm.id}'.");
             }
 
             private void ValidateTopLevelEntities()

@@ -12,6 +12,7 @@ namespace OldScars.Core.Data.Definitions
         public string display_name;
         public string[] accepted_ammo_profile_ids;
         public int magazine_capacity;
+        public float reload_duration;
         public float range;
         public float cycle_time;
         public float muzzle_offset;

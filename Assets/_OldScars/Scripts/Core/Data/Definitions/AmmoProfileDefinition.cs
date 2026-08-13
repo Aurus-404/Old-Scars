@@ -11,7 +11,10 @@ namespace OldScars.Core.Data.Definitions
         public string id;
         public string display_name;
         public string caliber_tag;
-        public float damage;
+        public string wound_type;
+        public float wound_severity;
+        public float bleeding_rate_per_game_hour;
+        public float pain_contribution;
         public string[] tags;
     }
 }

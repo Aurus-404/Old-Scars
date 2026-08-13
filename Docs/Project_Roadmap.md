@@ -25,13 +25,13 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `1c843961ed72b554f485b86105c443669337e8c0` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | Ninguno; M40.0 no iniciado |
+| Milestone activo | M40.0 — Combat Resolution & Weapons V1; manual Unity validation pending |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
-| Siguientes | M40.0 listo para autorización de implementación |
+| Siguientes | M40.0 — Manual Unity Validation & Closeout |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` y M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`. M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`. M40.0 queda planificado y listo para autorización, pero no iniciado.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED` y M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`. M40.0 queda `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; no está `DONE`.
 
 ## Estados Canonicos
 
@@ -130,8 +130,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` | ID TBD y M37.1 cerrados | Identidad durable, Alive/Dead, corpse continuity, spawn/restore runtime y persistencia fresh-session validados con automatización y evidencia manual. |
 | CERRADO | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED` | M38.0 | Autoridad temporal, Hunger/Thirst por game time, rest/sleep, persistence/rollback y diagnostics validados; fatigue queda deferred SHOULD. |
 | CERRADO | M39.0 — Localized Health & Medicine V1 | Jugable | `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED` | M38.1 | Seis regiones, heridas durables, bleeding por WorldClock, pain, venda localizada, UI H y persistence V1 validados con automatización y fresh-session manual. |
-| SIGUIENTE | M40.0 — Combat Resolution & Weapons V1 | Jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | M39.0 | Damage contract, melee/firearms, ammo y reload; no iniciado. |
-| DESPUES | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. |
+| ACTIVO | M40.0 — Combat Resolution & Weapons V1 | Jugable | `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | M39.0 | Resolver único hacia M39, melee/firearms, estado cargado por instancia, ammo/reload y persistence automatizados; falta closeout manual. |
+| BLOQUEADO | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. |
 | DESPUES | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `PLANNED` | M38.0 | Navegacion, percepcion y diagnostico. |
 | DESPUES | M41.1 — Human Encounter AI V1 | Jugable | `PLANNED` | M40.0, M41.0 | Evitar, alertarse, huir y luchar; gate `AI Ready`. |
 | DESPUES | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED` | M38.1 | Clima, forecast, exposicion y proteccion. |
@@ -182,7 +182,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 READY FOR AUTHORIZATION`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 IMPLEMENTED / MANUAL VALIDATION PENDING`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -291,7 +291,15 @@ Mauro confirmó manualmente las seis regiones, baseline `Se ve bien`, laceració
 
 Deuda de tuning no bloqueante: revisar posteriormente la relación severity/bleeding rate/tiempo hasta deterioro crítico o muerte, porque una laceración severa puede tardar demasiado en producir pérdida vital grave. No es un fallo arquitectónico ni de persistence.
 
-Fuera: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. M40.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` y no se inicia en este closeout.
+Fuera del cierre M39: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. En ese closeout M40.0 quedó listo para autorización; su estado vigente se controla a continuación.
+
+### M40.0 — Límite Obligatorio
+
+M40.0 queda `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. Implementa una ruta única de melee/firearm hacia heridas M39, seis regiones por impacto real, estado cargado durable por `ItemInstance`, ammo compatible, reload temporizado/cancelable, cycle, Equipment/ownership y persistence/rollback V1.
+
+La automatización completa M36–M40 pasó sin warnings nuevos y `SampleScene` quedó unchanged. Esto no equivale a validación manual: aim/input/feedback, reload/melee jugables y save/load fresh-session deben confirmarse en Unity antes de elevar el milestone.
+
+Fuera: armor/penetration, proyectiles físicos, critical hits, condition/desgaste, AI combat, animación/audio y UI final. M40.1 permanece `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`.
 
 ## Trabajo Congelado O Diferido
 

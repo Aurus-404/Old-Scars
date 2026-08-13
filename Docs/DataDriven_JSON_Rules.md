@@ -440,7 +440,10 @@ Ejemplo de apertura posterior de storage:
 - `firearm_profiles/*.json` usa `accepted_ammo_profile_ids` como lista obligatoria de perfiles de municion compatibles.
 - Cada referencia debe ser un Global Content ID canónico, existir en `ammo_profiles/*.json` y no repetirse.
 - La cadena vigente es item con `firearm_profile_id` → firearm profile → `accepted_ammo_profile_ids` → item de municion con `ammo_profile_id`.
-- El prototipo actual exige `magazine_capacity = 1` y no posee estado runtime de cargador; no debe presentarse como contrato final de armas.
+- `magazine_capacity` debe ser mayor que cero; `reload_duration`, `cycle_time`, `range`, `muzzle_offset` y `debug_accuracy_spread` son valores finitos validados del profile.
+- `AmmoProfileDefinition` declara impacto médico determinista mediante `wound_type`, `wound_severity`, `bleeding_rate_per_game_hour` y `pain_contribution`. El runtime lo traduce a M39; no declara scripts ni daño directo a HP.
+- `WeaponProfileDefinition` reutiliza el mismo contrato médico para melee y agrega `melee_range`, `attack_duration` y `attack_cooldown`.
+- El estado cargado no vive en JSON de definitions: cada `ItemInstance` firearm mantiene ammo profile y rounds en runtime/save; capacity siempre deriva del profile.
 - No usar un campo directo `accepted_ammo` en items o acciones; no es el contrato vigente y no reemplaza `accepted_ammo_profile_ids`.
 
 ## Fuera Del Contrato JSON Actual

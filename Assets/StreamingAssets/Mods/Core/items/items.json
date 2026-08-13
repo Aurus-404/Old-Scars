@@ -232,7 +232,7 @@
       "id": "core:lee_enfield_rifle_01",
       "display": {
         "name": "Rifle Lee-Enfield",
-        "description": "Un rifle Lee-Enfield de cerrojo preparado para la prueba single-shot v0."
+        "description": "Un rifle Lee-Enfield de cerrojo con cargador interno para munición .303 British."
       },
       "categories": ["weapon", "firearm"],
       "tags": [

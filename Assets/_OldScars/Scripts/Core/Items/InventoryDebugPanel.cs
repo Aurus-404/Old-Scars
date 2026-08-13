@@ -1183,7 +1183,7 @@ namespace OldScars.Core.Items
 
             GUILayout.Label($"Firearm: {firearmController.EquippedFirearmDisplayName}");
             GUILayout.Label(firearmController.StatusText);
-            GUILayout.Label("F: Toggle Aim");
+            GUILayout.Label("F: Combat | LMB: Fire | R: Reload");
         }
 
         private void DrawCarryWeightSection()

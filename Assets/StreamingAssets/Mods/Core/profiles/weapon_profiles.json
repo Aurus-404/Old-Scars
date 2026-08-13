@@ -8,7 +8,14 @@
       "condition_affects_damage": true,
       "condition_affects_accuracy": true,
       "default_actions": ["core:blunt_swing", "core:forceful_strike"],
-      "armor_interaction": "blunt_impact"
+      "armor_interaction": "blunt_impact",
+      "melee_range": 1.8,
+      "attack_duration": 0.45,
+      "attack_cooldown": 0.8,
+      "wound_type": "Blunt",
+      "wound_severity": 0.45,
+      "bleeding_rate_per_game_hour": 0,
+      "pain_contribution": 0.5
     }
   ]
 }

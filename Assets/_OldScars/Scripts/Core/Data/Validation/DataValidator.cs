@@ -1388,6 +1388,15 @@ namespace OldScars.Core.Data.Validation
                             report.Error($"{ctx}: 'default_actions' references '{actionId}' which was not loaded.");
                     }
                 }
+
+                if (profile.melee_range <= 0f || float.IsNaN(profile.melee_range) || float.IsInfinity(profile.melee_range))
+                    report.Error($"{ctx}: 'melee_range' must be finite and > 0 (got {profile.melee_range}).");
+                if (profile.attack_duration < 0f || float.IsNaN(profile.attack_duration) || float.IsInfinity(profile.attack_duration))
+                    report.Error($"{ctx}: 'attack_duration' must be finite and >= 0 (got {profile.attack_duration}).");
+                if (profile.attack_cooldown < 0f || float.IsNaN(profile.attack_cooldown) || float.IsInfinity(profile.attack_cooldown))
+                    report.Error($"{ctx}: 'attack_cooldown' must be finite and >= 0 (got {profile.attack_cooldown}).");
+                ValidateMedicalImpact(profile.wound_type, profile.wound_severity,
+                    profile.bleeding_rate_per_game_hour, profile.pain_contribution, ctx);
             }
         }
 
@@ -1429,8 +1438,11 @@ namespace OldScars.Core.Data.Validation
                     }
                 }
 
-                if (profile.magazine_capacity != 1)
-                    report.Error($"{ctx}: 'magazine_capacity' must be 1 for Milestone 29 single-shot v0 (got {profile.magazine_capacity}).");
+                if (profile.magazine_capacity <= 0)
+                    report.Error($"{ctx}: 'magazine_capacity' must be > 0 (got {profile.magazine_capacity}).");
+
+                if (profile.reload_duration <= 0f || float.IsNaN(profile.reload_duration) || float.IsInfinity(profile.reload_duration))
+                    report.Error($"{ctx}: 'reload_duration' must be finite and > 0 (got {profile.reload_duration}).");
 
                 if (profile.range <= 0f)
                     report.Error($"{ctx}: 'range' must be > 0 (got {profile.range}).");
@@ -1468,13 +1480,30 @@ namespace OldScars.Core.Data.Validation
                 if (!string.IsNullOrWhiteSpace(profile.caliber_tag) && !tags.IsValid(profile.caliber_tag))
                     report.Error($"{ctx}: caliber_tag '{profile.caliber_tag}' is not registered in tags.json.");
 
-                if (profile.damage <= 0f)
-                    report.Error($"{ctx}: 'damage' must be > 0 (got {profile.damage}).");
+                ValidateMedicalImpact(profile.wound_type, profile.wound_severity,
+                    profile.bleeding_rate_per_game_hour, profile.pain_contribution, ctx);
 
                 ValidateTagList(profile.tags, $"{ctx}: tags");
                 if (profile.tags == null || !ContainsValue(profile.tags, profile.caliber_tag))
                     report.Error($"{ctx}: 'tags' must contain caliber_tag '{SafeId(profile.caliber_tag)}'.");
             }
+        }
+
+        private void ValidateMedicalImpact(
+            string woundType,
+            float severity,
+            float bleedingRatePerGameHour,
+            float painContribution,
+            string context)
+        {
+            if (woundType != "Laceration" && woundType != "Puncture" && woundType != "Blunt")
+                report.Error($"{context}: 'wound_type' must be canonical Laceration, Puncture or Blunt.");
+            if (float.IsNaN(severity) || float.IsInfinity(severity) || severity <= 0f || severity > 1f)
+                report.Error($"{context}: 'wound_severity' must be finite and in (0, 1].");
+            if (float.IsNaN(bleedingRatePerGameHour) || float.IsInfinity(bleedingRatePerGameHour) || bleedingRatePerGameHour < 0f || bleedingRatePerGameHour > 1f)
+                report.Error($"{context}: 'bleeding_rate_per_game_hour' must be finite and in [0, 1].");
+            if (float.IsNaN(painContribution) || float.IsInfinity(painContribution) || painContribution < 0f || painContribution > 1f)
+                report.Error($"{context}: 'pain_contribution' must be finite and in [0, 1].");
         }
 
         private void ValidateActions()

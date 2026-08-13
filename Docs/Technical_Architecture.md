@@ -127,6 +127,16 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `M38.0 Actor Runtime & Lifecycle Diagnostics` usa dos Play sessions sobre `SampleScene`: guarda authored Alive/Dead y runtime actor en A; en B comprueba bootstrap Alive previo al load, aplica Dead/corpse, recrea runtime con mismo ID, vuelve a Alive selectivamente y prueba rollback post-reconciliation. Sale sin guardar escena ni dejar saves temporales.
 - `M38.1 Needs, World Clock & Recovery Diagnostics` usa dos Play sessions: valida clock/derivación, needs sin double tick, food/water real, rest/sleep, Dead, save/load fresh-session, payload legacy sin clock, preflight inválido sin mutación y fault post-clock/needs con rollback equivalente. Sale sin guardar `SampleScene` ni dejar saves temporales.
 - `M39.0 Localized Health & Medicine Diagnostics` usa dos Play sessions: cubre seis regiones, heridas deterministas, bleeding/rest sin double tick, pain, consumo x1, aislamiento, runtime actor Dead/corpse, UI H, round-trip exacto, legacy sin medical state, null/enums/severity inválidos sin mutación y fault post-medical-state con rollback equivalente.
+- `M40.0 Combat & Weapons Diagnostics` usa dos Play sessions: cubre seis regiones, melee/range, reload parcial/completo/cancelado, dry-fire, fire/miss/cycle, Dead/corpse, identidad drop/pickup, Equipment, round-trip exacto, legacy unloaded, preflight estricto y fault post-firearm-state con rollback equivalente.
+
+## Combat Resolution Y Weapons V1
+
+- `FirearmDebugController` conserva su MonoBehaviour/GUID M29 y es el único adaptador de input del player: F alterna combate, LMB ataca y R inicia reload. No posee ammo suelta ni aplica HP; delega en servicios, conserva WASD y consulta el blocker UI.
+- `WeaponCombatService` toma la misma instancia equipada desde `ActorEquipmentComponent`. Firearms se resuelven por `ItemDefinition.firearm_profile_id`; melee por `ItemDefinition.combat.weapon_profile`. No existe branching productivo por Lee-Enfield, `.303` o crowbar.
+- `CombatResolutionService` recibe attacker, weapon, attack kind, collider/impact y parámetros médicos; deriva una de seis regiones desde bounds y punto real y llama exclusivamente `ActorMedicalStateComponent.TryApplyWound`.
+- Cada firearm `ItemInstance` posee estado mutable `LoadedAmmoProfileId + LoadedRounds`; capacity deriva del `FirearmProfileDefinition`. La misma referencia y `InstanceId` atraviesan Equipment, drop/pickup y ownership transfers.
+- Reload busca ammo compatible dentro del árbol real de ownership, consume exactamente el faltante y restaura el estado de arma si el backend rechaza el commit. `DebugActionProgressController` aporta la operación temporizada/cancelable; cancelar no muta ammo ni firearm.
+- Current Slice persiste el estado dentro de `ItemState.firearmState`, lo valida antes de mutar y lo restaura dentro de la misma transacción M37–M39. Omisión legacy V1 normaliza a unloaded; null presente, incompatibilidad o rounds fuera de capacidad fallan preflight. El fault post-firearm-state prueba rollback canónico.
 
 ## Persistence Ready — Current Slice Aprobado
 
@@ -196,8 +206,8 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Limites Tecnicos Del Slice
 
 - World Clock y needs/rest M38.1 están validados para el Current Slice; no existe offline progression, calendario amplio, clima, iluminación temporal, beds system ni fatigue completa.
-- Health es un valor escalar con tags derivados; no existe daño localizado, heridas, sangrado, dolor, armadura ni penetracion integrados.
-- `FirearmDebugController` es un prototipo debug de arma de fuego, no el contrato final de combate.
+- M39 aporta health localizada/medicine y M40 aporta resolución melee/firearm V1; todavía no existen armadura, penetración, proyectiles físicos, condition de armas, AI combat, animación/audio final ni balance de producción.
+- `FirearmDebugController` sigue siendo una superficie debug, pero ya no es una autoridad paralela: Equipment, `ItemInstance`, servicios de combate y M39 poseen el estado y la lógica gameplay.
 - Existe actor registry/spawn/lifecycle durable acotado a M38.0; no existen IA, navegación de NPCs, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
 - La UI es debug OnGUI y no debe expandirse como si fuera la UI final.
 - Los mods son aditivos, exigen Global Content IDs canónicos y siguen sin manifests, ownership de namespace, overrides/versiones, dependencies ni patches; el soporte de compatibilidad de produccion pertenece a milestones posteriores.

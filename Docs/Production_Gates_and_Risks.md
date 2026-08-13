@@ -176,7 +176,17 @@ Contratos cerrados: seis regiones humanas V1; WoundId durable; tipos `Laceration
 
 Deuda aceptada no bloqueante: revisar mediante balancing la relación severity/bleeding rate/tiempo hasta deterioro crítico o muerte, porque una laceración severa puede tardar demasiado en producir pérdida vital grave. No es un fallo arquitectónico, no rompe persistence y no modifica valores en este closeout.
 
-Fuera de alcance: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. M40.0 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` y no se inicia en este commit.
+Fuera de alcance de ese closeout M39: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. El estado vigente de M40.0 se controla a continuación.
+
+### M40.0 Combat Resolution & Weapons — Gate Manual Pendiente
+
+Estado: `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Evidencia automatizada: Runtime/Editor compile, Global Content ID Namespace Foundation, M36.1, M37.0, ambos M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX dieron `PASS`. `M40.0 Combat & Weapons Diagnostics: PASS` cubrió dos Play sessions, seis regiones, melee/range, reload exacto y cancelación, fire/miss/dry-fire/cycle, bleeding a Dead/corpse, drop/pickup, Equipment, round-trip fresh-session, legacy unloaded, preflight sin mutación y rollback post-firearm-state equivalente. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; no hubo warnings nuevos.
+
+Gate manual pendiente: confirmar F/LMB/R, aim con mouse, hit/miss y regiones explicables, bolt cycle, reload parcial/completo/cancelado, crowbar melee/rango, cambio de arma, drop/pickup, bloqueo Inventory/Health sin perder WASD, feedback legible y save/load después de salir completamente de Play Mode.
+
+Riesgos/fuera: balance final, spread/critical hits, proyectiles físicos, animación/audio final, condition, armor/penetration y AI combat. M40.1 permanece `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`; M40.0 no puede marcarse `DONE` con automatización sola.
 
 ### Combat Ready - M40.1
 

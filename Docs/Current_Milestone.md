@@ -4,45 +4,42 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ## Estado Actual
 
-### M39.0 — Localized Health & Medicine V1
+### M40.0 — Combat Resolution & Weapons V1
 
 Estado actual:
 
-`DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`
+`IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
 
-Validation — `AUTOMATED + MANUAL FRESH-SESSION PASSED`
+Validation — `AUTOMATED PASSED; MANUAL UNITY VALIDATION PENDING`
 
-Functional Pass 1 implementa seis regiones humanas V1, heridas durables localizadas, severidad, sangrado por `WorldClock`, dolor derivado y tratamiento data-driven con venda. `ActorHealthComponent` conserva la reserva vital escalar y la autoridad Alive/Dead de M38; el estado médico manda sobre heridas, bleeding, pain y bandage. M38.1 continúa `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`; `Persistence Ready` continúa `APPROVED`.
+Functional Pass 1 gradúa el prototipo M29 a un único adaptador de input de combate, resuelve melee/firearms mediante servicios data-driven y traduce impactos deterministas a heridas M39. El estado cargado vive en cada `ItemInstance`; reload consume ammo compatible desde ownership real; M38/M39 conservan autoridad sobre reserva vital, Dead/corpse, wounds, bleeding y pain. `Persistence Ready` continúa `APPROVED`.
 
 ## Implementación Y Automatización
 
-- Runtime/Editor compilation, M36.1 Checkpoint A/Foundation, M37.0, ambos M37.1, M38.0, M38.1, Player Controls & Health Window e Inventory Interaction UX: `PASS`.
-- `M39.0 Localized Health & Medicine Diagnostics: PASS` en dos Play sessions: baseline, localización, bleeding sin double tick, rest, pain, venda x1, aislamiento regional, muerte/corpse, actor runtime, save/load, legacy V1, preflight y rollback.
-- Fault post-medical-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback canónicamente equivalentes.
+- Runtime/Editor compilation, Global Content ID, M36.1, M37.0, ambos M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX: `PASS`.
+- `M40.0 Combat & Weapons Diagnostics: PASS` en dos Play sessions: seis regiones, melee/range, dry-fire, reload parcial/completo/cancelado, fire/miss/cycle, bleeding-to-Dead, drop/pickup, equipment, fresh-session round-trip, legacy V1, preflight y rollback.
+- Fault post-firearm-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback canónicamente equivalentes.
 - `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
-- Cero warnings nuevos atribuibles a M39.0; permanecen los seis warnings C# preexistentes documentados.
-- Mauro validó manualmente la ventana regional, la herida localizada, bleeding y pérdida vital, Rest/Sleep sin healing, venda x1 sin eliminar la herida y el round-trip Current Slice después de salir completamente de Play Mode. El load fresh-session terminó `Success`, con `MutationStarted: True` y sin rollback requerido.
-- No se observaron errores runtime atribuibles a M39.0. Los warnings legacy de Global Content ID y EquipmentSlot permanecen como deuda Core-only conocida y aceptada.
+- Cero warnings nuevos atribuibles a M40.0; permanecen los seis warnings C# preexistentes documentados.
+- La validación manual Unity de aim/fire/reload/melee, feedback, UI/input y fresh-session sigue pendiente; automatización no cierra ese gate.
 
 ## Contrato Funcional
 
-- Regiones: `Head`, `Torso`, `LeftArm`, `RightArm`, `LeftLeg`, `RightLeg`; son un dominio técnico cerrado V1, no Content IDs.
-- Cada herida conserva `WoundId`, región, tipo `Laceration/Puncture/Blunt`, severidad, tasa de sangrado, contribución de dolor y estado `Unbandaged/Bandaged`.
-- El mismo evento `WorldClock.GameTimeAdvanced` procesa directamente el delta normal o de Rest/Sleep. Sangrar reduce la reserva vital de `ActorHealthComponent`; al agotarla conserva lifecycle Dead/corpse de M38 y no progresa después de muerte.
-- La venda Core usa `consumable.wound_treatment`, consume exactamente x1 y reduce el sangrado de una herida concreta sin `Heal(+X)` ni borrar la herida. Core y mods usan el mismo loader/validator/servicio.
-- La ventana H existente muestra cuerpo esquemático, regiones, heridas y evaluaciones cualitativas; los números escalares quedan confinados al área DEBUG. Mantiene H/X/Escape, WASD, bloqueo local de input y exclusividad con Inventory.
+- `CombatResolutionService` es la ruta única de impacto a `ActorMedicalStateComponent.TryApplyWound`; no aplica daño escalar paralelo.
+- `WeaponCombatService` consulta Equipment, perfiles y ownership; firearm y melee se distinguen por datos, nunca por IDs de contenido productivos.
+- Firearms conservan `ammoProfileId + loadedRounds` por `ItemInstance`; capacidad deriva del `FirearmProfile`. Reload es temporizable/cancelable, consume exactamente el faltante y revalida la misma arma equipada.
+- El adaptador conserva F/LMB/R, raycast/cycle/feedback del prototipo, mantiene WASD y respeta Inventory/Health input blocking.
+- El resolver usa bounds/impact point para `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg`; M39 y M38 continúan resolviendo bleeding, vitalidad, muerte y corpse.
 
 ## Persistence Y Compatibilidad
 
-`PlayerState` y `ActorState` agregan DTOs médicos planos dentro del Current Slice schema/envelope V1. Capture, preflight, canonical compare, apply y rollback reutilizan la transacción M37/M38. Un save V1 anterior que omite `medicalState` deriva baseline sin heridas desde su health escalar, sin inventar etiología; un objeto presente null o inválido se rechaza antes de mutar. Los legacy `CorpseState[]` reciben baseline médico sano conservando health 0.
+`ItemState.firearmState` agrega el estado cargado al Current Slice schema/envelope V1. Capture cubre todos los owners mediante la tabla única de items; preflight valida definición, profile, compatibilidad y capacidad; apply/compare/rollback reutilizan la transacción M37–M39. Un save V1 anterior que omite `firearmState` deriva unloaded sin inventar munición; null presente o estado inválido se rechaza antes de mutar.
 
 ## Deuda Y Fuera De Alcance
 
-La relación entre severity, bleeding rate y tiempo hasta deterioro crítico o muerte requiere balancing posterior: una laceración severa puede tardar demasiado en producir pérdida vital grave. Es deuda de tuning no bloqueante; no es un fallo arquitectónico, no rompe persistence y no modifica valores de gameplay en este closeout.
-
-Quedan fuera combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. También quedan fuera healing de tejido, vendajes saturados, enfermedades generales, UI final y fisiología avanzada. La deuda Content ID authored preexistente permanece sin cambios.
+Quedan fuera armor/penetration, proyectiles físicos, critical hits, spread/balance final, animación/audio final, condition/desgaste, AI combat, dual wield, attachments y UI final. El balance severity/bleeding sigue siendo deuda no bloqueante de M39.
 
 ## Próximo Trabajo
 
-- M40.0 — Combat Resolution & Weapons V1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
-- M40.0 no se inicia en este closeout documental.
+- M40.0 — Manual Unity Validation & Closeout.
+- M40.1 — Armor & Penetration V1 permanece `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`.

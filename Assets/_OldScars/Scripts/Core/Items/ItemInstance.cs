@@ -17,6 +17,9 @@ namespace OldScars.Core.Items
         public string OwnedStorageProfileId { get; }
         public ItemOwnedStorageRuntime OwnedStorage { get; private set; }
         public bool HasOwnedStorage => OwnedStorage != null;
+        public bool HasFirearmState { get; }
+        public string LoadedAmmoProfileId { get; private set; }
+        public int LoadedRounds { get; private set; }
 
         private bool ownedStorageRegistered;
 
@@ -29,7 +32,7 @@ namespace OldScars.Core.Items
         }
 
         private ItemInstance(NewItemState state, Func<string, ItemStorageProfileDefinition> profileResolver)
-            : this(state.InstanceId, state.DefinitionId, state.Condition, state.MaxStack, state.OwnedStorageProfileId)
+            : this(state.InstanceId, state.DefinitionId, state.Condition, state.MaxStack, state.OwnedStorageProfileId, state.HasFirearmState)
         {
             try
             {
@@ -57,13 +60,15 @@ namespace OldScars.Core.Items
             string definitionId,
             int condition,
             int maxStack,
-            string ownedStorageProfileId)
+            string ownedStorageProfileId,
+            bool hasFirearmState)
         {
             InstanceId = instanceId;
             DefinitionId = definitionId;
             Condition = condition;
             MaxStack = maxStack;
             OwnedStorageProfileId = ownedStorageProfileId;
+            HasFirearmState = hasFirearmState;
         }
 
         public static ItemInstance CreateNew(ItemDefinition definition)
@@ -106,7 +111,8 @@ namespace OldScars.Core.Items
                     definition.id,
                     condition,
                     Math.Max(1, definition.max_stack),
-                    definition.owned_storage_profile_id);
+                    definition.owned_storage_profile_id,
+                    !string.IsNullOrWhiteSpace(definition.firearm_profile_id));
             }
             catch
             {
@@ -123,13 +129,48 @@ namespace OldScars.Core.Items
             string siblingId = ItemInstanceIdRegistry.Instance.ReserveNewId();
             try
             {
-                return new ItemInstance(siblingId, DefinitionId, Condition, MaxStack, null);
+                return new ItemInstance(siblingId, DefinitionId, Condition, MaxStack, null, false);
             }
             catch
             {
                 ItemInstanceIdRegistry.Instance.ReleaseFailedReservation(siblingId);
                 throw;
             }
+        }
+
+        public bool TrySetFirearmState(string ammoProfileId, int loadedRounds, out string failure)
+        {
+            if (!HasFirearmState)
+            {
+                failure = $"Item instance '{InstanceId}' is not a firearm.";
+                return false;
+            }
+            if (loadedRounds < 0 || loadedRounds == 0 && !string.IsNullOrEmpty(ammoProfileId) ||
+                loadedRounds > 0 && string.IsNullOrWhiteSpace(ammoProfileId))
+            {
+                failure = $"Firearm state for '{InstanceId}' has inconsistent ammo '{ammoProfileId ?? "<NONE>"}' and loaded rounds {loadedRounds}.";
+                return false;
+            }
+
+            LoadedAmmoProfileId = loadedRounds > 0 ? ammoProfileId : null;
+            LoadedRounds = loadedRounds;
+            failure = null;
+            return true;
+        }
+
+        public bool TryConsumeLoadedRound(out string failure)
+        {
+            if (!HasFirearmState || LoadedRounds <= 0)
+            {
+                failure = $"Firearm '{InstanceId}' is unloaded.";
+                return false;
+            }
+
+            LoadedRounds--;
+            if (LoadedRounds == 0)
+                LoadedAmmoProfileId = null;
+            failure = null;
+            return true;
         }
 
         public static bool CanStackWith(ItemInstance first, ItemInstance second)
@@ -215,7 +256,8 @@ namespace OldScars.Core.Items
                 definition.id,
                 definition.physical.condition_max,
                 Math.Max(1, definition.max_stack),
-                definition.owned_storage_profile_id);
+                definition.owned_storage_profile_id,
+                !string.IsNullOrWhiteSpace(definition.firearm_profile_id));
         }
 
         private static NewItemState PrepareAuthored(ItemDefinition definition, string authoredInstanceId)
@@ -230,7 +272,8 @@ namespace OldScars.Core.Items
                 definition.id,
                 definition.physical.condition_max,
                 Math.Max(1, definition.max_stack),
-                definition.owned_storage_profile_id);
+                definition.owned_storage_profile_id,
+                !string.IsNullOrWhiteSpace(definition.firearm_profile_id));
         }
 
         private static void ValidateDefinition(ItemDefinition definition)
@@ -271,13 +314,15 @@ namespace OldScars.Core.Items
                 string definitionId,
                 int condition,
                 int maxStack,
-                string ownedStorageProfileId)
+                string ownedStorageProfileId,
+                bool hasFirearmState)
             {
                 InstanceId = instanceId;
                 DefinitionId = definitionId;
                 Condition = condition;
                 MaxStack = maxStack;
                 OwnedStorageProfileId = ownedStorageProfileId;
+                HasFirearmState = hasFirearmState;
             }
 
             internal string InstanceId { get; }
@@ -285,6 +330,7 @@ namespace OldScars.Core.Items
             internal int Condition { get; }
             internal int MaxStack { get; }
             internal string OwnedStorageProfileId { get; }
+            internal bool HasFirearmState { get; }
         }
     }
 }

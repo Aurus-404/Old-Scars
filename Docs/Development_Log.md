@@ -2726,3 +2726,32 @@ Fuera de alcance: combat resolution, ballistics, armor, penetration, infection, 
 M38.0 permanece `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`; M38.1 permanece `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`; `Persistence Ready` permanece `APPROVED`.
 
 Siguiente: M40.0 — Combat Resolution & Weapons V1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. No se inicia en este closeout documental.
+
+### M40.0 — Combat Resolution & Weapons V1 — Functional Pass 1
+
+Fecha: 2026-08-13.
+
+Estado: `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Se graduó el prototipo M29 sin crear una segunda autoridad. `FirearmDebugController` conserva su MonoBehaviour/GUID y el input F/LMB/R, pero ahora delega en `WeaponCombatService` y `CombatResolutionService`; ya no consume ammo suelta ni llama daño escalar. Equipment, ownership, `ItemInstance`, M39 medical y M38 lifecycle conservan sus autoridades existentes.
+
+Contratos implementados:
+
+- resolución única de impactos a seis regiones por bounds/punto real y `ActorMedicalStateComponent.TryApplyWound`;
+- melee data-driven mediante `WeaponProfile`, con range/timing e impacto Blunt para la fixture Core;
+- firearm state durable por `ItemInstance` (`ammoProfileId + loadedRounds`), capacity derivada del `FirearmProfile`, reload temporizado/cancelable y consumo exacto desde ownership real;
+- fire consume un round incluso en miss; dry-fire y full/incompatible/out-of-range rechazan sin mutar; el cycle bloquea el ataque hasta quedar ready;
+- drop/pickup/equipment conservan el mismo `InstanceId` y estado; visuales siguen derivados de commits Equipment;
+- Current Slice V1 agrega `ItemState.firearmState`, legacy omission normaliza unloaded, null/rounds/ammo/duplicados inválidos fallan preflight y el fault post-firearm restore reutiliza rollback M37–M39.
+
+Evidencia automatizada:
+
+- Runtime/Editor compile `PASS`; permanecen seis warnings C# preexistentes y no hay warnings nuevos atribuibles a M40.0;
+- Global Content ID, M36.1, M37.0, Snapshot/Semantic Preflight M37.1, Current Slice Round-Trip M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX: `PASS`;
+- `M40.0 Combat & Weapons Diagnostics: PASS` en dos Play sessions; el fault post-firearm-state informó `ApplyFailed`, `RollbackAttempted: True`, `RollbackSucceeded: True` y equivalencia canónica;
+- `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; Packages y ProjectSettings intactos;
+- alcance: 13 C# y 1277 líneas C# agregadas, dentro del objetivo autorizado.
+
+Fuera: armor/penetration, proyectiles físicos, critical hits, balance/spread final, animación/audio final, condition/desgaste, AI combat, dual wield, attachments y UI final.
+
+Siguiente: `M40.0 — Manual Unity Validation & Closeout`. M40.1 queda `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`. M40.0 no está `DONE`.

@@ -4,13 +4,19 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximos Tres Trabajos
 
-### 1. M40.0 — Combat Resolution & Weapons V1
+### 1. M40.0 — Manual Unity Validation & Closeout
 
-Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
+Estado: `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
 
-Objetivo: damage contract, melee/firearms, ammo y reload sobre M39.0 ya cerrado.
+Objetivo: validar manualmente aim/fire/reload/melee, feedback, input/UI, cambio de arma, drop/pickup y Current Slice fresh-session; reconciliar el cierre sin reabrir implementación.
 
-Condición de inicio: autorización explícita de implementación. Este closeout documental no inicia M40.0.
+Condición de cierre: evidencia manual explícita de Mauro. Automatización sola no permite `DONE`.
+
+### 2. M40.1 — Armor & Penetration V1
+
+Estado: `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`.
+
+No iniciar hasta cerrar manualmente M40.0.
 
 ## Dirección De Producción
 
@@ -28,7 +34,7 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
-- M40.0 antes de su autorización, M40.1 y AI;
+- M40.1 antes del closeout manual M40.0 y AI;
 - condition, repair o crafting;
 - actores o mundo a escala fuera del seam mínimo implementado por M38.0;
 - facciones amplias;

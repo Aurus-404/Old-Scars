@@ -5,7 +5,10 @@
       "id": "core:ammo_303_british_01_profile",
       "display_name": ".303 British Rounds",
       "caliber_tag": "caliber_303",
-      "damage": 35,
+      "wound_type": "Puncture",
+      "wound_severity": 0.65,
+      "bleeding_rate_per_game_hour": 0.1,
+      "pain_contribution": 0.55,
       "tags": ["ammo", "rifle_ammo", "caliber_303"]
     }
   ]

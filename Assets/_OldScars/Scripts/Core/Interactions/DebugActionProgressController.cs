@@ -146,6 +146,45 @@ namespace OldScars.Core.Interactions
             return true;
         }
 
+        public bool TryStartTimedOperation(
+            float operationDuration,
+            string displayName,
+            string targetName,
+            Func<DebugActionExecutionResult> completion)
+        {
+            if (isActionInProgress || completion == null || float.IsNaN(operationDuration) ||
+                float.IsInfinity(operationDuration) || operationDuration < 0f)
+            {
+                Debug.LogWarning(
+                    "[DebugActionProgressController] Timed operation rejected." +
+                    $"\n  Active: {isActionInProgress}" +
+                    $"\n  Operation: {SafeText(displayName)}" +
+                    $"\n  Duration: {operationDuration}");
+                return false;
+            }
+
+            if (operationDuration <= 0f)
+            {
+                ShowResult(completion());
+                return true;
+            }
+
+            activeAction = null;
+            activeExecutionContext = default;
+            activeActionName = displayName;
+            activeTargetName = targetName;
+            duration = operationDuration;
+            elapsed = 0f;
+            activeCompletion = completion;
+            isActionInProgress = true;
+            Debug.Log(
+                "[DebugActionProgressController] Started timed gameplay operation." +
+                $"\n  Operation: {SafeText(displayName)}" +
+                $"\n  Target: {SafeText(targetName)}" +
+                $"\n  Duration: {duration:0.00}s");
+            return true;
+        }
+
         public bool TryCancelActiveAction(string reason)
         {
             if (!isActionInProgress)
