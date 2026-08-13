@@ -2836,3 +2836,31 @@ Manual: `PENDING — Mauro armor/penetration fresh-session recheck`.
 Gate: `Combat Ready — PENDING MANUAL M40.1 CLOSEOUT`.
 
 Siguiente: `M40.1 — Manual Unity Validation & Closeout`. La implementación queda congelada; no iniciar M41.0.
+
+### M40.1 — Armor & Penetration V1 — Manual Fresh-Session Closeout
+
+Fecha: 2026-08-13.
+
+Estado anterior: `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Estado final: `DONE — ARMOR / PENETRATION V1 VALIDATED`.
+
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
+
+Mauro confirmó el cierre manual:
+
+- `StoppedTwoLayers`: `.303` power `0.65` frente a resistencia total `0.65` produjo `Stopped`, exactamente una `Blunt` y ninguna `Puncture`; Head y arms descubiertos conservaron el resultado unarmored/Puncture;
+- `PenetratedOneLayer`: resistencia `0.325` dejó residual `0.325` y produjo exactamente una `Puncture`;
+- `UnarmoredInventoryOnly`: las dos armor `ItemInstance` en inventory, fuera de Equipment, no protegieron;
+- crowbar directo sobre torso protegido produjo `Blunt`; Equipment intervino, inventory-only no y melee no atravesó paredes;
+- geometría opaca bloqueó antes de armor/actor; al restaurar una línea limpia el impacto volvió a alcanzar el target;
+- Current Slice guardó al actor `actor_677cb4714310457d9e35140b04a199f0`; tras salir completamente de Play, fresh Play lo reconstruyó mediante `Initialization: PersistenceRestore` y el load informó `FailureCode: Success`, `Result: Success`;
+- `item_65e023d5f6a1478c8384a2f39be86630` y `item_71d498f132b9435c9e85caf1be6a5de4` conservaron identidad y Equipment; otro impacto de torso `.65 <= .65` dio `Stopped`, una `Blunt` y ninguna torso `Puncture`.
+
+La evidencia automatizada publicada permanece vigente: Runtime/Editor compile, regresión M40.0 y `M40.1 Armor & Penetration Diagnostics` dieron `PASS`; `SampleScene`, Packages, ProjectSettings y persistence schema/envelope V1 permanecieron intactos. No se repitió Unity durante este closeout documental.
+
+Los warnings legacy Global Content ID continúan como deuda conocida no bloqueante, no como fallos M40.1. Permanecen diferidos: familias FMJ/AP/HP/tracer/anti-material como variaciones exclusivamente data-driven sobre el mismo resolver; receivers machine/vehicle; integración M43 de `Condition`; proyectiles físicos, ricochet, ángulo, espesor real, spall, fragmentación, vehículos y máquinas.
+
+Gate: `Combat Ready — APPROVED`.
+
+Siguiente: M41.0 — Navigation & Perception Foundation permanece `PLANNED`, disponible para autorización y no iniciado.

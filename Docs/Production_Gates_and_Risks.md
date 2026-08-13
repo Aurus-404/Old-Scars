@@ -199,9 +199,9 @@ Riesgos/fuera de M40.0: balance final, spread/critical hits, proyectiles físico
 
 ### Combat Ready - M40.1
 
-Estado: `PENDING — MANUAL M40.1 CLOSEOUT`.
+Estado: `APPROVED`.
 
-M40.1 está `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. La automatización demostró un único pipeline M40 → armor/world penetration → adapter médico M39, ammo y rounds exactos, Equipment como autoridad, seis regiones, stop/penetration/trauma residual explicables, superficies world acotadas, melee protegido, death/corpse, round-trip fresh-session, compatibilidad V1 y datos inválidos sin mutación. `SampleScene` permaneció unchanged y no aparecieron warnings nuevos atribuibles.
+M40.1 está `DONE — ARMOR / PENETRATION V1 VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`. La automatización demostró un único pipeline M40 → armor/world penetration → adapter médico M39, ammo y rounds exactos, Equipment como autoridad, seis regiones, stop/penetration/trauma residual explicables, superficies world acotadas, melee protegido, death/corpse, round-trip fresh-session, compatibilidad V1 y datos inválidos sin mutación. `SampleScene` permaneció unchanged y no aparecieron warnings nuevos atribuibles.
 
 El núcleo de comparación/residual es independiente del receptor y común a wearable armor y world surfaces. Toda munición de proyectil usa `penetration_power > 0` sin flags AP/HP/FMJ; Condition conserva únicamente un seam futuro sin lectura, mutación ni desgaste. El fixture manual permite ciclar dos capas `Stopped`, una capa `Penetrated` y armor sólo en inventory `Unarmored` usando una única definición de armor y la `.303` existente.
 
@@ -216,7 +216,16 @@ Debe validar:
 
 Evidencia: matriz de combate con y sin proteccion, trazas del resolver, estado antes/despues y validacion manual.
 
-Evidencia todavía pendiente para aprobar el gate: recheck manual de cobertura/equipped-only, stopped sin `Puncture`, penetrated con una única `Puncture`, melee, near-cover, save → salida total de Play → fresh Play → load, protección post-load e inexistencia de errores M40.1 en Console.
+Evidencia manual confirmada por Mauro:
+
+- dos capas equipped con resistencia total `0.65` frente a `.303` power `0.65` dieron `Stopped`, exactamente una `Blunt` y ninguna `Puncture`; Head/arms descubiertos conservaron el comportamiento unarmored;
+- una capa de resistencia `0.325` dio `Penetrated`, residual `0.325` y exactamente una `Puncture`; ambas piezas sólo en inventory no protegieron;
+- crowbar directo sobre torso protegido produjo `Blunt`, Equipment intervino e inventory-only no; melee no atravesó paredes;
+- geometría opaca bloqueó antes de armor/actor y una línea limpia restauró el impacto;
+- Current Slice guardó al actor `actor_677cb4714310457d9e35140b04a199f0`, salió completamente de Play y en fresh Play lo reconstruyó mediante `Initialization: PersistenceRestore`; load informó `FailureCode: Success` / `Result: Success`;
+- `item_65e023d5f6a1478c8384a2f39be86630` y `item_71d498f132b9435c9e85caf1be6a5de4` conservaron identidad y Equipment; el torso volvió a dar `Stopped` con `Blunt` y sin `Puncture`.
+
+Decisión: `Combat Ready — APPROVED`. Los warnings legacy Global Content ID continúan como deuda aceptada y no constituyen fallos M40.1.
 
 Deuda aceptable: amplitud de armas, balance final, animacion/audio final y desgaste reparable futuro, siempre que M43 pueda integrarlo sin romper el contrato.
 

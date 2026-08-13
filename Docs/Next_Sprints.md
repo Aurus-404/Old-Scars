@@ -4,42 +4,30 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximo Trabajo
 
-### 1. M40.1 — Manual Unity Validation & Closeout
+### 1. M41.0 — Navigation & Perception Foundation
 
-Estado: `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `PLANNED`.
 
-M40.0 está `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`. `Persistence Ready` permanece `APPROVED`; `Combat Ready` permanece `PENDING MANUAL M40.1 CLOSEOUT`.
+M40.1 está `DONE — ARMOR / PENETRATION V1 VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`; `Combat Ready` está `APPROVED`. M41.0 queda disponible para autorización, pero su implementación no está iniciada ni autorizada por este closeout.
 
-La implementación y automatización están congeladas. El único trabajo siguiente es el recheck manual fresh-session; no iniciar M41.0 antes de completarlo.
+Alcance previsto por el Roadmap:
 
-Checklist práctico para Mauro:
+- navegación foundation acotada;
+- percepción diagnosticable;
+- integración con la identidad/lifecycle M38 sin adelantar Human Encounter AI;
+- diagnóstico reproducible y criterios de validación explícitos.
 
-1. Entrar a Play Mode y preparar/equipar el Lee-Enfield con `.303` mediante el flujo M40 ya validado.
-2. Ejecutar una vez `Old Scars > Diagnostics > Combat > M40.1 Prepare or Cycle Manual Armor Target`.
-3. Confirmar en Console el target, sus dos `ArmorInstanceIds` y `Mode='StoppedTwoLayers'`; ambas piezas deben estar en Equipment, no sólo en inventory.
-4. Disparar Torso y confirmar `Stopped`.
-5. Confirmar que ese impacto no crea `Puncture`.
-6. Confirmar una única `Blunt` por transferencia de trauma.
-7. Disparar Head con la misma armor y confirmar `Unarmored`/`Puncture`; repetir opcionalmente brazo o pierna para aislamiento regional.
-8. Ejecutar el mismo menú una vez más y confirmar `Mode='PenetratedOneLayer'`.
-9. Disparar Torso con `.303` y confirmar `Penetrated`.
-10. Confirmar exactamente una nueva `Puncture` residual para ese impacto.
-11. Ejecutar el menú otra vez y confirmar `Mode='UnarmoredInventoryOnly'`.
-12. Confirmar que las piezas sólo en inventory no protegen y que Torso vuelve al comportamiento unarmored M40.
-13. Ejecutar el menú otra vez para volver a `StoppedTwoLayers`.
-14. Golpear Torso directamente con crowbar y confirmar una única consecuencia `Blunt` residual coherente.
-15. Colocar cobertura opaca inmediata entre shooter y target, disparar y confirmar que bloquea antes de armor/actor.
-16. Volver a una línea limpia y confirmar que el impacto llega otra vez al target.
-17. Dejar `StoppedTwoLayers`, registrar ActorInstanceId y ambos ArmorInstanceIds, y guardar Current Slice.
-18. Salir completamente de Play Mode.
-19. Entrar a una sesión fresh Play y cargar Current Slice.
-20. Confirmar el mismo actor, los mismos dos ArmorInstanceIds y ambas piezas equipadas.
-21. Repetir el disparo de Torso y confirmar que vuelve a producir `Stopped` sin `Puncture`.
-22. Confirmar Console sin errores atribuibles a M40.1 y reportar el resultado para decidir el closeout de `Combat Ready`.
+Antes de implementar se debe congelar el prompt de milestone conforme a `OldScars_Development_Rules.md` y `Milestone_Template.md`, revisar dependencias reales y obtener autorización explícita de Mauro.
+
+### 2. M41.1 — Human Encounter AI V1
+
+Estado: `PLANNED`.
+
+Permanece posterior a M41.0 y dependiente de sus contratos. No está iniciado ni autorizado; no adelantar AI combat durante la foundation de navegación/percepción.
 
 ## Dirección De Producción
 
-El pequeño playable exploration prototype no está iniciado. Después del closeout aplicable podrá reutilizar la infraestructura existente para evaluar gameplay y presentación; no es una vertical slice final, no recibe milestone ID nuevo y no adelanta M45.1.
+El pequeño playable exploration prototype no está iniciado. Podrá reutilizar foundations validadas en un trabajo autorizado posterior; no es una vertical slice final, no recibe milestone ID nuevo y no adelanta M45.1.
 
 ## Secuencia De Modding Posterior
 
@@ -53,7 +41,7 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
-- M41.0, AI combat o cualquier ampliación posterior antes del closeout manual M40.1;
+- M41.1, AI combat o cualquier ampliación posterior antes de cerrar M41.0;
 - condition, repair o crafting;
 - actores o mundo a escala fuera del seam mínimo implementado por M38.0;
 - facciones amplias;

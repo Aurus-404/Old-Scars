@@ -219,7 +219,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Limites Tecnicos Del Slice
 
 - World Clock y needs/rest M38.1 están validados para el Current Slice; no existe offline progression, calendario amplio, clima, iluminación temporal, beds system ni fatigue completa.
-- M39 aporta health localizada/medicine, M40 aporta resolución melee/firearm V1 y M40.1 implementa armor regional más penetración común wearable/world con validación manual pendiente. Todavía no existen proyectiles físicos, ricochet/ángulo/thickness real, armor degradation, condition mutable de armas, receptores machine/vehicle, AI combat, animación/audio final ni balance de producción.
+- M39 aporta health localizada/medicine, M40 aporta resolución melee/firearm V1 y M40.1 valida armor regional más penetración común wearable/world mediante automatización y fresh-session manual. Todavía no existen proyectiles físicos, ricochet/ángulo/thickness real, armor degradation, condition mutable de armas, receptores machine/vehicle, AI combat, animación/audio final ni balance de producción.
 - `FirearmDebugController` sigue siendo una superficie debug, pero ya no es una autoridad paralela: Equipment, `ItemInstance`, servicios de combate y M39 poseen el estado y la lógica gameplay.
 - Existe actor registry/spawn/lifecycle durable acotado a M38.0; no existen IA, navegación de NPCs, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
 - La UI es debug OnGUI y no debe expandirse como si fuera la UI final.

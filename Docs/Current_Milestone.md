@@ -6,40 +6,34 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ### M40.1 — Armor & Penetration V1
 
-Estado actual:
+Estado final:
 
-`IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
+`DONE — ARMOR / PENETRATION V1 VALIDATED`
 
-`Combat Ready — PENDING MANUAL M40.1 CLOSEOUT`.
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
 
-M40.0 permanece `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`. M40.1 agrega cobertura regional equipped-only, penetración determinista común para wearable armor y world surfaces, trauma residual y un dispatch explícito de consecuencias; M39/M38 conservan autoridad sobre wounds, bleeding, pain, vitalidad, muerte y corpse. `Persistence Ready` continúa `APPROVED`.
+`Combat Ready — APPROVED`.
 
-## Evidencia Automatizada
+M40.0 permanece `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`. M40.1 validó cobertura regional equipped-only, penetración determinista común para wearable armor y world surfaces, trauma residual y dispatch explícito de consecuencias. M39/M38 conservan autoridad sobre wounds, bleeding, pain, vitalidad, muerte y corpse. `Persistence Ready` continúa `APPROVED`.
 
-- Runtime/Editor compile, Global Content ID Namespace Foundation, M36.1 Foundation Identity, M38.0 lifecycle, M39.0 Health/Medicine y M40.0 Combat Resolution & Weapons: `PASS`.
-- `M40.1 Armor & Penetration Diagnostics: PASS` en dos Play sessions: contratos A–W, seis regiones, Equipment authority, stopped con/sin trauma, exact threshold, residual penetration, melee, death/corpse, save/load exacto, legacy V1, invalid data sin mutación y regresiones M40.
-- World coverage: thin penetrable cover + actor, resistant cover, dos superficies sucesivas, budget agotado, límite de cuatro, geometría opaca y caso combinado world cover → wearable armor → actor: `PASS`.
-- La `.303` Core declara `penetration_power: 0.65`; una capa del fixture de torso (`resistance: 0.325`) produce residual `0.325` y dos instancias equipadas consumen exactamente el budget hasta `Stopped`.
-- 13 archivos C# y 1800 líneas C# agregadas, exactamente dentro del techo duro; JSON/docs/.meta no cuentan.
-- `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; Packages y ProjectSettings intactos.
-- No aparecieron warnings nuevos atribuibles a M40.1; permanecen los seis warnings C# preexistentes documentados y la deuda legacy Core Content ID.
+## Evidencia De Cierre
 
-## Contrato Funcional
+- Automatización: Runtime/Editor compile y `M40.1 Armor & Penetration Diagnostics: PASS` en dos Play sessions, incluida la regresión M40.0 requerida, seis regiones, Equipment authority, stop/penetration/trauma residual, melee, superficies world acotadas, muerte/corpse, persistencia V1 y datos inválidos sin mutación.
+- Dos capas equipped sumaron resistencia `0.65`: la `.303` con `penetration_power: 0.65` produjo `Stopped`, exactamente una `Blunt` y ninguna `Puncture`. Una capa de `0.325` produjo residual `0.325` y exactamente una `Puncture`.
+- Head/arms descubiertos se comportaron unarmored. Las mismas piezas sólo en inventory no protegieron. Crowbar sobre torso protegido produjo `Blunt`; inventory-only no intervino y melee no atravesó paredes.
+- Geometría opaca bloqueó antes de armor/actor; restaurar una línea limpia permitió nuevamente el impacto.
+- Current Slice guardó y, tras fresh Play, reconstruyó `actor_677cb4714310457d9e35140b04a199f0` mediante `Initialization: PersistenceRestore`; el load informó `FailureCode: Success` y `Result: Success`.
+- Las armor `item_65e023d5f6a1478c8384a2f39be86630` y `item_71d498f132b9435c9e85caf1be6a5de4` conservaron identidad y Equipment; el torso volvió a dar `Stopped` con `Blunt` y sin `Puncture`.
+- Los warnings legacy Global Content ID permanecen como deuda conocida, no como fallos M40.1.
 
-- `PenetrationResolutionService` es receiver-independent: `incomingPower <= resistance` produce `Stopped`; `incomingPower > resistance` produce `Penetrated`; residual = `max(0, incomingPower - resistance)`.
-- `ArmorProfileDefinition` declara seis regiones posibles, profile de penetración, resistencia de impacto, blunt transfer/threshold y `layer_priority`. `PenetrationProfileDefinition` declara la resistencia en una escala interna compartida, no en unidades físicas fingidas.
-- Sólo `ActorEquipmentComponent.Entries` protege; inventory, backpacks, containers y world items no lo hacen. Capas aplicables se ordenan determinísticamente.
-- World geometry es opaca salvo `penetration_profile_id` explícito. La continuación usa epsilon `0.001`, deduplicación de collider/owner y máximo cuatro superficies por attack.
-- Un stop nunca produce `Puncture` y puede producir cero heridas o una única `Blunt`; una penetración produce como máximo una única consecuencia residual. El adapter humano llama M39 sólo cuando el collider terminal realmente es un actor médico.
-- Toda `AmmoProfileDefinition` de proyectil exige `penetration_power > 0`; no existen branches `IsAP`, `CanPenetrate`, FMJ/AP/HP ni por IDs concretos.
-- Melee no atraviesa paredes y reutiliza el mismo núcleo contra impact resistance de la armor que cubre al receptor directo.
+## Contratos Congelados
 
-## Persistence, Condition Y Compatibilidad
-
-M40.1 agrega cero estado durable: profiles son Definitions y Equipment/`ItemInstance` ya hacen round-trip exacto. No existen `armorState` ni `penetrationState`; schema/envelope V1 siguen en versión 1 y un save anterior no inventa armor. El diagnostic confirmó misma armor/`InstanceId` equipada y protección post-load. `EffectiveResistance(ItemInstance, baseResistance)` queda como seam M43; M40.1 no lee, degrada ni muta `Condition`.
+- `PenetrationResolutionService` sigue receiver-independent: `incomingPower <= resistance` produce `Stopped`; sólo `incomingPower > resistance` produce `Penetrated`; residual = `max(0, incomingPower - resistance)`.
+- Armor protege exclusivamente desde Equipment y por región. World geometry permanece opaca salvo profile penetrable explícito; la continuación del ray usa budget y límites acotados.
+- Toda munición de proyectil usa `penetration_power > 0`; futuras FMJ/AP/HP, tracer y anti-material se diferencian por datos y reutilizan el mismo resolver, sin branches binarios por tipo.
+- M40.1 no agrega estado durable. `EffectiveResistance(ItemInstance, baseResistance)` queda reservado para M43; machines, vehicles y sus receivers permanecen futuros.
+- Proyectiles físicos, ricochet, ángulo, espesor real, spall, fragmentación y sistemas completos de vehículos/máquinas permanecen fuera de alcance.
 
 ## Próximo Trabajo
 
-- Ejecutar únicamente `M40.1 — Manual Unity Validation & Closeout` con el checklist de [Next_Sprints.md](Next_Sprints.md).
-- El menú de Play Mode `Old Scars > Diagnostics > Combat > M40.1 Prepare or Cycle Manual Armor Target` prepara y cicla los modos `StoppedTwoLayers`, `PenetratedOneLayer` y `UnarmoredInventoryOnly` sin modificar `SampleScene`.
-- No iniciar M41.0 hasta completar el recheck manual y decidir `Combat Ready`.
+M41.0 — Navigation & Perception Foundation permanece `PLANNED`, disponible para autorización y no iniciado. No existe milestone activo hasta una autorización explícita de Mauro.
