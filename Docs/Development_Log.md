@@ -2767,3 +2767,30 @@ El recheck manual de Mauro confirmó unloaded, reload completo/parcial, consumo 
 Corrección acotada: el camera ray sigue determinando el target deseado; el disparo físico ahora parte del centro corporal a muzzle-height con sólo 0.02 m de epsilon hacia el target, y el primer collider real bloquea. `muzzle_offset` queda limitado al origen visual de la línea debug. No se agregaron sockets, hitboxes, visuals M35 ni proyectiles físicos.
 
 El diagnóstico M40 agrega un caso near-cover: una pared a 0.65 m bloquea al actor detrás, consume exactamente un round y no crea wound; al retirar la misma pared, el mismo target recibe la herida localizada correcta. Manual pendiente: Mauro near-cover raycast recheck.
+
+### M40.0 — Combat Resolution & Weapons V1 — Manual Fresh-Session Closeout
+
+Fecha: 2026-08-13.
+
+Estado anterior: `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Estado posterior: `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`.
+
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
+
+Evidencia manual confirmada por Mauro:
+
+- Lee-Enfield se equipó; F activó combat mode; unloaded rechazó fire; reload completo y parcial funcionaron con capacity 10 y consumo exacto de ammo compatible; LMB consumió exactamente un loaded round; bolt cycle impidió fire inmediato; impactos reales produjeron heridas regionales `Puncture`; world geometry bloqueó disparos; muerte/corpse continuó integrada con M38/M39.
+- Correction Pass 1 publicada en `ea6cbcd02c36f8403509ce209967efe29914f2a0` pasó: con el jugador pegado a una pared y un actor detrás, el impacto quedó en world geometry, el actor no recibió wound y no se atravesó cobertura cercana; con línea limpia, el actor volvió a recibir impacto normalmente.
+- Crowbar se equipó y usó el mismo combat mode; el ataque melee temporizado produjo heridas `Blunt` observadas en LeftArm, Torso, RightLeg y RightArm; fuera de rango informó `Melee attack missed`; geometría interpuesta bloqueó; WASD canceló una acción en progreso; no apareció una ruta médica paralela.
+- Lee-Enfield soltado y recogido conservó `Loaded 8/10` y `InstanceId: item_c0f66d58249e4892aa4632028975816e`: el estado cargado siguió al `ItemInstance`, no al owner ni a la representación world/equipment.
+- Current Slice save terminó `Result: Success`; tras salir completamente de Play Mode, iniciar una nueva Play session y cargar el slot, el load terminó `Phase: Complete`, `FailureCode: Success`, `Result: Success`. El Lee-Enfield reapareció equipado en `Loaded 8/10`.
+- No aparecieron errores nuevos atribuibles a M40. Los warnings legacy `core:*` conocidos permanecen como deuda aceptada y no bloquean el milestone.
+
+Evidencia automatizada preservada: `M40.0 Combat Resolution & Weapons Diagnostics: PASS`, incluidos seis body regions, melee/range, dry-fire, reload parcial/completo/cancelado, fire/miss/cycle, bleeding-to-Dead, drop/pickup, Equipment, fresh-session round-trip, legacy V1, preflight, rollback transaccional y near-cover Correction Pass 1. El fault esperado informó `ApplyFailed`, `RollbackAttempted: True` y `RollbackSucceeded: True`.
+
+Contratos preservados: M38/M39 continúan como autoridades de medical/death/corpse; el firearm state durable permanece en `ItemInstance`; Current Slice conserva preflight/apply/rollback transaccional M37 sin un sistema paralelo. `Persistence Ready` permanece `APPROVED`.
+
+Fuera y deuda diferida: armor/penetration, proyectiles físicos, critical hits, balance/spread final, animación/audio final, weapon condition/wear, AI combat, dual wield, attachments y UI final. El tuning severity/bleeding de M39 y la compatibilidad legacy Core Content IDs permanecen como deuda no bloqueante.
+
+Siguiente: M40.1 — Armor & Penetration V1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. No se diseña ni implementa en este closeout documental.

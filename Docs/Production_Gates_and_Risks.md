@@ -178,15 +178,24 @@ Deuda aceptada no bloqueante: revisar mediante balancing la relación severity/b
 
 Fuera de alcance de ese closeout M39: combat resolution, ballistics, armor, penetration, infection, fractures, surgery, organs, blood types, transfusions, antibiotics, complex analgesics, regional movement penalties, limb disability y AI. El estado vigente de M40.0 se controla a continuación.
 
-### M40.0 Combat Resolution & Weapons — Gate Manual Pendiente
+### M40.0 Combat Resolution & Weapons — Validado
 
-Estado: `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`.
 
-Evidencia automatizada: Runtime/Editor compile, Global Content ID Namespace Foundation, M36.1, M37.0, ambos M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX dieron `PASS`. `M40.0 Combat Resolution & Weapons Diagnostics: PASS` cubrió dos Play sessions, seis regiones, melee/range, reload exacto y cancelación, fire/miss/dry-fire/cycle, bleeding a Dead/corpse, drop/pickup, Equipment, round-trip fresh-session, legacy unloaded, preflight sin mutación y rollback post-firearm-state equivalente. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; no hubo warnings nuevos.
+Validation: `AUTOMATED + MANUAL FRESH-SESSION PASSED`.
 
-Gate manual pendiente: confirmar F/LMB/R, aim con mouse, hit/miss y regiones explicables, bolt cycle, reload parcial/completo/cancelado, crowbar melee/rango, cambio de arma, drop/pickup, bloqueo Inventory/Health sin perder WASD, feedback legible y save/load después de salir completamente de Play Mode.
+Evidencia automatizada: Runtime/Editor compile, Global Content ID Namespace Foundation, M36.1, M37.0, ambos M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX dieron `PASS`. `M40.0 Combat Resolution & Weapons Diagnostics: PASS` cubrió dos Play sessions, seis regiones, melee/range, reload exacto y cancelación, fire/miss/dry-fire/cycle, bleeding a Dead/corpse, drop/pickup, Equipment, round-trip fresh-session, legacy unloaded, preflight sin mutación, rollback post-firearm-state equivalente y near-cover Correction Pass 1. `SampleScene` conservó SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; no hubo warnings nuevos.
 
-Riesgos/fuera: balance final, spread/critical hits, proyectiles físicos, animación/audio final, condition, armor/penetration y AI combat. M40.1 permanece `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`; M40.0 no puede marcarse `DONE` con automatización sola.
+Evidencia manual confirmada por Mauro:
+
+- Lee-Enfield equipable; F/LMB/R; unloaded; reload completo/parcial; capacity 10; ammo compatible y loaded rounds consumidos exactamente; bolt cycle; impactos regionales `Puncture`; world blocking; continuidad Dead/corpse.
+- Correction Pass 1: una pared inmediata bloqueó el disparo y evitó la wound del actor detrás; con línea limpia el actor volvió a recibir impacto.
+- Crowbar equipable; melee temporizado; heridas `Blunt` observadas en LeftArm, Torso, RightLeg y RightArm; out-of-range `Melee attack missed`; geometría interpuesta; cancelación por WASD; sin ruta médica paralela.
+- Drop/pickup preservó `Loaded 8/10` y `InstanceId: item_c0f66d58249e4892aa4632028975816e`, confirmando que el estado durable sigue al `ItemInstance`.
+- Current Slice save `Success`, salida completa de Play, fresh Play y load `Phase: Complete`, `FailureCode: Success`, `Result: Success`; Lee-Enfield equipado restaurado en `Loaded 8/10`.
+- No aparecieron errores nuevos atribuibles a M40. Los warnings legacy `core:*` siguen como deuda aceptada.
+
+Riesgos/fuera: balance final, spread/critical hits, proyectiles físicos, animación/audio final, condition, armor/penetration, dual wield, attachments, UI final y AI combat. El tuning severity/bleeding M39 y la compatibilidad legacy Core Content IDs permanecen como deuda no bloqueante. M40.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no se inicia en este closeout.
 
 ### Combat Ready - M40.1
 

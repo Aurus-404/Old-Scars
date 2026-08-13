@@ -2,21 +2,15 @@
 
 Este documento contiene sólo los próximos trabajos reales. El trabajo activo se resume en [Current_Milestone.md](Current_Milestone.md); los IDs, estados, dependencias y gates se derivan de [Project_Roadmap.md](Project_Roadmap.md).
 
-## Próximos Tres Trabajos
+## Próximo Trabajo
 
-### 1. M40.0 — Manual Unity Validation & Closeout
+### 1. M40.1 — Armor & Penetration V1
 
-Estado: `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+Estado: `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
 
-Objetivo: validar manualmente aim/fire/reload/melee, feedback, input/UI, cambio de arma, drop/pickup y Current Slice fresh-session; reconciliar el cierre sin reabrir implementación.
+M40.0 está `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, con `AUTOMATED + MANUAL FRESH-SESSION PASSED`. `Persistence Ready` permanece `APPROVED`.
 
-Condición de cierre: evidencia manual explícita de Mauro. Automatización sola no permite `DONE`.
-
-### 2. M40.1 — Armor & Penetration V1
-
-Estado: `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`.
-
-No iniciar hasta cerrar manualmente M40.0.
+M40.1 es el siguiente milestone real, pero no está iniciado. Requiere autorización explícita antes de diseñar o implementar su alcance.
 
 ## Dirección De Producción
 
@@ -34,7 +28,7 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
-- M40.1 antes del closeout manual M40.0 y AI;
+- M40.1 sin autorización explícita y AI combat antes de sus dependencias;
 - condition, repair o crafting;
 - actores o mundo a escala fuera del seam mínimo implementado por M38.0;
 - facciones amplias;
