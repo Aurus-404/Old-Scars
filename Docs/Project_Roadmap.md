@@ -25,13 +25,15 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `1c843961ed72b554f485b86105c443669337e8c0` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | Ninguno; M40.1 — Armor & Penetration V1 está listo para autorización |
+| Milestone activo | M40.1 — Armor & Penetration V1 |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
-| Siguientes | M40.1 — Armor & Penetration V1 |
+| Estado M40.1 | `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` |
+| Combat Ready | `PENDING MANUAL M40.1 CLOSEOUT` |
+| Siguientes | M40.1 — Manual Unity Validation & Closeout |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED` y M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`. M40.1 está `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no se inició.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED` y M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`. M40.1 está `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`; `Combat Ready` permanece `PENDING MANUAL M40.1 CLOSEOUT`.
 
 ## Estados Canonicos
 
@@ -131,7 +133,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED` | M38.0 | Autoridad temporal, Hunger/Thirst por game time, rest/sleep, persistence/rollback y diagnostics validados; fatigue queda deferred SHOULD. |
 | CERRADO | M39.0 — Localized Health & Medicine V1 | Jugable | `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED` | M38.1 | Seis regiones, heridas durables, bleeding por WorldClock, pain, venda localizada, UI H y persistence V1 validados con automatización y fresh-session manual. |
 | CERRADO | M40.0 — Combat Resolution & Weapons V1 | Jugable | `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED` | M39.0 | Resolver único hacia M39, melee/firearms, estado cargado por instancia, ammo/reload, near-cover blocking y persistence validados con automatización y fresh-session manual. |
-| SIGUIENTE | M40.1 — Armor & Penetration V1 | Jugable | `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION` | M40.0 | Cobertura y penetracion explicables, con seam futuro para condition; gate `Combat Ready`. No iniciado. |
+| ACTIVO | M40.1 — Armor & Penetration V1 | Jugable | `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | M40.0 | Cobertura regional equipped-only, núcleo común de penetración para armor/world, trauma residual y diagnostics automatizados; gate `Combat Ready` pendiente del closeout manual. |
 | DESPUES | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `PLANNED` | M38.0 | Navegacion, percepcion y diagnostico. |
 | DESPUES | M41.1 — Human Encounter AI V1 | Jugable | `PLANNED` | M40.0, M41.0 | Evitar, alertarse, huir y luchar; gate `AI Ready`. |
 | DESPUES | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED` | M38.1 | Clima, forecast, exposicion y proteccion. |
@@ -160,7 +162,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 
 Este archivo es autoridad sobre los nombres y la ubicacion de los gates. Sus criterios detallados se desarrollan en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 
-Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready — APPROVED` para el Current Slice validado en M37.1.
+Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready — APPROVED` para el Current Slice validado en M37.1; `Combat Ready — PENDING MANUAL M40.1 CLOSEOUT`.
 
 | Gate | Cierre previsto |
 | --- | --- |
@@ -182,7 +184,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 READY FOR AUTHORIZATION`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 IMPLEMENTED / MANUAL CLOSEOUT PENDING`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -299,7 +301,21 @@ M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`. Validation: `AU
 
 La automatización M40 pasó, incluido near-cover Correction Pass 1, preflight estricto y fault post-firearm-state con `ApplyFailed`, `RollbackAttempted: True` y `RollbackSucceeded: True`. Mauro confirmó manualmente firearm unloaded/reload/fire/cycle/regiones/world blocking/Dead-corpse; near-cover sin atravesar geometría; crowbar melee/range/cancelación; estado `Loaded 8/10` e `InstanceId` preservados tras drop/pickup; y Current Slice fresh-session restaurando el rifle equipado en `Loaded 8/10` con resultado `Success`. No aparecieron errores nuevos atribuibles a M40. Los warnings legacy `core:*` permanecen como deuda aceptada.
 
-Fuera: armor/penetration, proyectiles físicos, critical hits, balance/spread final, condition/desgaste, AI combat, dual wield, attachments, animación/audio y UI final. El tuning severity/bleeding de M39 y la compatibilidad legacy Core Content IDs permanecen como deuda no bloqueante. M40.1 pasa a `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no se inicia en este closeout.
+Fuera de M40.0 quedaron armor/penetration, proyectiles físicos, critical hits, balance/spread final, condition/desgaste, AI combat, dual wield, attachments, animación/audio y UI final. El tuning severity/bleeding de M39 y la compatibilidad legacy Core Content IDs permanecen como deuda no bloqueante. El estado vigente de armor/penetration se controla en M40.1 a continuación.
+
+### M40.1 — Functional Pass 1 Implementado / Cierre Manual Pendiente
+
+M40.1 queda `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. M40.0 permanece `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`; `Combat Ready` permanece `PENDING MANUAL M40.1 CLOSEOUT`.
+
+`PenetrationResolutionService` compara una magnitud interna común contra capas independientes del tipo de receptor. `incomingPower <= resistance` produce `Stopped`; sólo `incomingPower > resistance` produce `Penetrated`; el residual es `max(0, incomingPower - resistance)`. Armor wearable y superficies world penetrables usan exactamente ese núcleo, y el dispatch terminal mantiene un adapter médico explícito sin convertir al resolver común en una dependencia de M39.
+
+Armor se descubre exclusivamente desde Equipment y aplica por las seis `BodyRegion`. Las capas se ordenan por `layer_priority` descendente y desempates canónicos, nunca por orden incidental. Un stop rechaza `Puncture` y puede transferir una única consecuencia `Blunt`; una penetración genera como máximo una consecuencia médica residual. M39 continúa siendo la única autoridad de wounds, bleeding, pain, vitalidad y muerte.
+
+Toda munición de proyectil declara `penetration_power > 0`. No existen ramas `IsAP`, `CanPenetrate`, FMJ/AP/HP ni otra taxonomía binaria: futuras familias diferirán por datos y atravesarán el mismo resolver.
+
+World geometry sin `penetration_profile_id` permanece opaca. Las superficies explícitamente penetrables continúan el ray con presupuesto residual, epsilon `0.001`, deduplicación de collider/owner y límite de cuatro superficies. Melee reutiliza impact resistance sólo contra el receptor impactado; no atraviesa paredes.
+
+M40.1 agrega cero estado durable: profiles son Definitions; Equipment, `ItemInstance`, `Condition` e identidad ya realizan round-trip. No existen `armorState` ni `penetrationState`, y schema/envelope V1 permanecen en versión 1. `EffectiveResistance(ItemInstance, baseResistance)` es el seam reservado para M43; M40.1 no lee ni muta Condition.
 
 ## Trabajo Congelado O Diferido
 

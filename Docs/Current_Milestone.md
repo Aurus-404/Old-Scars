@@ -4,46 +4,42 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ## Estado Actual
 
-### M40.0 — Combat Resolution & Weapons V1
+### M40.1 — Armor & Penetration V1
 
 Estado actual:
 
-`DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`
+`IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`
 
-Validation — `AUTOMATED + MANUAL FRESH-SESSION PASSED`
+`Combat Ready — PENDING MANUAL M40.1 CLOSEOUT`.
 
-Functional Pass 1 gradúa el prototipo M29 a un único adaptador de input de combate, resuelve melee/firearms mediante servicios data-driven y traduce impactos deterministas a heridas M39. El estado cargado vive en cada `ItemInstance`; reload consume ammo compatible desde ownership real; M38/M39 conservan autoridad sobre reserva vital, Dead/corpse, wounds, bleeding y pain. `Persistence Ready` continúa `APPROVED`.
+M40.0 permanece `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`. M40.1 agrega cobertura regional equipped-only, penetración determinista común para wearable armor y world surfaces, trauma residual y un dispatch explícito de consecuencias; M39/M38 conservan autoridad sobre wounds, bleeding, pain, vitalidad, muerte y corpse. `Persistence Ready` continúa `APPROVED`.
 
-## Evidencia De Validación
+## Evidencia Automatizada
 
-- Runtime/Editor compilation, Global Content ID, M36.1, M37.0, ambos M37.1, M38.0, M38.1, M39.0, Player Controls & Health Window e Inventory Interaction UX: `PASS`.
-- `M40.0 Combat Resolution & Weapons Diagnostics: PASS` en dos Play sessions: seis regiones, melee/range, dry-fire, reload parcial/completo/cancelado, fire/miss/cycle, bleeding-to-Dead, drop/pickup, equipment, fresh-session round-trip, legacy V1, preflight, rollback y near-cover Correction Pass 1.
-- Fault post-firearm-state: `ApplyFailed` esperado, `RollbackAttempted: True`, `RollbackSucceeded: True`; pre-state y post-rollback canónicamente equivalentes.
-- `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`.
-- Cero warnings nuevos atribuibles a M40.0; permanecen los seis warnings C# preexistentes documentados.
-- Mauro confirmó manualmente Lee-Enfield equipable, F/LMB/R, unloaded, reload completo/parcial, capacity 10, consumo exacto, bolt cycle, heridas regionales `Puncture`, world blocking y continuidad Dead/corpse.
-- Near-cover Correction Pass 1 pasó: una pared inmediata bloqueó el impacto y evitó la wound del actor detrás; con línea limpia el actor volvió a recibir impacto.
-- Crowbar pasó equip, melee temporizado, heridas `Blunt`, regiones reales, out-of-range, geometría interpuesta y cancelación por WASD sin ruta médica paralela.
-- Drop/pickup preservó `Loaded 8/10` y `InstanceId: item_c0f66d58249e4892aa4632028975816e`. Save, salida de Play, fresh Play y Load restauraron el rifle equipado en `Loaded 8/10` con `Phase: Complete`, `FailureCode: Success` y `Result: Success`.
-- No hubo errores nuevos atribuibles a M40. Los warnings legacy `core:*` permanecen como deuda aceptada y no bloqueante.
+- Runtime/Editor compile, Global Content ID Namespace Foundation, M36.1 Foundation Identity, M38.0 lifecycle, M39.0 Health/Medicine y M40.0 Combat Resolution & Weapons: `PASS`.
+- `M40.1 Armor & Penetration Diagnostics: PASS` en dos Play sessions: contratos A–W, seis regiones, Equipment authority, stopped con/sin trauma, exact threshold, residual penetration, melee, death/corpse, save/load exacto, legacy V1, invalid data sin mutación y regresiones M40.
+- World coverage: thin penetrable cover + actor, resistant cover, dos superficies sucesivas, budget agotado, límite de cuatro, geometría opaca y caso combinado world cover → wearable armor → actor: `PASS`.
+- La `.303` Core declara `penetration_power: 0.65`; una capa del fixture de torso (`resistance: 0.325`) produce residual `0.325` y dos instancias equipadas consumen exactamente el budget hasta `Stopped`.
+- 13 archivos C# y 1800 líneas C# agregadas, exactamente dentro del techo duro; JSON/docs/.meta no cuentan.
+- `SampleScene` unchanged, SHA-256 `25810B64A01437969F000D93EC5E0153837CD7C33EB61CD63D3F1C5D7E438335`; Packages y ProjectSettings intactos.
+- No aparecieron warnings nuevos atribuibles a M40.1; permanecen los seis warnings C# preexistentes documentados y la deuda legacy Core Content ID.
 
 ## Contrato Funcional
 
-- `CombatResolutionService` es la ruta única de impacto a `ActorMedicalStateComponent.TryApplyWound`; no aplica daño escalar paralelo.
-- `WeaponCombatService` consulta Equipment, perfiles y ownership; firearm y melee se distinguen por datos, nunca por IDs de contenido productivos.
-- Firearms conservan `ammoProfileId + loadedRounds` por `ItemInstance`; capacidad deriva del `FirearmProfile`. Reload es temporizable/cancelable, consume exactamente el faltante y revalida la misma arma equipada.
-- El adaptador conserva F/LMB/R, raycast/cycle/feedback del prototipo, mantiene WASD y respeta Inventory/Health input blocking.
-- El resolver usa bounds/impact point para `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg`; M39 y M38 continúan resolviendo bleeding, vitalidad, muerte y corpse.
+- `PenetrationResolutionService` es receiver-independent: `incomingPower <= resistance` produce `Stopped`; `incomingPower > resistance` produce `Penetrated`; residual = `max(0, incomingPower - resistance)`.
+- `ArmorProfileDefinition` declara seis regiones posibles, profile de penetración, resistencia de impacto, blunt transfer/threshold y `layer_priority`. `PenetrationProfileDefinition` declara la resistencia en una escala interna compartida, no en unidades físicas fingidas.
+- Sólo `ActorEquipmentComponent.Entries` protege; inventory, backpacks, containers y world items no lo hacen. Capas aplicables se ordenan determinísticamente.
+- World geometry es opaca salvo `penetration_profile_id` explícito. La continuación usa epsilon `0.001`, deduplicación de collider/owner y máximo cuatro superficies por attack.
+- Un stop nunca produce `Puncture` y puede producir cero heridas o una única `Blunt`; una penetración produce como máximo una única consecuencia residual. El adapter humano llama M39 sólo cuando el collider terminal realmente es un actor médico.
+- Toda `AmmoProfileDefinition` de proyectil exige `penetration_power > 0`; no existen branches `IsAP`, `CanPenetrate`, FMJ/AP/HP ni por IDs concretos.
+- Melee no atraviesa paredes y reutiliza el mismo núcleo contra impact resistance de la armor que cubre al receptor directo.
 
-## Persistence Y Compatibilidad
+## Persistence, Condition Y Compatibilidad
 
-`ItemState.firearmState` agrega el estado cargado al Current Slice schema/envelope V1. Capture cubre todos los owners mediante la tabla única de items; preflight valida definición, profile, compatibilidad y capacidad; apply/compare/rollback reutilizan la transacción M37–M39. Un save V1 anterior que omite `firearmState` deriva unloaded sin inventar munición; null presente o estado inválido se rechaza antes de mutar.
-
-## Deuda Y Fuera De Alcance
-
-Quedan fuera armor/penetration, proyectiles físicos, critical hits, spread/balance final, animación/audio final, condition/desgaste, AI combat, dual wield, attachments y UI final. El balance severity/bleeding sigue siendo deuda no bloqueante de M39.
+M40.1 agrega cero estado durable: profiles son Definitions y Equipment/`ItemInstance` ya hacen round-trip exacto. No existen `armorState` ni `penetrationState`; schema/envelope V1 siguen en versión 1 y un save anterior no inventa armor. El diagnostic confirmó misma armor/`InstanceId` equipada y protección post-load. `EffectiveResistance(ItemInstance, baseResistance)` queda como seam M43; M40.1 no lee, degrada ni muta `Condition`.
 
 ## Próximo Trabajo
 
-- M40.1 — Armor & Penetration V1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`.
-- No diseñar ni implementar M40.1 sin autorización explícita.
+- Ejecutar únicamente `M40.1 — Manual Unity Validation & Closeout` con el checklist de [Next_Sprints.md](Next_Sprints.md).
+- El menú de Play Mode `Old Scars > Diagnostics > Combat > M40.1 Prepare or Cycle Manual Armor Target` prepara y cicla los modos `StoppedTwoLayers`, `PenetratedOneLayer` y `UnarmoredInventoryOnly` sin modificar `SampleScene`.
+- No iniciar M41.0 hasta completar el recheck manual y decidir `Combat Ready`.

@@ -12,6 +12,29 @@ namespace OldScars.Core.Interactions
         private bool profileApplied;
         private bool loggedWaitingForData;
 
+        public string WorldObjectProfileId => worldObjectProfileId;
+
+        public bool TryGetPenetrationProfile(out PenetrationProfileDefinition penetrationProfile)
+        {
+            penetrationProfile = null;
+            if (!IsGameDataReady() || string.IsNullOrWhiteSpace(worldObjectProfileId))
+                return false;
+            WorldObjectProfileDefinition worldProfile =
+                GameDataManager.Instance.Database.GetWorldObjectProfile(worldObjectProfileId);
+            if (worldProfile == null || string.IsNullOrWhiteSpace(worldProfile.penetration_profile_id))
+                return false;
+            penetrationProfile = GameDataManager.Instance.Database.GetPenetrationProfile(worldProfile.penetration_profile_id);
+            return penetrationProfile != null;
+        }
+
+#if UNITY_EDITOR
+        public void DiagnosticConfigure(string profileId)
+        {
+            worldObjectProfileId = profileId;
+            profileApplied = false;
+        }
+#endif
+
         private IEnumerator Start()
         {
             if (string.IsNullOrWhiteSpace(worldObjectProfileId))

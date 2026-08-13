@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using OldScars.Core.Actions;
+using OldScars.Core.Actors;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Data.Loading;
 
@@ -59,6 +60,8 @@ namespace OldScars.Core.Data.Validation
             ValidateWeaponProfiles();
             ValidateFirearmProfiles();
             ValidateAmmoProfiles();
+            ValidatePenetrationProfiles();
+            ValidateArmorProfiles();
             ValidateItemStorageProfiles();
             ValidateItems();
             ValidateLootTables();
@@ -553,6 +556,16 @@ namespace OldScars.Core.Data.Validation
 
                 ValidateWorldObjectProfileInitialTags(worldObjectProfile.initial_tags, $"{ctx}: initial_tags");
 
+                if (!string.IsNullOrWhiteSpace(worldObjectProfile.penetration_profile_id))
+                {
+                    RequireGlobalContentId(worldObjectProfile.penetration_profile_id, "penetration_profile_id", ctx);
+                    if (database.GetPenetrationProfile(worldObjectProfile.penetration_profile_id) == null)
+                    {
+                        report.Error($"{ctx}: 'penetration_profile_id' references " +
+                                     $"'{worldObjectProfile.penetration_profile_id}' which was not loaded.");
+                    }
+                }
+
                 if (worldObjectProfile.loot_table_id != null)
                     report.Error($"{ctx}: 'loot_table_id' is not supported in World Object Profile v0.");
             }
@@ -1041,7 +1054,7 @@ namespace OldScars.Core.Data.Validation
                 if (item.consumable != null)
                     ValidateItemConsumable(item, ctx);
 
-                ValidateItemFirearmAndAmmoProfiles(item, ctx);
+                ValidateItemProfileReferences(item, ctx);
             }
         }
 
@@ -1118,13 +1131,17 @@ namespace OldScars.Core.Data.Validation
             }
         }
 
-        private void ValidateItemFirearmAndAmmoProfiles(ItemDefinition item, string ctx)
+        private void ValidateItemProfileReferences(ItemDefinition item, string ctx)
         {
             bool hasFirearmProfile = !string.IsNullOrWhiteSpace(item.firearm_profile_id);
             bool hasAmmoProfile = !string.IsNullOrWhiteSpace(item.ammo_profile_id);
+            bool hasArmorProfile = !string.IsNullOrWhiteSpace(item.armor_profile_id);
 
             if (hasFirearmProfile && hasAmmoProfile)
                 report.Error($"{ctx}: an item cannot reference both 'firearm_profile_id' and 'ammo_profile_id'.");
+
+            if (hasArmorProfile && (hasFirearmProfile || hasAmmoProfile))
+                report.Error($"{ctx}: an armor item cannot also reference a firearm or ammo profile in M40.1.");
 
             if (hasFirearmProfile)
             {
@@ -1149,6 +1166,20 @@ namespace OldScars.Core.Data.Validation
 
                 if (IsItemEquipEnabled(item))
                     report.Error($"{ctx}: ammo items must not be equipable in Milestone 29.");
+            }
+
+            if (hasArmorProfile)
+            {
+                RequireGlobalContentId(item.armor_profile_id, "armor_profile_id", ctx);
+
+                if (database.GetArmorProfile(item.armor_profile_id) == null)
+                    report.Error($"{ctx}: 'armor_profile_id' references '{item.armor_profile_id}' which was not loaded.");
+
+                if (!IsItemEquipEnabled(item))
+                    report.Error($"{ctx}: items with 'armor_profile_id' must be equipable.");
+
+                if (item.max_stack != 1)
+                    report.Error($"{ctx}: armor items must declare 'max_stack' exactly 1.");
             }
         }
 
@@ -1483,11 +1514,99 @@ namespace OldScars.Core.Data.Validation
                 ValidateMedicalImpact(profile.wound_type, profile.wound_severity,
                     profile.bleeding_rate_per_game_hour, profile.pain_contribution, ctx);
 
+                if (float.IsNaN(profile.penetration_power) || float.IsInfinity(profile.penetration_power) ||
+                    profile.penetration_power <= 0f)
+                {
+                    report.Error($"{ctx}: projectile 'penetration_power' must be finite and > 0 (got {profile.penetration_power}).");
+                }
+
                 ValidateTagList(profile.tags, $"{ctx}: tags");
                 if (profile.tags == null || !ContainsValue(profile.tags, profile.caliber_tag))
                     report.Error($"{ctx}: 'tags' must contain caliber_tag '{SafeId(profile.caliber_tag)}'.");
             }
         }
+
+        private void ValidateArmorProfiles()
+        {
+            foreach (ArmorProfileDefinition profile in database.GetAllArmorProfiles())
+            {
+                string ctx = $"ArmorProfile '{SafeId(profile != null ? profile.id : null)}'";
+                if (profile == null)
+                {
+                    report.Error("ArmorProfile: null definition loaded.");
+                    continue;
+                }
+
+                RequireType(profile.type, "armor_profile", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
+                if (string.IsNullOrWhiteSpace(profile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+
+                if (profile.covered_regions == null || profile.covered_regions.Length == 0)
+                {
+                    report.Error($"{ctx}: 'covered_regions' is required and must not be empty.");
+                }
+                else
+                {
+                    var seen = new HashSet<string>(StringComparer.Ordinal);
+                    for (int index = 0; index < profile.covered_regions.Length; index++)
+                    {
+                        string region = profile.covered_regions[index];
+                        if (!Enum.TryParse(region, false, out BodyRegion parsed) ||
+                            !Enum.IsDefined(typeof(BodyRegion), parsed) ||
+                            !string.Equals(region, parsed.ToString(), StringComparison.Ordinal))
+                        {
+                            report.Error($"{ctx}: covered_regions[{index}] '{SafeId(region)}' is not a canonical BodyRegion.");
+                        }
+                        else if (!seen.Add(region))
+                        {
+                            report.Error($"{ctx}: duplicate covered region '{region}'.");
+                        }
+                    }
+                }
+
+                RequireGlobalContentId(profile.penetration_profile_id, "penetration_profile_id", ctx);
+                if (!string.IsNullOrWhiteSpace(profile.penetration_profile_id) &&
+                    database.GetPenetrationProfile(profile.penetration_profile_id) == null)
+                {
+                    report.Error($"{ctx}: 'penetration_profile_id' references '{profile.penetration_profile_id}' which was not loaded.");
+                }
+                if (!FiniteNonNegative(profile.impact_resistance))
+                    report.Error($"{ctx}: 'impact_resistance' must be finite and >= 0 (got {profile.impact_resistance}).");
+                if (!FiniteUnit(profile.stopped_blunt_transfer))
+                    report.Error($"{ctx}: 'stopped_blunt_transfer' must be finite and in [0, 1] (got {profile.stopped_blunt_transfer}).");
+                if (!FiniteUnit(profile.blunt_wound_threshold))
+                    report.Error($"{ctx}: 'blunt_wound_threshold' must be finite and in [0, 1] (got {profile.blunt_wound_threshold}).");
+                if (profile.layer_priority < 0)
+                    report.Error($"{ctx}: 'layer_priority' must be >= 0 (got {profile.layer_priority}).");
+            }
+        }
+
+        private void ValidatePenetrationProfiles()
+        {
+            foreach (PenetrationProfileDefinition profile in database.GetAllPenetrationProfiles())
+            {
+                string ctx = $"PenetrationProfile '{SafeId(profile != null ? profile.id : null)}'";
+                if (profile == null)
+                {
+                    report.Error("PenetrationProfile: null definition loaded.");
+                    continue;
+                }
+
+                RequireType(profile.type, "penetration_profile", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
+                if (string.IsNullOrWhiteSpace(profile.display_name))
+                    report.Error($"{ctx}: 'display_name' is required.");
+                if (!FiniteNonNegative(profile.resistance))
+                    report.Error($"{ctx}: 'resistance' must be finite and >= 0 (got {profile.resistance}).");
+            }
+        }
+
+        private static bool FiniteNonNegative(float value) =>
+            !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f;
+
+        private static bool FiniteUnit(float value) =>
+            !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f && value <= 1f;
 
         private void ValidateMedicalImpact(
             string woundType,

@@ -26,6 +26,8 @@ namespace OldScars.Core.Data
         private readonly Dictionary<string, WeaponProfileDefinition> _weaponProfiles = new Dictionary<string, WeaponProfileDefinition>();
         private readonly Dictionary<string, FirearmProfileDefinition> _firearmProfiles = new Dictionary<string, FirearmProfileDefinition>();
         private readonly Dictionary<string, AmmoProfileDefinition> _ammoProfiles = new Dictionary<string, AmmoProfileDefinition>();
+        private readonly Dictionary<string, ArmorProfileDefinition> _armorProfiles = new Dictionary<string, ArmorProfileDefinition>();
+        private readonly Dictionary<string, PenetrationProfileDefinition> _penetrationProfiles = new Dictionary<string, PenetrationProfileDefinition>();
         private readonly Dictionary<string, ActionDefinition> _actions = new Dictionary<string, ActionDefinition>();
         private readonly Dictionary<string, LootTableDefinition> _lootTables = new Dictionary<string, LootTableDefinition>();
         private readonly Dictionary<string, ActorProfileDefinition> _actorProfiles = new Dictionary<string, ActorProfileDefinition>();
@@ -45,6 +47,8 @@ namespace OldScars.Core.Data
         public int WeaponProfileCount => _weaponProfiles.Count;
         public int FirearmProfileCount => _firearmProfiles.Count;
         public int AmmoProfileCount => _ammoProfiles.Count;
+        public int ArmorProfileCount => _armorProfiles.Count;
+        public int PenetrationProfileCount => _penetrationProfiles.Count;
         public int ActionCount => _actions.Count;
         public int LootTableCount => _lootTables.Count;
         public int ActorProfileCount => _actorProfiles.Count;
@@ -95,6 +99,16 @@ namespace OldScars.Core.Data
         public void RegisterAmmoProfile(AmmoProfileDefinition definition, DataLoadReport report)
         {
             Register(_ammoProfiles, definition != null ? definition.id : null, definition, "AmmoProfile", report);
+        }
+
+        public void RegisterArmorProfile(ArmorProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_armorProfiles, definition != null ? definition.id : null, definition, "ArmorProfile", report);
+        }
+
+        public void RegisterPenetrationProfile(PenetrationProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_penetrationProfiles, definition != null ? definition.id : null, definition, "PenetrationProfile", report);
         }
 
         public void RegisterAction(ActionDefinition definition, DataLoadReport report)
@@ -234,6 +248,16 @@ namespace OldScars.Core.Data
         public AmmoProfileDefinition GetAmmoProfile(string id)
         {
             return LookupContent(_ammoProfiles, id, "AmmoProfile");
+        }
+
+        public ArmorProfileDefinition GetArmorProfile(string id)
+        {
+            return LookupContent(_armorProfiles, id, "ArmorProfile");
+        }
+
+        public PenetrationProfileDefinition GetPenetrationProfile(string id)
+        {
+            return LookupContent(_penetrationProfiles, id, "PenetrationProfile");
         }
 
         public ActionDefinition GetAction(string id)
@@ -399,6 +423,16 @@ namespace OldScars.Core.Data
             return _ammoProfiles.Values;
         }
 
+        public IEnumerable<ArmorProfileDefinition> GetAllArmorProfiles()
+        {
+            return _armorProfiles.Values;
+        }
+
+        public IEnumerable<PenetrationProfileDefinition> GetAllPenetrationProfiles()
+        {
+            return _penetrationProfiles.Values;
+        }
+
         public IEnumerable<ActionDefinition> GetAllActions()
         {
             return _actions.Values;
@@ -454,6 +488,8 @@ namespace OldScars.Core.Data
                       $"\n  WeaponProfiles:  {_weaponProfiles.Count}" +
                       $"\n  FirearmProfiles: {_firearmProfiles.Count}" +
                       $"\n  AmmoProfiles:    {_ammoProfiles.Count}" +
+                      $"\n  ArmorProfiles:   {_armorProfiles.Count}" +
+                      $"\n  PenetrationProfiles: {_penetrationProfiles.Count}" +
                       $"\n  Actions:         {_actions.Count}" +
                       $"\n  LootTables:      {_lootTables.Count}" +
                       $"\n  ActorProfiles:   {_actorProfiles.Count}" +

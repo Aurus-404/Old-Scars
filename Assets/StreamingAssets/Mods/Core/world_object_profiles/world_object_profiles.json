@@ -11,6 +11,20 @@
       "id": "core:debug_closed_door_01",
       "display_name": "Debug Closed Door",
       "initial_tags": ["closed_door", "inspectable"]
+    },
+    {
+      "type": "world_object_profile",
+      "id": "core:debug_thin_penetrable_cover_01",
+      "display_name": "Debug Thin Penetrable Cover",
+      "initial_tags": ["inspectable"],
+      "penetration_profile_id": "core:debug_thin_cover_01"
+    },
+    {
+      "type": "world_object_profile",
+      "id": "core:debug_resistant_penetrable_cover_01",
+      "display_name": "Debug Resistant Penetrable Cover",
+      "initial_tags": ["inspectable"],
+      "penetration_profile_id": "core:debug_resistant_cover_01"
     }
   ]
 }

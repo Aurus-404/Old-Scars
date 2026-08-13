@@ -15,6 +15,9 @@ namespace OldScars.Core.Data.Definitions
         public float wound_severity;
         public float bleeding_rate_per_game_hour;
         public float pain_contribution;
+        // Shared physical penetration budget. Projectile families differ by
+        // data values, never by AP/HP/FMJ branches in combat code.
+        public float penetration_power = float.NaN;
         public string[] tags;
     }
 }

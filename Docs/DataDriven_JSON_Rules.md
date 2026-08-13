@@ -32,7 +32,7 @@ No todos los campos terminados en `_id` pertenecen al mismo dominio. La clasific
 
 `ContentId` es el único contrato sintáctico para Global Content IDs. No hace trim, lowercase ni reemplazo silencioso: espacios, mayúsculas, guiones, separador ausente o separadores múltiples son errores claros.
 
-Usan Global Content ID todas las familias registradas en `GameDatabase`: items, item storage profiles, equipment slots/layouts, weapon/firearm/ammo profiles, actions, loot tables, actor/world object profiles, visual rig capabilities/profiles, visual assets, item visual profiles y attachment poses. Sus referencias entre Definitions usan la misma forma canónica.
+Usan Global Content ID todas las familias registradas en `GameDatabase`: items, item storage profiles, equipment slots/layouts, weapon/firearm/ammo/armor/penetration profiles, actions, loot tables, actor/world object profiles, visual rig capabilities/profiles, visual assets, item visual profiles y attachment poses. Sus referencias entre Definitions usan la misma forma canónica.
 
 La unicidad es por tipo/registry. `core:test_item` y `test_namespace:test_item` pueden coexistir en el registry de items; `test_item` y `core:test_item` no pueden registrarse como dos aliases de Core.
 
@@ -229,6 +229,7 @@ Reglas:
 - `initial_tags` es obligatorio, no vacio, sin duplicados y solo puede usar tags registrados.
 - El profile define configuracion inicial reutilizable; no guarda estado runtime.
 - La escena referencia el profile ID mediante `WorldObjectProfileComponent`.
+- `penetration_profile_id` es opcional y referencia un `PenetrationProfileDefinition`; si falta, la geometría es opaca y bloquea el ray M40.
 - Los objetos no leen JSON directamente; la carga pasa por `GameDataLoader` y `GameDatabase`.
 - `GameDataLoader` carga `world_object_profiles/*.json`; el perfil Core actual vive en `world_object_profiles/world_object_profiles.json`.
 - No soportar `loot_table_id`, storage, contenedores ni estado runtime dentro del profile v0.
@@ -260,6 +261,7 @@ Los items equipables usan alternativas completas mediante `slot_sets`:
 - Cada array interno es un set atomico completo; todos sus slots deben existir y no repetirse.
 - Un item de dos manos declara `["core:hand_left", "core:hand_right"]`; no crea un socket `both_hands`.
 - Todo item equipable usa `max_stack = 1` y no puede declarar `slot_sets` vacio.
+- `armor_profile_id` es opcional y referencia un `ArmorProfileDefinition`; sólo un item equipable, no stackeable y no combinado con firearm/ammo puede declararlo.
 - `slot_sets` no puede coexistir con `allowed_slots`/`occupied_slots` legacy.
 - El schema `allowed_slots`/`occupied_slots` sigue siendo legacy. Durante la transición Core, la referencia histórica `right_hand` se mapea a `core:hand_right`; un mod externo no obtiene namespace implícito y no se crea una segunda autoridad runtime.
 - Equipment runtime guarda una sola entry en un storage lineal y los slots solo referencian su `InstanceId`.
@@ -441,10 +443,43 @@ Ejemplo de apertura posterior de storage:
 - Cada referencia debe ser un Global Content ID canónico, existir en `ammo_profiles/*.json` y no repetirse.
 - La cadena vigente es item con `firearm_profile_id` → firearm profile → `accepted_ammo_profile_ids` → item de municion con `ammo_profile_id`.
 - `magazine_capacity` debe ser mayor que cero; `reload_duration`, `cycle_time`, `range`, `muzzle_offset` y `debug_accuracy_spread` son valores finitos validados del profile.
-- `AmmoProfileDefinition` declara impacto médico determinista mediante `wound_type`, `wound_severity`, `bleeding_rate_per_game_hour` y `pain_contribution`. El runtime lo traduce a M39; no declara scripts ni daño directo a HP.
+- `AmmoProfileDefinition` declara impacto médico determinista mediante `wound_type`, `wound_severity`, `bleeding_rate_per_game_hour` y `pain_contribution`, más `penetration_power` finito y estrictamente mayor que cero para el proyectil. El runtime lo traduce a M39/M40.1; no declara scripts ni daño directo a HP.
+- No existen flags `IsAP`, `CanPenetrate` ni branches por FMJ/AP/HP/tracer/anti-materiel. Toda munición usa el mismo resolver: futuras AP tenderán a mayor `penetration_power` y menor efecto blando, HP al caso inverso y FMJ a un baseline intermedio, siempre como datos y no como clases lógicas.
 - `WeaponProfileDefinition` reutiliza el mismo contrato médico para melee y agrega `melee_range`, `attack_duration` y `attack_cooldown`.
 - El estado cargado no vive en JSON de definitions: cada `ItemInstance` firearm mantiene ammo profile y rounds en runtime/save; capacity siempre deriva del profile.
 - No usar un campo directo `accepted_ammo` en items o acciones; no es el contrato vigente y no reemplaza `accepted_ammo_profile_ids`.
+
+## Armor Y Penetration Profiles M40.1
+
+`penetration_profiles/*.json` declara capas comparables en una escala interna compartida:
+
+```json
+{
+  "penetration_profiles": [
+    {
+      "type": "penetration_profile",
+      "id": "example_mod:light_plate",
+      "display_name": "Light Plate",
+      "resistance": 0.325
+    }
+  ]
+}
+```
+
+- `type`, Global Content ID canónico, `display_name` y `resistance` son obligatorios.
+- `resistance` debe ser finita y `>= 0`; es una magnitud relativa compartida, no mm RHA, joules ni espesor físico.
+- El mismo profile puede ser referenciado por wearable armor o por un world object penetrable. C# aplica siempre `power <= resistance → Stopped`, `power > resistance → Penetrated` y resta la resistencia al budget cuando penetra.
+
+`armor_profiles/*.json` declara la adaptación wearable:
+
+- `type: "armor_profile"`, Global Content ID y `display_name` obligatorios;
+- `covered_regions` no vacío, sin duplicados y limitado a `Head`, `Torso`, `LeftArm`, `RightArm`, `LeftLeg`, `RightLeg`;
+- `penetration_profile_id` canónico y existente;
+- `impact_resistance` finita y `>= 0` para melee directo;
+- `stopped_blunt_transfer` y `blunt_wound_threshold` finitos dentro de `[0,1]`;
+- `layer_priority >= 0`, con desempates canónicos en runtime; el orden del JSON o de componentes no decide el resultado.
+
+Un mod agrega item → `armor_profile_id` → regions/resistance/trauma sin C# nuevo. Sólo Equipment real protege; estas Definitions no guardan owner, slots ocupados, `Condition`, wounds ni outcome. M40.1 no agrega estado de save ni mutable durability.
 
 ## Fuera Del Contrato JSON Actual
 
@@ -454,7 +489,6 @@ Los siguientes campos o dominios requieren un milestone que defina schema, valid
 - sound
 - creates_noise
 - noise_level
-- protection_profile
 - loot avanzado
 - rarezas
 - loot con pesos o chances

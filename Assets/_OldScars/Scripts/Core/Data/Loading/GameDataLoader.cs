@@ -22,6 +22,8 @@ namespace OldScars.Core.Data.Loading
     /// - world_object_profiles
     /// - firearm_profiles
     /// - ammo_profiles
+    /// - armor_profiles
+    /// - penetration_profiles
     /// - visual_capabilities / visual_rig_profiles
     /// - visual_assets / item_visual_profiles / attachment_poses
     ///
@@ -129,6 +131,8 @@ namespace OldScars.Core.Data.Loading
             LoadWeaponProfilesFrom(Path.Combine(modDirectory, "profiles"), context);
             LoadFirearmProfilesFrom(Path.Combine(modDirectory, "firearm_profiles"), context);
             LoadAmmoProfilesFrom(Path.Combine(modDirectory, "ammo_profiles"), context);
+            LoadPenetrationProfilesFrom(Path.Combine(modDirectory, "penetration_profiles"), context);
+            LoadArmorProfilesFrom(Path.Combine(modDirectory, "armor_profiles"), context);
             LoadActionsFrom(Path.Combine(modDirectory, "actions"), context);
             LoadItemsFrom(Path.Combine(modDirectory, "items"), context);
             LoadItemStorageProfilesFrom(Path.Combine(modDirectory, "item_storage_profiles"), context);
@@ -216,6 +220,44 @@ namespace OldScars.Core.Data.Loading
                         Database.RegisterAmmoProfile(profile, report);
 
                 Debug.Log($"[GameDataLoader] AmmoProfiles: {wrapper.ammo_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadArmorProfilesFrom(string directory, ContentLoadContext context)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                ArmorProfilesWrapper wrapper = Parse<ArmorProfilesWrapper>(file);
+                if (wrapper == null || wrapper.armor_profiles == null)
+                {
+                    report.Warning($"No 'armor_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (ArmorProfileDefinition profile in wrapper.armor_profiles)
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterArmorProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] ArmorProfiles: {wrapper.armor_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
+        private void LoadPenetrationProfilesFrom(string directory, ContentLoadContext context)
+        {
+            foreach (string file in JsonFilesIn(directory))
+            {
+                PenetrationProfilesWrapper wrapper = Parse<PenetrationProfilesWrapper>(file);
+                if (wrapper == null || wrapper.penetration_profiles == null)
+                {
+                    report.Warning($"No 'penetration_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (PenetrationProfileDefinition profile in wrapper.penetration_profiles)
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterPenetrationProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] PenetrationProfiles: {wrapper.penetration_profiles.Length} entries from {FileName(file)}");
             }
         }
 
@@ -501,6 +543,8 @@ namespace OldScars.Core.Data.Loading
         [Serializable] private sealed class WeaponProfilesWrapper { public WeaponProfileDefinition[] weapon_profiles; }
         [Serializable] private sealed class FirearmProfilesWrapper { public FirearmProfileDefinition[] firearm_profiles; }
         [Serializable] private sealed class AmmoProfilesWrapper { public AmmoProfileDefinition[] ammo_profiles; }
+        [Serializable] private sealed class ArmorProfilesWrapper { public ArmorProfileDefinition[] armor_profiles; }
+        [Serializable] private sealed class PenetrationProfilesWrapper { public PenetrationProfileDefinition[] penetration_profiles; }
         [Serializable] private sealed class ActionsWrapper { public ActionDefinition[] actions; }
         [Serializable] private sealed class ItemsWrapper { public ItemDefinition[] items; }
         [Serializable] private sealed class ItemStorageProfilesWrapper { public ItemStorageProfileDefinition[] item_storage_profiles; }

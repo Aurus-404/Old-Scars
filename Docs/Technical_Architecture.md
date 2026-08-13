@@ -18,7 +18,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 - `ContentId` es el contrato sintáctico único para una Definition registrada globalmente. La forma canónica es `namespace:local_id`; cada segmento admite sólo letras ASCII minúsculas, dígitos y `_`. No se corrigen case, guiones ni whitespace silenciosamente.
 - `DefinitionContentIdNormalizer` se ejecuta después de deserializar y antes de registrar. Canonicaliza tanto `definition.id` como cada referencia que apunta a un registry global; una referencia cross-namespace explícita se conserva.
-- Las familias globales actuales son `ItemDefinition`, `ItemStorageProfileDefinition`, `EquipmentSlotDefinition`, `EquipmentLayoutDefinition`, `WeaponProfileDefinition`, `FirearmProfileDefinition`, `AmmoProfileDefinition`, `ActionDefinition`, `LootTableDefinition`, `ActorProfileDefinition`, `WorldObjectProfileDefinition`, `VisualRigCapabilityDefinition`, `VisualRigProfileDefinition`, `VisualAssetDefinition`, `ItemVisualProfileDefinition` y `AttachmentPoseDefinition`.
+- Las familias globales actuales son `ItemDefinition`, `ItemStorageProfileDefinition`, `EquipmentSlotDefinition`, `EquipmentLayoutDefinition`, `WeaponProfileDefinition`, `FirearmProfileDefinition`, `AmmoProfileDefinition`, `ArmorProfileDefinition`, `PenetrationProfileDefinition`, `ActionDefinition`, `LootTableDefinition`, `ActorProfileDefinition`, `WorldObjectProfileDefinition`, `VisualRigCapabilityDefinition`, `VisualRigProfileDefinition`, `VisualAssetDefinition`, `ItemVisualProfileDefinition` y `AttachmentPoseDefinition`.
 - La unicidad sigue perteneciendo a cada registry tipado. Reutilizar el mismo texto en otra familia no crea identidad compartida; dentro de un registry, `legacy_id` y `core:legacy_id` nunca se almacenan como dos keys.
 - IDs miembros de un contrato permanecen locales: grupos de layout, parts/sockets de un rig, `socket_role`, `family_id`, pose `socket_id`, contexts, stat keys y tokens cerrados como effect `type`. No se convierten por tener sufijo `_id`.
 - Equipment slots como `core:hand_right` y capabilities como `core:mount_storage` sí son Global Content IDs porque viven en registries propios. El role visual `hand_right` sigue siendo un Local ID; ambos dominios no son intercambiables.
@@ -76,7 +76,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 - `ActorMedicalStateComponent` es la autoridad runtime de heridas localizadas. El dominio humano V1 es el enum técnico cerrado `Head`, `Torso`, `LeftArm`, `RightArm`, `LeftLeg`, `RightLeg`; no se fuerza a Global Content IDs ni se modelan huesos u órganos.
 - Cada `ActorMedicalWoundState` conserva `wound_<32 hex lowercase>`, región y tipo canónicos, severidad finita en `(0,1]`, bleeding por game hour, pain en `[0,1]` y `Unbandaged/Bandaged` con multiplicador. IDs se exigen únicos por actor y los strings enum deben ser exactamente canónicos.
-- `Laceration`, `Puncture` y `Blunt` usan reglas simples y deterministas para defaults de bleeding/pain. M40 podrá llamar `ApplyWound`; M39 no resuelve armas, impactos, armor ni RNG clínico.
+- `Laceration`, `Puncture` y `Blunt` usan reglas simples y deterministas para defaults de bleeding/pain. M40/M40.1 entregan como máximo una consecuencia al adapter médico; M39 no resuelve armas, impactos, armor, surfaces ni RNG clínico.
 - El componente escucha `WorldClock.GameTimeAdvanced` y aplica el delta completo una sola vez, incluido Rest/Sleep. La tasa efectiva agregada reduce `ActorHealthComponent.CurrentHealth`; ese scalar es la reserva vital/bridge legacy y sigue siendo la única autoridad de Alive/Dead, tags y corpse. No existe una segunda reserva ni lifecycle.
 - Dead ignora progreso médico. Pain es la suma acotada derivada de las heridas persistidas; no aplica todavía penalizaciones, analgésicos, tolerancia o inconsciencia.
 - `ItemConsumable.wound_treatment` declara `type: bandage` y `bleeding_multiplier` finito en `[0,1)`. `InventoryItemUseService` busca una entry realmente poseída/consumible, valida la herida, aplica treatment y elimina exactamente x1 mediante el backend existente; un fallo de consumo restaura heridas y revision. La venda Core y un mod externo atraviesan el mismo contrato. Treatment no llama `Heal`, no borra la herida y no se combina con restore effects en V1.
@@ -128,20 +128,33 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `M38.1 Needs, World Clock & Recovery Diagnostics` usa dos Play sessions: valida clock/derivación, needs sin double tick, food/water real, rest/sleep, Dead, save/load fresh-session, payload legacy sin clock, preflight inválido sin mutación y fault post-clock/needs con rollback equivalente. Sale sin guardar `SampleScene` ni dejar saves temporales.
 - `M39.0 Localized Health & Medicine Diagnostics` usa dos Play sessions: cubre seis regiones, heridas deterministas, bleeding/rest sin double tick, pain, consumo x1, aislamiento, runtime actor Dead/corpse, UI H, round-trip exacto, legacy sin medical state, null/enums/severity inválidos sin mutación y fault post-medical-state con rollback equivalente.
 - `M40.0 Combat Resolution & Weapons Diagnostics` usa dos Play sessions: cubre seis regiones, melee/range, reload parcial/completo/cancelado, dry-fire, fire/miss/cycle, Dead/corpse, identidad drop/pickup, Equipment, round-trip exacto, legacy unloaded, preflight estricto y fault post-firearm-state con rollback equivalente.
+- `M40.1 Armor & Penetration Diagnostics` usa dos Play sessions: cubre Equipment authority, seis regiones, stopped con/sin trauma, exact threshold, penetrated residual, capas deterministas, melee, death/corpse, world cover penetrable/resistente/secuencial/acotada, clear/opaque regression, combinación world → wearable → actor, round-trip exacto, legacy V1 e invalid data sin mutación.
 
 ## Combat Resolution Y Weapons V1
 
 - `FirearmDebugController` conserva su MonoBehaviour/GUID M29 y es el único adaptador de input del player: F alterna combate, LMB ataca y R inicia reload. No posee ammo suelta ni aplica HP; delega en servicios, conserva WASD y consulta el blocker UI.
 - `WeaponCombatService` toma la misma instancia equipada desde `ActorEquipmentComponent`. Firearms se resuelven por `ItemDefinition.firearm_profile_id`; melee por `ItemDefinition.combat.weapon_profile`. No existe branching productivo por Lee-Enfield, `.303` o crowbar.
-- `CombatResolutionService` recibe attacker, weapon, attack kind, collider/impact y parámetros médicos; deriva una de seis regiones desde bounds y punto real y llama exclusivamente `ActorMedicalStateComponent.TryApplyWound`.
+- `CombatResolutionService` expone el dispatch terminal de consecuencias. El adapter humano actual deriva una de seis regiones desde bounds/punto real, resuelve armor equipada y llama exclusivamente M39; un collider no médico queda `InvalidTarget` sin forzar al núcleo de penetración a conocer actores.
 - Cada firearm `ItemInstance` posee estado mutable `LoadedAmmoProfileId + LoadedRounds`; capacity deriva del `FirearmProfileDefinition`. La misma referencia y `InstanceId` atraviesan Equipment, drop/pickup y ownership transfers.
 - Reload busca ammo compatible dentro del árbol real de ownership, consume exactamente el faltante y restaura el estado de arma si el backend rechaza el commit. `DebugActionProgressController` aporta la operación temporizada/cancelable; cancelar no muta ammo ni firearm.
 - Current Slice persiste el estado dentro de `ItemState.firearmState`, lo valida antes de mutar y lo restaura dentro de la misma transacción M37–M39. Omisión legacy V1 normaliza a unloaded; null presente, incompatibilidad o rounds fuera de capacidad fallan preflight. El fault post-firearm-state prueba rollback canónico.
 
+## Armor & Penetration V1
+
+- `PenetrationResolutionService` es puro respecto del receptor: recibe `incomingPower` y `PenetrationLayer[]`, ordena por prioridad descendente y desempates canónicos, aplica `power <= resistance → Stopped` o `power > resistance → Penetrated`, y devuelve `residual = max(0, power - resistance)`. La escala es interna y relativa; no representa mm RHA ni energía física.
+- Wearable armor y world surfaces son adapters del mismo núcleo. Armor se descubre únicamente desde `ActorEquipmentComponent.Entries`; cada `ArmorProfileDefinition` cubre regiones M39 declaradas y referencia un `PenetrationProfileDefinition`. Inventory, item-owned storage, containers y world items no protegen.
+- `WorldObjectProfileDefinition.penetration_profile_id` es opt-in. Su ausencia conserva geometría opaca y near-cover M40. Una surface penetrada continúa desde el hit con epsilon `0.001`, budget residual, deduplicación de collider/owner y máximo cuatro surfaces; no existe projectile simulation.
+- El ray físico resuelve primero world layers. Si termina en un actor, el residual entra al adapter wearable y finalmente produce cero o una consecuencia M39. Un stop prohíbe `Puncture` y puede transferir una única `Blunt`; una penetración preserva el tipo base y escala la única wound por residual/original.
+- El dispatch de consecuencias está separado del resolver común. Sólo existe `ActorMedicalCombatReceiver`; futuros adapters de machines/vehicles pueden incorporarse sin modificar comparación, residual o trayectoria. M40.1 no implementa esos receptores.
+- Todo `AmmoProfileDefinition` de proyectil exige `penetration_power` finito y `> 0`. No hay branches `IsAP`, `CanPenetrate`, FMJ/AP/HP/tracer/anti-materiel ni por IDs; futuras variantes cambian datos y atraviesan el mismo servicio.
+- Melee usa el mismo resolver contra `impact_resistance` de las capas que cubren al receptor directo, pero no atraviesa world geometry.
+- `EffectiveResistance(ItemInstance, baseResistance)` devuelve actualmente la resistencia base y es el seam M43. M40.1 no lee ni muta `Condition`, no degrada armor y no implementa repair.
+- Profiles/outcomes no agregan estado durable. Equipment e identidad/Condition de `ItemInstance` ya persisten; no existen `armorState` ni `penetrationState`, y Current Slice schema/envelope V1 permanecen en versión 1.
+
 ## Persistence Ready — Current Slice Aprobado
 
 - El alcance aprobado persiste player pose, health/needs representados, `ItemInstance` identity, `DefinitionId`, `Condition`, stacks/quantities, grid placements, Inventory, Equipment, ownership, item-owned storage, containers, corpse surfaces actuales, doors, authored world items, runtime dropped world items y runtime mutable state incluido por M37.1.
-- M38.0 agrega lifecycle/pose y spawn/restore mínimo de NPCs. M38.1 y M39 agregan estado temporal/needs y estado médico sin reabrir el gate aprobado. AI, navegación, world-scale population, combat y world streaming no forman parte de `Persistence Ready`.
+- M38.0 agrega lifecycle/pose y spawn/restore mínimo de NPCs. M38.1 y M39 agregan estado temporal/needs y estado médico sin reabrir el gate aprobado. M40.1 reutiliza Equipment/ItemInstance persistidos y agrega cero estado durable. AI, navegación, world-scale population y world streaming no forman parte de `Persistence Ready`.
 
 ## Inventory, Grid, Ownership Y Equipment
 
@@ -206,7 +219,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Limites Tecnicos Del Slice
 
 - World Clock y needs/rest M38.1 están validados para el Current Slice; no existe offline progression, calendario amplio, clima, iluminación temporal, beds system ni fatigue completa.
-- M39 aporta health localizada/medicine y M40 aporta resolución melee/firearm V1; todavía no existen armadura, penetración, proyectiles físicos, condition de armas, AI combat, animación/audio final ni balance de producción.
+- M39 aporta health localizada/medicine, M40 aporta resolución melee/firearm V1 y M40.1 implementa armor regional más penetración común wearable/world con validación manual pendiente. Todavía no existen proyectiles físicos, ricochet/ángulo/thickness real, armor degradation, condition mutable de armas, receptores machine/vehicle, AI combat, animación/audio final ni balance de producción.
 - `FirearmDebugController` sigue siendo una superficie debug, pero ya no es una autoridad paralela: Equipment, `ItemInstance`, servicios de combate y M39 poseen el estado y la lógica gameplay.
 - Existe actor registry/spawn/lifecycle durable acotado a M38.0; no existen IA, navegación de NPCs, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
 - La UI es debug OnGUI y no debe expandirse como si fuera la UI final.

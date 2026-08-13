@@ -7,6 +7,7 @@ namespace OldScars.Core.Data.Definitions
         public string id;
         public string display_name;
         public string[] initial_tags;
+        public string penetration_profile_id; // optional PenetrationProfileDefinition.id; absent means opaque
         public object loot_table_id; // Unsupported schema shim for explicit validation.
     }
 }

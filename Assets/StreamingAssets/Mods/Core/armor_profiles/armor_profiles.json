@@ -1,0 +1,15 @@
+{
+  "armor_profiles": [
+    {
+      "type": "armor_profile",
+      "id": "core:debug_torso_armor_01_profile",
+      "display_name": "Debug Torso Armor",
+      "covered_regions": ["Torso"],
+      "penetration_profile_id": "core:debug_torso_armor_penetration_01",
+      "impact_resistance": 0.2,
+      "stopped_blunt_transfer": 0.35,
+      "blunt_wound_threshold": 0.2,
+      "layer_priority": 30
+    }
+  ]
+}

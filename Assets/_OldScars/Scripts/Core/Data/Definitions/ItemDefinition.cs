@@ -26,6 +26,7 @@ namespace OldScars.Core.Data.Definitions
         public string owned_storage_profile_id; // Optional ItemStorageProfileDefinition.id owned by each runtime instance.
         public string firearm_profile_id; // references FirearmProfileDefinition.id
         public string ammo_profile_id;    // references AmmoProfileDefinition.id
+        public string armor_profile_id;   // references ArmorProfileDefinition.id
     }
 
     [System.Serializable]

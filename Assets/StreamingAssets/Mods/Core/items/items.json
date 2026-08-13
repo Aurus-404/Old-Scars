@@ -229,6 +229,39 @@
     },
     {
       "type": "item",
+      "id": "core:debug_torso_armor_01",
+      "display": {
+        "name": "Protección de torso de prueba",
+        "description": "Fixture Core de protección regional para validar cobertura, penetración y trauma residual."
+      },
+      "categories": ["armor", "clothing"],
+      "tags": ["item", "metal"],
+      "max_stack": 1,
+      "physical": {
+        "weight_kg": 4.5,
+        "volume_l": 4.0,
+        "condition_max": 100
+      },
+      "economy": {
+        "base_buy_value": 60,
+        "base_sell_value": 20
+      },
+      "equip": {
+        "equippable": true,
+        "slot_sets": [
+          ["core:torso_outer"],
+          ["core:torso_middle"]
+        ]
+      },
+      "inventory": {
+        "footprint": { "width": 3, "height": 3 },
+        "initial_orientation": "original",
+        "icon_id": "debug_torso_armor_01"
+      },
+      "armor_profile_id": "core:debug_torso_armor_01_profile"
+    },
+    {
+      "type": "item",
       "id": "core:lee_enfield_rifle_01",
       "display": {
         "name": "Rifle Lee-Enfield",

@@ -109,6 +109,30 @@ namespace OldScars.Core.Data.Loading
         }
 
         internal static bool Normalize(
+            ArmorProfileDefinition definition,
+            ContentLoadContext context,
+            string sourceFile,
+            DataLoadReport report)
+        {
+            if (!ResolveDefinitionId(ref definition.id, "ArmorProfileDefinition", context, sourceFile, report))
+                return false;
+
+            bool valid = true;
+            ResolveReference(ref definition.penetration_profile_id, "ArmorProfileDefinition", definition.id,
+                "penetration_profile_id", context, sourceFile, report, ref valid);
+            return valid;
+        }
+
+        internal static bool Normalize(
+            PenetrationProfileDefinition definition,
+            ContentLoadContext context,
+            string sourceFile,
+            DataLoadReport report)
+        {
+            return ResolveDefinitionId(ref definition.id, "PenetrationProfileDefinition", context, sourceFile, report);
+        }
+
+        internal static bool Normalize(
             AttachmentPoseDefinition definition,
             ContentLoadContext context,
             string sourceFile,
@@ -186,6 +210,8 @@ namespace OldScars.Core.Data.Loading
                 "firearm_profile_id", context, sourceFile, report, ref valid);
             ResolveOptionalReference(ref definition.ammo_profile_id, "ItemDefinition", definition.id,
                 "ammo_profile_id", context, sourceFile, report, ref valid);
+            ResolveOptionalReference(ref definition.armor_profile_id, "ItemDefinition", definition.id,
+                "armor_profile_id", context, sourceFile, report, ref valid);
 
             if (definition.equip != null)
             {
@@ -330,7 +356,13 @@ namespace OldScars.Core.Data.Loading
             DataLoadReport report)
         {
             // loot_table_id is currently an unsupported object shim and remains untouched.
-            return ResolveDefinitionId(ref definition.id, "WorldObjectProfileDefinition", context, sourceFile, report);
+            if (!ResolveDefinitionId(ref definition.id, "WorldObjectProfileDefinition", context, sourceFile, report))
+                return false;
+
+            bool valid = true;
+            ResolveOptionalReference(ref definition.penetration_profile_id, "WorldObjectProfileDefinition", definition.id,
+                "penetration_profile_id", context, sourceFile, report, ref valid);
+            return valid;
         }
 
         private static bool ResolveDefinitionId(

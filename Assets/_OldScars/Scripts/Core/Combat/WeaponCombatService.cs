@@ -27,18 +27,25 @@ namespace OldScars.Core.Combat
 
     public readonly struct WeaponCombatResult
     {
-        public WeaponCombatResult(WeaponCombatCode code, string message, int quantity = 0, CombatResolutionResult combat = default)
+        public WeaponCombatResult(
+            WeaponCombatCode code,
+            string message,
+            int quantity = 0,
+            CombatResolutionResult combat = default,
+            PhysicalShotResolution physicalShot = default)
         {
             Code = code;
             Message = message;
             Quantity = quantity;
             Combat = combat;
+            PhysicalShot = physicalShot;
         }
 
         public WeaponCombatCode Code { get; }
         public string Message { get; }
         public int Quantity { get; }
         public CombatResolutionResult Combat { get; }
+        public PhysicalShotResolution PhysicalShot { get; }
         public bool Success => Code == WeaponCombatCode.Success || Code == WeaponCombatCode.Miss;
     }
 
@@ -135,7 +142,47 @@ namespace OldScars.Core.Combat
             ActorItemOwnershipComponent ownership,
             string expectedFirearmInstanceId,
             Collider hitCollider,
-            Vector3 hitPoint)
+            Vector3 hitPoint) =>
+            FireEquippedCore(ownership, expectedFirearmInstanceId, hitCollider, hitPoint, null, null);
+
+        public static WeaponCombatResult FireEquipped(
+            ActorItemOwnershipComponent ownership,
+            string expectedFirearmInstanceId,
+            PhysicalShotResolver physicalResolver) =>
+            FireEquippedCore(ownership, expectedFirearmInstanceId, null, default, null, physicalResolver);
+
+#if UNITY_EDITOR
+        public static WeaponCombatResult DiagnosticFireEquipped(
+            ActorItemOwnershipComponent ownership,
+            string expectedFirearmInstanceId,
+            Collider hitCollider,
+            Vector3 hitPoint,
+            float penetrationPower)
+        {
+            if (float.IsNaN(penetrationPower) || float.IsInfinity(penetrationPower) || penetrationPower < 0f)
+                return Fail(WeaponCombatCode.InvalidWeapon, "Diagnostic penetration power must be finite and >= 0.");
+            return FireEquippedCore(ownership, expectedFirearmInstanceId, hitCollider, hitPoint, penetrationPower, null);
+        }
+
+        public static WeaponCombatResult DiagnosticFireEquipped(
+            ActorItemOwnershipComponent ownership,
+            string expectedFirearmInstanceId,
+            float penetrationPower,
+            PhysicalShotResolver physicalResolver)
+        {
+            if (float.IsNaN(penetrationPower) || float.IsInfinity(penetrationPower) || penetrationPower < 0f)
+                return Fail(WeaponCombatCode.InvalidWeapon, "Diagnostic penetration power must be finite and >= 0.");
+            return FireEquippedCore(ownership, expectedFirearmInstanceId, null, default, penetrationPower, physicalResolver);
+        }
+#endif
+
+        private static WeaponCombatResult FireEquippedCore(
+            ActorItemOwnershipComponent ownership,
+            string expectedFirearmInstanceId,
+            Collider hitCollider,
+            Vector3 hitPoint,
+            float? diagnosticPenetrationPower,
+            PhysicalShotResolver physicalResolver)
         {
             if (!TryGetEquippedWeapon(ownership, out ItemInstance firearmItem, out _, out FirearmProfileDefinition profile, out _) ||
                 firearmItem.InstanceId != expectedFirearmInstanceId || profile == null)
@@ -146,22 +193,82 @@ namespace OldScars.Core.Combat
             AmmoProfileDefinition ammo = Database()?.GetAmmoProfile(firearmItem.LoadedAmmoProfileId);
             if (ammo == null || !Contains(profile.accepted_ammo_profile_ids, ammo.id))
                 return Fail(WeaponCombatCode.InvalidWeapon, "Loaded ammo state is not compatible with the firearm profile.");
-            if (!firearmItem.TryConsumeLoadedRound(out string consumeFailure))
-                return Fail(WeaponCombatCode.Unloaded, consumeFailure);
-            if (hitCollider == null)
-                return new WeaponCombatResult(WeaponCombatCode.Miss, "Shot missed; one loaded round was consumed.", 1);
             if (!TryWoundType(ammo.wound_type, out WoundType woundType))
                 return Fail(WeaponCombatCode.InvalidWeapon, "Ammo wound type is invalid after data validation.");
+
+            float originalPower = diagnosticPenetrationPower ?? ammo.penetration_power;
+            float remainingPower = originalPower;
+            PhysicalShotResolution physicalShot = default;
+            if (physicalResolver != null)
+            {
+                try
+                {
+                    physicalShot = physicalResolver(originalPower);
+                }
+                catch (Exception exception)
+                {
+                    return Fail(WeaponCombatCode.ResolutionRejected,
+                        $"Physical shot resolution threw {exception.GetType().Name}: {exception.Message}");
+                }
+
+                if (!ValidPhysicalShot(physicalShot, originalPower, out string physicalFailure))
+                    return Fail(WeaponCombatCode.ResolutionRejected, physicalFailure);
+                hitCollider = physicalShot.Termination == PhysicalShotTermination.Impact
+                    ? physicalShot.HitCollider
+                    : null;
+                hitPoint = physicalShot.EndPoint;
+                remainingPower = physicalShot.RemainingPower;
+            }
+
+            if (!firearmItem.TryConsumeLoadedRound(out string consumeFailure))
+                return Fail(WeaponCombatCode.Unloaded, consumeFailure);
+
+            if (physicalResolver != null)
+            {
+                if (physicalShot.Termination == PhysicalShotTermination.Miss)
+                {
+                    return new WeaponCombatResult(
+                        WeaponCombatCode.Miss,
+                        "Shot missed; one loaded round was consumed.",
+                        1,
+                        physicalShot: physicalShot);
+                }
+                if (physicalShot.Termination == PhysicalShotTermination.SurfaceStopped)
+                {
+                    PenetrationResolution surface = physicalShot.LastSurfaceResolution;
+                    return new WeaponCombatResult(
+                        WeaponCombatCode.Success,
+                        $"Projectile stopped by penetrable surface '{physicalShot.TerminalSurfaceProfileId}' " +
+                        $"(power {surface.IncomingPower:0.###} <= resistance {surface.AppliedResistance:0.###}).",
+                        1,
+                        physicalShot: physicalShot);
+                }
+                if (physicalShot.Termination == PhysicalShotTermination.SurfaceLimitStopped)
+                {
+                    return new WeaponCombatResult(
+                        WeaponCombatCode.Success,
+                        $"Projectile stopped at the bounded penetration surface limit " +
+                        $"after {physicalShot.PenetratedSurfaceCount} surface(s).",
+                        1,
+                        physicalShot: physicalShot);
+                }
+            }
+
+            if (hitCollider == null)
+                return new WeaponCombatResult(WeaponCombatCode.Miss, "Shot missed; one loaded round was consumed.", 1,
+                    physicalShot: physicalShot);
 
             CombatResolutionResult combat = CombatResolutionService.ResolveImpact(
                 hitCollider,
                 hitPoint,
                 new CombatImpact(ownership.gameObject, firearmItem, CombatAttackKind.Firearm, woundType,
-                    ammo.wound_severity, ammo.bleeding_rate_per_game_hour, ammo.pain_contribution));
+                    ammo.wound_severity, ammo.bleeding_rate_per_game_hour, ammo.pain_contribution,
+                    originalPower,
+                    remainingPower));
             WeaponCombatCode code = combat.Code == CombatResolutionCode.Miss || combat.Code == CombatResolutionCode.InvalidTarget
                 ? WeaponCombatCode.Miss
-                : combat.WoundApplied ? WeaponCombatCode.Success : WeaponCombatCode.ResolutionRejected;
-            return new WeaponCombatResult(code, combat.Message, 1, combat);
+                : combat.Resolved ? WeaponCombatCode.Success : WeaponCombatCode.ResolutionRejected;
+            return new WeaponCombatResult(code, combat.Message, 1, combat, physicalShot);
         }
 
         public static WeaponCombatResult StrikeEquipped(
@@ -184,10 +291,12 @@ namespace OldScars.Core.Combat
                 hitCollider,
                 hitPoint,
                 new CombatImpact(ownership.gameObject, weapon, CombatAttackKind.Melee, woundType,
-                    profile.wound_severity, profile.bleeding_rate_per_game_hour, profile.pain_contribution));
+                    profile.wound_severity, profile.bleeding_rate_per_game_hour, profile.pain_contribution,
+                    profile.wound_severity,
+                    profile.wound_severity));
             WeaponCombatCode code = combat.Code == CombatResolutionCode.Miss || combat.Code == CombatResolutionCode.InvalidTarget
                 ? WeaponCombatCode.Miss
-                : combat.WoundApplied ? WeaponCombatCode.Success : WeaponCombatCode.ResolutionRejected;
+                : combat.Resolved ? WeaponCombatCode.Success : WeaponCombatCode.ResolutionRejected;
             return new WeaponCombatResult(code, combat.Message, 0, combat);
         }
 
@@ -238,6 +347,34 @@ namespace OldScars.Core.Combat
         private static GameDatabase Database() => GameDataManager.Instance != null && GameDataManager.Instance.IsReady
             ? GameDataManager.Instance.Database : null;
         private static bool Contains(string[] values, string expected) => values != null && values.Contains(expected, StringComparer.Ordinal);
+        private static bool ValidPhysicalShot(
+            PhysicalShotResolution shot,
+            float expectedOriginalPower,
+            out string failure)
+        {
+            if (!shot.IsResolved || !Enum.IsDefined(typeof(PhysicalShotTermination), shot.Termination) ||
+                !FiniteVector(shot.EndPoint) ||
+                float.IsNaN(shot.OriginalPower) || float.IsInfinity(shot.OriginalPower) ||
+                float.IsNaN(shot.RemainingPower) || float.IsInfinity(shot.RemainingPower) ||
+                shot.OriginalPower < 0f || shot.RemainingPower < 0f ||
+                shot.RemainingPower > shot.OriginalPower ||
+                Mathf.Abs(shot.OriginalPower - expectedOriginalPower) > 0.0001f ||
+                shot.PenetratedSurfaceCount < 0 ||
+                shot.Termination == PhysicalShotTermination.Impact && shot.HitCollider == null ||
+                shot.Termination != PhysicalShotTermination.Impact && shot.HitCollider != null)
+            {
+                failure = "Physical shot resolver returned an invalid terminal collider, endpoint or penetration budget.";
+                return false;
+            }
+
+            failure = null;
+            return true;
+        }
+
+        private static bool FiniteVector(Vector3 value) =>
+            !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+            !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
+            !float.IsNaN(value.z) && !float.IsInfinity(value.z);
         private static bool TryWoundType(string value, out WoundType result) =>
             Enum.TryParse(value, false, out result) && Enum.IsDefined(typeof(WoundType), result) && result.ToString() == value;
         private static WeaponCombatResult Fail(WeaponCombatCode code, string message) => new WeaponCombatResult(code, message);

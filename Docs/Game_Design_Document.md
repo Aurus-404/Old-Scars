@@ -151,8 +151,8 @@ Los estados exactos de milestones siguen bajo la autoridad de [Project_Roadmap.m
 | Bootstrap de actores | Los perfiles crean inventario y Equipment reales sin estado falso paralelo. | M35.1 validado. | Lifecycle durable en M38.0. |
 | Save y persistencia | Preservar identidad y consecuencias actuales de forma segura. | Current Slice durable validado; tiempo, actores, estado médico y firearm state se extienden aditivamente sobre V1. | M36.1–M40.0; ampliar sólo por milestone. |
 | Salud y muerte | Vulnerabilidad, transición coherente a muerte/cuerpo y política de recuperación. | M39 validó seis regiones, heridas durables, sangrado, dolor, venda localizada y muerte por reserva vital. | Tuning posterior de severity/bleeding; no amplía el alcance médico V1. |
-| Combate, daño y armadura | Vulnerabilidad creíble, penetración explicable y arsenal con roles materiales claros. | M40.0 validó resolución única melee/firearm hacia M39, ammo/reload, seis regiones, near-cover blocking, estado durable por `ItemInstance` y persistence fresh-session. Armadura y penetración no están implementadas. | M40.1 `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`. |
-| Arsenal y munición | Predominan rifles de cerrojo y revólveres; las armas complejas, automáticas, antiblindaje y especiales son progresivamente más raras. | No existe el sistema final de armas, modificaciones ni familias de munición. | Requiere specs dentro de combate, items, condition y crafting. |
+| Combate, daño y armadura | Vulnerabilidad creíble, penetración explicable y arsenal con roles materiales claros. | M40.0 validó melee/firearm hacia M39. M40.1 implementó cobertura regional equipped-only y un núcleo común de penetración residual para wearable armor/world surfaces; automatización `PASS`, recheck manual pendiente. | `Combat Ready — PENDING MANUAL M40.1 CLOSEOUT`. |
+| Arsenal y munición | Predominan rifles de cerrojo y revólveres; las armas complejas, automáticas, antiblindaje y especiales son progresivamente más raras. | M40.1 congela `penetration_power > 0` y una única resolución data-driven; no existe todavía el sistema final de modificaciones ni contenido de familias de munición. | Las familias y el balance requieren specs posteriores dentro de combate, items, condition y crafting. |
 | Vehículos y movilidad | Bicicletas, motos, motocarros, utilitarios, remolques, maquinaria de oruga y vehículos raros funcionan como herramientas de viaje, trabajo y supervivencia. | No existe conducción ni backend vehicular final. | `OUT OF CURRENT SCOPE`; requiere rebaseline y milestones propios. |
 | Necesidades, tiempo y ambiente | Las presiones importan cuando alteran ruta, preparación o recuperación. | WorldClock, Hunger/Thirst y Rest/Sleep validados; bleeding consume el mismo delta. | Fatigue diferida; clima M42.0; comida/agua/ecología M42.1. |
 | Condition, repair, disassembly y crafting | Decisiones materiales distintas, no un árbol enciclopédico universal. | Condition inicial no mutable como sistema validado. | M43.0–M43.1. |
@@ -207,7 +207,7 @@ La munición se diferencia por calibre, fabricación y función. Entre sus varia
 - surplus de baja calidad;
 - cargas o lotes especiales definidos cuando produzcan una decisión jugable clara.
 
-Las diferencias deben afectar penetración, efecto terminal, precisión práctica, suciedad, desgaste, disponibilidad y valor comercial, no ser simples multiplicadores de daño.
+Las diferencias deben afectar penetración, efecto terminal, precisión práctica, suciedad, desgaste, disponibilidad y valor comercial, no ser simples multiplicadores de daño. No existe una división binaria entre munición “penetrante” y “no penetrante”: todo proyectil usa `penetration_power` contra las resistencias atravesadas. AP tenderá a mayor penetración y menor efecto sobre blancos blandos, HP al compromiso inverso y FMJ a un baseline intermedio; ninguna familia requiere branches `IsAP`/`CanPenetrate` ni un resolver distinto.
 
 ### Armas Caseras Y Reconstruidas
 
@@ -371,7 +371,7 @@ Hasta una decisión explícita, el texto correspondiente conserva su etiqueta y 
 | Estación de bombeo | Parece slice narrativo definido. | Candidata M45.1, no canon narrativo. | `CORRECTED` |
 | Catálogo de sistemas | Los MVP exceden la aprobación demostrada. | Conservar como propuestas salvo decisiones recientes explícitas. | `RECLASSIFIED` |
 | Supervivencia | Enfermedad general dentro del plan base. | Excluir sin nuevo rebaseline. | `CORRECTED` |
-| Armadura | MVP requiere condition mutable. | M40.1 expone seam futuro; condition llega en M43.0. | `CORRECTED` |
+| Armadura | MVP requiere condition mutable. | M40.1 implementó armor/penetration con resistencia base y un seam futuro; Condition mutable sigue reservada a M43.0. | `CORRECTED` |
 | Save | Primer save demasiado amplio. | M37 cubre el slice actual; lifecycle general comienza en M38. | `CORRECTED` |
 | Compañeros y vehículos | Ambos aparecían como progresión planificada. | Compañeros siguen diferidos. La dirección de vehículos está confirmada, pero su implementación está fuera del roadmap actual sin rebaseline. | `RECLASSIFIED` |
 | Arsenal | No existía una jerarquía consolidada de disponibilidad y función. | Confirmar predominio de cerrojo/revólver, munición variada, rareza progresiva y armas caseras previsibles. | `ADDED — RECENT DECISION` |

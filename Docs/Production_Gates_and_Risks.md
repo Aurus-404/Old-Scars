@@ -195,9 +195,15 @@ Evidencia manual confirmada por Mauro:
 - Current Slice save `Success`, salida completa de Play, fresh Play y load `Phase: Complete`, `FailureCode: Success`, `Result: Success`; Lee-Enfield equipado restaurado en `Loaded 8/10`.
 - No aparecieron errores nuevos atribuibles a M40. Los warnings legacy `core:*` siguen como deuda aceptada.
 
-Riesgos/fuera: balance final, spread/critical hits, proyectiles físicos, animación/audio final, condition, armor/penetration, dual wield, attachments, UI final y AI combat. El tuning severity/bleeding M39 y la compatibilidad legacy Core Content IDs permanecen como deuda no bloqueante. M40.1 queda `PLANNED — READY FOR IMPLEMENTATION AUTHORIZATION`; no se inicia en este closeout.
+Riesgos/fuera de M40.0: balance final, spread/critical hits, proyectiles físicos, animación/audio final, condition, armor/penetration, dual wield, attachments, UI final y AI combat. El tuning severity/bleeding M39 y la compatibilidad legacy Core Content IDs permanecen como deuda no bloqueante. El estado vigente de armor/penetration y del gate se controla a continuación.
 
 ### Combat Ready - M40.1
+
+Estado: `PENDING — MANUAL M40.1 CLOSEOUT`.
+
+M40.1 está `IMPLEMENTED — AUTOMATED ARMOR / PENETRATION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. La automatización demostró un único pipeline M40 → armor/world penetration → adapter médico M39, ammo y rounds exactos, Equipment como autoridad, seis regiones, stop/penetration/trauma residual explicables, superficies world acotadas, melee protegido, death/corpse, round-trip fresh-session, compatibilidad V1 y datos inválidos sin mutación. `SampleScene` permaneció unchanged y no aparecieron warnings nuevos atribuibles.
+
+El núcleo de comparación/residual es independiente del receptor y común a wearable armor y world surfaces. Toda munición de proyectil usa `penetration_power > 0` sin flags AP/HP/FMJ; Condition conserva únicamente un seam futuro sin lectura, mutación ni desgaste. El fixture manual permite ciclar dos capas `Stopped`, una capa `Penetrated` y armor sólo en inventory `Unarmored` usando una única definición de armor y la `.303` existente.
 
 Debe validar:
 
@@ -209,6 +215,8 @@ Debe validar:
 - escenarios debug reproducibles.
 
 Evidencia: matriz de combate con y sin proteccion, trazas del resolver, estado antes/despues y validacion manual.
+
+Evidencia todavía pendiente para aprobar el gate: recheck manual de cobertura/equipped-only, stopped sin `Puncture`, penetrated con una única `Puncture`, melee, near-cover, save → salida total de Play → fresh Play → load, protección post-load e inexistencia de errores M40.1 en Console.
 
 Deuda aceptable: amplitud de armas, balance final, animacion/audio final y desgaste reparable futuro, siempre que M43 pueda integrarlo sin romper el contrato.
 

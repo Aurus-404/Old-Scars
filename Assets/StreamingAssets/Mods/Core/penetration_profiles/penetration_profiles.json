@@ -1,0 +1,22 @@
+{
+  "penetration_profiles": [
+    {
+      "type": "penetration_profile",
+      "id": "core:debug_torso_armor_penetration_01",
+      "display_name": "Debug Torso Armor Ballistic Layer",
+      "resistance": 0.325
+    },
+    {
+      "type": "penetration_profile",
+      "id": "core:debug_thin_cover_01",
+      "display_name": "Debug Thin Penetrable Cover",
+      "resistance": 0.15
+    },
+    {
+      "type": "penetration_profile",
+      "id": "core:debug_resistant_cover_01",
+      "display_name": "Debug Resistant Penetrable Cover",
+      "resistance": 0.8
+    }
+  ]
+}
