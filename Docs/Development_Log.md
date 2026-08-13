@@ -2755,3 +2755,15 @@ Evidencia automatizada:
 Fuera: armor/penetration, proyectiles físicos, critical hits, balance/spread final, animación/audio final, condition/desgaste, AI combat, dual wield, attachments y UI final.
 
 Siguiente: `M40.0 — Manual Unity Validation & Closeout`. M40.1 queda `PLANNED — BLOCKED BY M40.0 MANUAL CLOSEOUT`. M40.0 no está `DONE`.
+
+### M40.0 — Correction Pass 1 — Physical Shot Origin / Near-Cover Blocking
+
+Fecha: 2026-08-13.
+
+Estado: `IMPLEMENTED — AUTOMATED COMBAT / WEAPONS VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+El recheck manual de Mauro confirmó unloaded, reload completo/parcial, consumo exacto de ammo, fire, bolt cycle, heridas regionales `Puncture`, impactos contra mundo y continuidad Dead/corpse. También detectó que el ray origin físico adelantado por `muzzle_offset` podía comenzar detrás de una pared cercana y omitir cobertura.
+
+Corrección acotada: el camera ray sigue determinando el target deseado; el disparo físico ahora parte del centro corporal a muzzle-height con sólo 0.02 m de epsilon hacia el target, y el primer collider real bloquea. `muzzle_offset` queda limitado al origen visual de la línea debug. No se agregaron sockets, hitboxes, visuals M35 ni proyectiles físicos.
+
+El diagnóstico M40 agrega un caso near-cover: una pared a 0.65 m bloquea al actor detrás, consume exactamente un round y no crea wound; al retirar la misma pared, el mismo target recibe la herida localizada correcta. Manual pendiente: Mauro near-cover raycast recheck.

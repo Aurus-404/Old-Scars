@@ -16,6 +16,8 @@ namespace OldScars.Core.Combat
     /// </summary>
     public sealed class FirearmDebugController : MonoBehaviour
     {
+        private const float PhysicalShotOriginEpsilon = 0.02f;
+
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private Camera inputCamera;
         [SerializeField] private DebugWorldUiInputBlocker uiInputBlocker;
@@ -186,15 +188,15 @@ namespace OldScars.Core.Combat
 
             if (firearm != null)
             {
-                bool hit = TryFirstHit(currentAim.Origin, currentAim.Direction, firearm.range, out RaycastHit raycastHit);
-                Vector3 end = hit ? raycastHit.point : currentAim.Origin + currentAim.Direction * firearm.range;
+                bool hit = TryFirstHit(currentAim.PhysicalOrigin, currentAim.Direction, firearm.range, out RaycastHit raycastHit);
+                Vector3 end = hit ? raycastHit.point : currentAim.PhysicalOrigin + currentAim.Direction * firearm.range;
                 WeaponCombatResult result = WeaponCombatService.FireEquipped(
                     ownership, item.InstanceId, hit ? raycastHit.collider : null, end);
                 if (result.Code != WeaponCombatCode.Unloaded && result.Code != WeaponCombatCode.NotEquipped &&
                     result.Code != WeaponCombatCode.InvalidWeapon)
                 {
                     nextAttackTime = Time.time + firearm.cycle_time;
-                    ShowTracer(currentAim.Origin, end);
+                    ShowTracer(currentAim.PhysicalOrigin, end);
                 }
                 Record(result.Success ? GameplayFeedbackEntryType.Info : GameplayFeedbackEntryType.Warning, result.Message, definition, result.Quantity);
                 return;
@@ -203,7 +205,7 @@ namespace OldScars.Core.Combat
             if (melee == null)
                 return;
             string expectedId = item.InstanceId;
-            Vector3 origin = currentAim.Origin;
+            Vector3 origin = currentAim.VisualOrigin;
             Vector3 direction = currentAim.Direction;
             bool started = progressController != null && progressController.TryStartTimedOperation(
                 melee.attack_duration,
@@ -235,19 +237,22 @@ namespace OldScars.Core.Combat
             if (!TryGetEquipped(out _, out _, out FirearmProfileDefinition firearm, out WeaponProfileDefinition melee))
                 return false;
             float range = firearm != null ? firearm.range : melee.melee_range;
-            float offset = firearm != null ? firearm.muzzle_offset : 0.45f;
-            if (!TryCalculateAim(offset, range, out AimSolution solution))
+            float visualOffset = firearm != null ? firearm.muzzle_offset : 0.45f;
+            if (!TryCalculateAim(visualOffset, range, out AimSolution solution))
                 return false;
             currentAim = solution;
             Vector3 flat = solution.Direction;
             flat.y = 0f;
             if (flat.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.LookRotation(flat.normalized, Vector3.up);
-            SetLine(aimLine, solution.Origin, solution.Origin + solution.Direction * range, true);
+            Vector3 visualDirection = solution.Target - solution.VisualOrigin;
+            float visualDistance = Mathf.Min(range, visualDirection.magnitude);
+            SetLine(aimLine, solution.VisualOrigin,
+                solution.VisualOrigin + visualDirection.normalized * visualDistance, true);
             return true;
         }
 
-        private bool TryCalculateAim(float forwardOffset, float range, out AimSolution solution)
+        private bool TryCalculateAim(float visualForwardOffset, float range, out AimSolution solution)
         {
             solution = default;
             Mouse mouse = Mouse.current;
@@ -267,19 +272,52 @@ namespace OldScars.Core.Combat
                 target = cameraRay.GetPoint(enter);
             }
 
-            float muzzleY = ResolveMuzzleHeight();
-            Vector3 actorOrigin = new Vector3(transform.position.x, muzzleY, transform.position.z);
+            return TryBuildAimSolution(target, visualForwardOffset, out solution);
+        }
+
+        private bool TryBuildAimSolution(Vector3 target, float visualForwardOffset, out AimSolution solution)
+        {
+            solution = default;
+            Vector3 actorOrigin = new Vector3(transform.position.x, ResolveMuzzleHeight(), transform.position.z);
             Vector3 flatForward = target - actorOrigin;
             flatForward.y = 0f;
             if (flatForward.sqrMagnitude < 0.001f)
                 return false;
-            Vector3 origin = actorOrigin + flatForward.normalized * forwardOffset;
-            Vector3 direction = target - origin;
+
+            Vector3 flatDirection = flatForward.normalized;
+            float targetDistance = Vector3.Distance(actorOrigin, target);
+            float epsilon = Mathf.Min(PhysicalShotOriginEpsilon, targetDistance * 0.1f);
+            Vector3 physicalOrigin = actorOrigin + flatDirection * epsilon;
+            Vector3 visualOrigin = actorOrigin + flatDirection * Mathf.Max(0f, visualForwardOffset);
+            Vector3 direction = target - physicalOrigin;
             if (direction.sqrMagnitude < 0.001f)
                 return false;
-            solution = new AimSolution(origin, direction.normalized);
+            solution = new AimSolution(target, physicalOrigin, visualOrigin, direction.normalized);
             return true;
         }
+
+#if UNITY_EDITOR
+        public bool DiagnosticResolvePhysicalShot(
+            Vector3 desiredTarget,
+            float range,
+            out Collider firstCollider,
+            out Vector3 hitPoint,
+            out Vector3 physicalOrigin)
+        {
+            firstCollider = null;
+            hitPoint = desiredTarget;
+            physicalOrigin = default;
+            if (!TryBuildAimSolution(desiredTarget, 0f, out AimSolution solution))
+                return false;
+
+            physicalOrigin = solution.PhysicalOrigin;
+            if (!TryFirstHit(solution.PhysicalOrigin, solution.Direction, range, out RaycastHit hit))
+                return true;
+            firstCollider = hit.collider;
+            hitPoint = hit.point;
+            return true;
+        }
+#endif
 
         private float ResolveMuzzleHeight()
         {
@@ -397,8 +435,17 @@ namespace OldScars.Core.Combat
 
         private readonly struct AimSolution
         {
-            public AimSolution(Vector3 origin, Vector3 direction) { Origin = origin; Direction = direction; }
-            public Vector3 Origin { get; }
+            public AimSolution(Vector3 target, Vector3 physicalOrigin, Vector3 visualOrigin, Vector3 direction)
+            {
+                Target = target;
+                PhysicalOrigin = physicalOrigin;
+                VisualOrigin = visualOrigin;
+                Direction = direction;
+            }
+
+            public Vector3 Target { get; }
+            public Vector3 PhysicalOrigin { get; }
+            public Vector3 VisualOrigin { get; }
             public Vector3 Direction { get; }
         }
     }

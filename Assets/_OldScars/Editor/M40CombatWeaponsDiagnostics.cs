@@ -181,13 +181,53 @@ namespace OldScars.Editor
                     rifle.LoadedRounds == 10 && Quantity(ownership, AmmoItemId) == fullAmmo,
                 "E. Full reload rejection mutated firearm or ammo.");
 
-            WeaponCombatResult shot = WeaponCombatService.FireEquipped(ownership, rifle.InstanceId, collider, torso);
-            Require(shot.Success && rifle.LoadedRounds == 9 && medical.WoundCount == wounds + 1 &&
+            target.transform.position = player.transform.position + player.transform.right * 2.5f;
+            target.transform.rotation = Quaternion.LookRotation(
+                player.transform.position - target.transform.position, Vector3.up);
+            Physics.SyncTransforms();
+            torso = RegionPoint(collider.bounds, 0f, 0.65f);
+            Require(input.DiagnosticResolvePhysicalShot(
+                    torso, firearm.range, out Collider unobstructedCollider, out Vector3 unobstructedPoint,
+                    out Vector3 physicalOrigin) && IsTargetCollider(unobstructedCollider, target),
+                "G. Clear physical shot did not resolve the target actor before near-cover setup.");
+
+            Vector3 shotDirection = torso - physicalOrigin;
+            shotDirection.y = 0f;
+            shotDirection.Normalize();
+            var cover = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cover.name = "M40 Near Cover Diagnostic";
+            cover.transform.SetPositionAndRotation(
+                physicalOrigin + shotDirection * 0.65f,
+                Quaternion.LookRotation(shotDirection, Vector3.up));
+            cover.transform.localScale = new Vector3(1.5f, 2f, 0.1f);
+            Physics.SyncTransforms();
+
+            Require(input.DiagnosticResolvePhysicalShot(
+                    torso, firearm.range, out Collider blockedCollider, out Vector3 blockedPoint, out Vector3 blockedOrigin) &&
+                    blockedCollider == cover.GetComponent<Collider>() && Vector3.Distance(blockedOrigin, physicalOrigin) < 0.001f,
+                "G. Near cover was not the first collider from the physical shot origin.");
+            int roundsBeforeCover = rifle.LoadedRounds;
+            WeaponCombatResult blockedShot = WeaponCombatService.FireEquipped(
+                ownership, rifle.InstanceId, blockedCollider, blockedPoint);
+            Require(blockedShot.Code == WeaponCombatCode.Miss &&
+                    blockedShot.Combat.Code == CombatResolutionCode.InvalidTarget &&
+                    rifle.LoadedRounds == roundsBeforeCover - 1 && medical.WoundCount == wounds,
+                "G. Near cover did not consume exactly one round and block the target wound: " + blockedShot.Message);
+
+            UnityEngine.Object.DestroyImmediate(cover);
+            Physics.SyncTransforms();
+            Require(input.DiagnosticResolvePhysicalShot(
+                    torso, firearm.range, out unobstructedCollider, out unobstructedPoint, out _) &&
+                    IsTargetCollider(unobstructedCollider, target),
+                "G. Clear shot did not resolve the same target after near-cover removal.");
+            WeaponCombatResult shot = WeaponCombatService.FireEquipped(
+                ownership, rifle.InstanceId, unobstructedCollider, unobstructedPoint);
+            Require(shot.Success && rifle.LoadedRounds == 8 && medical.WoundCount == wounds + 1 &&
                     shot.Combat.Region == BodyRegion.Torso && medical.GetWound(shot.Combat.WoundId).woundType == WoundType.Puncture.ToString(),
                 "G. Firearm hit did not consume one round and apply one Puncture wound: " + shot.Message);
             wounds = medical.WoundCount;
             WeaponCombatResult miss = WeaponCombatService.FireEquipped(ownership, rifle.InstanceId, null, Vector3.zero);
-            Require(miss.Code == WeaponCombatCode.Miss && rifle.LoadedRounds == 8 && medical.WoundCount == wounds,
+            Require(miss.Code == WeaponCombatCode.Miss && rifle.LoadedRounds == 7 && medical.WoundCount == wounds,
                 "G. Miss did not consume exactly one loaded round without a wound.");
             input.DiagnosticStartCycle(10f);
             Require(!input.IsAttackReady, "I. Bolt cycle gate did not close after a shot.");
@@ -324,6 +364,10 @@ namespace OldScars.Editor
 
         private static Vector3 RegionPoint(Bounds bounds, float normalizedX, float normalizedY) =>
             new Vector3(bounds.center.x + bounds.extents.x * normalizedX, bounds.min.y + bounds.size.y * normalizedY, bounds.center.z);
+
+        private static bool IsTargetCollider(Collider collider, ActorRuntimeIdentity target) =>
+            collider != null && target != null &&
+            (collider.transform == target.transform || collider.transform.IsChildOf(target.transform));
 
         private static void EquipRifle(ActorEquipmentComponent equipment, InventoryComponent inventory, string instanceId)
         {
