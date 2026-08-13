@@ -233,6 +233,8 @@ Bloquea: resoluciones paralelas, consumo de municion inconsistente, armor opaca 
 
 ### AI Ready - M41.1
 
+Foundation vigente: M41.0 está `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. Esto satisface la evidencia automatizada de navegación/percepción base, pero no aprueba `AI Ready`: falta el closeout manual M41.0 y M41.1 permanece `PLANNED`.
+
 Debe validar:
 
 - navegacion y percepcion diagnosticables;

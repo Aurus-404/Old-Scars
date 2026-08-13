@@ -27,6 +27,11 @@
         "max_health": 100,
         "current_health": 100
       },
+      "visual_perception": {
+        "visual_range": 15.0,
+        "horizontal_fov_degrees": 120.0,
+        "eye_height": 1.6
+      },
       "initial_inventory": [
         { "item_id": "core:bandage_01", "quantity": 3 },
         { "item_id": "core:scrap_metal_01", "quantity": 2 }
@@ -46,6 +51,11 @@
         "max_health": 100,
         "current_health": 100
       },
+      "visual_perception": {
+        "visual_range": 15.0,
+        "horizontal_fov_degrees": 120.0,
+        "eye_height": 1.6
+      },
       "initial_inventory": [
         { "item_id": "core:bandage_01", "quantity": 3 },
         { "item_id": "core:scrap_metal_01", "quantity": 2 }
@@ -62,6 +72,11 @@
         "max_health": 100,
         "current_health": 100
       },
+      "visual_perception": {
+        "visual_range": 15.0,
+        "horizontal_fov_degrees": 120.0,
+        "eye_height": 1.6
+      },
       "initial_inventory": [
         { "item_id": "core:bandage_01", "quantity": 3 },
         { "item_id": "core:scrap_metal_01", "quantity": 2 }
@@ -70,6 +85,28 @@
         { "item_id": "core:small_backpack_01" },
         { "item_id": "core:lee_enfield_rifle_01" }
       ]
+    },
+    {
+      "type": "actor_profile",
+      "id": "core:debug_navigation_npc_01",
+      "display_name": "Debug Navigation NPC",
+      "initial_tags": ["human", "inspectable"],
+      "health": {
+        "max_health": 100,
+        "current_health": 100
+      },
+      "navigation": {
+        "speed": 3.5,
+        "acceleration": 8.0,
+        "angular_speed": 360.0,
+        "stopping_distance": 0.2
+      },
+      "visual_perception": {
+        "visual_range": 15.0,
+        "horizontal_fov_degrees": 120.0,
+        "eye_height": 1.6
+      },
+      "initial_inventory": []
     }
   ]
 }

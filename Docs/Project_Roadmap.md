@@ -25,15 +25,15 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `1c843961ed72b554f485b86105c443669337e8c0` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | Ninguno; M41.0 permanece `PLANNED` y disponible para autorización |
+| Milestone activo | M41.0 — Navigation & Perception Foundation — manual Unity validation pendiente |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
 | Estado M40.1 | `DONE — ARMOR / PENETRATION V1 VALIDATED` |
 | Combat Ready | `APPROVED` |
-| Siguientes | M41.0 — Navigation & Perception Foundation (`PLANNED`; disponible para autorización) |
+| Siguientes | M41.0 — Manual Unity Validation & Closeout; luego M41.1 permanece `PLANNED` |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED` y M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`. `Combat Ready` está `APPROVED`. M41.0 permanece `PLANNED`, disponible para autorización y no iniciado.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED` y M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`. `Combat Ready` está `APPROVED`. M41.0 queda `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. M41.1 permanece `PLANNED` y no iniciado.
 
 ## Estados Canonicos
 
@@ -134,7 +134,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M39.0 — Localized Health & Medicine V1 | Jugable | `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED` | M38.1 | Seis regiones, heridas durables, bleeding por WorldClock, pain, venda localizada, UI H y persistence V1 validados con automatización y fresh-session manual. |
 | CERRADO | M40.0 — Combat Resolution & Weapons V1 | Jugable | `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED` | M39.0 | Resolver único hacia M39, melee/firearms, estado cargado por instancia, ammo/reload, near-cover blocking y persistence validados con automatización y fresh-session manual. |
 | CERRADO | M40.1 — Armor & Penetration V1 | Jugable | `DONE — ARMOR / PENETRATION V1 VALIDATED` | M40.0 | Cobertura regional equipped-only, núcleo común de penetración para armor/world, trauma residual y round-trip fresh-session validados; gate `Combat Ready` aprobado. |
-| SIGUIENTE | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `PLANNED` | M38.0 | Navegacion, percepcion y diagnostico; disponible para autorización, no iniciado. |
+| ACTIVO | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING` | M38.0 | Navigation NPC y perception visual separadas, data-driven y diagnosticadas; falta validación manual fresh-session. |
 | DESPUES | M41.1 — Human Encounter AI V1 | Jugable | `PLANNED` | M40.0, M41.0 | Evitar, alertarse, huir y luchar; gate `AI Ready`. |
 | DESPUES | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED` | M38.1 | Clima, forecast, exposicion y proteccion. |
 | DESPUES | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED` | M42.0; M41.0 para animales moviles | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready`. |
@@ -184,7 +184,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 IMPLEMENTED / MANUAL PENDING`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -320,6 +320,16 @@ M40.1 agrega cero estado durable: profiles son Definitions; Equipment, `ItemInst
 Mauro confirmó manualmente: dos capas equipped con resistencia total `0.65` detuvieron la `.303` de power `0.65` con exactamente una `Blunt` y ninguna `Puncture`; una capa de `0.325` dejó residual `0.325` y una única `Puncture`; Head/arms descubiertos y armor sólo en inventory conservaron el comportamiento unarmored; crowbar directo reutilizó protección/impact resistance sin atravesar paredes; geometría opaca bloqueó antes del actor y una línea limpia restauró el impacto. El round-trip fresh-session reconstruyó `actor_677cb4714310457d9e35140b04a199f0` por `PersistenceRestore`, preservó equipadas `item_65e023d5f6a1478c8384a2f39be86630` y `item_71d498f132b9435c9e85caf1be6a5de4`, cargó con `FailureCode: Success` / `Result: Success` y volvió a detener el impacto de torso sin `Puncture`.
 
 Las extensiones futuras — FMJ/AP/HP y anti-material exclusivamente data-driven sobre el mismo resolver, receptores machine/vehicle y el seam M43 de `Condition` — permanecen diferidas. Proyectiles físicos, ricochet, ángulo, espesor real, spall, fragmentación, vehículos y máquinas no forman parte de M40.1. Los warnings legacy Global Content ID continúan como deuda conocida no bloqueante.
+
+### M41.0 — Navigation & Perception Foundation Implementado
+
+M41.0 queda `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`. Runtime/Editor compile, data validation, `M41.0 Navigation & Perception Diagnostics` y la regresión directa M38.0 dieron `PASS`. La validación visual fresh-session permanece obligatoria antes de `DONE`.
+
+Navigation y Perception son capacidades independientes declaradas por bloques opcionales de `ActorProfileDefinition`. `ActorNavigationController` usa `NavMeshAgent` y estados explícitos `Idle`, `Moving`, `Reached` y `Failed`; rechaza destinos fuera del NavMesh, no reintenta y respeta lifecycle `Dead`. `ActorVisualPerceptionService` evalúa identidad, lifecycle, range, FOV horizontal y LOS físico con resultados explicables, sin depender de Combat ni de Navigation.
+
+`ActorProfileComponent` aplica capacidades en bootstrap y restore sin apropiarse de la autoridad del player. `SampleScene` contiene una fixture aislada, NavMesh bakeado, barrera y markers reproducibles para diagnóstico y validación manual. Orden, path y resultados de percepción son efímeros; M41.0 no agrega estado durable ni cambia schema/envelope V1, y Navigation queda `Idle` tras restore.
+
+M41.1 permanece `PLANNED`, no iniciado y fuera de alcance. Hostility, alert states, investigation, chase, flee, combat decisions, cover, behavior trees y sistemas AI generales no forman parte de M41.0.
 
 ## Trabajo Congelado O Diferido
 

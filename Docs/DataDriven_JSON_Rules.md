@@ -327,6 +327,34 @@ Reglas de `initial_equipment`:
 - ese rollback no revierte display, tags, health, layout ni `initial_inventory`; el profile completo no es una transaccion;
 - `initial_inventory` e `initial_equipment` son listas independientes; repetir una definicion en ambas crea instancias distintas.
 
+### Actor Profiles: capacidades M41.0
+
+`ActorProfileDefinition` puede declarar dos bloques opcionales e independientes:
+
+```json
+{
+  "navigation": {
+    "speed": 3.5,
+    "acceleration": 8.0,
+    "angular_speed": 360.0,
+    "stopping_distance": 0.2
+  },
+  "visual_perception": {
+    "visual_range": 15.0,
+    "horizontal_fov_degrees": 120.0,
+    "eye_height": 1.6
+  }
+}
+```
+
+- la presencia de cada bloque declara esa capacidad runtime; ausencia significa que el actor no la recibe;
+- todos los valores deben ser finitos y estrictamente mayores que cero;
+- `horizontal_fov_degrees` además debe ser `<= 360`;
+- Navigation y Visual Perception pueden existir por separado y no declaran decisiones de comportamiento;
+- estos bloques son Definitions: no guardan orden, path, estado `Moving/Reached/Failed`, target observado ni resultado de percepción;
+- el player Core no declara `navigation`; su movimiento continúa bajo sus controladores propios;
+- no agregar hostility, bravery, faction disposition, alertness, combat preference ni scripting AI a estos bloques.
+
 ## Actions
 
 `ActionDefinition.id` es un Global Content ID, por ejemplo `core:force_door`. Las referencias `combat.actions[]` y `WeaponProfileDefinition.default_actions[]` usan el mismo contrato. En cambio, `effects[].type`, `contexts[]` y `target` son tokens/local IDs cerrados consumidos por C# y no reciben namespace.

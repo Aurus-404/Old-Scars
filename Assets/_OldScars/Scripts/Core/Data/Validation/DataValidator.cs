@@ -639,6 +639,8 @@ namespace OldScars.Core.Data.Validation
 
                 ValidateActorProfileInitialTags(actorProfile.initial_tags, $"{ctx}: initial_tags");
                 ValidateActorProfileHealth(actorProfile.health, $"{ctx}: health");
+                ValidateActorProfileNavigation(actorProfile.navigation, $"{ctx}: navigation");
+                ValidateActorProfileVisualPerception(actorProfile.visual_perception, $"{ctx}: visual_perception");
                 ValidateActorProfileInventory(actorProfile.initial_inventory, $"{ctx}: initial_inventory");
 
                 if (!string.IsNullOrWhiteSpace(actorProfile.equipment_layout_id))
@@ -663,6 +665,32 @@ namespace OldScars.Core.Data.Validation
                 if (actorProfile.equipped != null)
                     report.Error($"{ctx}: 'equipped' is not supported yet in Milestone 24.2.");
             }
+        }
+
+        private void ValidateActorProfileNavigation(ActorProfileNavigation navigation, string context)
+        {
+            if (navigation == null)
+                return;
+            RequireFinitePositive(navigation.speed, "speed", context);
+            RequireFinitePositive(navigation.acceleration, "acceleration", context);
+            RequireFinitePositive(navigation.angular_speed, "angular_speed", context);
+            RequireFinitePositive(navigation.stopping_distance, "stopping_distance", context);
+        }
+
+        private void ValidateActorProfileVisualPerception(ActorProfileVisualPerception perception, string context)
+        {
+            if (perception == null)
+                return;
+            RequireFinitePositive(perception.visual_range, "visual_range", context);
+            RequireFinitePositive(perception.eye_height, "eye_height", context);
+            if (!FinitePositive(perception.horizontal_fov_degrees) || perception.horizontal_fov_degrees > 360f)
+                report.Error($"{context}: 'horizontal_fov_degrees' must be finite and within (0, 360] (got {perception.horizontal_fov_degrees}).");
+        }
+
+        private void RequireFinitePositive(float value, string field, string context)
+        {
+            if (!FinitePositive(value))
+                report.Error($"{context}: '{field}' must be finite and > 0 (got {value}).");
         }
 
         private void ValidateActorProfileInitialTags(string[] initialTags, string context)
@@ -1604,6 +1632,9 @@ namespace OldScars.Core.Data.Validation
 
         private static bool FiniteNonNegative(float value) =>
             !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f;
+
+        private static bool FinitePositive(float value) =>
+            !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f;
 
         private static bool FiniteUnit(float value) =>
             !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f && value <= 1f;

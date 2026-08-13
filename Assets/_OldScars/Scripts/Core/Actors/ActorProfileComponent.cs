@@ -6,6 +6,7 @@ using OldScars.Core.Interactions;
 using OldScars.Core.Items;
 using OldScars.Core.Visuals;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace OldScars.Core.Actors
 {
@@ -69,6 +70,7 @@ namespace OldScars.Core.Actors
             ApplyDisplayName(profile);
             ApplyInitialTags(profile);
             ApplyVisualRigProfile(profile);
+            ApplyRuntimeCapabilities(profile);
             GetComponent<InventoryComponent>()?.PreparePersistenceRestore();
             return true;
         }
@@ -111,6 +113,7 @@ namespace OldScars.Core.Actors
             ApplyInitialInventory(profile);
             ApplyInitialEquipment(profile);
             ApplyVisualRigProfile(profile);
+            ApplyRuntimeCapabilities(profile);
 
             Debug.Log($"[ActorProfileComponent] '{name}' applied actor profile '{actorProfileId}'.");
         }
@@ -293,6 +296,79 @@ namespace OldScars.Core.Actors
                 Debug.LogWarning(
                     $"[ActorProfileComponent] '{name}' could not apply visual rig profile " +
                     $"'{profile.visual_rig_profile_id}': {reason}");
+            }
+        }
+
+        private void ApplyRuntimeCapabilities(ActorProfileDefinition profile)
+        {
+            ApplyNavigation(profile);
+            ApplyVisualPerception(profile);
+        }
+
+        private void ApplyNavigation(ActorProfileDefinition profile)
+        {
+            if (profile.navigation == null)
+                return;
+            if (GetComponent<PlayerMovementController>() != null || GetComponent<PlayerMovementInputController>() != null)
+            {
+                Debug.LogError(
+                    "[Actors][NAVIGATION_PROFILE_REJECTED]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
+                    "\n  Failure: NPC navigation cannot share the player movement authority." +
+                    "\n  ActionTaken: no NavMeshAgent or ActorNavigationController was added");
+                return;
+            }
+
+            NavMeshAgent agent = GetComponent<NavMeshAgent>();
+            if (agent == null)
+                agent = gameObject.AddComponent<NavMeshAgent>();
+            Collider bodyCollider = GetComponent<Collider>();
+            if (bodyCollider != null)
+            {
+                Bounds bounds = bodyCollider.bounds;
+                agent.baseOffset = Mathf.Max(0f, transform.position.y - bounds.min.y);
+                agent.height = Mathf.Max(0.1f, bounds.size.y);
+                agent.radius = Mathf.Max(0.05f, Mathf.Min(bounds.extents.x, bounds.extents.z));
+            }
+            ActorNavigationController navigation = GetComponent<ActorNavigationController>();
+            if (navigation == null)
+                navigation = gameObject.AddComponent<ActorNavigationController>();
+            if (!navigation.TryConfigure(
+                    profile.navigation.speed,
+                    profile.navigation.acceleration,
+                    profile.navigation.angular_speed,
+                    profile.navigation.stopping_distance,
+                    out string error))
+            {
+                Debug.LogError(
+                    "[Actors][NAVIGATION_PROFILE_REJECTED]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
+                    $"\n  Failure: {error ?? "<UNKNOWN>"}" +
+                    "\n  ActionTaken: navigation capability remains unavailable");
+            }
+        }
+
+        private void ApplyVisualPerception(ActorProfileDefinition profile)
+        {
+            if (profile.visual_perception == null)
+                return;
+            ActorVisualPerceptionService perception = GetComponent<ActorVisualPerceptionService>();
+            if (perception == null)
+                perception = gameObject.AddComponent<ActorVisualPerceptionService>();
+            if (!perception.TryConfigure(
+                    profile.visual_perception.visual_range,
+                    profile.visual_perception.horizontal_fov_degrees,
+                    profile.visual_perception.eye_height,
+                    out string error))
+            {
+                Debug.LogError(
+                    "[Actors][PERCEPTION_PROFILE_REJECTED]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
+                    $"\n  Failure: {error ?? "<UNKNOWN>"}" +
+                    "\n  ActionTaken: visual perception capability remains unavailable");
             }
         }
 

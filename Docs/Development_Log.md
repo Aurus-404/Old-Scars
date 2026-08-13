@@ -2864,3 +2864,41 @@ Los warnings legacy Global Content ID continúan como deuda conocida no bloquean
 Gate: `Combat Ready — APPROVED`.
 
 Siguiente: M41.0 — Navigation & Perception Foundation permanece `PLANNED`, disponible para autorización y no iniciado.
+
+### M41.0 — Navigation & Perception Foundation — Functional Pass 1
+
+Fecha: 2026-08-13.
+
+Base: `6c376a88234edc0d4fb2a046d8ae2a17a115efad` en `dev`, sincronizada `0/0` y con working tree limpio al comenzar.
+
+Estado anterior: `PLANNED`.
+
+Estado actual: `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Implementación:
+
+- `ActorNavigationController` agrega órdenes NPC data-driven mediante `NavMeshAgent`, estados explícitos `Idle/Moving/Reached/Failed`, path completo prevalidado, llegada sin loop, stop, fallos estables y autoridad lifecycle M38;
+- destinos fuera del NavMesh se rechazan con un epsilon exclusivamente numérico: no existe teleport, snap funcional, retry automático ni spam por frame;
+- `ActorVisualPerceptionService` permanece separado de Navigation y Combat y devuelve un resultado explicable después de identidad, lifecycle, range, FOV horizontal y LOS físico, incluido blocker y child collider del target;
+- `ActorProfileDefinition` incorpora bloques opcionales `navigation` y `visual_perception`; `DataValidator` exige valores finitos/positivos y FOV dentro de `(0, 360]`;
+- `ActorProfileComponent` configura capacidades declaradas durante bootstrap y restore, mientras el player conserva sus controladores propios y no recibe navegación NPC;
+- `CurrentSliceLoadService` aplica la pose durable mediante el seam de Navigation, limpia órdenes efímeras y deja el actor `Idle`; no cambian snapshot, schema ni envelope V1;
+- `SampleScene` queda preparada mediante Editor API con una fixture aislada, `NavMeshSurface`, asset bakeado, barrera `Not Walkable` y markers reproducibles;
+- un único `M41.0 Navigation & Perception Diagnostics` cubre spawn/registry, datos aplicados, desplazamiento/Reached, destinos inválidos y cercanos fuera del NavMesh, estabilidad sin retry, muerte/inmovilidad, player authority, range/FOV/LOS, blocker, self, child collider y restore;
+- el mismo tooling ofrece un setup Play temporal y toggle de barrera para la validación manual, sin UI final ni control gráfico automatizado.
+
+Validación automatizada:
+
+- Runtime/Editor compile: `PASS` (`Tundra build success`, return code 0);
+- Data validation: `PASS` dentro del diagnóstico (`GameDataManager.Report.HasErrors == false`);
+- `M41.0 Navigation & Perception Diagnostics: PASS`;
+- regresión directa `M38.0 Actor Runtime & Lifecycle Diagnostics: PASS`;
+- no hubo warnings nuevos atribuibles a M41.0; permanecen los seis warnings C# preexistentes.
+
+Persistencia: `NONE`. Orden, path, estado operativo y resultado de percepción son efímeros; sólo se reutiliza la pose/lifecycle durable ya existente.
+
+Manual: `PENDING — Mauro M41.0 navigation/perception fresh-session recheck`.
+
+Fuera: hostility, factions, alert states, investigation/search, chase, flee, combat decisions, weapon selection, shooting/melee AI, cover, flanking, squads, patrol schedules, Behavior Trees, GOAP, Utility AI, strategic/vehicle navigation y animal behavior.
+
+Siguiente: `M41.0 — Manual Unity Validation & Closeout`. M41.1 permanece `PLANNED`, no iniciado y no autorizado por este pass.

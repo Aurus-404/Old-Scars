@@ -528,7 +528,10 @@ namespace OldScars.Core.Persistence
             foreach (ActorState state in Items(snapshot.actors))
             {
                 ActorRuntime actor = scene.Actors[state.actorInstanceId];
-                ApplyPose(state.pose, actor.Root);
+                if (actor.Navigation != null)
+                    actor.Navigation.ApplyPersistencePose(Position(state.pose), Rotation(state.pose));
+                else
+                    ApplyPose(state.pose, actor.Root);
                 actor.Health.ApplyInitialHealth(actor.Health.MaxHealth, state.currentHealth);
                 if (!actor.Medical.TryApplyPersistenceState(state.medicalState, out string actorMedicalError))
                     throw new InvalidOperationException(
@@ -718,6 +721,7 @@ namespace OldScars.Core.Persistence
             internal ActorMedicalStateComponent Medical;
             internal ActorNeedsComponent Needs;
             internal LootableActorInventoryComponent Lootable;
+            internal ActorNavigationController Navigation;
         }
 
         private sealed class ResolvedScene
@@ -832,7 +836,8 @@ namespace OldScars.Core.Persistence
                     Health = identity.GetComponent<ActorHealthComponent>(),
                     Medical = identity.GetComponent<ActorMedicalStateComponent>(),
                     Needs = identity.GetComponent<ActorNeedsComponent>(),
-                    Lootable = identity.GetComponent<LootableActorInventoryComponent>()
+                    Lootable = identity.GetComponent<LootableActorInventoryComponent>(),
+                    Navigation = identity.GetComponent<ActorNavigationController>()
                 };
                 if (actor.Inventory == null || actor.Health == null || actor.Medical == null ||
                     requireOwnership && actor.Ownership == null || requireNeeds && actor.Needs == null)
@@ -867,7 +872,8 @@ namespace OldScars.Core.Persistence
                     Health = identity.GetComponent<ActorHealthComponent>(),
                     Medical = identity.GetComponent<ActorMedicalStateComponent>(),
                     Needs = identity.GetComponent<ActorNeedsComponent>(),
-                    Lootable = identity.GetComponent<LootableActorInventoryComponent>()
+                    Lootable = identity.GetComponent<LootableActorInventoryComponent>(),
+                    Navigation = identity.GetComponent<ActorNavigationController>()
                 };
                 if (actor.Inventory == null || actor.Health == null || actor.Medical == null || actor.Ownership == null)
                     return FailActor(out actor, out error,

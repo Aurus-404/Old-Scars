@@ -4,26 +4,24 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximo Trabajo
 
-### 1. M41.0 — Navigation & Perception Foundation
+### 1. M41.0 — Manual Unity Validation & Closeout
 
-Estado: `PLANNED`.
+Estado: `IMPLEMENTED — AUTOMATED NAVIGATION / PERCEPTION VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
 
-M40.1 está `DONE — ARMOR / PENETRATION V1 VALIDATED`, con validation `AUTOMATED + MANUAL FRESH-SESSION PASSED`; `Combat Ready` está `APPROVED`. M41.0 queda disponible para autorización, pero su implementación no está iniciada ni autorizada por este closeout.
+Checklist pendiente:
 
-Alcance previsto por el Roadmap:
-
-- navegación foundation acotada;
-- percepción diagnosticable;
-- integración con la identidad/lifecycle M38 sin adelantar Human Encounter AI;
-- diagnóstico reproducible y criterios de validación explícitos.
-
-Antes de implementar se debe congelar el prompt de milestone conforme a `OldScars_Development_Rules.md` y `Milestone_Template.md`, revisar dependencias reales y obtener autorización explícita de Mauro.
+1. Abrir `SampleScene` en una sesión Unity fresca y entrar en Play.
+2. Ejecutar `Old Scars/Diagnostics/AI/M41.0 Prepare Manual Validation`.
+3. Verificar que el navigator rodea la barrera, no la atraviesa y queda detenido en `Reached`.
+4. Alternar `M41.0 Toggle Manual Perception Blocker` y confirmar `Occluded` con barrera / `Perceived` sin barrera.
+5. Confirmar ausencia de errores M41.0 y registrar evidencia.
+6. Realizar el closeout documental; no reabrir implementación salvo una regresión funcional real.
 
 ### 2. M41.1 — Human Encounter AI V1
 
 Estado: `PLANNED`.
 
-Permanece posterior a M41.0 y dependiente de sus contratos. No está iniciado ni autorizado; no adelantar AI combat durante la foundation de navegación/percepción.
+Permanece posterior al cierre manual de M41.0 y dependiente de sus contratos. No está iniciado ni autorizado; no adelantar hostility, alert states, chase, flee, combat decisions ni otra conducta humana durante el closeout de la foundation.
 
 ## Dirección De Producción
 
@@ -39,11 +37,11 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 
 ## No Iniciar Todavía
 
+- M41.1, AI combat o cualquier comportamiento humano antes del closeout manual de M41.0;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
-- M41.1, AI combat o cualquier ampliación posterior antes de cerrar M41.0;
 - condition, repair o crafting;
-- actores o mundo a escala fuera del seam mínimo implementado por M38.0;
+- actores o mundo a escala fuera de las foundations implementadas;
 - facciones amplias;
 - generación procedural;
 - producción masiva de contenido.

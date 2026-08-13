@@ -3,8 +3,8 @@ namespace OldScars.Core.Data.Definitions
     /// <summary>
     /// Immutable actor profile definition loaded from JSON.
     ///
-    /// Milestone 24.1 scope: data load and registration only. Runtime
-    /// application to scene actors belongs to a later pass.
+    /// Immutable content parameters are applied by ActorProfileComponent;
+    /// runtime orders and observations remain ephemeral actor state.
     /// </summary>
     [System.Serializable]
     public sealed class ActorProfileDefinition
@@ -19,6 +19,8 @@ namespace OldScars.Core.Data.Definitions
         public ActorProfileInitialEquipmentEntry[] initial_equipment;
         public string equipment_layout_id;
         public string visual_rig_profile_id;
+        public ActorProfileNavigation navigation;
+        public ActorProfileVisualPerception visual_perception;
         public ActorProfileEquipped equipped; // Unsupported until a later M24 pass.
     }
 
@@ -27,6 +29,23 @@ namespace OldScars.Core.Data.Definitions
     {
         public float max_health;
         public float current_health;
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileNavigation
+    {
+        public float speed;
+        public float acceleration;
+        public float angular_speed;
+        public float stopping_distance;
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileVisualPerception
+    {
+        public float visual_range;
+        public float horizontal_fov_degrees;
+        public float eye_height;
     }
 
     [System.Serializable]
