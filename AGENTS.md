@@ -93,6 +93,8 @@ Usar Luna para trabajo pequeño, mecanico y localizado; Terra para trabajo cotid
 
 ## Presupuesto De Ejecucion Y Eficiencia
 
+**La eficiencia se mide por trabajo util por costo, no por minimizar tokens, archivos, lineas, tiempo o uso de agentes de forma aislada. La prioridad es obtener una solucion correcta, mantenible y proporcional sin desperdicio.**
+
 ### Alcance Y Auditoria
 
 - Implementar la unidad funcional solicitada por el camino minimo correcto. Una vez fijado el diseño, no ampliar el scope salvo blocker funcional real.
@@ -102,15 +104,16 @@ Usar Luna para trabajo pequeño, mecanico y localizado; Terra para trabajo cotid
 
 ### Subagentes
 
-- No usar subagentes por defecto. Justificarlos solo cuando exista una investigacion realmente independiente o paralelizable.
-- El maximo normal es un subagente. Usar mas de uno requiere autorizacion explicita de Mauro o una necesidad tecnica extraordinaria explicada antes de delegar.
-- El agente principal integra y decide. Normalmente un solo implementador modifica archivos acoplados; las conclusiones paralelas no sustituyen su revision.
+- Usar subagentes cuando aporten una ventaja material: investigacion independiente, revision especializada, QA paralelo, arquitectura compleja o trabajo realmente separable.
+- No existe un limite numerico rigido por defecto. Evitar subagentes redundantes, duplicacion de auditoria y delegacion que no reduzca riesgo, tiempo o incertidumbre.
+- El agente principal conserva integracion y decision final. Normalmente un solo implementador modifica archivos acoplados; las conclusiones paralelas no sustituyen su revision.
 
 ### Presupuesto De Implementacion
 
-- Presupuesto orientativo por unidad: aproximadamente 8 archivos C# y 500 lineas C# nuevas como maximo.
-- Superar ese presupuesto requiere autorizacion explicita o detenerse para reportar que el alcance real excede lo previsto.
-- Si una tarea define un techo especifico, ese techo reemplaza al default.
+- Las cifras aproximadas de archivos y lineas son señales de control de alcance, no limites de calidad ni techos obligatorios. Una unidad funcional coherente puede superar ampliamente una referencia cuando la implementacion correcta lo requiera.
+- No detenerse ni pedir autorizacion solamente porque aumento el numero de archivos o lineas. Detenerse o replantear cuando el crecimiento revele scope creep real, otro sistema independiente, una decision arquitectonica no autorizada o una expansion que ya no pertenece razonablemente a la unidad original.
+- Es preferible completar correctamente una unidad coherente de 900 lineas que fragmentarla artificialmente en dos implementaciones peores solo para cumplir una cifra.
+- Si una tarea define un techo especifico y obligatorio, ese contrato explicito prevalece.
 
 ### Diagnostics Y Regresiones
 
@@ -121,17 +124,19 @@ Usar Luna para trabajo pequeño, mecanico y localizado; Terra para trabajo cotid
 
 ### Regla De PASS Y Presion De Presupuesto
 
-**PASS significa congelar implementacion.** Despues del PASS requerido no hacer polishing, refactors opcionales, helpers adicionales, mejoras de ergonomia debug, features nuevas ni una ultima mejora.
+Un PASS de los criterios requeridos es una señal para dejar de inventar trabajo opcional, no una orden de abandonar trabajo todavia necesario para calidad, integracion, robustez o aceptacion.
 
-Continuar unicamente con:
+Despues de cumplir realmente los criterios, no agregar polishing gratuito, helpers sin necesidad, features nuevas, diagnostics que no puedan revelar informacion nueva ni ampliaciones de scope. Seguir trabajando cuando todavia exista integracion o robustez necesaria, una regresion relevante, una prueba requerida, un defecto real o documentacion necesaria para cerrar correctamente.
+
+Cuando ya no queda trabajo necesario, continuar con:
 
 `auditoria final -> documentacion necesaria -> commit -> push`
 
-salvo que aparezca una regresion funcional real.
+salvo que aparezca nueva evidencia funcional relevante.
 
 - Prioridad obligatoria: `compile -> funcionalidad central -> diagnostic directo -> regresion imprescindible -> commit/push`, antes que polish, tooling extra, documentacion extensa, auditorias generales o mejoras opcionales.
-- Si una unidad crece inesperadamente, no continuar expandiendola: completar el nucleo coherente ya iniciado, validar, publicar un checkpoint funcional y registrar el resto como deferred.
-- Si pasan aproximadamente 20-25 minutos sin alcanzar un primer PASS funcional, reevaluar el plan y eliminar trabajo no esencial. No cortar arbitrariamente una implementacion coherente a mitad de camino: dejar siempre el checkout funcional, validado y publicable.
+- Si una unidad crece inesperadamente, distinguir crecimiento necesario de scope creep. Completar el nucleo coherente y registrar como deferred solamente lo que realmente pertenezca a otra unidad o sea opcional.
+- Un periodo prolongado sin progreso verificable es una señal para reevaluar el enfoque, no un timeout automatico. Si la tarea es legitimamente compleja y continua avanzando hacia el resultado, puede continuar; eliminar trabajo circular, repetitivo o sin evidencia de progreso.
 
 ### Git Y Cierre
 
