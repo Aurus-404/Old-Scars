@@ -2970,3 +2970,11 @@ Gate: `AI Ready — APPROVED`.
 Fuera: hostility universal, facciones, investigación, cover/flanking, behavior trees, población/streaming, AI animal, UI final, cambios de persistencia y cualquier milestone posterior.
 
 Siguiente: hardening de workflow de desarrollo; no iniciar M42.0 ni otro milestone jugable por este cierre.
+
+### Workflow Hardening — Closeout
+
+Fecha: 2026-08-20.
+
+Se cerró el pass de workflow fuera de milestone: `AGENTS.md`, Development Rules, Milestone Template y cuatro repo-local skills quedaron compactos, con política explícita de System Harmony, uso proporcional de modelos/subagentes y logs accionables. El worktree aislado confirmó una única consulta Unity MCP real y read-only: `editor_status` devolvió Editor `ready`, sin compilación, para Unity `6000.4.6f1` en el proyecto del worktree.
+
+`com.unity.pipeline` queda solamente como requisito técnico del bridge MCP configurado; Unity CLI global es opcional y no se convierte en requisito de Old Scars. No hubo cambios de gameplay, datos, persistencia, escenas ni milestones. M42.0 y Open World Rebaseline permanecen no iniciados.

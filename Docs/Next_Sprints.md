@@ -4,19 +4,19 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximo Trabajo
 
-### 1. Hardening de workflow de desarrollo
+### 1. Sin milestone jugable activo
 
-Estado: `PLANNED — NO INICIADO`.
+Estado: `WORKFLOW HARDENING CLOSED`.
 
-M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El próximo trabajo es endurecer el workflow (AGENTS, skills, worktrees, Unity MCP y prácticas operativas), sin iniciar un nuevo milestone jugable.
+M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
 Fuera de alcance:
 
-- M42.0 u otro milestone jugable;
+- M42.0, Open World Rebaseline u otro milestone jugable;
 - cambios de gameplay, datos o persistencia;
 - reabrir la arquitectura M41.1 validada.
 
-M42.0 permanece `PLANNED` en el Roadmap y no se inicia por este cierre.
+M42.0 permanece `PLANNED` en el Roadmap y no se inicia por este cierre. El próximo trabajo requiere nueva autorización explícita.
 
 ## Dirección De Producción
 

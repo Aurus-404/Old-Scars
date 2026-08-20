@@ -31,4 +31,4 @@ M41.0 permanece `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`; M40.1 c
 
 ## Próximo Trabajo
 
-No iniciar un milestone nuevo: el siguiente trabajo autorizado es hardening de workflow, fuera de M41.1.
+No hay milestone jugable activo. El hardening de workflow posterior a M41.1 está cerrado; M42.0 y Open World Rebaseline permanecen no iniciados y requieren autorización específica.
