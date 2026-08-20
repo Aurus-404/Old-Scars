@@ -21,6 +21,7 @@ namespace OldScars.Core.Data.Definitions
         public string visual_rig_profile_id;
         public ActorProfileNavigation navigation;
         public ActorProfileVisualPerception visual_perception;
+        public ActorProfileEncounterAI encounter_ai;
         public ActorProfileEquipped equipped; // Unsupported until a later M24 pass.
     }
 
@@ -46,6 +47,19 @@ namespace OldScars.Core.Data.Definitions
         public float visual_range;
         public float horizontal_fov_degrees;
         public float eye_height;
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileEncounterAI
+    {
+        public string response_policy;
+        public float alert_duration_seconds;
+        public float lost_contact_timeout_seconds;
+        public float avoid_distance;
+        public float flee_distance;
+        public float preferred_combat_distance;
+        public float decision_interval_seconds;
+        public float replan_distance;
     }
 
     [System.Serializable]

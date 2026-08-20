@@ -42,7 +42,6 @@ namespace OldScars.Editor
             EditorApplication.update += Continue;
         }
 
-        [MenuItem(Menu)]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)
@@ -54,10 +53,8 @@ namespace OldScars.Editor
             EditorApplication.EnterPlaymode();
         }
 
-        [MenuItem(Menu, true)]
         private static bool ValidateRun() => !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling;
 
-        [MenuItem(ManualMenu)]
         public static void PrepareManualValidation()
         {
             Require(EditorApplication.isPlaying && GameDataManager.Instance?.IsReady == true,
@@ -92,10 +89,8 @@ namespace OldScars.Editor
                 "\n  Next: use M41.0 Toggle Manual Perception Blocker to compare Occluded and Perceived.");
         }
 
-        [MenuItem(ManualMenu, true)]
         private static bool ValidateManual() => EditorApplication.isPlaying && !EditorApplication.isCompiling;
 
-        [MenuItem(ToggleMenu)]
         public static void ToggleManualPerceptionBlocker()
         {
             Require(EditorApplication.isPlaying, "Manual blocker toggle requires Play Mode.");
@@ -120,7 +115,6 @@ namespace OldScars.Editor
                 $"\n  Blocker: {sight.Blocker?.name ?? "<NONE>"}");
         }
 
-        [MenuItem(ToggleMenu, true)]
         private static bool ValidateToggle() => EditorApplication.isPlaying && !EditorApplication.isCompiling;
 
         private static void Continue()

@@ -44,7 +44,6 @@ namespace OldScars.Editor
             new ApprovedIdentity("Debug World Lee-Enfield Rifle", "item_c0f66d58249e4892aa4632028975816e", "lee_enfield_rifle_01")
         };
 
-        [MenuItem(MenuPath)]
         public static void RunCheckpointAIdentityDiagnostics()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -56,13 +55,11 @@ namespace OldScars.Editor
             M36ItemIdentityDiagnostics.RunAndLog();
         }
 
-        [MenuItem(MenuPath, true)]
         private static bool ValidateRunCheckpointAIdentityDiagnostics()
         {
             return !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling;
         }
 
-        [MenuItem(ApplyMenuPath)]
         public static void ApplyApprovedSampleSceneIdentity()
         {
             EnsureEditMode();
@@ -115,7 +112,6 @@ namespace OldScars.Editor
             Debug.Log($"M36.1 approved SampleScene identity applied. changed: {changed.ToString().ToLowerInvariant()}");
         }
 
-        [MenuItem(ValidateMenuPath)]
         public static void ValidateFoundationIdentity()
         {
             EnsureEditMode();

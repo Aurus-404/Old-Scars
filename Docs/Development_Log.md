@@ -2931,3 +2931,42 @@ El cambio local de `SampleScene.unity` generado durante la prueba manual se audi
 Gate: `AI Ready — PENDING M41.1`. M41.0 no aprueba ese gate por sí solo.
 
 Siguiente: M41.1 — Human Encounter AI V1 permanece `PLANNED`, disponible para autorización y no iniciado.
+
+### M41.1 — Human Encounter AI V1 — Final Closeout
+
+Fecha: 2026-08-20.
+
+Estado anterior: `IMPLEMENTED — AUTOMATED VALIDATION PASSED; MANUAL UNITY VALIDATION PENDING`.
+
+Estado final: `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`.
+
+Validation: `AUTOMATED + MANUAL UNITY PASSED`.
+
+Implementación cerrada:
+
+- `ActorProfileDefinition.encounter_ai` declara response y tuning finito/validado; `ActorProfileComponent` sólo añade/configura `HumanEncounterAIController` para actores NPC que ya tienen Navigation y Perception, y rechaza una autoridad de movimiento del player;
+- `HumanEncounterAIController` decide solamente target explícito, state/timers y respuesta `avoid`/`flee`/`fight`; Navigation conserva path, Perception conserva LOS y `WeaponCombatService` conserva ammo, reload, impacto y consecuencias;
+- player y NPC reutilizan `PhysicalShotPathResolver`; M41.1 no creó una autoridad paralela de Combat, Navigation o Perception;
+- `LostContact` congela la última posición de una percepción positiva, cancela acción activa y nunca copia el transform oculto del target; timeout limpia el encounter y reacquisition exige asignación explícita;
+- lifecycle `Dead` deja IA inactiva, detiene navegación y cancela reload/ataque; encounter state, target, timers y path son efímeros y schema/envelope de save permanecen sin cambios;
+- el diagnóstico automático cubre avoid/flee, navegación inválida estable, fight con reload/disparo/armor, LostContact/no omniscience, reacquisition y lifecycle;
+- la limpieza Editor-only preserva diagnostics históricos para automatización y deja una fixture manual explícita `Old Scars/Diagnostics/AI/M41.1` con Avoid, Flee, Fight, LOS y Toggle LOS Barrier; el panel `M41.1 Manual Status` muestra escenario, estado, percepción/LOS y weapon/ammo/reload para Fight.
+
+Validación automatizada:
+
+- Runtime/Editor compile: `PASS`;
+- `M41.1 Human Encounter AI Diagnostics: PASS`;
+- `git diff --check`: `PASS`.
+
+Mauro confirmó manualmente:
+
+- Avoid: `Idle → Alerted → Avoiding`, navegación física y `NAVIGATION_MOVING`;
+- Flee: `Idle → Alerted → Fleeing`, navegación física y `NAVIGATION_MOVING`;
+- Fight: `Idle → Alerted → Fighting`, Perceived/LOS correcto, Lee-Enfield equipada y reload/disparo real. El estado final `0 loaded / 0 reserve` fue el agotamiento deliberado de toda la munición durante la prueba;
+- LOS: target inicialmente percibido; barrera activa produjo `Perceived = False`, `Occluded` y `LostContact`; tras timeout volvió a `Idle`; al retirar barrera y reasignar threat volvió a `Alerted`, sin omnisciencia.
+
+Gate: `AI Ready — APPROVED`.
+
+Fuera: hostility universal, facciones, investigación, cover/flanking, behavior trees, población/streaming, AI animal, UI final, cambios de persistencia y cualquier milestone posterior.
+
+Siguiente: hardening de workflow de desarrollo; no iniciar M42.0 ni otro milestone jugable por este cierre.

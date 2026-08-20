@@ -11,7 +11,6 @@ namespace OldScars.Editor
     {
         private const string Menu = "Old Scars/Diagnostics/Player Controls & Health Window/Run Foundation";
 
-        [MenuItem(Menu)]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)
@@ -97,7 +96,6 @@ namespace OldScars.Editor
             }
         }
 
-        [MenuItem(Menu, true)]
         private static bool ValidateRun() => !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling;
 
         public static void RunBatch()

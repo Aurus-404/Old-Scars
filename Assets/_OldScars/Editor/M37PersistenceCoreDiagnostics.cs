@@ -13,7 +13,6 @@ namespace OldScars.Editor
     {
         private const string MenuPath = "Old Scars/Diagnostics/M37.0/Run Persistence Core Diagnostics";
 
-        [MenuItem(MenuPath)]
         public static void RunPersistenceCoreDiagnostics()
         {
             var failures = new List<string>();
@@ -55,7 +54,6 @@ namespace OldScars.Editor
             Debug.Log(report);
         }
 
-        [MenuItem(MenuPath, true)]
         private static bool CanRun()
         {
             return !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling;

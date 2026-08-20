@@ -641,6 +641,7 @@ namespace OldScars.Core.Data.Validation
                 ValidateActorProfileHealth(actorProfile.health, $"{ctx}: health");
                 ValidateActorProfileNavigation(actorProfile.navigation, $"{ctx}: navigation");
                 ValidateActorProfileVisualPerception(actorProfile.visual_perception, $"{ctx}: visual_perception");
+                ValidateActorProfileEncounterAI(actorProfile, $"{ctx}: encounter_ai");
                 ValidateActorProfileInventory(actorProfile.initial_inventory, $"{ctx}: initial_inventory");
 
                 if (!string.IsNullOrWhiteSpace(actorProfile.equipment_layout_id))
@@ -691,6 +692,26 @@ namespace OldScars.Core.Data.Validation
         {
             if (!FinitePositive(value))
                 report.Error($"{context}: '{field}' must be finite and > 0 (got {value}).");
+        }
+
+        private void ValidateActorProfileEncounterAI(ActorProfileDefinition actorProfile, string context)
+        {
+            ActorProfileEncounterAI ai = actorProfile.encounter_ai;
+            if (ai == null)
+                return;
+            if (ai.response_policy != "avoid" && ai.response_policy != "flee" && ai.response_policy != "fight")
+                report.Error($"{context}: 'response_policy' must be exactly 'avoid', 'flee' or 'fight'.");
+            RequireFinitePositive(ai.alert_duration_seconds, "alert_duration_seconds", context);
+            RequireFinitePositive(ai.lost_contact_timeout_seconds, "lost_contact_timeout_seconds", context);
+            RequireFinitePositive(ai.avoid_distance, "avoid_distance", context);
+            RequireFinitePositive(ai.flee_distance, "flee_distance", context);
+            RequireFinitePositive(ai.preferred_combat_distance, "preferred_combat_distance", context);
+            RequireFinitePositive(ai.decision_interval_seconds, "decision_interval_seconds", context);
+            RequireFinitePositive(ai.replan_distance, "replan_distance", context);
+            if (FinitePositive(ai.flee_distance) && FinitePositive(ai.avoid_distance) && ai.flee_distance <= ai.avoid_distance)
+                report.Error($"{context}: 'flee_distance' must be greater than 'avoid_distance'.");
+            if (actorProfile.navigation == null || actorProfile.visual_perception == null)
+                report.Error($"{context}: encounter_ai requires both navigation and visual_perception blocks.");
         }
 
         private void ValidateActorProfileInitialTags(string[] initialTags, string context)

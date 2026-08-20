@@ -57,7 +57,6 @@ namespace OldScars.EditorTools
                 0f)
         };
 
-        [MenuItem(MenuPath)]
         private static void GenerateAll()
         {
             var failures = new List<string>();

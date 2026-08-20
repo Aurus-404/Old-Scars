@@ -20,7 +20,6 @@ namespace OldScars.EditorTools
         private const float AbsurdLocalPositionThreshold = 2f;
         private const float FallbackHalfWidth = 0.575f;
 
-        [MenuItem(ValidateMenuPath)]
         private static void ValidateM32DoorPivots()
         {
             if (!TryGetDoorsRoot(out Transform doorsRoot))
@@ -40,7 +39,6 @@ namespace OldScars.EditorTools
                 Debug.LogWarning($"[RepairM32DoorPivotsTool] Validated {controllers.Length} M32 door pivot(s): {issueCount} issue(s) found.");
         }
 
-        [MenuItem(RepairMenuPath)]
         private static void RepairM32DoorPivots()
         {
             if (!TryGetDoorsRoot(out Transform doorsRoot))

@@ -13,7 +13,6 @@ namespace OldScars.EditorTools
 
         private Vector3 padding = DefaultPadding;
 
-        [MenuItem("Old Scars/Visuals/Fit Interaction Colliders To Visuals")]
         private static void Open()
         {
             GetWindow<FitInteractionCollidersWindow>("Fit Visual Colliders");

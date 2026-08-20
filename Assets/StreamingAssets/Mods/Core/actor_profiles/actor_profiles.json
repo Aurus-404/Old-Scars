@@ -107,6 +107,85 @@
         "eye_height": 1.6
       },
       "initial_inventory": []
+    },
+    {
+      "type": "actor_profile",
+      "id": "core:debug_encounter_avoid_01",
+      "display_name": "Debug Encounter Avoid NPC",
+      "initial_tags": ["human", "inspectable"],
+      "health": { "max_health": 100, "current_health": 100 },
+      "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
+      "visual_perception": { "visual_range": 20.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
+      "encounter_ai": {
+        "response_policy": "avoid",
+        "alert_duration_seconds": 0.2,
+        "lost_contact_timeout_seconds": 5.0,
+        "avoid_distance": 10.0,
+        "flee_distance": 13.0,
+        "preferred_combat_distance": 6.0,
+        "decision_interval_seconds": 0.1,
+        "replan_distance": 0.75
+      },
+      "initial_inventory": []
+    },
+    {
+      "type": "actor_profile",
+      "id": "core:debug_encounter_flee_01",
+      "display_name": "Debug Encounter Flee NPC",
+      "initial_tags": ["human", "inspectable"],
+      "health": { "max_health": 100, "current_health": 100 },
+      "navigation": { "speed": 4.0, "acceleration": 9.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
+      "visual_perception": { "visual_range": 20.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
+      "encounter_ai": {
+        "response_policy": "flee",
+        "alert_duration_seconds": 0.2,
+        "lost_contact_timeout_seconds": 5.0,
+        "avoid_distance": 10.0,
+        "flee_distance": 13.0,
+        "preferred_combat_distance": 6.0,
+        "decision_interval_seconds": 0.1,
+        "replan_distance": 0.75
+      },
+      "initial_inventory": []
+    },
+    {
+      "type": "actor_profile",
+      "id": "core:debug_encounter_fight_01",
+      "display_name": "Debug Encounter Fight NPC",
+      "equipment_layout_id": "core:human_standard_01",
+      "initial_tags": ["human", "inspectable"],
+      "health": { "max_health": 100, "current_health": 100 },
+      "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
+      "visual_perception": { "visual_range": 30.0, "horizontal_fov_degrees": 180.0, "eye_height": 1.6 },
+      "encounter_ai": {
+        "response_policy": "fight",
+        "alert_duration_seconds": 0.2,
+        "lost_contact_timeout_seconds": 0.8,
+        "avoid_distance": 5.0,
+        "flee_distance": 9.0,
+        "preferred_combat_distance": 8.0,
+        "decision_interval_seconds": 0.1,
+        "replan_distance": 0.75
+      },
+      "initial_inventory": [
+        { "item_id": "core:ammo_303_british_01", "quantity": 12 }
+      ],
+      "initial_equipment": [
+        { "item_id": "core:lee_enfield_rifle_01" }
+      ]
+    },
+    {
+      "type": "actor_profile",
+      "id": "core:debug_encounter_armored_target_01",
+      "display_name": "Debug Encounter Armored Target",
+      "equipment_layout_id": "core:human_standard_01",
+      "initial_tags": ["human", "inspectable"],
+      "health": { "max_health": 100, "current_health": 100 },
+      "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
+      "initial_inventory": [],
+      "initial_equipment": [
+        { "item_id": "core:debug_torso_armor_01", "slot_ids": ["core:torso_outer"] }
+      ]
     }
   ]
 }

@@ -22,7 +22,6 @@ namespace OldScars.EditorTools
         private Vector3 paddingPerSide = DefaultPaddingPerSide;
         private Vector3 minimumSize = DefaultMinimumSize;
 
-        [MenuItem("Old Scars/World Items/Fit Usable Item Colliders")]
         private static void Open()
         {
             GetWindow<UsableWorldItemColliderFitterWindow>("Fit World Item Colliders");

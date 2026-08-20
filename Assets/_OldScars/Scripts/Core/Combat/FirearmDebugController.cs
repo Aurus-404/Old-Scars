@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
@@ -19,8 +17,6 @@ namespace OldScars.Core.Combat
     public sealed class FirearmDebugController : MonoBehaviour
     {
         private const float PhysicalShotOriginEpsilon = 0.02f;
-        private const float SurfaceContinuationEpsilon = 0.001f;
-        private const int MaxPenetratedSurfaces = 4;
 
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private Camera inputCamera;
@@ -380,147 +376,9 @@ namespace OldScars.Core.Combat
             float range,
             float penetrationPower)
         {
-            var ignoredColliders = new HashSet<Collider>();
-            var penetratedSurfaceOwners = new HashSet<WorldObjectProfileComponent>();
-            Vector3 currentOrigin = physicalOrigin;
-            float remainingRange = Mathf.Max(0f, range);
-            float remainingPower = penetrationPower;
-            int penetratedSurfaces = 0;
-            PenetrationResolution lastSurface = default;
-
-            while (remainingRange > 0f)
-            {
-                if (!TryNextPhysicalHit(
-                        currentOrigin,
-                        direction,
-                        remainingRange,
-                        ignoredColliders,
-                        out RaycastHit hit))
-                {
-                    return new PhysicalShotResolution(
-                        PhysicalShotTermination.Miss,
-                        null,
-                        currentOrigin + direction * remainingRange,
-                        penetrationPower,
-                        remainingPower,
-                        penetratedSurfaces,
-                        lastSurface);
-                }
-
-                Collider collider = hit.collider;
-                if (collider.GetComponentInParent<ActorHealthComponent>() != null)
-                {
-                    return new PhysicalShotResolution(
-                        PhysicalShotTermination.Impact,
-                        collider,
-                        hit.point,
-                        penetrationPower,
-                        remainingPower,
-                        penetratedSurfaces,
-                        lastSurface);
-                }
-
-                WorldObjectProfileComponent surface = collider.GetComponentInParent<WorldObjectProfileComponent>();
-                if (surface == null || !surface.TryGetPenetrationProfile(out PenetrationProfileDefinition profile))
-                {
-                    return new PhysicalShotResolution(
-                        PhysicalShotTermination.Impact,
-                        collider,
-                        hit.point,
-                        penetrationPower,
-                        remainingPower,
-                        penetratedSurfaces,
-                        lastSurface);
-                }
-
-                if (penetratedSurfaceOwners.Contains(surface))
-                {
-                    // A compound collider belonging to an already-resolved
-                    // surface is not another resistance layer. Actor receivers
-                    // were checked first, preserving a future internal receiver.
-                    ignoredColliders.Add(collider);
-                    float duplicateAdvance = hit.distance + SurfaceContinuationEpsilon;
-                    remainingRange = Mathf.Max(0f, remainingRange - duplicateAdvance);
-                    currentOrigin = hit.point + direction * SurfaceContinuationEpsilon;
-                    continue;
-                }
-
-                if (penetratedSurfaces >= MaxPenetratedSurfaces)
-                {
-                    return new PhysicalShotResolution(
-                        PhysicalShotTermination.SurfaceLimitStopped,
-                        null,
-                        hit.point,
-                        penetrationPower,
-                        remainingPower,
-                        penetratedSurfaces,
-                        lastSurface,
-                        profile.id);
-                }
-
-                lastSurface = PenetrationResolutionService.Resolve(
-                    remainingPower,
-                    new[]
-                    {
-                        new PenetrationLayer(
-                            "world_surface_" + RuntimeHelpers.GetHashCode(surface),
-                            profile.id,
-                            0,
-                            profile.resistance)
-                    });
-                if (lastSurface.Outcome == PenetrationOutcome.Stopped)
-                {
-                    return new PhysicalShotResolution(
-                        PhysicalShotTermination.SurfaceStopped,
-                        null,
-                        hit.point,
-                        penetrationPower,
-                        0f,
-                        penetratedSurfaces,
-                        lastSurface,
-                        profile.id);
-                }
-
-                remainingPower = lastSurface.ResidualPower;
-                penetratedSurfaces++;
-                ignoredColliders.Add(collider);
-                penetratedSurfaceOwners.Add(surface);
-                float advance = hit.distance + SurfaceContinuationEpsilon;
-                remainingRange = Mathf.Max(0f, remainingRange - advance);
-                currentOrigin = hit.point + direction * SurfaceContinuationEpsilon;
-            }
-
-            return new PhysicalShotResolution(
-                PhysicalShotTermination.Miss,
-                null,
-                currentOrigin,
-                penetrationPower,
-                remainingPower,
-                penetratedSurfaces,
-                lastSurface);
-        }
-
-        private bool TryNextPhysicalHit(
-            Vector3 origin,
-            Vector3 direction,
-            float range,
-            ISet<Collider> ignoredColliders,
-            out RaycastHit result)
-        {
             int mask = hitLayerMask.value != 0 ? hitLayerMask.value : Physics.DefaultRaycastLayers;
-            RaycastHit[] hits = Physics.RaycastAll(origin, direction, range, mask, QueryTriggerInteraction.Ignore);
-            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
-            foreach (RaycastHit hit in hits)
-            {
-                Collider collider = hit.collider;
-                if (collider == null || collider.transform == transform || collider.transform.IsChildOf(transform) ||
-                    ignoredColliders.Contains(collider))
-                    continue;
-                result = hit;
-                return true;
-            }
-            result = default;
-            return false;
+            return PhysicalShotPathResolver.Resolve(
+                transform, physicalOrigin, direction, range, penetrationPower, mask);
         }
 
         private bool TryGetEquipped(

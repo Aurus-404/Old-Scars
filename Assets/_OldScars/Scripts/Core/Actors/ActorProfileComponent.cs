@@ -303,6 +303,7 @@ namespace OldScars.Core.Actors
         {
             ApplyNavigation(profile);
             ApplyVisualPerception(profile);
+            ApplyEncounterAI(profile);
         }
 
         private void ApplyNavigation(ActorProfileDefinition profile)
@@ -369,6 +370,35 @@ namespace OldScars.Core.Actors
                     $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
                     $"\n  Failure: {error ?? "<UNKNOWN>"}" +
                     "\n  ActionTaken: visual perception capability remains unavailable");
+            }
+        }
+
+        private void ApplyEncounterAI(ActorProfileDefinition profile)
+        {
+            if (profile.encounter_ai == null)
+                return;
+            if (GetComponent<PlayerMovementController>() != null || GetComponent<PlayerMovementInputController>() != null)
+            {
+                Debug.LogError(
+                    "[Actors][ENCOUNTER_AI_PROFILE_REJECTED]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
+                    "\n  Failure: Human Encounter AI cannot share the player movement authority." +
+                    "\n  ActionTaken: no HumanEncounterAIController was added");
+                return;
+            }
+
+            HumanEncounterAIController controller = GetComponent<HumanEncounterAIController>();
+            if (controller == null)
+                controller = gameObject.AddComponent<HumanEncounterAIController>();
+            if (!controller.TryConfigure(profile.encounter_ai, out string error))
+            {
+                Debug.LogError(
+                    "[Actors][ENCOUNTER_AI_PROFILE_REJECTED]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
+                    $"\n  Failure: {error ?? "<UNKNOWN>"}" +
+                    "\n  ActionTaken: encounter AI capability remains unavailable");
             }
         }
 

@@ -50,7 +50,6 @@ namespace OldScars.Editor
         private const string TorsoOuterSlotId = "core:torso_outer", TorsoMiddleSlotId = "core:torso_middle";
         private const float Epsilon = 0.0001f;
         static M40ArmorPenetrationDiagnostics() => EditorApplication.update += Continue;
-        [MenuItem(Menu)]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)
@@ -64,8 +63,6 @@ namespace OldScars.Editor
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             EditorApplication.EnterPlaymode();
         }
-        [MenuItem(Menu, true)] private static bool ValidateRun() => !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling;
-        [MenuItem(ManualMenu)]
         private static void PrepareOrToggleManualTarget() { try {
                 Require(EditorApplication.isPlaying && GameDataManager.Instance?.IsReady == true, "Manual setup requires an active Play session with loaded game data.");
                 ActorInteractionContext player = Player();
@@ -84,7 +81,6 @@ namespace OldScars.Editor
                 ActorItemOwnershipComponent finalOwnership = target.GetComponent<ActorItemOwnershipComponent>(); ItemInstance[] finalArmors = finalOwnership.GetAllOwnedEntries().Where(entry => entry.DefinitionId == ArmorItemId).Select(entry => entry.Item).OrderBy(item => item.InstanceId, StringComparer.Ordinal).ToArray(); int finalEquipped = finalArmors.Count(item => finalOwnership.Equipment.IsEquipped(item.InstanceId));
                 Debug.Log($"[M40.1 Manual Setup] Target='{target.name}' ActorInstanceId='{target.ActorInstanceId}' ArmorInstanceIds='{string.Join(",", finalArmors.Select(item => item.InstanceId))}' Mode='{(finalEquipped == 2 ? "StoppedTwoLayers" : finalEquipped == 1 ? "PenetratedOneLayer" : "UnarmoredInventoryOnly")}'.");
             } catch (Exception exception) { Debug.LogError("[M40.1 Manual Setup] " + exception.Message); } }
-        [MenuItem(ManualMenu, true)] private static bool ValidateManualTarget() => EditorApplication.isPlaying && !EditorApplication.isCompiling;
         private static void Continue()
         {
             string phase = SessionState.GetString(PhaseKey, string.Empty);

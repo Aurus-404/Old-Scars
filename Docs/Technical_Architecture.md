@@ -186,7 +186,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - El bootstrap valida ownership unico antes de publicar el snapshot visual confirmado.
 - El profile completo no es una transaccion: un rollback de `initial_equipment` conserva display, tags, health, layout e `initial_inventory` ya aplicados.
 
-## Navigation Y Visual Perception M41.0
+## Navigation, Perception Y Human Encounter AI M41
 
 - `ActorProfileDefinition.navigation` y `visual_perception` son bloques opcionales e independientes. Su presencia declara la capacidad; su ausencia no agrega componentes ni aplica defaults productivos ocultos.
 - `ActorProfileComponent` configura esas capacidades tanto durante bootstrap como durante `PersistenceRestore`. Un actor con autoridades de movimiento del player rechaza navegación NPC; `CharacterController`, `PlayerMovementController` y `PlayerMovementInputController` permanecen separados.
@@ -195,6 +195,9 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `ActorVisualPerceptionService` no depende de Navigation ni Combat. Evalúa observer/target registrados, lifecycle, rango, FOV horizontal y LOS físico ordenado; ignora colliders propios/triggers y resuelve child colliders hacia la identidad target.
 - `ActorVisualPerceptionResult` explica perceived/reason, IDs, posición observada, distancia, ángulo, blocker y tiempo de `WorldClock` cuando existe. No existe memoria, alertness, target selection ni decisión de comportamiento en M41.0.
 - `SampleScene` contiene `M41_NavigationFixture`, una `NavMeshSurface` aislada con bake persistido, floor, barrera `Not Walkable` y markers. El Editor tool idempotente prepara y valida asset, posiciones, path y triangulación; el diagnóstico principal prueba Navigation, Perception, spawn/restore y regresión de autoridad del player.
+- M41.1 agrega el bloque opcional data-driven `encounter_ai` y `HumanEncounterAIController`. Este último sólo posee target explícitamente asignado, state/timers y response `avoid`/`flee`/`fight`; delega LOS en `ActorVisualPerceptionService`, path en `ActorNavigationController` y ammo/reload/impacto en `WeaponCombatService`.
+- `LostContact` conserva sólo `LastKnownPosition` de una percepción positiva, no consulta la posición del target oculto, cancela acción activa y limpia el encounter tras timeout; una reacquisition exige asignación explícita. `Dead` detiene navegación y acciones.
+- `PhysicalShotPathResolver` es el camino físico compartido por player y NPC; `WeaponCombatService` sigue siendo la autoridad para munición y consecuencias. M41.1 no agrega estado durable ni cambia schema/envelope.
 
 ## Interaccion Y Estado Del Mundo
 
@@ -229,9 +232,9 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Limites Tecnicos Del Slice
 
 - World Clock y needs/rest M38.1 están validados para el Current Slice; no existe offline progression, calendario amplio, clima, iluminación temporal, beds system ni fatigue completa.
-- M39 aporta health localizada/medicine, M40 aporta resolución melee/firearm V1 y M40.1 valida armor regional más penetración común wearable/world mediante automatización y fresh-session manual. Todavía no existen proyectiles físicos, ricochet/ángulo/thickness real, armor degradation, condition mutable de armas, receptores machine/vehicle, AI combat, animación/audio final ni balance de producción.
+- M39 aporta health localizada/medicine, M40 aporta resolución melee/firearm V1 y M40.1 valida armor regional más penetración común wearable/world mediante automatización y fresh-session manual. M41.1 agrega AI humana acotada sobre esas autoridades. Todavía no existen proyectiles físicos, ricochet/ángulo/thickness real, armor degradation, condition mutable de armas, receptores machine/vehicle, animación/audio final ni balance de producción.
 - `FirearmDebugController` sigue siendo una superficie debug, pero ya no es una autoridad paralela: Equipment, `ItemInstance`, servicios de combate y M39 poseen el estado y la lógica gameplay.
-- Existe actor registry/spawn/lifecycle durable acotado a M38.0 y una foundation M41.0 de navegación NPC/percepción visual. No existen Human Encounter AI, hostility, alert states, investigación, chase/flee, decisiones de combate, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
+- Existe actor registry/spawn/lifecycle durable acotado a M38.0, Navigation/Perception M41.0 y Human Encounter AI V1 M41.1. No existen hostility universal, investigación, cover/flanking, behavior trees, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
 - La UI es debug OnGUI y no debe expandirse como si fuera la UI final.
 - Los mods son aditivos, exigen Global Content IDs canónicos y siguen sin manifests, ownership de namespace, overrides/versiones, dependencies ni patches; el soporte de compatibilidad de produccion pertenece a milestones posteriores.
 

@@ -233,7 +233,7 @@ Bloquea: resoluciones paralelas, consumo de municion inconsistente, armor opaca 
 
 ### AI Ready - M41.1
 
-Foundation vigente: M41.0 está `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`. Esto cierra la base de navegación/percepción, pero no aprueba `AI Ready`: el gate cierra recién con M41.1, que permanece `PLANNED` y no iniciado.
+Estado: `AI Ready — APPROVED` en M41.1. M41.0 aportó Navigation/Perception y M41.1 validó avoid/alert/flee/fight, LostContact, reacquisition explícita, lifecycle y el uso del contrato de combate existente sin omnisciencia ni autoridades paralelas.
 
 Debe validar:
 
@@ -422,7 +422,7 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | R03 | `MITIGATING` | Mauro | Sobreingenieria | Media | Alta | Aparecen abstracciones sin consumidor actual. | Exigir necesidad actual, contrato minimo y consumidor demostrado. | Riesgo estructural permanente; revisar en cada milestone arquitectonico y cada gate, especialmente M36.1, M37, M41, M45 y M50. Foundation Freeze revisa su mitigacion local, no lo cierra globalmente. |
 | R04 | `MITIGATING` | Mauro | Deuda OnGUI | Alta | Media | UI debug condiciona backends nuevos. | Congelar ampliaciones y reemplazar en M48.0. | Cerrar en Production Ready; aceptacion de deuda requiere decision explicita. |
 | R05 | `CLOSED` | Mauro | Persistencia introducida tarde | Media | Alta | Sistemas nuevos carecen de identidad durable. | M36.1 y M37.1 validaron identidad y Current Slice persistence. | Cerrado en Persistence Ready; revalidar en releases. |
-| R06 | `OPEN` | Mauro | IA demasiado compleja | Media | Alta | Multiples capas antes de un encuentro funcional. | Limitar M41.1 a avoid/alert/flee/fight. | Cerrar en AI Ready. |
+| R06 | `CLOSED` | Mauro | IA demasiado compleja | Media | Alta | Multiples capas antes de un encuentro funcional. | M41.1 quedó limitado a avoid/alert/flee/fight, reutilizando autoridades existentes. | Cerrado en AI Ready; revalidar ante una futura ampliación de IA. |
 | R07 | `MITIGATING` | Mauro | Proceduralidad prematura | Media | Alta | Generacion antes de sectorizacion y tools. | Bloquearla hasta M47.0. | Cerrar al autorizar el alcance acotado de M47.0; reconfirmar en Production Ready. |
 | R08 | `OPEN` | Mauro | Falta de herramientas de contenido | Alta | Alta | Cada contenido exige edicion manual fragil. | Validators, catalogos e inspector. | Cerrar en Content Pipeline Ready. |
 | R09 | `OPEN` | Mauro | Explosion de datos | Media | Alta | Duplicacion, IDs rotos y schemas divergentes. | Catalogos, validacion y compatibilidad. | Cerrar en Production Ready. |

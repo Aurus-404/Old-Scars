@@ -26,13 +26,11 @@ namespace OldScars.EditorTools
         private const string CrowbarHeldPath = "Assets/_OldScars/Art/External/Sketchfab/Crowbar_PSX_LowPoly/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Rusted_Crowbar_Held_PSX.prefab";
         private const string DebugCargoPrefabPath = "Assets/_OldScars/Debug/Visuals/PFB_DEBUG_CargoRig_M35.prefab";
 
-        [MenuItem(MenuRoot + "Configure Selected Human Rig")]
         private static void ConfigureSelectedHumanRig()
         {
             ConfigureSelectedHumanRig(false);
         }
 
-        [MenuItem(MenuRoot + "Configure Selected Human Debug Rig")]
         private static void ConfigureSelectedHumanDebugRig()
         {
             ConfigureSelectedHumanRig(true);
@@ -137,7 +135,6 @@ namespace OldScars.EditorTools
                 actorRoot);
         }
 
-        [MenuItem(MenuRoot + "Generate M35 Visual Prefabs")]
         private static void GenerateM35VisualPrefabs()
         {
             EnsureAssetFolder(SurvivalVisualsDirectory);
@@ -162,7 +159,6 @@ namespace OldScars.EditorTools
             Debug.Log("[M35VisualRigTools] Generated backpack world/equipped and held crowbar/rifle visual prefabs.");
         }
 
-        [MenuItem(MenuRoot + "Generate Debug Cargo Rig")]
         private static void GenerateDebugCargoRig()
         {
             EnsureAssetFolder("Assets/_OldScars/Debug/Visuals");
@@ -203,7 +199,6 @@ namespace OldScars.EditorTools
             Debug.Log("[M35VisualRigTools] Generated Debug Cargo Rig with the universal synchronizer. No scene was modified.");
         }
 
-        [MenuItem(MenuRoot + "Validate Selected Rig")]
         private static void ValidateSelectedRig()
         {
             EntityVisualRigRuntime rig = Selection.activeGameObject != null
@@ -240,7 +235,6 @@ namespace OldScars.EditorTools
             Debug.Log("[M35VisualRigTools] Selected rig bindings are structurally valid.", rig);
         }
 
-        [MenuItem(MenuRoot + "Validate Generated Visual Prefabs")]
         private static void ValidateGeneratedVisualPrefabs()
         {
             string[] equippedPaths = { BackpackEquippedPath, CrowbarHeldPath, RifleHeldPath };
@@ -262,7 +256,6 @@ namespace OldScars.EditorTools
             Debug.Log("[M35VisualRigTools] Generated M35 visual prefabs satisfy their visual-only contracts.");
         }
 
-        [MenuItem(MenuRoot + "Copy Selected Attachment Pose JSON")]
         private static void CopySelectedAttachmentPoseJson()
         {
             Transform selected = Selection.activeTransform;

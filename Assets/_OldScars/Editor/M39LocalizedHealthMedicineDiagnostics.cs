@@ -43,7 +43,6 @@ namespace OldScars.Editor
             EditorApplication.update += Continue;
         }
 
-        [MenuItem(Menu)]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)
@@ -59,7 +58,6 @@ namespace OldScars.Editor
             EditorApplication.EnterPlaymode();
         }
 
-        [MenuItem(Menu, true)]
         private static bool ValidateRun()
         {
             return !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling;

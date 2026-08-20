@@ -18,22 +18,23 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone cerrado mas reciente | M41.0 — Navigation & Perception Foundation |
+| Milestone cerrado mas reciente | M41.1 — Human Encounter AI V1 |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
-| Ultimo milestone funcional cerrado | M41.0 — Navigation & Perception Foundation |
+| Ultimo milestone funcional cerrado | M41.1 — Human Encounter AI V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado | `1c843961ed72b554f485b86105c443669337e8c0` |
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
-| Milestone activo | Ninguno; M41.1 permanece `PLANNED` y disponible para autorización |
+| Milestone activo | Ninguno |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
 | Estado M40.1 | `DONE — ARMOR / PENETRATION V1 VALIDATED` |
 | Combat Ready | `APPROVED` |
-| Siguientes | M41.1 — Human Encounter AI V1 (`PLANNED`; disponible para autorización) |
+| AI Ready | `APPROVED` |
+| Siguientes | M42.0 — Weather, Exposure & Environment V1 (`PLANNED`; no iniciado) |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED` y M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`. M41.0 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` está `APPROVED`. M41.1 permanece `PLANNED`, disponible para autorización y no iniciado; `AI Ready` todavía no está aprobado.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
 
 ## Estados Canonicos
 
@@ -135,7 +136,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M40.0 — Combat Resolution & Weapons V1 | Jugable | `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED` | M39.0 | Resolver único hacia M39, melee/firearms, estado cargado por instancia, ammo/reload, near-cover blocking y persistence validados con automatización y fresh-session manual. |
 | CERRADO | M40.1 — Armor & Penetration V1 | Jugable | `DONE — ARMOR / PENETRATION V1 VALIDATED` | M40.0 | Cobertura regional equipped-only, núcleo común de penetración para armor/world, trauma residual y round-trip fresh-session validados; gate `Combat Ready` aprobado. |
 | CERRADO | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` | M38.0 | Navigation NPC y perception visual separadas, data-driven y validadas con automatización y prueba manual Unity. |
-| SIGUIENTE | M41.1 — Human Encounter AI V1 | Jugable | `PLANNED` | M40.0, M41.0 | Evitar, alertarse, huir y luchar; gate `AI Ready`. |
+| CERRADO | M41.1 — Human Encounter AI V1 | Jugable | `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` | M40.0, M41.0 | Avoid, Alerted, Flee, Fight y LostContact acotados, data-driven y validados; gate `AI Ready` aprobado. |
 | DESPUES | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED` | M38.1 | Clima, forecast, exposicion y proteccion. |
 | DESPUES | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED` | M42.0; M41.0 para animales moviles | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready`. |
 | DESPUES | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad. |
@@ -162,7 +163,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 
 Este archivo es autoridad sobre los nombres y la ubicacion de los gates. Sus criterios detallados se desarrollan en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 
-Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready — APPROVED` para el Current Slice validado en M37.1; `Combat Ready — APPROVED` en M40.1.
+Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready — APPROVED` para el Current Slice validado en M37.1; `Combat Ready — APPROVED` en M40.1; `AI Ready — APPROVED` en M41.1.
 
 | Gate | Cierre previsto |
 | --- | --- |
@@ -184,7 +185,7 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 Camino base vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 DONE`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 DONE → M41.1 DONE → AI Ready APPROVED`
 
 Ramas que deben converger antes de la vertical slice candidata:
 
@@ -331,7 +332,17 @@ Navigation y Perception son capacidades independientes declaradas por bloques op
 
 Mauro confirmó manualmente que el navigator recibió destination, se desplazó físicamente rodeando la barrera y completó `Moving → Reached`. Con poses deterministas, la barrera activa produjo `Occluded` con blocker exacto `Navigation Perception Barrier`; al retirarla produjo `Perceived: True`, `Reason: Perceived` y `Blocker: <NONE>`. El helper usado para esa validación quedó corregido por `b4345890d9185d439d408cdece211424c88b8b21`.
 
-M41.1 permanece `PLANNED`, no iniciado y fuera de alcance. Hostility, alert states, investigation, chase, flee, combat decisions, cover, behavior trees y sistemas AI generales no forman parte de M41.0.
+M41.1 permanece fuera de alcance de M41.0. Hostility, alert states, investigation, chase, flee, combat decisions, cover, behavior trees y sistemas AI generales no forman parte de M41.0.
+
+### M41.1 — Human Encounter AI V1 Validado
+
+M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. Validation: `AUTOMATED + MANUAL UNITY PASSED`; el gate `AI Ready` queda `APPROVED`.
+
+`HumanEncounterAIController` sólo decide estado de encuentro, target explícitamente asignado, timers y response data-driven `avoid`/`flee`/`fight`. Reutiliza `ActorVisualPerceptionService` para percepción/LOS, `ActorNavigationController` para órdenes y path, y `WeaponCombatService` para arma, ammo, reload, impacto y resolución médica. Player y NPC usan `PhysicalShotPathResolver`; no se agrega una autoridad paralela de combate, navegación o percepción.
+
+`LostContact` conserva exclusivamente la última posición obtenida de una percepción positiva, cancela acción activa y no lee el transform oculto del target. Tras timeout limpia el encounter y exige reasignación explícita para reacquisition. Estados, target, timers, path, percepción y munición de combate conservan sus contratos efímeros/persistentes preexistentes; M41.1 no cambia schema ni envelope de save.
+
+El diagnóstico automático cubre avoid/flee, navegación inválida sin retry, fight con reload/disparo/armor, LostContact, no omniscience, reacquisition y lifecycle Dead. Mauro confirmó manualmente los cuatro escenarios y el tooling Editor quedó reducido a una fixture M41.1 explícita; diagnostics históricos se preservan para automatización sin entradas visibles obsoletas.
 
 ## Trabajo Congelado O Diferido
 

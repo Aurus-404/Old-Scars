@@ -42,7 +42,6 @@ namespace OldScars.Editor
 
         static M40CombatWeaponsDiagnostics() => EditorApplication.update += Continue;
 
-        [MenuItem(Menu)]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)
@@ -57,7 +56,6 @@ namespace OldScars.Editor
             EditorApplication.EnterPlaymode();
         }
 
-        [MenuItem(Menu, true)]
         private static bool ValidateRun() => !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling;
 
         private static void Continue()

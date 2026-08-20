@@ -19,7 +19,6 @@ namespace OldScars.Editor
                 "Assets/_OldScars/Resources/PFB_WorldItem_lee_enfield_rifle_01.prefab")
         };
 
-        [MenuItem(MenuPath)]
         private static void MigrateSampleScenePickups()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)

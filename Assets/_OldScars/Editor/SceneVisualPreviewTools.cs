@@ -13,7 +13,6 @@ namespace OldScars.EditorTools
         private const string ApplyMenuPath = "Old Scars/Visuals/Apply Scene Visual Preview";
         private const string ClearMenuPath = "Old Scars/Visuals/Clear Scene Visual Preview";
 
-        [MenuItem(ApplyMenuPath)]
         private static void ApplySceneVisualPreview()
         {
             if (!TryGetEditableActiveScene(out Scene activeScene))
@@ -105,7 +104,6 @@ namespace OldScars.EditorTools
                 $"[SceneVisualPreviewTools] Applied {appliedCount} scene visual previews; skipped {skippedCount}.");
         }
 
-        [MenuItem(ClearMenuPath)]
         private static void ClearSceneVisualPreview()
         {
             if (!TryGetEditableActiveScene(out Scene activeScene))

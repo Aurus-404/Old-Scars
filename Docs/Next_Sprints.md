@@ -4,20 +4,19 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximo Trabajo
 
-### 1. M41.1 — Human Encounter AI V1
+### 1. Hardening de workflow de desarrollo
 
-Estado: `PLANNED`.
+Estado: `PLANNED — NO INICIADO`.
 
-M41.0 está `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`. M41.1 queda disponible como siguiente milestone, pero no está iniciado ni autorizado por este closeout.
+M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El próximo trabajo es endurecer el workflow (AGENTS, skills, worktrees, Unity MCP y prácticas operativas), sin iniciar un nuevo milestone jugable.
 
-Alcance previsto por el Roadmap:
+Fuera de alcance:
 
-- humanos capaces de evitar, alertarse, huir y luchar;
-- reutilización de Navigation, Perception y del contrato de combate existente;
-- transiciones interrumpibles y feedback observable;
-- comportamiento acotado, sin facciones estratégicas ni framework universal de AI.
+- M42.0 u otro milestone jugable;
+- cambios de gameplay, datos o persistencia;
+- reabrir la arquitectura M41.1 validada.
 
-Antes de implementar se debe congelar un prompt M41.1 conforme a `OldScars_Development_Rules.md` y `Milestone_Template.md`, revisar dependencias reales y obtener autorización explícita de Mauro.
+M42.0 permanece `PLANNED` en el Roadmap y no se inicia por este cierre.
 
 ## Dirección De Producción
 
@@ -33,7 +32,7 @@ M50.0 conserva el alcance de compatibilidad de producción; ID TBD — Global Co
 
 ## No Iniciar Todavía
 
-- M41.1 o AI combat sin autorización específica;
+- M42.0 o trabajo jugable nuevo sin autorización específica;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;

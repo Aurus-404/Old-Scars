@@ -22,7 +22,6 @@ namespace OldScars.Editor
 
         private const string NavMeshAssetPath = "Assets/Scenes/SampleScene/NavMesh-M41_NavigationFixture.asset";
 
-        [MenuItem("Old Scars/Diagnostics/AI/Prepare M41.0 SampleScene Navigation")]
         public static void Prepare()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)

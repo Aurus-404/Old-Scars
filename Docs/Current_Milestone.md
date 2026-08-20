@@ -4,32 +4,31 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ## Estado Actual
 
-### M41.0 — Navigation & Perception Foundation
+### M41.1 — Human Encounter AI V1
 
 Estado final:
 
-`DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`
+`DONE — HUMAN ENCOUNTER AI V1 VALIDATED`
 
 Validation: `AUTOMATED + MANUAL UNITY PASSED`.
 
-M40.1 permanece `DONE — ARMOR / PENETRATION V1 VALIDATED` y `Combat Ready — APPROVED`. M41.0 cierra capacidades separadas y data-driven de navegación NPC y percepción visual explicable sobre identidad/lifecycle M38. `AI Ready` permanece pendiente de M41.1.
+M41.0 permanece `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`; M40.1 conserva `Combat Ready — APPROVED`. M41.1 conecta Navigation, Perception y Combat sin una autoridad paralela. `AI Ready — APPROVED`.
 
 ## Evidencia De Cierre
 
-- Runtime/Editor compile, Data validation, `M41.0 Navigation & Perception Diagnostics` y regresión directa M38.0: `PASS`.
-- Mauro confirmó que el runtime actor recibió destination, se desplazó físicamente rodeando la barrera y completó `Moving → Reached` sin atravesar geometría bloqueante.
-- Con observer/target deterministas y barrera activa, Perception informó `Occluded` y blocker exacto `Navigation Perception Barrier`.
-- Al retirar la barrera, Perception informó `Perceived: True`, `Reason: Perceived` y `Blocker: <NONE>`.
-- El helper manual fue corregido por `b4345890d9185d439d408cdece211424c88b8b21` para restaurar poses canónicas antes de cada evaluación y compartir el contrato del diagnóstico automático.
-- El residuo local de la prueba manual en `SampleScene` contenía sólo desplazamiento accidental de la fixture y normalización de campos vacíos de Unity; se restauró desde la escena publicada sin perder contenido funcional.
+- Runtime/Editor compile y `M41.1 Human Encounter AI Diagnostics`: `PASS`.
+- Mauro confirmó `Idle → Alerted → Avoiding`, `Fleeing` y `Fighting`, con navegación física y `NAVIGATION_MOVING` observable.
+- Fight reutilizó Lee-Enfield, ammo/reload/disparo y armor del contrato M40; el estado final `0 loaded / 0 reserve` fue consumo manual deliberado, no un defecto.
+- LOS confirmó `Perceived → Occluded → LostContact → Idle`; al retirar la barrera y reasignar explícitamente el threat volvió a `Alerted`, sin omnisciencia.
+- El menú Editor muestra sólo la fixture M41.1 explícita; diagnostics históricos siguen invocables por automatización sin exposición manual obsoleta.
 
 ## Contratos Cerrados
 
-- `ActorNavigationController` posee exclusivamente la orden efímera, destino y estados `Idle`, `Moving`, `Reached` y `Failed`; no teleporta, no reintenta y respeta lifecycle `Dead`.
-- `ActorVisualPerceptionService` permanece independiente de Navigation y Combat y explica identidad, range, FOV horizontal, LOS y blocker.
-- Las capacidades se declaran mediante bloques opcionales `navigation` y `visual_perception` de `ActorProfileDefinition`; el player conserva sus autoridades propias.
-- Orden, path y resultados de percepción permanecen efímeros. M41.0 no agrega estado durable ni cambia schema/envelope; tras restore Navigation queda `Idle`.
+- `HumanEncounterAIController` sólo posee decision state/target/timers/response y requiere bloques data-driven `navigation`, `visual_perception` y `encounter_ai`.
+- Perception conserva LOS; Navigation conserva path; `WeaponCombatService` conserva ammo, reload, impacto y consecuencias. Player y NPC comparten `PhysicalShotPathResolver`.
+- `LostContact` usa sólo last-known de percepción positiva, cancela acción y exige reacquisition explícita tras timeout; `Dead` deja IA y Navigation inactivas.
+- Encounter state, target, timers, órdenes y resultados de percepción siguen efímeros; M41.1 no cambia schema/envelope.
 
 ## Próximo Trabajo
 
-M41.1 — Human Encounter AI V1 permanece `PLANNED`, disponible como siguiente milestone y no iniciado. `AI Ready` continúa pendiente de su validación.
+No iniciar un milestone nuevo: el siguiente trabajo autorizado es hardening de workflow, fuera de M41.1.

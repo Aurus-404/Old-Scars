@@ -12,7 +12,6 @@ namespace OldScars.Editor
     {
         private const string MenuPath = "Old Scars/Diagnostics/Content IDs/Run Namespace Foundation";
 
-        [MenuItem(MenuPath)]
         public static void Run()
         {
             var failures = new List<string>();
@@ -36,7 +35,6 @@ namespace OldScars.Editor
                 "- temporary fixture removed");
         }
 
-        [MenuItem(MenuPath, true)]
         private static bool ValidateRun()
         {
             return !EditorApplication.isCompiling && !EditorApplication.isPlayingOrWillChangePlaymode;

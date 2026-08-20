@@ -23,7 +23,6 @@ namespace OldScars.EditorTools
             EditorApplication.update += RunBatchWhenReady;
         }
 
-        [MenuItem(Menu)]
         public static void Run()
         {
             if (!EditorApplication.isPlaying || GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
@@ -101,7 +100,6 @@ namespace OldScars.EditorTools
             Debug.Log("Inventory Interaction UX Correction Diagnostics: PASS");
         }
 
-        [MenuItem(Menu, true)]
         private static bool ValidateRun() => !EditorApplication.isCompiling;
 
         public static void RunBatch()

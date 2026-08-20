@@ -31,7 +31,6 @@ namespace OldScars.Editor
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
-        [MenuItem(SaveMenu)]
         public static void SaveDebugSlot()
         {
             CurrentSliceSaveResult result = CurrentSliceSnapshotService.Save(CurrentSliceSnapshotService.DebugSlotId);
@@ -45,10 +44,8 @@ namespace OldScars.Editor
             Debug.Log(CurrentSliceSnapshotService.BuildSuccessSummary(CurrentSliceSnapshotService.DebugSlotId, result.Snapshot));
         }
 
-        [MenuItem(SaveMenu, true)]
         private static bool ValidateSaveDebugSlot() => EditorApplication.isPlaying && !EditorApplication.isCompiling;
 
-        [MenuItem(LoadMenu)]
         public static void LoadDebugSlot()
         {
             CurrentSliceLoadResult result = CurrentSliceLoadService.Load(CurrentSliceSnapshotService.DebugSlotId);
@@ -61,25 +58,20 @@ namespace OldScars.Editor
             }
         }
 
-        [MenuItem(LoadMenu, true)]
         private static bool ValidateLoadDebugSlot() => EditorApplication.isPlaying && !EditorApplication.isCompiling;
 
-        [MenuItem(DiagnosticMenu)]
         public static void RunSnapshotAndSemanticPreflightDiagnostics()
         {
             StartDiagnostic("snapshot");
         }
 
-        [MenuItem(DiagnosticMenu, true)]
         private static bool ValidateDiagnostics() => !EditorApplication.isCompiling;
 
-        [MenuItem(RoundTripDiagnosticMenu)]
         public static void RunCurrentSlicePersistentRoundTripDiagnostics()
         {
             StartDiagnostic("roundtrip");
         }
 
-        [MenuItem(RoundTripDiagnosticMenu, true)]
         private static bool ValidateRoundTripDiagnostics() => !EditorApplication.isCompiling;
 
         private static void StartDiagnostic(string mode)
