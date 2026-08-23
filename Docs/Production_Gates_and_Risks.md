@@ -6,7 +6,7 @@ Este documento desarrolla criterios de salida, evidencia, deuda y riesgos para l
 
 [Project_Roadmap.md](Project_Roadmap.md) conserva la autoridad sobre IDs, estados, dependencias y nombres/ubicacion de gates. Este documento no reserva IDs, no cambia estados y no autoriza implementacion.
 
-Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 se conserva intacto como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) documenta los contratos tecnicos vigentes despues de contrastarlos con el codigo real.
+Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 se conserva intacto como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) documenta los contratos tecnicos vigentes despues de contrastarlos con el codigo real. [Open_World_Architecture.md](Open_World_Architecture.md) documenta la dirección futura aprobada sin convertirla en estado implementado.
 
 ## Regla De Aprobacion
 
@@ -57,6 +57,23 @@ Bloquea un gate la deuda que:
 - depende de bypasses hardcodeados;
 - mantiene sin validar un comportamiento central del gate;
 - carece de diagnostico suficiente para investigar fallos.
+
+## Review Conditions De Open World Foundations
+
+Estas condiciones no crean un gate nuevo ni reservan milestone ID. Deben incorporarse a la validación de cada future foundation autorizada y al Connected First Playable:
+
+- content source provenance suficiente antes de crear mundos persistentes;
+- generation compatibility explícita para sectores todavía no resueltos, sin usar silenciosamente versiones actuales;
+- identidad durable única a través de sectores activos e inactivos;
+- topología y features cross-sector coherentes antes de realización local;
+- determinismo y sector realization order independence;
+- world payload sobre M37 sin cambiar `current_slice_v1` ni crear un segundo save engine;
+- transición runtime recuperable sin confundirla con autosave policy;
+- un único sector con simulación pesada autoritativa, permitiendo staging inerte;
+- navegación/rendimiento medidos antes de producción sectorial;
+- A→B→A, mutaciones, full process exit y fresh load en el Connected First Playable.
+
+Los riesgos R24–R26 deben quedar cerrados dentro del alcance del Connected First Playable antes de usarlo como baseline para sistemas posteriores. La vertical slice final debe revalidarlos, no descubrirlos por primera vez.
 
 ## Gates Canonicos
 
@@ -251,8 +268,11 @@ Bloquea: omnisciencia, estados no reproducibles, loops sin salida, bypass del co
 
 ### World Systems Ready - M42.1
 
+La ubicación M42.1 es la reserva histórica actual y requiere sequence rebaseline después de las foundations open-world; este texto no autoriza M42 ni fija su posición final.
+
 Debe validar:
 
+- integración con el mundo/sector activo sin crear una segunda autoridad mundial;
 - world clock y recovery;
 - sueño/descanso como MUST;
 - weather, exposure y proteccion conectados;
@@ -283,9 +303,11 @@ Bloquea: barras aisladas, sistemas que no modifican decisiones, recovery no func
 
 ### Content Pipeline Ready - M45.0
 
+El scope histórico M45.0 requiere rebaseline: la sectorización fundamental se mueve al camino open-world `ID TBD`; este gate conserva la obligación posterior de tooling/content pipeline sin asumir que M45 inicia la arquitectura sectorial.
+
 Debe validar:
 
-- sectorizacion y flujo repetible de autorado;
+- flujo repetible de autorado y composición sobre sectores ya fundamentados;
 - validators de IDs, tags, referencias y schemas;
 - catalogos e inspeccion con errores accionables;
 - creacion de contenido representativo sin bypasses ni cirugia manual rutinaria;
@@ -299,8 +321,11 @@ Bloquea: referencias rotas no detectadas, outputs no reproducibles, schema drift
 
 ### Vertical Slice Approved - M45.1
 
+La ubicación M45.1 y sus dependencias finales requieren sequence rebaseline. El Connected First Playable es una prueba de sistemas previa y no sustituye esta barra audiovisual de producción.
+
 Debe validar:
 
+- Connected First Playable previamente demostrado y revalidado dentro del alcance relevante;
 - Foundation Freeze, Persistence Ready, Combat Ready, AI Ready, World Systems Ready, Survival Systems Ready y Content Pipeline Ready;
 - M43.1 validado aunque no posea un gate propio;
 - loop persistente de preparacion, expedicion y retorno;
@@ -401,15 +426,15 @@ M55.0 ejecuta Launch despues de Release Candidate; no agrega un gate canonico nu
 | Persistence Ready | R05, R14, R19 | R01, R09, R16, R17, R18, R20, R22 |
 | Combat Ready | Ninguno especifico del registro actual | R01, R10, R11, R15, R16, R17, R18, R22 |
 | AI Ready | R06 | R01, R10, R11, R15, R16, R17, R22 |
-| World Systems Ready | Ninguno especifico del registro actual | R01, R10, R11, R15, R16, R17, R22 |
+| World Systems Ready | Ninguno especifico del registro actual | R01, R10, R11, R15, R16, R17, R22, R24, R25, R26 |
 | Survival Systems Ready | R10 | R01, R11, R15, R16, R17, R22 |
-| Content Pipeline Ready | R08 | R01, R02, R09, R11, R13, R16, R17, R20, R21, R22 |
-| Vertical Slice Approved | R15, R18 | R01, R02, R04, R09, R10, R11, R12, R13, R16, R17, R19, R20, R21, R22, R23 |
+| Content Pipeline Ready | R08 | R01, R02, R09, R11, R13, R16, R17, R20, R21, R22, R24, R26 |
+| Vertical Slice Approved | R15, R18, R24, R25, R26 | R01, R02, R04, R09, R10, R11, R12, R13, R16, R17, R19, R20, R21, R22, R23 |
 | Production Ready | R04, R07, R09, R12, R13, R20, R21 | R01, R02, R10, R11, R16, R17, R19, R22, R23 |
-| Alpha | Ninguno adicional | R01, R02, R10, R11, R16, R17, R19, R20, R22, R23 |
+| Alpha | Ninguno adicional | R01, R02, R10, R11, R16, R17, R19, R20, R22, R23, R24, R25, R26 |
 | Content Complete | Ninguno adicional | R01, R09, R11, R12, R13, R16, R17, R19, R20, R21, R22, R23 |
 | Beta | R11 | R01, R02, R10, R16, R17, R19, R20, R22, R23 |
-| Release Candidate | R16, R23 | R01, R02, R05, R11, R17, R19, R20, R21, R22 |
+| Release Candidate | R16, R23 | R01, R02, R05, R11, R17, R19, R20, R21, R22, R24, R25, R26 |
 
 ## Registro De Riesgos
 
@@ -423,7 +448,7 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | R04 | `MITIGATING` | Mauro | Deuda OnGUI | Alta | Media | UI debug condiciona backends nuevos. | Congelar ampliaciones y reemplazar en M48.0. | Cerrar en Production Ready; aceptacion de deuda requiere decision explicita. |
 | R05 | `CLOSED` | Mauro | Persistencia introducida tarde | Media | Alta | Sistemas nuevos carecen de identidad durable. | M36.1 y M37.1 validaron identidad y Current Slice persistence. | Cerrado en Persistence Ready; revalidar en releases. |
 | R06 | `CLOSED` | Mauro | IA demasiado compleja | Media | Alta | Multiples capas antes de un encuentro funcional. | M41.1 quedó limitado a avoid/alert/flee/fight, reutilizando autoridades existentes. | Cerrado en AI Ready; revalidar ante una futura ampliación de IA. |
-| R07 | `MITIGATING` | Mauro | Proceduralidad prematura | Media | Alta | Generacion antes de sectorizacion y tools. | Bloquearla hasta M47.0. | Cerrar al autorizar el alcance acotado de M47.0; reconfirmar en Production Ready. |
+| R07 | `MITIGATING` | Mauro | Worldgen prematuro o acoplado irreversiblemente | Media | Alta | GameObjects o sectores independientes se generan antes de provenance, macro truth, determinismo y persistencia. | Seguir el camino open-world aprobado: logical plan, validación, persistence y materialización por foundations autorizadas. | Revisar cada foundation; cerrar para el scope del Connected First Playable y reconfirmar en Production Ready. |
 | R08 | `OPEN` | Mauro | Falta de herramientas de contenido | Alta | Alta | Cada contenido exige edicion manual fragil. | Validators, catalogos e inspector. | Cerrar en Content Pipeline Ready. |
 | R09 | `OPEN` | Mauro | Explosion de datos | Media | Alta | Duplicacion, IDs rotos y schemas divergentes. | Catalogos, validacion y compatibilidad. | Cerrar en Production Ready. |
 | R10 | `OPEN` | Mauro | Supervivencia frustrante | Media | Alta | Castigos sin informacion o decision. | Feedback explicable y playtests integrados. | Cerrar en Survival Systems Ready; revisar Alpha/Beta. |
@@ -433,13 +458,16 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | R14 | `CLOSED` | Mauro | Cambios tardios de arquitectura | Media | Alta | Save y nuevos sistemas fuerzan IDs nuevos. | Foundation Freeze, Content IDs y M37.1 validados. | Cerrado en Persistence Ready. |
 | R15 | `MITIGATING` | Mauro | Sistemas sin loop integrado | Alta | Alta | Features aisladas sin decisiones compartidas. | Regla transversal de sistemas conectados. | Cerrar en Vertical Slice Approved. |
 | R16 | `MITIGATING` | Mauro | Milestones siempre pendientes | Alta | Alta | Se acumula `PENDING UNITY VALIDATION`. | Definir escenario/evidencia antes de implementar. | Revisar cada gate; cerrar en Release Candidate. |
-| R17 | `MITIGATING` | Mauro | Drift entre GDD, Roadmap y mirrors | Alta | Alta | Pilares o alcance difieren entre documentos. | Jerarquia explicita y revision cruzada. | Mitigar en M36.0 Checkpoint B; revisar cada gate. |
+| R17 | `MITIGATING` | Mauro | Drift entre GDD, Roadmap y mirrors | Alta | Alta | Pilares o alcance difieren entre documentos. | Jerarquia explicita, `Open_World_Architecture.md` para dirección futura y revisión cruzada sin duplicar contratos implementados. | Mitigar en cada documentación/rebaseline y revisar cada gate. |
 | R18 | `MITIGATING` | Mauro | Atomicidad cross-actor incompleta | Media | Alta | Transferencias universales duplican, pierden o reasignan items. | Reutilizar identidad, ownership, preview/commit/rollback y no reactivar M35.2.3.1 antes de sus dependencias. | Revisar Foundation/Persistence; cerrar antes de Vertical Slice Approved. |
 | R19 | `CLOSED` | Mauro | Corrupcion o recovery insuficiente de saves | Media | Alta | Carga parcial, perdida silenciosa o save irrecuperable. | Envelope versionado, integridad, escritura atomica, recovery, migrations y pruebas de fallo. | Cerrado en Persistence Ready; revalidar en releases. |
-| R20 | `OPEN` | Mauro | Incompatibilidad entre save, datos y mods | Media | Alta | Un cambio de definicion rompe referencias o altera estado cargado. | Politica de compatibilidad, manifests/versiones, migrations y matriz de upgrades. | Revisar desde Persistence; cerrar en Production Ready y revalidar en releases. |
+| R20 | `OPEN` | Mauro | Incompatibilidad entre save, datos, assets, generación y mods | Media | Alta | Un cambio de definición/input rompe referencias, altera estado cargado o reinterpreta un sector no resuelto. | Provenance, generation compatibility explícita, versiones/migrations y matriz de upgrades sin asumir igualdad de bytes como única semántica. | Revisar desde la primera foundation de provenance; cerrar en Production Ready y revalidar en releases. |
 | R21 | `OPEN` | Mauro | Referencias o assets sin derechos verificables | Media | Alta | Moodboards, marcas o material de autor desconocido entran en build, deck, store o trailer. | Ledger de derechos, cuarentena interna y reemplazo/licencia antes de cualquier uso externo. | Revisar desde Content Pipeline; cerrar antes de material publico y, como maximo, en Production Ready. |
 | R22 | `MITIGATING` | Mauro | Trabajo asistido por IA no comprendido o documentacion falsa | Media | Alta | Nadie puede explicar el cambio, la documentacion contradice el repo o un prompt reescribe contratos validados. | Tareas pequeñas, revision humana, evidencia del repo, pruebas e integracion por contratos existentes. | Riesgo estructural; revisar en cada gate. |
 | R23 | `OPEN` | Mauro | Claims comerciales superan la evidencia jugable | Media | Alta | Store, deck o trailer prometen canon o features futuras no demostradas. | Claim gate, material propio/licenciado y comunicacion ligada a evidencia representativa. | Revisar Vertical Slice/Production; cerrar en Release Candidate. |
+| R24 | `MITIGATING` | Mauro | Reinterpretación silenciosa de sectores no resueltos | Media | Alta | Un sector visitado tarde usa el generador/contenido actual y contradice el contrato con el que nació el mundo. | Registrar generation contract y exigir compatibilidad, migración explícita o fallo seguro antes de resolver detalle local. | Cerrar para el scope del Connected First Playable; revalidar Content Pipeline, Vertical Slice y releases. |
+| R25 | `OPEN` | Mauro | Transición sectorial deja estado híbrido o irrecuperable | Media | Alta | Origen liberado y destino parcial, dos sectores autoritativos o rollback incapaz de restaurar A. | Separar runtime transition de autosave, staging inerte, rollback capture, validación y promoción única del destino. | Cerrar para el scope del Connected First Playable; revalidar Vertical Slice y releases. |
+| R26 | `OPEN` | Mauro | Colisión de identidades durables entre estado activo e inactivo | Media | Alta | Actor/item se duplica al materializar o IDs idénticos existen en sectores distintos. | Preflight mundial o mecanismo equivalente que garantice unicidad sin crear otra autoridad de gameplay. | Cerrar para el scope de World Persistence/Connected First Playable; revalidar en gates posteriores. |
 
 ## Plantilla De Revision De Gate
 

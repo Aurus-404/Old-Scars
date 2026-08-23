@@ -12,7 +12,7 @@ Este archivo es la autoridad canonica para:
 
 `Current_Milestone.md` resume este estado, `Next_Sprints.md` deriva la cola inmediata y `Development_Log.md` conserva la cronologia append-only. Ninguno de esos documentos puede reasignar IDs ni contradecir el estado publicado aqui.
 
-Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 externo se conserva como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) mantiene la autoridad sobre contratos tecnicos vigentes despues de contrastarlos con el codigo real. Este roadmap no sustituye esas fuentes ni convierte implementaciones en diseño final.
+Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 externo se conserva como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) mantiene la autoridad sobre contratos tecnicos vigentes despues de contrastarlos con el codigo real. [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto sin presentarla como implementada. Este roadmap no sustituye esas fuentes ni convierte implementaciones en diseño final.
 
 ## Estado De Produccion
 
@@ -32,9 +32,12 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Estado M40.1 | `DONE — ARMOR / PENETRATION V1 VALIDATED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
-| Siguientes | M42.0 — Weather, Exposure & Environment V1 (`PLANNED`; no iniciado) |
+| Open World Rebaseline | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` |
+| Siguientes | ID TBD — Minimum Content Source Identity & Provenance Foundation (`PLANNED — NOT AUTHORIZED`) |
 
 M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
+
+No hay milestone de implementación activo. La dirección open-world fue aprobada arquitectónicamente, pero ninguna foundation futura queda autorizada por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
 
 ## Estados Canonicos
 
@@ -119,6 +122,27 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | ID TBD — Container State / Naming Cleanup v0 | `DEFERRED — ID REQUIRED ON REACTIVATION` | Deuda de naming/tags legacy; no bloquea M36/M37. |
 | ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` | Foundation actual: `namespace:local_id`, namespace `core`, identidad canónica de `GameDatabase`, migración Core, compatibilidad legacy temporal, normalización schema-v1 y diagnósticos. No implementa manifests, provenance completa, dependencies ni patches/load-order. El nombre queda reservado con `ID TBD`; no consume un número histórico. |
 
+## Open World Rebaseline — Dirección Futura Aprobada
+
+[Open_World_Architecture.md](Open_World_Architecture.md) congela la dirección de producto/arquitectura futura con estado `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`. No reserva IDs numéricos, no inicia gameplay y no convierte contratos futuros en realidad técnica.
+
+Camino conceptual propuesto:
+
+| Orden | Unidad | Estado | Dependencia conceptual | Resultado esperado |
+| --- | --- | --- | --- | --- |
+| 1 | ID TBD — Minimum Content Source Identity & Provenance Foundation | `PLANNED — NOT AUTHORIZED` | Global Content ID Foundation validada | Fuentes/versiones/inputs identificables mediante el pipeline Core/mod existente, sin implementar el alcance completo M50.0. |
+| 2 | ID TBD — World Identity, Topology & Determinism | `PLANNED — NOT AUTHORIZED` | Unidad 1 | Contratos lógicos mínimos de mundo/sector/topología, coordenadas separadas y determinismo, sin GameObjects. |
+| 3 | ID TBD — Macro Geography & Cross-Sector Networks | `PLANNED — NOT AUTHORIZED` | Unidad 2 | Geografía, ríos, carreteras, costa e infraestructura continua planificados a nivel mundial. |
+| 4 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | Unidad 3 | Historia estructurada acotada que produce/explica estado presente real sin event-sourced persistence. |
+| 5 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | Unidades 1–4; M37 validado | Payload lógico mundial hermano que reutiliza garantías M37 y deja `current_slice_v1` intacto. |
+| 6 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | Unidades 3–5 | Blueprint local validable y composición de estructuras/sitios autorados mediante autoridades existentes. |
+| 7 | ID TBD — Large-Sector Navigation & Performance Gate | `PLANNED — NOT AUTHORIZED` | Unidad 2; antes de materialización productiva | Spike medido de NavMesh/particiones/lifecycle sin reemplazar M41.0. |
+| 8 | ID TBD — Sector Materialization & Transition | `PLANNED — NOT AUTHORIZED` | Unidades 5–7 | Un sector autoritativo activo, staging inerte y transición runtime recuperable sin imponer autosave por frontera. |
+| 9 | ID TBD — Connected First Playable | `PLANNED — NOT AUTHORIZED` | Unidades 1–8; M32–M41.1 | Prueba integrada A→B→A, mutaciones, save, full exit y fresh load; no vertical slice audiovisual final. |
+| 10 | ID TBD — Open World Playtest & Roadmap Rebaseline | `PLANNED — NOT AUTHORIZED` | Unidad 9 | Evidencia para reordenar sistemas posteriores y fijar gates/budgets reales. |
+
+Esta tabla no asigna milestone numbers ni autoriza su implementación. Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y production permanecen en el producto; su orden final se revisará con evidencia del Connected First Playable.
+
 ## Roadmap Estrategico Desde M36
 
 Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan implementacion por si solos.
@@ -137,18 +161,18 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M40.1 — Armor & Penetration V1 | Jugable | `DONE — ARMOR / PENETRATION V1 VALIDATED` | M40.0 | Cobertura regional equipped-only, núcleo común de penetración para armor/world, trauma residual y round-trip fresh-session validados; gate `Combat Ready` aprobado. |
 | CERRADO | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` | M38.0 | Navigation NPC y perception visual separadas, data-driven y validadas con automatización y prueba manual Unity. |
 | CERRADO | M41.1 — Human Encounter AI V1 | Jugable | `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` | M40.0, M41.0 | Avoid, Alerted, Flee, Fight y LostContact acotados, data-driven y validados; gate `AI Ready` aprobado. |
-| DESPUES | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED` | M38.1 | Clima, forecast, exposicion y proteccion. |
-| DESPUES | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED` | M42.0; M41.0 para animales moviles | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready`. |
-| DESPUES | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad. |
-| DESPUES | M43.1 — Bounded Crafting & Workstations V1 | Jugable | `PLANNED` | M43.0 | Recetas cerradas y estaciones limitadas. |
-| DESPUES | M44.0 — Skills & Long-Term Progression V1 | Jugable | `PLANNED` | M39.0, M40.1, M41.1, M42.1, M43.1 | Competencias que habilitan opciones, sin grind. |
-| DESPUES | M44.1 — Shelter & Recovery Progression V1 | Jugable | `PLANNED` | M38.1, M39.0, M42.1, M43.1, M44.0 | Refugio funcional y recuperacion; gate `Survival Systems Ready`. |
-| DESPUES | M45.0 — Content Tools & World Sectorization | Herramientas/arquitectura | `PLANNED` | M37.1 | Sectores, validators, catalogos e inspector sobre contratos estabilizados; gate `Content Pipeline Ready`. |
-| DESPUES | M45.1 — Old Scars Vertical Slice Candidate: La estacion de bombeo | Contenido/jugable | `PLANNED — CANDIDATE, NOT NARRATIVE CANON` | M36.1, M37.1, M40.1, M41.1, M42.1, M43.1, M44.1, M45.0 | Loop preparacion–expedicion–retorno persistente con barra audiovisual acotada; gate `Vertical Slice Approved`. |
-| FUTURO | M46.0 — Settlements, Trade & Patrimonial Value | Jugable/contenido | `PLANNED` | M45.1 | Asentamientos y economia material acotada. |
-| FUTURO | M46.1 — Faction Identity, Disposition & Memory V1 | Jugable | `PLANNED` | M41.1, M46.0 | MUST limitado a identidad, disposicion y memoria minima; no guerra estrategica. |
-| FUTURO | M47.0 — Controlled Secondary World Variation V1 | Arquitectura/herramientas | `PLANNED` | M45.0, M46.1 | MUST limitado a variacion secundaria controlada, determinista y persistente. |
-| FUTURO | M47.1 — Narrative, Events & Objectives V1 | Contenido/jugable | `PLANNED` | M46.1, M47.0 | Eventos y objetivos autorales acotados. |
+| RESECUENCIAR | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1; futura world/sector foundation aplicable | Clima, forecast, exposicion y proteccion permanecen planificados; ya no son el siguiente trabajo automático. |
+| RESECUENCIAR | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M42.0; M41.0 para animales moviles; world/sector context aplicable | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready` pendiente de reubicación revisada. |
+| RESECUENCIAR | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad; prioridad final posterior al playtest open-world. |
+| RESECUENCIAR | M43.1 — Bounded Crafting & Workstations V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M43.0 | Recetas cerradas y estaciones limitadas; prioridad final posterior al playtest open-world. |
+| RESECUENCIAR | M44.0 — Skills & Long-Term Progression V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M39.0, M40.1, M41.1, M42.1, M43.1 | Competencias que habilitan opciones, sin grind. |
+| RESECUENCIAR | M44.1 — Shelter & Recovery Progression V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1, M39.0, M42.1, M43.1, M44.0 | Refugio funcional y recuperacion; gate `Survival Systems Ready` pendiente de reubicación revisada. |
+| RESECUENCIAR | M45.0 — Content Tools & World Sectorization | Herramientas/arquitectura | `PLANNED — SCOPE REBASELINE REQUIRED` | M37.1; open-world foundations ID TBD | El ID y scope histórico se conservan; la sectorización fundamental migra al nuevo camino ID TBD y el tooling/gate restante debe reconciliarse antes de autorización. |
+| RESECUENCIAR | M45.1 — Old Scars Vertical Slice Candidate: La estacion de bombeo | Contenido/jugable | `PLANNED — CANDIDATE, NOT NARRATIVE CANON; SEQUENCE REBASELINE REQUIRED` | Connected First Playable y systems/content foundations revisados | Vertical slice audiovisual posterior; no sustituye el Connected First Playable. |
+| FUTURO / RESECUENCIAR | M46.0 — Settlements, Trade & Patrimonial Value | Jugable/contenido | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M45.1 o dependencia posterior revisada | Asentamientos y economia material acotada. |
+| FUTURO / RESECUENCIAR | M46.1 — Faction Identity, Disposition & Memory V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M41.1, M46.0 o dependencia posterior revisada | MUST limitado a identidad, disposicion y memoria minima; no guerra estrategica. |
+| FUTURO / RESECUENCIAR | M47.0 — Controlled Secondary World Variation V1 | Arquitectura/herramientas | `PLANNED — SCOPE REBASELINE REQUIRED` | Open-world foundations; dependencies posteriores revisadas | Variación secundaria posterior permanece distinta del worldgen macro fundamental ahora requerido. |
+| FUTURO / RESECUENCIAR | M47.1 — Narrative, Events & Objectives V1 | Contenido/jugable | `PLANNED — SCOPE REBASELINE REQUIRED` | M46.1, M47.0 o dependencies posteriores revisadas | Eventos/objetivos autorales permanecen distintos de la historia causal de generación. |
 | FUTURO | M48.0 — Production UI/UX & Accessibility | Produccion | `PLANNED` | M45.1, M47.1 | UI de produccion sin reescribir backends. |
 | FUTURO | M48.1 — Art, Animation & Audio Production Pipeline | Produccion/herramientas | `PLANNED` | M45.1 | Pipeline repetible con budgets. |
 | FUTURO | M49.0 — Content Production & Optimization | Contenido/produccion | `PLANNED` | M47.1, M48.0, M48.1 | Contenido a escala sin sistemas nuevos. |
@@ -164,6 +188,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 Este archivo es autoridad sobre los nombres y la ubicacion de los gates. Sus criterios detallados se desarrollan en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 
 Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready — APPROVED` para el Current Slice validado en M37.1; `Combat Ready — APPROVED` en M40.1; `AI Ready — APPROVED` en M41.1.
+
+Los gates ya aprobados no se reabren. Las ubicaciones M42.1 en adelante conservan la reserva histórica del roadmap, pero su orden y milestone de cierre requieren reconciliación después del Connected First Playable; no autorizan iniciar esos milestones en la secuencia anterior.
 
 | Gate | Cierre previsto |
 | --- | --- |
@@ -183,27 +209,28 @@ Estado vigente: `Foundation Freeze — APPROVED` en M36.1; `Persistence Ready �
 
 ## Dependencias Y Camino Critico
 
-Camino base vigente:
+Camino cerrado vigente:
 
 `M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 DONE → M41.1 DONE → AI Ready APPROVED`
 
-Ramas que deben converger antes de la vertical slice candidata:
+Camino crítico conceptual siguiente, todavía sin autorización de implementación:
 
-- M38.1 → M39.0 → M40.0 → M40.1;
-- M38.0 → M41.0 y M40.0 → M41.1;
-- M38.1 → M42.0 → M42.1; animales moviles requieren tambien M41.0;
-- M37.1 → M43.0 → M43.1;
-- M38.1, M39.0, M42.1, M43.1 y M44.0 → M44.1;
-- M37.1 → M45.0;
-- M40.1, M41.1, M42.1, M43.1, M44.1 y M45.0 → M45.1.
+`Open World Rebaseline → Content Source Identity / Provenance → World Identity / Topology / Determinism → Macro Geography / Cross-Sector Networks → Bounded History / Present-Day Resolution → World Persistence → Sector Blueprint / Authored Composition → Large-Sector Navigation / Performance Gate → Sector Materialization / Transition → Connected First Playable → Playtest / Rebaseline`
+
+M42.0–M47.1 y los sistemas posteriores se reinsertarán de acuerdo con dependencias y evidencia reales. No se eliminan ni se consideran iniciados.
 
 Dependencias de produccion:
 
 - persistencia antes de escalar actores, NPCs o mundo;
 - actor lifecycle antes de heridas, necesidades complejas e IA;
-- world clock antes de clima, deterioro y eventos;
+- world clock antes de clima, deterioro y reconciliación temporal;
 - condition antes de reparacion; reparacion/desmontaje antes de crafting;
-- sectorizacion y tools antes de proceduralidad o contenido masivo;
+- source provenance y generation compatibility antes de crear mundos persistentes;
+- macro truth y cross-sector networks antes de resolver blueprints vecinos;
+- world persistence antes de comprometer mutaciones sectoriales;
+- spike medido de navegación/rendimiento antes de producción sectorial;
+- sector materialization/transition antes del Connected First Playable;
+- tools y validators antes de contenido masivo;
 - economia material antes de comercio;
 - save, actores y comercio antes de consecuencias regionales.
 - toda Definition global nueva debe usar `ContentId` canónico; no se permite volver a IDs globales simples durante los milestones intermedios.
@@ -262,7 +289,7 @@ Implementa solamente:
 - migración explícita de `Mods/Core`, seam de source context y compatibilidad schema v1 para Definition ID/layout/equipment slots sin subir versión;
 - fixture Editor temporal para coexistencia entre namespaces y referencias cross-namespace.
 
-No implementa manifest, provenance persistida completa, dependencies, overrides/patches, Workshop, SDK, scripting, DLL mods, hot reload, AssetBundles ni namespace de tags. La secuencia posterior queda `manifest → provenance → dependencies → patches`; M50.0 continúa futuro y no se considera iniciado.
+No implementa manifest, provenance persistida completa, dependencies, overrides/patches, Workshop, SDK, scripting, DLL mods, hot reload, AssetBundles ni namespace de tags. La primera extensión propuesta combina minimum content source identity/provenance sin congelar un manifest schema ni fingerprint universal; dependencies y patches permanecen en M50.0, que continúa futuro y no se considera iniciado.
 
 ### M37 — Limite Obligatorio
 
@@ -347,7 +374,7 @@ El diagnóstico automático cubre avoid/flee, navegación inválida sin retry, f
 ## Trabajo Congelado O Diferido
 
 - No ampliar OnGUI ni continuar la serie M35.2 durante M36/M37.
-- No iniciar combate, IA, mundo procedural, facciones amplias, UI final o produccion masiva de contenido antes de sus dependencias.
+- No iniciar nuevas foundations open-world, facciones amplias, UI final o producción masiva de contenido sin autorización y dependencias explícitas.
 - No introducir enfermedades generales, agricultura o vehiculos en la version inicial completa sin un nuevo rebaseline aprobado.
 - No convertir JSON en scripting libre.
 - No crear sistemas universales preventivos sin necesidad actual demostrada.

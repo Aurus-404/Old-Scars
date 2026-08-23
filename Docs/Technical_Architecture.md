@@ -2,7 +2,7 @@
 
 ## Alcance Y Autoridad
 
-Este documento describe contratos tecnicos implementados en el slice actual. No asigna IDs, estados, dependencias ni gates; esa autoridad pertenece a [Project_Roadmap.md](Project_Roadmap.md). Una capacidad futura mencionada aqui es un limite de integracion, no una implementacion existente.
+Este documento describe contratos tecnicos implementados en el slice actual. No asigna IDs, estados, dependencias ni gates; esa autoridad pertenece a [Project_Roadmap.md](Project_Roadmap.md). [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto con estado explícito `NOT IMPLEMENTED`. Una capacidad futura mencionada aqui es un limite de integracion, no una implementacion existente.
 
 ## Datos, Mods Y Runtime
 
@@ -24,8 +24,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Equipment slots como `core:hand_right` y capabilities como `core:mount_storage` sí son Global Content IDs porque viven en registries propios. El role visual `hand_right` sigue siendo un Local ID; ambos dominios no son intercambiables.
 - Tags permanecen sin namespace y registrados por `TagRegistry`. `asset_key` ya usa dos segmentos pero es una clave secundaria de provider, no un `Definition.id`. `ItemInstance.InstanceId`, `PersistentSceneObjectId`, save slot IDs y storage IDs compuestos son dominios runtime/persistentes separados.
 - Compatibilidad temporal: sólo una carga con contexto Core puede cualificar un ID legacy sin namespace como `core:*`; consultas authored y saves schema v1 usan un resolver Core explícito y generan diagnóstico. Los mods externos no reciben namespace implícito. La excepción histórica `right_hand` → `core:hand_right` está limitada a referencias legacy de Equipment.
-- `ContentLoadContext` conserva mod directory/nombre y source file mientras normaliza, por lo que los errores de carga incluyen fuente. `GameDatabase` todavía no persiste un sidecar completo de provenance: un manifest futuro debe aportar Mod ID/namespace autoritativo y extender este seam antes de dependencies y patches.
-- Secuencia de extensión prevista, no implementada: `manifest → provenance → dependencies → patches`.
+- `ContentLoadContext` conserva mod directory/nombre y source file mientras normaliza, por lo que los errores de carga incluyen fuente. `GameDatabase` todavía no persiste identidad/provenance completa de la fuente. La primera extensión propuesta debe usar este seam, pero no existe ni se congela todavía un manifest schema, fingerprint universal o contrato de generation compatibility. Dependencies y patches permanecen en el alcance futuro M50.0.
 
 ## Identidad Durable De Items Y Limite De Persistencia
 

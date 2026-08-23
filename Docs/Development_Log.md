@@ -2978,3 +2978,30 @@ Fecha: 2026-08-20.
 Se cerró el pass de workflow fuera de milestone: `AGENTS.md`, Development Rules, Milestone Template y cuatro repo-local skills quedaron compactos, con política explícita de System Harmony, uso proporcional de modelos/subagentes y logs accionables. El worktree aislado confirmó una única consulta Unity MCP real y read-only: `editor_status` devolvió Editor `ready`, sin compilación, para Unity `6000.4.6f1` en el proyecto del worktree.
 
 `com.unity.pipeline` queda solamente como requisito técnico del bridge MCP configurado; Unity CLI global es opcional y no se convierte en requisito de Old Scars. No hubo cambios de gameplay, datos, persistencia, escenas ni milestones. M42.0 y Open World Rebaseline permanecen no iniciados.
+
+### Open World Rebaseline — Phase 2A Architecture Freeze Draft
+
+Fecha: 2026-08-23.
+
+Estado de dirección: `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`.
+
+Estado documental: `DRAFT — PENDING MAURO DIFF REVIEW; NO COMMIT / NO PUSH`.
+
+Después de la auditoría arquitectónica Phase 1 y su revisión, se preparó una propuesta de baseline canónico para el futuro mundo abierto. La dirección define un único mundo lógico persistente, sectores grandes interconectados, macro planning anterior a la realización local, un solo sector con simulación pesada autoritativa, coordenadas lógicas separadas de Unity, worldgen determinista, historia causal acotada, blueprints validados antes de materializar y mutaciones gobernadas por persistencia.
+
+Se creó `Open_World_Architecture.md` como autoridad de diseño futuro y se reconciliaron Roadmap, Current Milestone, Next Sprints, GDD, Technical Architecture y Production Gates/Risks. `Technical_Architecture.md` continúa describiendo sólo realidad implementada; `DataDriven_JSON_Rules.md` permanece unchanged porque no existe manifest/world schema implementado.
+
+Correcciones congeladas en el draft:
+
+- un sector inactivo puede permanecer localmente no resuelto, pero nunca usar silenciosamente un generador/contenido incompatible cuando se visite;
+- world history registra causalidad, pero el world state presente es autoridad y no se reconstruye por event replay;
+- runtime transition y autosave/checkpoint policy son contratos separados;
+- staging inerte de destino no crea una segunda simulación autoritativa;
+- world persistence debe garantizar unicidad durable de actores/items entre estado activo e inactivo sin otra autoridad gameplay;
+- logical world persistence no congela un único JSON monolítico ni diseña todavía transacciones multi-file;
+- provenance y generation compatibility son problemas relacionados pero distintos;
+- mundo finito muy grande es recomendación inicial; finite vs future-expandable permanece pendiente de aprobación final de Mauro.
+
+El camino crítico conceptual pasa a foundations `ID TBD`: content source identity/provenance; world identity/topology/determinism; macro geography/cross-sector networks; bounded history; world persistence; sector blueprint/authored composition; navigation/performance gate; materialization/transition; Connected First Playable; playtest/rebaseline. M42.0–M47.1 conservan sus IDs y sistemas, pero requieren sequence/scope rebaseline y no quedan autorizados.
+
+No se modificaron C#, JSON, scenes, prefabs, packages ni gameplay. No se ejecutó Unity porque la tarea es exclusivamente documental. El draft permanece en un worktree/branch aislado y debe detenerse antes de commit, push o integración hasta revisión explícita de Mauro.

@@ -14,6 +14,14 @@ Validation: `AUTOMATED + MANUAL UNITY PASSED`.
 
 M41.0 permanece `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`; M40.1 conserva `Combat Ready — APPROVED`. M41.1 conecta Navigation, Perception y Combat sin una autoridad paralela. `AI Ready — APPROVED`.
 
+### Open World Rebaseline
+
+Estado de dirección:
+
+`APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
+
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. No existe todavía implementación de worldgen, sectores, transición, provenance ni world persistence.
+
 ## Evidencia De Cierre
 
 - Runtime/Editor compile y `M41.1 Human Encounter AI Diagnostics`: `PASS`.
@@ -31,4 +39,6 @@ M41.0 permanece `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`; M40.1 c
 
 ## Próximo Trabajo
 
-No hay milestone jugable activo. El hardening de workflow posterior a M41.1 está cerrado; M42.0 y Open World Rebaseline permanecen no iniciados y requieren autorización específica.
+No hay milestone de implementación activo. El primer coding unit propuesto es `ID TBD — Minimum Content Source Identity & Provenance Foundation`; permanece `PLANNED — NOT AUTHORIZED` y requiere autorización específica.
+
+M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.

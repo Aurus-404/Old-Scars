@@ -1,10 +1,18 @@
 # Old Scars - Documento de Diseño del Juego
 
-- Versión: línea base de repositorio 1.1
-- Actualizado: 6 de agosto de 2026
+- Versión: línea base de repositorio 1.2
+- Actualizado: 23 de agosto de 2026
 - Estado: `APPROVED — REVISED DESIGN BASELINE`
 - Derivado de: `Old_Scars_GDD_Maestro_v3.1.docx` (17 de julio de 2026)
 - SHA-256 de la fuente: `919966D0BFCDE1FD77C6D7765EE087B4D04211FBDEAAD06B4AAFCCFEE7308AF4`
+
+## Changelog 1.2
+
+- Se aprueba un único mundo lógico persistente dividido en sectores grandes, variables e interconectados, con macro planning anterior a la realización local.
+- Se distingue world sector de internal technical partition y se fija inicialmente una sola simulación sectorial pesada autoritativa.
+- Se aprueban worldgen lógico determinista, historia causal acotada y composición procedural de estructuras/sitios principalmente autorados.
+- Se enlaza [Open_World_Architecture.md](Open_World_Architecture.md) como autoridad de la arquitectura futura sin presentar worldgen, sectores o world persistence como implementados.
+- `FINITE VS FUTURE-EXPANDABLE WORLD` permanece pendiente de decisión final de Mauro.
 
 ## Changelog 1.1
 
@@ -37,6 +45,7 @@ Autoridades por dominio:
 - Mauro decide la dirección creativa, el canon y el alcance de producto;
 - [Project_Roadmap.md](Project_Roadmap.md) define IDs, estados, dependencias, secuencia y gates de milestones;
 - [Technical_Architecture.md](Technical_Architecture.md) define los contratos técnicos actuales después de contrastarlos con el código;
+- [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección arquitectónica futura aprobada del mundo abierto, con estado explícito no implementado;
 - este documento contiene la línea base de diseño revisada y sus decisiones abiertas;
 - [DataDriven_JSON_Rules.md](DataDriven_JSON_Rules.md) define el contrato actual de JSON/datos;
 - [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md) desarrolla la evidencia de gates y el registro de riesgos;
@@ -74,7 +83,7 @@ Una implementación o prototipo no se convierte en diseño final por el mero hec
 | Crafting, reparación, desmontaje, calidad y valor patrimonial son aspectos distintos. | `DESIGN TARGET — HIGH LEVEL CONFIRMED` | No deben colapsarse en un único sistema universal de crafting. |
 | Los vehículos forman un ecosistema de herramientas de movilidad, trabajo y supervivencia. | `CONFIRMED — RECENT DECISION / OUT OF CURRENT IMPLEMENTATION SCOPE` | Su dirección de diseño está definida, pero la conducción y sus sistemas técnicos requieren rebaseline y milestones propios. |
 | El arsenal tiene una distribución material e histórica clara. | `CONFIRMED — RECENT DECISION / DESIGN TARGET` | Rifles de cerrojo y revólveres predominan; las armas más complejas o especializadas son progresivamente menos comunes y más costosas de mantener y abastecer. |
-| El contenido importante es autoral; la variación procedural es secundaria. | `CONFIRMED — RECENT DECISION` | M47.0 se limita a variación secundaria controlada, determinista y persistente. |
+| El mundo macro se genera de forma determinista; los sitios y estructuras importantes permanecen principalmente autorados. | `CONFIRMED — RECENT DECISION` | Worldgen decide topología, geografía, redes, placement, contexto y condición histórica/presente. No implica generar proceduralmente cada edificio, pared o habitación. La variación secundaria posterior sigue siendo un alcance distinto. |
 | Evitar sistemas universales preventivos y sobreingeniería prematura. | `CONFIRMED — RECENT DECISION` | Construir el contrato más pequeño que requieran el milestone activo y el consumidor actual. |
 | La producción no se optimiza únicamente para una demo rápida. | `CONFIRMED — RECENT DECISION` | Los sistemas grandes pueden existir en el roadmap extenso cuando sean necesarios, pero su presencia en el diseño no autoriza iniciarlos antes de tiempo. |
 
@@ -82,7 +91,7 @@ Decisiones de producción adicionales ya fijadas:
 
 - sueño/descanso es `MUST`; fatiga es `SHOULD`;
 - el alcance de facciones, cuando corresponda, se limita inicialmente a identidad, disposición y memoria mínima;
-- el alcance procedural es variación secundaria controlada, no un mundo generado;
+- el mundo lógico, su macrogeografía y su historia causal usan generación determinista; el contenido importante permanece autorado y la variación decorativa/secundaria sigue acotada;
 - la estación de bombeo es candidata a vertical slice, no canon narrativo cerrado;
 - M36.1 es un freeze corto y un contrato de identidad, no save/load, condition, repair ni actor lifecycle;
 - M37 persiste primero el slice actual y no pre-serializa sistemas hipotéticos.
@@ -124,6 +133,20 @@ El looteo caracteriza la forma en que el jugador obtiene recursos y posibilidade
 | Belleza dentro de la destrucción | Encontrar silencio, naturaleza, escala y memoria entre las ruinas. | Saturar cada espacio con combate, loot o exposición narrativa. |
 | Mundo humano y persistente | Personas y lugares responden causalmente a acciones presenciadas y al tiempo. | Simulación global opaca o consecuencias sin causa legible. |
 
+### Dirección De Mundo Abierto
+
+`CONFIRMED — RECENT DECISION / NOT IMPLEMENTED`
+
+Old Scars tendrá un único mundo lógico persistente dividido en sectores grandes e interconectados. Un sector puede contener ciudades, pueblos, countryside, carreteras extensas, ríos, costa, mar, industria, sitios militares y grandes espacios silenciosos de viaje. Sus extensiones pueden variar y no se fija una grilla hexagonal/cuadrada uniforme.
+
+Los bordes sectoriales son límites técnicos, no discontinuidades geográficas. Ríos, carreteras, ferrocarriles, costa y vías navegables se planifican como features mundiales continuos antes de su realización local.
+
+Inicialmente un solo sector posee la simulación pesada autoritativa. Los sectores inactivos conservan plan, estado durable e historia/contexto, sin ejecutar gameplay completo. Internal technical partitions para terrain, rendering, NavMesh, physics o AI activation no son sectores visibles para el jugador.
+
+La generación produce primero datos lógicos validados y después materializa GameObjects. La historia generada es causal y acotada: hechos estructurados cambian o explican el mundo presente y pueden presentarse selectivamente sin convertir flavor text en autoridad.
+
+El contrato completo y sus decisiones abiertas viven en [Open_World_Architecture.md](Open_World_Architecture.md).
+
 ## Bucles Jugables
 
 | Bucle | Actividad del jugador | Decisiones y riesgo | Soporte actual |
@@ -158,7 +181,7 @@ Los estados exactos de milestones siguen bajo la autoridad de [Project_Roadmap.m
 | Condition, repair, disassembly y crafting | Decisiones materiales distintas, no un árbol enciclopédico universal. | Condition inicial no mutable como sistema validado. | M43.0–M43.1. |
 | Skills y refugio | El progreso amplía opciones mientras la recuperación conserva costos. | No son sistemas finales. | M44.0–M44.1. |
 | IA y navegación | Comenzar con comportamiento diagnosticable de evitar, alertarse, huir o luchar. | Navegación, percepción e IA finales ausentes. | M41.0–M41.1. |
-| Mundo, contenido y narrativa | Lugares autorales, viaje legible, belleza melancólica y variación secundaria controlada. | POIs debug; no hay campaña ni topología final. | M45.0–M47.1. |
+| Mundo, contenido y narrativa | Un mundo lógico persistente, sectores grandes conectados, geografía continua, worldgen determinista, historia causal acotada y sitios/estructuras principalmente autorados. | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`; el slice actual conserva sólo POIs/fixtures debug. | Foundations open-world `ID TBD`; M45–M47 requieren scope/sequence rebaseline. |
 | Facciones | Alcance inicial: identidad, disposición y memoria mínima. | No hay sistema final. | M46.1; no hay simulación estratégica de guerra. |
 | UI, accesibilidad, arte y audio | Decisiones legibles, errores recuperables y presentación coherente con la dirección nostálgica. | Presentación debug y foundations visuales. | M45.1, M48.0 y M48.1. |
 
@@ -272,7 +295,7 @@ La dirección de diseño está confirmada, pero su implementación no se incorpo
 | Protagonista | Comenzar siendo nadie es una propuesta de progresión, no un contrato fijo. | `PENDING MAURO DECISION` |
 | Abuelo y bandidos con cicatrices | Semilla narrativa opcional. | `PROPOSAL — PENDING MAURO DECISION` |
 | Campaña principal | Dirección más libertad; objetivo, estructura y finales abiertos. | `PENDING MAURO DECISION` |
-| Mapa y regiones | Los arquetipos previos son lentes de diseño, no topología canónica. | `PROPOSAL — PENDING MAURO DECISION` |
+| Mapa y regiones | Está aprobado un mundo lógico gigante, continuo y dividido en sectores grandes variables. Los arquetipos previos siguen siendo lentes, no topología concreta. Mundo finito vs future-expandable continúa abierto. | `PARTIAL CONFIRMATION — EXTENT PENDING MAURO DECISION` |
 | Facciones modernas | No hay roster aprobado. | `PENDING MAURO DECISION` |
 | Sin zombis | Dirección explícita. | `CONFIRMED — RECENT DECISION` |
 | Compañeros | Posible propuesta sin milestone reservado. | `DEFERRED — PENDING MAURO DECISION` |
@@ -318,11 +341,9 @@ PC/Windows, Steam, precio premium, tags, idiomas, clasificación, deck para publ
 
 ## Línea Base De Producción
 
-El roadmap canónico no se duplica aquí. Su camino crítico actual comienza:
+El roadmap canónico no se duplica aquí. M41.1 y `AI Ready` están cerrados; no hay milestone de implementación activo. La próxima secuencia conceptual prioriza foundations open-world y un Connected First Playable antes de reordenar los sistemas posteriores.
 
-`M36.0 → M36.1 → M37.0 → M37.1 → M38.0`
-
-Los gates, la secuencia M36–M55, las dependencias y los estados viven en [Project_Roadmap.md](Project_Roadmap.md). La evidencia y los riesgos viven en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
+Los IDs, estados, gates, dependencias y el camino vigente viven en [Project_Roadmap.md](Project_Roadmap.md). La arquitectura futura vive en [Open_World_Architecture.md](Open_World_Architecture.md). La evidencia y los riesgos viven en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 
 La estación de bombeo permanece como:
 
@@ -350,7 +371,7 @@ Las definiciones de arsenal y vehículos fijan dirección de diseño. No adelant
 14. profundidad del refugio;
 15. alcance técnico, milestones y prioridad de los vehículos usables;
 16. balance, catálogo exacto y reglas de modificación del arsenal;
-17. profundidad procedural más allá de la variación secundaria controlada;
+17. mundo macro finito o future-expandable y límites posteriores de variación procedural secundaria;
 18. plataforma, tienda, modelo comercial, clasificación e idiomas;
 19. art bible y especificación de producción de la dirección nostálgica confirmada;
 20. dispositivos de input, resoluciones objetivo y baseline de accesibilidad;
