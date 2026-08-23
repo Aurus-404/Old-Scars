@@ -18,28 +18,29 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone cerrado mas reciente | M41.1 — Human Encounter AI V1 |
+| Milestone/coding unit cerrado mas reciente | ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
-| Ultimo milestone funcional cerrado | M41.1 — Human Encounter AI V1 |
+| Ultimo milestone/coding unit funcional cerrado | ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
-| Commit funcional validado | `1c843961ed72b554f485b86105c443669337e8c0` |
-| Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
+| Commit funcional validado de M41.1 | `1c843961ed72b554f485b86105c443669337e8c0` |
+| Commit documental de validacion de M41.1 | `2956bcae19719a5f9073e24d58da4705742732fa` |
 | Milestone activo | Ninguno |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — World Identity, Topology & Determinism Foundation | `VALIDATED — FOUNDATION COMPLETE` |
+| Estado ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell | `VALIDATED — APPLICATION SHELL COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
 | Estado M40.1 | `DONE — ARMOR / PENETRATION V1 VALIDATED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` |
-| Siguientes | ID TBD — World Session + Persistence V1 / New Game Save-Load Path (`PLANNED — NOT AUTHORIZED`) |
+| Siguientes | ID TBD — Macro World Plan V1 (`PLANNED — NOT AUTHORIZED`) |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance y World Identity/Topology/Determinism quedan `VALIDATED — FOUNDATION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
 
-No hay milestone de implementación activo. Las foundations open-world de source identity/provenance y world identity/topology/determinism quedaron validadas. World Session/Persistence/New Game y las unidades posteriores no quedan autorizadas por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+No hay milestone de implementación activo. Las foundations open-world de source identity/provenance y world identity/topology/determinism, más la application shell acotada de World Session/New Game/Save/Load, quedaron validadas. `Macro World Plan V1` y las unidades posteriores no quedan autorizadas por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
 
 ## Estados Canonicos
 
@@ -125,6 +126,7 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` | Foundation actual: `namespace:local_id`, namespace `core`, identidad canónica de `GameDatabase`, migración Core, compatibilidad legacy temporal, normalización schema-v1 y diagnósticos. No implementa manifests, provenance completa, dependencies ni patches/load-order. El nombre queda reservado con `ID TBD`; no consume un número histórico. |
 | ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` | Manifest mínimo por source, source ID/namespace/version, ownership de declaraciones, Core común, orden determinista, recognized inputs y SHA-256 de provenance por source/set. Excluye generation compatibility, dependencies, patches, world/save y version negotiation. |
 | ID TBD — World Identity, Topology & Determinism Foundation | `VALIDATED — FOUNDATION COMPLETE` | `WorldId`, exact `WorldSeed`, generator context/version, SHA-256 scope/pass domains, `SectorId` y topology multiconexión conectada/canónica. Excluye session, persistence payload, menu, geography, history, materialización y compatibility. |
+| ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell | `VALIDATED — APPLICATION SHELL COMPLETE` | Session lifecycle único, bootstrap determinista mínimo, `world_session_v1` hermano sobre M37, save catalog y flujo Main Menu/World Runtime validados hasta fresh process. No completa macro world plan, gameplay world persistence, materialización ni compatibility. |
 
 ## Open World Rebaseline — Dirección Futura Aprobada
 
@@ -136,7 +138,8 @@ Camino conceptual propuesto:
 | --- | --- | --- | --- | --- |
 | 1 | ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` | Global Content ID Foundation validada | Fuentes/versiones/inputs identificables mediante el pipeline Core/mod existente, sin implementar el alcance completo M50.0. |
 | 2 | ID TBD — World Identity, Topology & Determinism | `VALIDATED — FOUNDATION COMPLETE` | Unidad 1 | Contratos lógicos mínimos de mundo/sector/topología y determinismo validados sin GameObjects, pose ni materialización. |
-| 3 | ID TBD — Macro Geography & Cross-Sector Networks | `PLANNED — NOT AUTHORIZED` | Unidad 2 | Geografía, ríos, carreteras, costa e infraestructura continua planificados a nivel mundial. |
+| Bridge | ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell | `VALIDATED — APPLICATION SHELL COMPLETE` | Unidad 2; M37 validado | Lifecycle y persistencia mínima de identity/topology/provenance evidence, sin completar la futura World Persistence. |
+| 3 | ID TBD — Macro World Plan V1 / Macro Geography & Cross-Sector Networks | `PLANNED — NOT AUTHORIZED` | Unidad 2; application shell validada | Global truth, geografía, ríos, carreteras, costa e infraestructura continua planificados a nivel mundial. |
 | 4 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | Unidad 3 | Historia estructurada acotada que produce/explica estado presente real sin event-sourced persistence. |
 | 5 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | Unidades 1–4; M37 validado | Payload lógico mundial hermano que reutiliza garantías M37 y deja `current_slice_v1` intacto. |
 | 6 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | Unidades 3–5 | Blueprint local validable y composición de estructuras/sitios autorados mediante autoridades existentes. |
@@ -147,7 +150,7 @@ Camino conceptual propuesto:
 
 Esta tabla no asigna milestone numbers ni autoriza su implementación. Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y production permanecen en el producto; su orden final se revisará con evidencia del Connected First Playable.
 
-El próximo candidato operativo solicitado es `ID TBD — World Session + Persistence V1 / New Game Save-Load Path`, `PLANNED — NOT AUTHORIZED`. Su futura definición debe distinguir un payload/session mínimo para identity/topology del World Persistence completo de la unidad 5, preservar M37/`current_slice_v1` y reconciliar dependencias antes de implementar; este estado de candidato no reordena silenciosamente macro geography/history ni autoriza menus.
+El próximo candidato operativo es `ID TBD — Macro World Plan V1`, `PLANNED — NOT AUTHORIZED`. La application shell ya cerrada fue un bridge técnico acotado y no adelanta el estado de World Persistence completo de la unidad 5. El próximo alcance debe preservar la decisión finite-vs-future-expandable como pendiente, producir global truth antes de realization local y no iniciar history, terrain/materialization ni sector transitions sin autorización expresa.
 
 ## Roadmap Estrategico Desde M36
 
@@ -169,6 +172,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M41.1 — Human Encounter AI V1 | Jugable | `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` | M40.0, M41.0 | Avoid, Alerted, Flee, Fight y LostContact acotados, data-driven y validados; gate `AI Ready` aprobado. |
 | CERRADO | ID TBD — Minimum Content Source Identity & Provenance Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | Global Content ID Foundation; Open World Rebaseline | Manifest compartido Core/mod, ownership/orden estable y provenance SHA-256 validados sin generation compatibility, world code ni persistencia. |
 | CERRADO | ID TBD — World Identity, Topology & Determinism Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | Content Source Identity/Provenance; Open World Rebaseline | IDs mundo/sector separados, seed/version context, domain derivation SHA-256 y topology conectada multiconexión validados sin Unity world, save ni geometry. |
+| CERRADO | ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell | Arquitectura/aplicación | `VALIDATED — APPLICATION SHELL COMPLETE` | World Identity/Topology/Determinism; Content Provenance; M37 | Session lifecycle, `world_session_v1`, bootstrap mínimo, catalog, Main Menu/World Runtime y fresh-process load validados; no macro worldgen ni gameplay world state. |
 | RESECUENCIAR | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1; futura world/sector foundation aplicable | Clima, forecast, exposicion y proteccion permanecen planificados; ya no son el siguiente trabajo automático. |
 | RESECUENCIAR | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M42.0; M41.0 para animales moviles; world/sector context aplicable | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready` pendiente de reubicación revisada. |
 | RESECUENCIAR | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad; prioridad final posterior al playtest open-world. |

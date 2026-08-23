@@ -26,7 +26,7 @@ La dirección de diseño está aprobada. No están implementados:
 - world sectors como regiones jugables/materializadas;
 - sector loading o transición;
 - macro geography o cross-sector features;
-- world save payload;
+- world persistence de geography, sector blueprints, gameplay mutations y estado activo/inactivo más allá de la shell mínima;
 - generation compatibility, generation manifests o world-specific content contracts;
 - world history;
 - world-scale identity catalogs;
@@ -34,7 +34,7 @@ La dirección de diseño está aprobada. No están implementados:
 
 No se autoriza implementación por la existencia de este documento. Cada unidad requiere alcance, dependencia, validación y autorización propios bajo el Roadmap.
 
-Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. Existen manifest/ownership/provenance, `WorldId`, `WorldSeed`, generator context/version, `SectorId`, conexiones explícitas, topology validation y SHA-256 canónicos. No existen todavía world session/save, geography, features continuos, sectores jugables, materialización ni compatibility policy.
+Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existe una application shell acotada: `WorldSession`, bootstrap determinista de un único sector, payload hermano `world_session_v1`, Main Menu, Load Game, World Runtime placeholder y Save/Return. No existen todavía macro world plan, geography, features continuos, sectores jugables/materializados, gameplay world state ni compatibility policy.
 
 ## Decisión Arquitectónica Central
 
@@ -396,7 +396,7 @@ No se crea una segunda autoridad de gameplay para actores o items. El mecanismo 
 
 ## World Persistence
 
-La futura persistencia mundial reutiliza las garantías de M37:
+La persistencia mundial reutiliza las garantías de M37:
 
 - envelope versionado;
 - migration seam;
@@ -410,7 +410,9 @@ La futura persistencia mundial reutiliza las garantías de M37:
 
 `current_slice_v1` queda sin cambios como regression path. No representa un sector y no se migra silenciosamente a uno.
 
-La dirección es un payload/modelo lógico hermano sobre Persistence Core. No se copia `CurrentSliceLoadService` ni se crea un serializer/file store paralelo. Las primitivas comunes sólo se extraen cuando exista el consumidor mundial real y con regresión M37 preservada.
+La primera implementación acotada cumple esa dirección mediante `world_session_v1`, schema `1`: un payload lógico hermano que conserva WorldId/display name, seed/generator version, topología completa, active sector y evidencia de provenance de creación. Usa el envelope, serializer, safe-write/recovery y slot rules de M37; `WorldId.Canonical` es el slot y el display name no es identidad de filesystem. Read reconstruye la topología por su validator real y sólo publica la session después del semantic preflight.
+
+Este V1 es application/session persistence, no la persistencia mundial completa de la futura unidad conceptual: todavía no contiene geography, history, sector blueprints, gameplay mutations, identidades durables mundiales ni partitions. No copia `CurrentSliceLoadService`, no crea serializer/file store paralelo y no aplica `current_slice_v1` como si fuera un sector.
 
 ### Logical Persistence Vs Physical Storage
 
@@ -465,7 +467,7 @@ Los mundos persistentes generados requieren procedencia estable de sus fuentes d
 
 Responde qué fuentes, versiones e inputs estuvieron presentes. La foundation mínima implementada extiende `ContentLoadContext` y `GameDataLoader`, conserva `GameDatabase`/`TagRegistry`/`DataValidator` como autoridades y publica un `LoadedContentSet` validado con fingerprints SHA-256 de provenance.
 
-El contrato actual cubre sólo manifests de source identity (`source_id`, namespace y version) y los JSON ya reconocidos por el loader. No persiste todavía el set en mundos/saves ni incluye authored assets/templates futuros.
+El contrato actual cubre manifests de source identity (`source_id`, namespace y version) y los JSON ya reconocidos por el loader. `world_session_v1` persiste un snapshot de la identidad/version/fingerprint por source y el fingerprint agregado presentes al crear el mundo. Esa evidencia no incluye authored assets/templates futuros, no se incorpora automáticamente a la aleatoriedad y no decide compatibilidad.
 
 ### Generation Compatibility
 
@@ -565,7 +567,7 @@ Los IDs, estados y dependencias autorizadas viven exclusivamente en [Project_Roa
 11. Playtest / Rebaseline;
 12. sistemas posteriores según dependencias y evidencia reales.
 
-Los pasos 2 y 3 ya están `VALIDATED — FOUNDATION COMPLETE`. El próximo candidato operativo puede probar un World Session/payload mínimo para identity/topology, pero debe preservar la distinción con World Persistence completo y reconciliar dependencias del Roadmap antes de implementación.
+Los pasos 2 y 3 están `VALIDATED — FOUNDATION COMPLETE`. Además quedó validada una shell operacional intermedia de World Session/New Game/Save/Load sobre M37. Esa shell no marca completo el paso 6: sólo persiste identity/topology/provenance evidence y mantiene vacíos macro plan, history y gameplay world state. El próximo candidato es `Macro World Plan V1`, según alcance y autorización del Roadmap.
 
 Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y producción no se eliminan. Su orden final posterior no queda permanentemente congelado aquí.
 
@@ -583,7 +585,7 @@ Recomendación inicial: un mundo macro **finito pero muy grande**, con topologí
 
 `FINITE VS FUTURE-EXPANDABLE WORLD — PENDING FINAL MAURO APPROVAL`
 
-Esta decisión pendiente no bloqueó la foundation de provenance ya cerrada ni bloquea por sí sola la siguiente foundation autorizable.
+Esta decisión pendiente no bloqueó las foundations ni la application shell ya cerradas. `Macro World Plan V1` debe conservarla explícitamente abierta salvo decisión de Mauro.
 
 ## Explicitly Deferred
 

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -184,6 +186,56 @@ namespace OldScars.Core.Persistence
             backup = primary + ".bak";
             temp = primary + ".tmp";
             return true;
+        }
+
+        /// <summary>
+        /// Enumerates canonical primary save slots using the same directory and
+        /// slot validation rules as Read/Write. Backup, temp and invalid filenames
+        /// are not returned. Payload-type filtering belongs to the consumer.
+        /// </summary>
+        public bool TryEnumeratePrimarySlotIds(out IReadOnlyList<string> slotIds, out string failure)
+        {
+            var discovered = new List<string>();
+            slotIds = new ReadOnlyCollection<string>(discovered);
+            failure = null;
+            try
+            {
+                if (!Directory.Exists(SavesDirectory))
+                    return true;
+
+                foreach (string filePath in Directory.EnumerateFiles(
+                             SavesDirectory, "*.json", SearchOption.TopDirectoryOnly))
+                {
+                    string fileName = Path.GetFileName(filePath);
+                    if (string.IsNullOrEmpty(fileName) ||
+                        !fileName.EndsWith(".json", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    string candidateSlot = fileName.Substring(0, fileName.Length - ".json".Length);
+                    if (!TryGetPaths(candidateSlot, out string primary, out _, out _))
+                        continue;
+                    if (!string.Equals(
+                            Path.GetFullPath(filePath),
+                            Path.GetFullPath(primary),
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                    discovered.Add(candidateSlot);
+                }
+
+                discovered.Sort(StringComparer.Ordinal);
+                slotIds = new ReadOnlyCollection<string>(discovered);
+                return true;
+            }
+            catch (Exception exception) when (
+                exception is IOException || exception is UnauthorizedAccessException)
+            {
+                failure = exception.Message;
+                return false;
+            }
         }
 
         private PersistenceDocumentResult ReadDocument(string path)

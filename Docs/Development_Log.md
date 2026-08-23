@@ -3053,3 +3053,33 @@ Validación autónoma en Unity `6000.4.6f1`, Editor batchmode aislado:
 - no se requirió gate manual/visual; no existen GameObjects, scenes ni comportamiento jugable en este alcance.
 
 No se implementaron world session/manager, save payload, `current_slice_v1` changes, Main Menu, New Game/Load Game, logical pose type, finite/expandable decision, geography, roads/rivers, history, terrain, materialización, active-sector lifecycle, NavMesh ni procedural buildings. `ID TBD — World Session + Persistence V1 / New Game Save-Load Path` queda candidato `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell
+
+Fecha: 2026-08-23.
+
+Estado: `VALIDATED — APPLICATION SHELL COMPLETE`.
+
+Se implementó `WorldSession` como autoridad lógica inmutable publicada por un único `WorldSessionService` con lifecycle Create/Load/Save/Close. La session conserva `WorldId`, display name, seed/generator version, topology, active sector y evidencia del `LoadedContentSet` presente al crear el mundo. El display name nunca determina identidad ni archivo; dos mundos con nombre y seed iguales conservan WorldIds/slots distintos y topología inicial equivalente.
+
+`WorldSessionBootstrap` usa `bootstrap_v1` y el contrato `WorldDeterminism` existente para derivar un único starter sector. Este bootstrap es mínimo y reemplazable: no se presenta como macro worldgen. Seed vacío usa randomness criptográfica sólo para elegir el entero signed 64-bit; no se agregó autoridad `UnityEngine.Random`.
+
+`world_session_v1`, schema `1`, quedó como payload hermano dentro del envelope/store M37. Usa `WorldId.Canonical` como slot y persiste generation context, topología completa/hash canónico, active sector y provenance evidence por source/set. Read aplica deserialización estricta, parseo de IDs, `WorldTopology.TryCreate`, hash/membership/provenance preflight y recién después permite publicar la session. `current_slice_v1` y `CurrentSliceLoadService` no se modificaron ni reinterpretaron; provenance permanece evidencia y no compatibility policy.
+
+La application route ahora es `MainMenu → WorldRuntime`, con `SampleScene` retenida como laboratorio en Build Settings. Main Menu ofrece New Game, Load Game y Exit; New Game persiste antes de entrar. World Runtime es un placeholder sin materialización y su menú Escape ofrece Continue, Save, Return to Main Menu y Exit. Return cierra la session sin autosave implícito; Exit dentro de Editor no termina el proceso de Mauro.
+
+Validación autónoma en Unity `6000.4.6f1`, usando roots temporales y procesos Editor aislados:
+
+- Runtime compile: `PASS`;
+- Editor compile: `PASS`;
+- `World Session / Persistence V1 Application Shell Diagnostics`: `PASS` para create, same-seed/different-world, exact round-trip, duplicate display names, catalog filtering, corrupt/semantic-invalid saves, lifecycle y contracts de payload/scenes;
+- Play Mode real: `MainMenu.TryCreateWorld → WorldRuntime → Continue/Save/Return → MainMenu.TryLoadWorld → WorldRuntime`: `PASS`, con session eliminada en cada retorno;
+- fresh Process A/B final posterior a review: `PASS`; A creó y cerró, B descubrió desde disco y cargó `world_ebffdfb63bac4e959ff4327da3406bf9`, seed `-3141592653589793`, topology hash `2ebdb9e76e28fe6131e883ee483b7ce2772cc913ae1bc1c19a411fb2bf61ce74` y active sector `sector_d8e0351713ca8a236e4d1a90bcb05267`, luego limpió el root temporal;
+- `M37.0 Persistence Core Diagnostics`, `M37.1 Snapshot & Semantic Preflight Diagnostics`, `World Identity / Topology / Determinism Foundation` y `Minimum Content Source Identity & Provenance Foundation`: `PASS`;
+- scene/build contract: `MainMenu` startup, `WorldRuntime` segundo, `SampleScene` conservada: `PASS`.
+
+No se implementaron macro world plan/geography, history, terrain, authored composition, sector materialization/streaming/transitions, gameplay world-state persistence, Main Menu art final ni generation compatibility. El siguiente candidato queda `ID TBD — Macro World Plan V1`, `PLANNED — NOT AUTHORIZED`.
+
+La revisión scoped detectó y corrigió un finding material antes del cierre: `GameDataManager` compartía root con `MainMenuSceneController`, por lo que `DontDestroyOnLoad` podía conservar UI de menú dentro de World Runtime. Ambos componentes quedaron en roots separados y el diagnóstico post-review exige que ningún `MainMenuSceneController` sobreviva en runtime; static contract y Play flow volvieron a `PASS`.
+
+`codex review --uncommitted` no pudo iniciarse por el issue conocido de Windows `codex.exe: Acceso denegado`. Se realizó revisión manual scoped de authorities, publication transaction, slot/path identity, provenance/compatibility boundary, hashing, scene lifecycle y scope. El arranque Play Mode batch aislado emitió además un `ArgumentOutOfRangeException` del indexador `UnityEditor.Search`; el stack fue íntegramente UnityEditor, sin frame de Old Scars, y el flujo post-review completó `PASS`. No se observaron errores/exceptions relevantes del producto.

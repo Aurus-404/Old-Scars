@@ -20,7 +20,7 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance y world identity/topology/determinism están implementadas y validadas; macro worldgen, geography/features, session/save, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance y world identity/topology/determinism, más la shell acotada de World Session/New Game/Save/Load, están implementadas y validadas; macro world plan, geography/features, gameplay world persistence, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
 
 ### ID TBD — Minimum Content Source Identity & Provenance Foundation
 
@@ -36,7 +36,15 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-`WorldId`, `WorldSeed`, `GeneratorVersion`, `SectorId`, derivación SHA-256 por scope/pass y `WorldTopology` conectado/multiconexión existen como datos lógicos puros. `WorldId` no entra en generación; provenance tampoco se convierte en compatibilidad ni input automático. No se implementaron session, save, menu, geography, history, materialización ni GameObjects.
+`WorldId`, `WorldSeed`, `GeneratorVersion`, `SectorId`, derivación SHA-256 por scope/pass y `WorldTopology` conectado/multiconexión existen como datos lógicos puros. `WorldId` no entra en generación; provenance tampoco se convierte en compatibilidad ni input automático.
+
+### ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell
+
+Estado final:
+
+`VALIDATED — APPLICATION SHELL COMPLETE`
+
+`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. Main Menu es el startup de producto, `WorldRuntime` es un placeholder separado y `SampleScene` permanece laboratorio. No se implementaron macro world plan, geography, history, terrain, gameplay world state, streaming ni sector transitions.
 
 ## Evidencia De Cierre
 
@@ -47,6 +55,8 @@ Estado final:
 - El menú Editor muestra sólo la fixture M41.1 explícita; diagnostics históricos siguen invocables por automatización sin exposición manual obsoleta.
 - Runtime/Editor compile, real Core + `DataValidator`, `Minimum Content Source Identity & Provenance Foundation` y `Global Content ID Namespace Foundation`: `PASS` en Editor batchmode aislado.
 - Runtime/Editor compile y `World Identity / Topology / Determinism Foundation`: `PASS` en dos procesos aislados con domain/topology golden hashes estables; M36.1 Foundation Identity y M37.0 Persistence Core permanecen `PASS`.
+- Runtime/Editor compile, `World Session / Persistence V1 Application Shell Diagnostics`, flujo Play Mode real Main Menu→Runtime→Menu→Main Menu→Load y scene wiring: `PASS`.
+- Fresh process A/B creó y reabrió desde disco el mismo `WorldId`, seed, topology hash y active sector; `M37.0`, M37.1 semantic preflight, World Identity/Topology/Determinism y Content Source Identity/Provenance permanecen `PASS`.
 
 ## Contratos Cerrados
 
@@ -57,6 +67,6 @@ Estado final:
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — World Session + Persistence V1 / New Game Save-Load Path`; permanece `PLANNED — NOT AUTHORIZED`, debe reutilizar M37 sin cambiar `current_slice_v1` y requiere autorización/alcance específico.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro World Plan V1`, `PLANNED — NOT AUTHORIZED`. Debe definir global truth determinista anterior a realization local sin implementar terrain/materialization/history/sector transitions fuera de su alcance autorizado.
 
 M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
