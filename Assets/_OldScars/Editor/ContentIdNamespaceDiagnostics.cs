@@ -83,6 +83,11 @@ namespace OldScars.Editor
                 Directory.CreateDirectory(externalItems);
                 Directory.CreateDirectory(externalStorage);
 
+                File.WriteAllText(Path.Combine(mods, "Core", GameDataLoader.ManifestFileName),
+                    "{\"source_id\":\"old_scars_core\",\"namespace\":\"core\",\"version\":\"1.0.0\"}");
+                File.WriteAllText(Path.Combine(mods, "TestNamespaceMod", GameDataLoader.ManifestFileName),
+                    "{\"source_id\":\"test_namespace_source\",\"namespace\":\"test_namespace\",\"version\":\"1.0.0\"}");
+
                 File.WriteAllText(Path.Combine(coreItems, "items.json"),
                     "{\"items\":[{\"type\":\"item\",\"id\":\"test_item\"," +
                     "\"owned_storage_profile_id\":\"test_namespace:test_storage\"}]}");

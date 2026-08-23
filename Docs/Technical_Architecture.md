@@ -7,10 +7,11 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 ## Datos, Mods Y Runtime
 
 - JSON contiene definiciones moddables; `GameDataLoader` las carga una vez, canonicaliza sus Global Content IDs en la frontera, `GameDatabase` las registra por ID canónico y `DataValidator` rechaza los contratos o referencias que valida explicitamente.
-- `Mods/Core` se carga primero y declara contenido oficial bajo el namespace reservado `core`. Usa el mismo parser, normalizador, registries y validator que una fuente externa; la compatibilidad legacy no evita validación.
-- Los directorios externos se cargan despues en orden alfabetico y pueden agregar IDs canónicos explícitos en namespaces no reservados. Un ID externo sin namespace se rechaza; el nombre del directorio todavía no prueba ownership del namespace.
-- No existe todavia politica de override, manifest, dependencia o version de mod. Un ID duplicado dentro de su tipo/registro produce error y la segunda definicion se rechaza.
-- El deserializador actual ignora campos desconocidos. Eso no los incorpora al contrato: un campo no documentado puede quedar silenciosamente sin consumidor hasta que loader, validator y runtime lo implementen.
+- Todo root de fuente requiere `manifest.json` con `source_id`, `namespace` y `version`. `GameDataLoader` descubre y valida todos los manifests, source IDs, namespaces y reservas Core antes de registrar una Definition; no infiere identidad durable desde nombres de carpeta ni rutas absolutas.
+- Core declara `source_id: old_scars_core`, posee el namespace reservado `core` y usa el mismo discovery/parser/context/registries/validator/provenance que fuentes externas. Es primero por contrato; las externas se ordenan canónicamente por `source_id`, no por enumeración o carpeta.
+- Cada source ID y namespace debe ser único. Una fuente sólo declara Definitions dentro de su namespace propio; esa regla no se aplica a referencias, por lo que una referencia cross-namespace explícita permanece válida cuando `DataValidator` confirma el target.
+- No existe todavía política de override, dependencia, patch, load-order o negociación de version. Un ID duplicado dentro de su tipo/registry produce error y la segunda definición se rechaza.
+- El deserializador de Definitions ignora campos desconocidos. Eso no los incorpora al contrato: un campo no documentado puede quedar silenciosamente sin consumidor hasta que loader, validator y runtime lo implementen. El parser de `manifest.json` es estricto y los rechaza.
 - Las definiciones no contienen estado de partida. Los objetos colocados en escena y las instancias runtime consumen definiciones por ID.
 - `ItemDefinition` describe un tipo; `ItemInstance` conserva identidad y estado de una instancia representativa. La cantidad del stack pertenece a `ItemStorageEntry`, no a `ItemInstance`.
 
@@ -24,7 +25,10 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Equipment slots como `core:hand_right` y capabilities como `core:mount_storage` sí son Global Content IDs porque viven en registries propios. El role visual `hand_right` sigue siendo un Local ID; ambos dominios no son intercambiables.
 - Tags permanecen sin namespace y registrados por `TagRegistry`. `asset_key` ya usa dos segmentos pero es una clave secundaria de provider, no un `Definition.id`. `ItemInstance.InstanceId`, `PersistentSceneObjectId`, save slot IDs y storage IDs compuestos son dominios runtime/persistentes separados.
 - Compatibilidad temporal: sólo una carga con contexto Core puede cualificar un ID legacy sin namespace como `core:*`; consultas authored y saves schema v1 usan un resolver Core explícito y generan diagnóstico. Los mods externos no reciben namespace implícito. La excepción histórica `right_hand` → `core:hand_right` está limitada a referencias legacy de Equipment.
-- `ContentLoadContext` conserva mod directory/nombre y source file mientras normaliza, por lo que los errores de carga incluyen fuente. `GameDatabase` todavía no persiste identidad/provenance completa de la fuente. La primera extensión propuesta debe usar este seam, pero no existe ni se congela todavía un manifest schema, fingerprint universal o contrato de generation compatibility. Dependencies y patches permanecen en el alcance futuro M50.0.
+- Source ID, namespace, Global Content ID, runtime/instance ID y persistent ID son dominios separados. `ContentLoadContext` lleva la identidad/version manifest, root físico sólo para IO/diagnóstico y flag official-Core; los errores de definición identifican primero el `source_id` estable.
+- El loader registra como recognized inputs exactamente los JSON que atraviesan sus familias actuales. `LoadedContentSource` expone metadata manifest, lista inmutable de paths relativos/hash/longitud y SHA-256 de provenance; `LoadedContentSet` conserva fuentes en orden canónico, descripción determinista y SHA-256 agregado.
+- Provenance usa campos manifest relevantes más path relativo normalizado y bytes exactos consumidos, en orden ordinal. Excluye root/folder/paths absolutos y archivos no reconocidos. Un cambio de fingerprint prueba diferencia de inputs, no incompatibilidad semántica de generación o save.
+- `GameDataManager` publica `LoadedContentSet` sólo después de `GameDataLoader` y `DataValidator` sin errores; en failure queda `null`. `GameDatabase`, `TagRegistry` y `DataValidator` conservan sus autoridades y no existe registry paralelo de gameplay.
 
 ## Identidad Durable De Items Y Limite De Persistencia
 
@@ -235,7 +239,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `FirearmDebugController` sigue siendo una superficie debug, pero ya no es una autoridad paralela: Equipment, `ItemInstance`, servicios de combate y M39 poseen el estado y la lógica gameplay.
 - Existe actor registry/spawn/lifecycle durable acotado a M38.0, Navigation/Perception M41.0 y Human Encounter AI V1 M41.1. No existen hostility universal, investigación, cover/flanking, behavior trees, población/streaming, clima, ecología, facciones, sectorización ni proceduralidad runtime.
 - La UI es debug OnGUI y no debe expandirse como si fuera la UI final.
-- Los mods son aditivos, exigen Global Content IDs canónicos y siguen sin manifests, ownership de namespace, overrides/versiones, dependencies ni patches; el soporte de compatibilidad de produccion pertenece a milestones posteriores.
+- Las fuentes son aditivas, requieren manifest y ownership de namespace, y siguen sin overrides, dependencies, patches, load-order, version negotiation ni generation compatibility; el soporte de compatibilidad de producción pertenece a milestones posteriores.
 
 ## Frontera M36.1 / M37
 

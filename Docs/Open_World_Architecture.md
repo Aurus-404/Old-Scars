@@ -27,12 +27,14 @@ La dirección de diseño está aprobada. No están implementados:
 - sector loading o transición;
 - world-level topology o cross-sector features;
 - world save payload;
-- manifests, provenance o generation compatibility;
+- generation compatibility, generation manifests o world-specific content contracts;
 - world history;
 - world-scale identity catalogs;
 - internal streaming de terreno, NavMesh, física, vegetación o IA.
 
 No se autoriza implementación por la existencia de este documento. Cada unidad requiere alcance, dependencia, validación y autorización propios bajo el Roadmap.
+
+La foundation mínima de content source identity/provenance sí está implementada: manifest por fuente, ownership de namespace, orden estable, recognized-input metadata y SHA-256 por fuente/set. No implementa ninguna capacidad mundial ni decide compatibilidad.
 
 ## Decisión Arquitectónica Central
 
@@ -454,7 +456,9 @@ Los mundos persistentes generados requieren procedencia estable de sus fuentes d
 
 ### Provenance
 
-Responde qué fuentes, versiones e inputs estuvieron presentes. La primera unidad de implementación propuesta es una foundation mínima de content source identity/provenance sobre `ContentLoadContext`, `GameDataLoader`, `GameDatabase` y `DataValidator` existentes.
+Responde qué fuentes, versiones e inputs estuvieron presentes. La foundation mínima implementada extiende `ContentLoadContext` y `GameDataLoader`, conserva `GameDatabase`/`TagRegistry`/`DataValidator` como autoridades y publica un `LoadedContentSet` validado con fingerprints SHA-256 de provenance.
+
+El contrato actual cubre sólo manifests de source identity (`source_id`, namespace y version) y los JSON ya reconocidos por el loader. No persiste todavía el set en mundos/saves ni incluye authored assets/templates futuros.
 
 ### Generation Compatibility
 
@@ -469,7 +473,7 @@ La arquitectura no congela:
 
 Las estructuras y assets autorados pueden convertirse en inputs relevantes. Una implementación futura debe identificar solamente los inputs realmente consumidos por generación y registrar evidencia suficiente sin adelantar el alcance completo de M50.0.
 
-[DataDriven_JSON_Rules.md](DataDriven_JSON_Rules.md) no se amplía hasta que exista un contrato implementado y validado.
+[DataDriven_JSON_Rules.md](DataDriven_JSON_Rules.md) documenta el contrato mínimo ya implementado. Cualquier ampliación exige consumidor y validación reales.
 
 ## Authored Content And Procedural Composition
 
@@ -570,7 +574,7 @@ Recomendación inicial: un mundo macro **finito pero muy grande**, con topologí
 
 `FINITE VS FUTURE-EXPANDABLE WORLD — PENDING FINAL MAURO APPROVAL`
 
-Esta decisión pendiente no bloquea la documentación ni la primera foundation de provenance.
+Esta decisión pendiente no bloqueó la foundation de provenance ya cerrada ni bloquea por sí sola la siguiente foundation autorizable.
 
 ## Explicitly Deferred
 

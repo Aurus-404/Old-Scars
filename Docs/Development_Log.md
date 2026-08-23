@@ -3005,3 +3005,27 @@ Correcciones congeladas en el draft:
 El camino crítico conceptual pasa a foundations `ID TBD`: content source identity/provenance; world identity/topology/determinism; macro geography/cross-sector networks; bounded history; world persistence; sector blueprint/authored composition; navigation/performance gate; materialization/transition; Connected First Playable; playtest/rebaseline. M42.0–M47.1 conservan sus IDs y sistemas, pero requieren sequence/scope rebaseline y no quedan autorizados.
 
 No se modificaron C#, JSON, scenes, prefabs, packages ni gameplay. No se ejecutó Unity porque la tarea es exclusivamente documental. El draft permanece en un worktree/branch aislado y debe detenerse antes de commit, push o integración hasta revisión explícita de Mauro.
+
+### ID TBD — Minimum Content Source Identity & Provenance Foundation
+
+Fecha: 2026-08-23.
+
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+Se implementó identidad/provenance mínima de content sources sobre el pipeline existente. Todo root inmediato de `StreamingAssets/Mods` requiere `manifest.json` estricto con `source_id`, `namespace` y `version`; `old_scars_core` posee el namespace reservado `core`. `GameDataLoader` descubre y valida todos los manifests, duplicados y reservas antes de registrar Definitions, carga Core primero y ordena externos por `source_id` estable. Folder name y paths absolutos permanecen sólo operacionales.
+
+`ContentLoadContext` conserva source identity/version/namespace/root IO y recognized inputs. `DefinitionContentIdNormalizer` exige que cada declaración pertenezca al namespace owner sin aplicar esa regla a referencias; cross-namespace references explícitas continúan bajo resolución/semántica de `DataValidator`. La compatibilidad legacy sin namespace permanece exclusiva de Core.
+
+`LoadedContentSource` y `LoadedContentSet` exponen metadata inmutable y SHA-256 canónico. El hash usa campos manifest relevantes, paths relativos normalizados y bytes exactos consumidos de los JSON que recorre el propio loader; no usa folder/root absoluto ni archivos no reconocidos. `GameDataManager` publica el set sólo después de loader + validator exitosos. Provenance registra evidencia de inputs y no se interpreta como generation/save compatibility.
+
+Validación autónoma en Unity `6000.4.6f1`, Editor batchmode aislado:
+
+- Runtime compile: `PASS`;
+- Editor compile: `PASS`;
+- `Minimum Content Source Identity & Provenance Foundation`: `PASS` para Core real y escenarios A–L de manifests, rename, duplicates, Core reservation, ownership, cross-namespace, bytes, order, archivos ignorados y failures;
+- real Core + `DataValidator`: `PASS`;
+- `Global Content ID Namespace Foundation`: `PASS`;
+- temp fixture cleanup: `PASS`;
+- no Play Mode/manual Mauro gate requerido: el cambio es loader/data contract con diagnostics deterministas y sin interacción visual.
+
+No se implementaron generation compatibility, WorldId/WorldSeed, topology, sectors, world persistence, saves, menus, dependencies, patches, overrides, load order, Workshop ni scripting/DLL mods. `ID TBD — World Identity, Topology & Determinism Foundation` queda como candidato `PLANNED — NOT AUTHORIZED`.

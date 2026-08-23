@@ -14,7 +14,7 @@ namespace OldScars.Core
     /// - Locate StreamingAssets/Mods.
     /// - Load all JSON definitions through GameDataLoader.
     /// - Validate the loaded definitions through DataValidator.
-    /// - Expose GameDatabase and TagRegistry to gameplay systems.
+    /// - Expose GameDatabase, TagRegistry and validated content provenance.
     ///
     /// This class does not create gameplay entities, inventories, combat, loot,
     /// save data, or UI. It only prepares immutable definition data.
@@ -32,6 +32,7 @@ namespace OldScars.Core
         public GameDatabase Database { get; private set; }
         public TagRegistry Tags { get; private set; }
         public DataLoadReport Report { get; private set; }
+        public LoadedContentSet LoadedContentSet { get; private set; }
 
         private void Awake()
         {
@@ -53,6 +54,7 @@ namespace OldScars.Core
         public void LoadGameData()
         {
             IsReady = false;
+            LoadedContentSet = null;
             Report = new DataLoadReport();
 
             string modsRootPath = Path.Combine(Application.streamingAssetsPath, modsFolderName);
@@ -67,6 +69,10 @@ namespace OldScars.Core
             var validator = new DataValidator(Database, Tags, Report);
             validator.Validate();
 
+            LoadedContentSet validatedContentSet = null;
+            if (!Report.HasErrors)
+                loader.TryBuildLoadedContentSet(out validatedContentSet);
+
             Report.LogSummary();
 
             if (Report.HasErrors)
@@ -80,8 +86,20 @@ namespace OldScars.Core
                 Debug.LogWarning("[GameDataManager] CoreDataSystem has errors, but haltOnDataErrors is disabled.");
             }
 
+            LoadedContentSet = validatedContentSet;
             IsReady = true;
-            Debug.Log("[GameDataManager] CoreDataSystem ready.");
+            if (LoadedContentSet != null)
+            {
+                Debug.Log(
+                    "[GameDataManager] CoreDataSystem ready. Loaded content set provenance: " +
+                    LoadedContentSet.ProvenanceFingerprint);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[GameDataManager] CoreDataSystem continued because haltOnDataErrors is disabled; " +
+                    "no validated LoadedContentSet was published.");
+            }
         }
     }
 }

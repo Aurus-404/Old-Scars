@@ -7,15 +7,54 @@ C# ejecuta lógica.
 
 Los JSON no deben contener lógica compleja ni scripts embebidos.
 
-El deserializador actual ignora campos desconocidos. Ausencia de error no convierte un campo en contrato: solo usar campos documentados y respaldados por definition, validator y runtime.
+El deserializador de Definitions ignora campos desconocidos. Ausencia de error no convierte un campo en contrato: solo usar campos documentados y respaldados por definition, validator y runtime. El manifest de source identity es deliberadamente estricto y rechaza campos no reconocidos.
 
 ## Paquete Core
 
 Mods/Core representa el contenido base oficial del juego y debe estar estructurado como un mod interno que sirva de ejemplo a modders.
 
-El juego carga Core primero bajo el namespace reservado `core`. Los mods externos actuales pueden agregar definiciones nuevas usando la misma estructura, pero deben declarar Global Content IDs canónicos explícitos; el nombre de su carpeta todavía no les asigna un namespace. No existe todavia politica de override o reemplazo: un ID duplicado dentro de su tipo/registro es error y la segunda definicion se rechaza.
+El juego carga Core primero bajo el namespace reservado `core`. Core y fuentes externas usan el mismo manifest discovery, `ContentLoadContext`, parser, registries, validator y provenance. Un source externo puede agregar definiciones nuevas usando la misma estructura, pero debe declarar Global Content IDs canónicos explícitos dentro de su namespace propio. No existe todavía política de override o reemplazo: un ID duplicado dentro de su tipo/registry es error y la segunda definición se rechaza.
 
 Core JSON define contenido. Save/runtime define el estado concreto de la partida. C# ejecuta lógica.
+
+## Content Source Manifest V1
+
+Todo directorio inmediato bajo `Assets/StreamingAssets/Mods` es un content-source root y debe contener exactamente este contrato mínimo en `manifest.json`:
+
+```json
+{
+  "source_id": "example_source",
+  "namespace": "example_content",
+  "version": "1.0.0"
+}
+```
+
+- `source_id` es identidad estable de la fuente y usa `[a-z0-9_]+`; no deriva del nombre de carpeta.
+- `namespace` usa `[a-z0-9_]+`, debe ser único y tiene exactamente un owner.
+- `version` es metadata declarada obligatoria, no vacía, sin trim implícito ni caracteres de control. No existe negociación de versiones.
+- `source_id`, `namespace` y version son campos distintos; tampoco son `ContentId`, runtime ID ni persistent ID.
+- El manifest es estricto: campos desconocidos o JSON malformado bloquean la carga.
+- `old_scars_core` + namespace `core` es el par reservado de Core oficial. Una fuente externa no puede reclamar ninguno de los dos de forma independiente.
+- Los source IDs y namespaces duplicados bloquean antes de registrar definiciones.
+- Core se ordena primero; fuentes externas se ordenan por `source_id` ordinal. Folder name y orden de filesystem no deciden identidad ni orden.
+- Una fuente sólo puede **declarar** Definitions dentro del namespace que posee. References explícitas a otro namespace siguen permitidas y su existencia/semántica permanece bajo `DataValidator`.
+
+El manifest no admite dependencies, conflicts, patches, overrides, load order, Workshop metadata, scripting/DLLs, generator settings ni generation compatibility.
+
+## Content Provenance V1
+
+Después de carga y validación exitosas, `GameDataManager.LoadedContentSet` describe de forma inmutable las fuentes cargadas. Cada `LoadedContentSource` expone identidad, namespace, version, recognized inputs y un SHA-256 de provenance; el set expone orden, descripción canónica y SHA-256 agregado.
+
+El fingerprint de una fuente usa:
+
+- campos manifest relevantes canonicalizados;
+- path relativo al source root, normalizado con `/`;
+- bytes exactos consumidos de cada JSON reconocido;
+- orden ordinal canónico.
+
+Recognized inputs son los JSON recorridos por las familias que ya carga `GameDataLoader`; esa misma ruta registra los inputs y evita una segunda lista divergente. No participan el path absoluto, el nombre del root, README, logs, screenshots, temporales, metadata del OS, Unity `Library` ni JSON ubicado fuera de una familia reconocida.
+
+Provenance responde qué fuentes/versiones/inputs estuvieron presentes. No es un compatibility hash: un cambio no implica por sí solo incompatibilidad de save o generation.
 
 ## Identidad E IDs
 

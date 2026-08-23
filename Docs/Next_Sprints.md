@@ -6,21 +6,21 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `WORKFLOW HARDENING CLOSED`.
+Estado: `MINIMUM CONTENT SOURCE IDENTITY & PROVENANCE FOUNDATION CLOSED`.
 
 M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
-La dirección [Open World Architecture](Open_World_Architecture.md) está `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`. El primer coding unit propuesto es:
+La dirección [Open World Architecture](Open_World_Architecture.md) está `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`. Su primera foundation quedó:
 
 `ID TBD — Minimum Content Source Identity & Provenance Foundation`
 
-Estado: `PLANNED — NOT AUTHORIZED`.
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
 
-Su futura autorización deberá permanecer acotada a source identity/provenance sobre el pipeline Core/mod existente. No autoriza worldgen, sectores, manifests completos, dependencies, patches ni world persistence.
+El próximo coding unit candidato es `ID TBD — World Identity, Topology & Determinism Foundation`, con estado `PLANNED — NOT AUTHORIZED`. Requiere autorización específica; este cierre no lo inicia.
 
 Fuera de alcance mientras no exista autorización específica:
 
-- cualquier implementación open-world;
+- cualquier implementación open-world posterior a provenance;
 - M42.0 u otro milestone jugable;
 - cambios de gameplay, datos o persistencia;
 - reabrir la arquitectura M41.1 validada.
@@ -33,15 +33,15 @@ El Connected First Playable es la prueba integrada objetivo después de las foun
 
 ## Modding Y Provenance
 
-La Global Content ID Foundation actual no implementa identidad estable de fuentes, provenance, generation compatibility, dependencies ni patches.
+La Global Content ID Foundation y la Minimum Content Source Identity & Provenance Foundation están validadas. Cada source requiere manifest `source_id`/`namespace`/`version`; ownership de declaraciones, orden estable y SHA-256 de recognized inputs están implementados sobre el pipeline Core/mod existente.
 
-La primera unidad propuesta debe establecer identidad/provenance mínima sin congelar todavía un manifest schema final ni un fingerprint universal. `Provenance` prueba qué fuentes/inputs estuvieron presentes; `generation compatibility` determina si esos inputs siguen siendo semánticamente compatibles con un mundo.
+`Provenance` prueba qué fuentes/inputs estuvieron presentes. `Generation compatibility` continúa no implementada y será responsable de decidir si inputs semánticos siguen siendo compatibles con un mundo; no se infiere desde igualdad/diferencia del fingerprint.
 
 Dependencies, overrides/patches y compatibilidad de producción permanecen en alcance posterior M50.0. La nueva foundation no sustituye M50.0 ni lo marca iniciado.
 
 ## No Iniciar Todavía
 
-- coding units open-world o M42.0 sin autorización específica;
+- World Identity/Topology/Determinism, otros coding units open-world o M42.0 sin autorización específica;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;

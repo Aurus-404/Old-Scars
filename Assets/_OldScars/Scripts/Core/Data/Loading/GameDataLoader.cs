@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Newtonsoft.Json;
 using OldScars.Core.Data.Definitions;
 using UnityEngine;
@@ -27,23 +28,34 @@ namespace OldScars.Core.Data.Loading
     /// - visual_capabilities / visual_rig_profiles
     /// - visual_assets / item_visual_profiles / attachment_poses
     ///
-    /// Global Content IDs are canonicalized with source context before
-    /// registration. Core is the only source allowed to qualify legacy IDs;
-    /// external sources require explicit namespace:local_id until manifests
-    /// provide authoritative mod identity and dependency context.
+    /// Every source is identified by a root manifest before any definition is
+    /// registered. Global Content IDs are canonicalized with that source context;
+    /// official Core alone may qualify legacy IDs. Manifests establish identity,
+    /// namespace ownership and provenance metadata, not dependency or compatibility
+    /// policy.
     /// </summary>
     public sealed class GameDataLoader
     {
+        public const string ManifestFileName = "manifest.json";
+        public const string OfficialCoreSourceId = "old_scars_core";
+
         public GameDatabase Database { get; }
         public TagRegistry Tags { get; }
 
         private readonly string modsRootPath;
         private readonly DataLoadReport report;
+        private List<ContentLoadContext> loadedSourceContexts;
 
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
             MissingMemberHandling = MissingMemberHandling.Ignore,
             NullValueHandling = NullValueHandling.Ignore
+        };
+
+        private static readonly JsonSerializerSettings ManifestJsonSettings = new JsonSerializerSettings
+        {
+            MissingMemberHandling = MissingMemberHandling.Error,
+            NullValueHandling = NullValueHandling.Include
         };
 
         public GameDataLoader(string modsRootPath, DataLoadReport report)
@@ -56,78 +68,251 @@ namespace OldScars.Core.Data.Loading
 
         public void LoadAll()
         {
+            loadedSourceContexts = null;
             if (!Directory.Exists(modsRootPath))
             {
                 report.Error($"Mods root folder not found: '{modsRootPath}'. Expected Assets/StreamingAssets/Mods.");
                 return;
             }
 
-            List<string> modDirectories = GetOrderedModDirectories();
+            List<ContentLoadContext> sources = DiscoverAndValidateSources();
+            if (report.HasErrors)
+                return;
 
-            if (modDirectories.Count == 0)
+            if (sources.Count == 0)
             {
-                report.Error($"No mod folders found under '{modsRootPath}'. Expected at least Mods/Core.");
+                report.Error($"No content-source folders found under '{modsRootPath}'.");
                 return;
             }
 
-            foreach (string modDirectory in modDirectories)
+            foreach (ContentLoadContext context in sources)
             {
-                string modName = Path.GetFileName(modDirectory);
-                bool isCore = string.Equals(modName, "Core", StringComparison.OrdinalIgnoreCase);
-                var context = new ContentLoadContext(modName, modDirectory, isCore);
-                Debug.Log($"[GameDataLoader] Loading mod source: {modName}" +
-                          (isCore
-                              ? $" (namespace '{ContentId.CoreNamespace}', Core legacy compatibility enabled)"
-                              : " (canonical Global Content IDs required; manifest ownership pending)"));
+                Debug.Log($"[GameDataLoader] Loading content source '{context.SourceId}' " +
+                          $"version '{context.Version}' owning namespace '{context.OwnedNamespace}'" +
+                          (context.IsOfficialCore ? " (official Core legacy compatibility enabled)" : string.Empty));
                 LoadMod(context);
                 context.ReportLegacyUsage(report);
             }
 
+            loadedSourceContexts = sources;
             Database.LogStats();
         }
 
-        private List<string> GetOrderedModDirectories()
+        public bool TryBuildLoadedContentSet(out LoadedContentSet loadedContentSet)
         {
-            var result = new List<string>();
-            string[] directories = Directory.GetDirectories(modsRootPath);
-            Array.Sort(directories, StringComparer.OrdinalIgnoreCase);
+            loadedContentSet = null;
+            if (report.HasErrors || loadedSourceContexts == null)
+                return false;
 
-            string coreDirectory = null;
-
-            foreach (string directory in directories)
+            var sources = new List<LoadedContentSource>(loadedSourceContexts.Count);
+            foreach (ContentLoadContext context in loadedSourceContexts)
             {
-                string name = Path.GetFileName(directory);
-                if (string.Equals(name, "Core", StringComparison.OrdinalIgnoreCase))
+                try
                 {
-                    coreDirectory = directory;
-                    break;
+                    sources.Add(ContentProvenance.BuildSource(context));
+                }
+                catch (Exception exception)
+                {
+                    report.Error(
+                        $"Content source '{context.SourceId}' provenance could not be built from its recognized inputs: " +
+                        exception.Message);
+                    return false;
                 }
             }
 
-            if (coreDirectory != null)
+            loadedContentSet = ContentProvenance.BuildSet(sources);
+            return true;
+        }
+
+        private List<ContentLoadContext> DiscoverAndValidateSources()
+        {
+            var discovered = new List<ContentLoadContext>();
+            string[] directories = Directory.GetDirectories(modsRootPath);
+            Array.Sort(directories, StringComparer.Ordinal);
+            if (directories.Length == 0)
             {
-                result.Add(coreDirectory);
-            }
-            else
-            {
-                report.Error("Required mod folder 'Core' was not found. Create Assets/StreamingAssets/Mods/Core.");
+                report.Error($"No content-source folders found under '{modsRootPath}'. Expected official Core content.");
+                return discovered;
             }
 
             foreach (string directory in directories)
             {
-                if (string.Equals(Path.GetFileName(directory), "Core", StringComparison.OrdinalIgnoreCase))
+                ContentSourceManifest manifest = ParseManifest(directory);
+                if (manifest == null)
                     continue;
 
-                result.Add(directory);
+                bool valid = ValidateManifest(manifest, directory);
+                if (!valid)
+                    continue;
+
+                bool isOfficialCore =
+                    string.Equals(manifest.SourceId, OfficialCoreSourceId, StringComparison.Ordinal) &&
+                    string.Equals(manifest.OwnedNamespace, ContentId.CoreNamespace, StringComparison.Ordinal);
+                discovered.Add(new ContentLoadContext(
+                    manifest.SourceId,
+                    manifest.OwnedNamespace,
+                    manifest.Version,
+                    directory,
+                    isOfficialCore));
             }
 
-            return result;
+            ValidateUniqueSourceIdentity(discovered);
+            if (report.HasErrors)
+                return new List<ContentLoadContext>();
+
+            discovered.Sort(CompareSources);
+            return discovered;
+        }
+
+        private ContentSourceManifest ParseManifest(string sourceDirectory)
+        {
+            string manifestPath = Path.Combine(sourceDirectory, ManifestFileName);
+            if (!File.Exists(manifestPath))
+            {
+                report.Error(
+                    $"Content source folder '{sourceDirectory}' is missing required root manifest '{ManifestFileName}'. " +
+                    "Source identity is never inferred from the folder name.");
+                return null;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(manifestPath);
+                ContentSourceManifest manifest =
+                    JsonConvert.DeserializeObject<ContentSourceManifest>(json, ManifestJsonSettings);
+                if (manifest == null)
+                    report.Error($"Content source manifest '{manifestPath}' is empty or deserialized to null.");
+                return manifest;
+            }
+            catch (Exception exception)
+            {
+                report.Error($"Failed to parse content source manifest '{manifestPath}': {exception.Message}");
+                return null;
+            }
+        }
+
+        private bool ValidateManifest(ContentSourceManifest manifest, string sourceDirectory)
+        {
+            bool valid = true;
+            string context = $"Content source manifest in '{sourceDirectory}'";
+
+            if (!ContentId.TryValidateLocalId(manifest.SourceId, out string sourceIdError))
+            {
+                report.Error($"{context}: required 'source_id' is invalid: {sourceIdError}.");
+                valid = false;
+            }
+
+            if (!ContentId.TryValidateNamespace(manifest.OwnedNamespace, out string namespaceError))
+            {
+                report.Error($"{context}: required 'namespace' is invalid: {namespaceError}.");
+                valid = false;
+            }
+
+            if (!TryValidateVersion(manifest.Version, out string versionError))
+            {
+                report.Error($"{context}: required 'version' is invalid: {versionError}.");
+                valid = false;
+            }
+
+            if (!valid)
+                return false;
+
+            bool claimsCoreSourceId =
+                string.Equals(manifest.SourceId, OfficialCoreSourceId, StringComparison.Ordinal);
+            bool claimsCoreNamespace =
+                string.Equals(manifest.OwnedNamespace, ContentId.CoreNamespace, StringComparison.Ordinal);
+            if (claimsCoreSourceId != claimsCoreNamespace)
+            {
+                report.Error(
+                    $"Content source '{manifest.SourceId}' cannot claim the reserved official Core identity or " +
+                    $"namespace independently. Official Core requires source_id '{OfficialCoreSourceId}' and " +
+                    $"namespace '{ContentId.CoreNamespace}'; external sources may claim neither.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ValidateUniqueSourceIdentity(List<ContentLoadContext> sources)
+        {
+            var sourceIds = new Dictionary<string, ContentLoadContext>(StringComparer.Ordinal);
+            var namespaces = new Dictionary<string, ContentLoadContext>(StringComparer.Ordinal);
+            int officialCoreCount = 0;
+
+            foreach (ContentLoadContext source in sources)
+            {
+                if (source.IsOfficialCore)
+                    officialCoreCount++;
+
+                if (sourceIds.TryGetValue(source.SourceId, out ContentLoadContext sourceIdOwner))
+                {
+                    report.Error(
+                        $"Duplicate content source_id '{source.SourceId}' in source roots " +
+                        $"'{sourceIdOwner.SourceRootPath}' and '{source.SourceRootPath}'.");
+                }
+                else
+                {
+                    sourceIds[source.SourceId] = source;
+                }
+
+                if (namespaces.TryGetValue(source.OwnedNamespace, out ContentLoadContext namespaceOwner))
+                {
+                    report.Error(
+                        $"Duplicate owned namespace '{source.OwnedNamespace}' in content sources " +
+                        $"'{namespaceOwner.SourceId}' and '{source.SourceId}'. Exactly one source may own a namespace.");
+                }
+                else
+                {
+                    namespaces[source.OwnedNamespace] = source;
+                }
+            }
+
+            if (officialCoreCount != 1)
+            {
+                report.Error(
+                    $"Exactly one official Core content source is required with source_id '{OfficialCoreSourceId}' " +
+                    $"and namespace '{ContentId.CoreNamespace}' (found {officialCoreCount}).");
+            }
+        }
+
+        private static int CompareSources(ContentLoadContext left, ContentLoadContext right)
+        {
+            if (left.IsOfficialCore != right.IsOfficialCore)
+                return left.IsOfficialCore ? -1 : 1;
+            return string.CompareOrdinal(left.SourceId, right.SourceId);
+        }
+
+        private static bool TryValidateVersion(string version, out string error)
+        {
+            error = null;
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                error = "value is null, empty or whitespace";
+                return false;
+            }
+
+            if (!string.Equals(version, version.Trim(), StringComparison.Ordinal))
+            {
+                error = "leading or trailing whitespace is not allowed";
+                return false;
+            }
+
+            for (int index = 0; index < version.Length; index++)
+            {
+                if (char.IsControl(version[index]))
+                {
+                    error = $"control character at position {index} is not allowed";
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void LoadMod(ContentLoadContext context)
         {
-            string modDirectory = context.ModDirectory;
-            LoadTagsFrom(Path.Combine(modDirectory, "tags"));
+            string modDirectory = context.SourceRootPath;
+            LoadTagsFrom(Path.Combine(modDirectory, "tags"), context);
             LoadWeaponProfilesFrom(Path.Combine(modDirectory, "profiles"), context);
             LoadFirearmProfilesFrom(Path.Combine(modDirectory, "firearm_profiles"), context);
             LoadAmmoProfilesFrom(Path.Combine(modDirectory, "ammo_profiles"), context);
@@ -148,11 +333,11 @@ namespace OldScars.Core.Data.Loading
             LoadWorldObjectProfilesFrom(Path.Combine(modDirectory, "world_object_profiles"), context);
         }
 
-        private void LoadTagsFrom(string directory)
+        private void LoadTagsFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                TagsWrapper wrapper = Parse<TagsWrapper>(file);
+                TagsWrapper wrapper = Parse<TagsWrapper>(file, context);
                 if (wrapper == null || wrapper.tags == null)
                 {
                     report.Warning($"No 'tags' array found in {FileName(file)}.");
@@ -168,9 +353,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadWeaponProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                WeaponProfilesWrapper wrapper = Parse<WeaponProfilesWrapper>(file);
+                WeaponProfilesWrapper wrapper = Parse<WeaponProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.weapon_profiles == null)
                 {
                     report.Warning($"No 'weapon_profiles' array found in {FileName(file)}.");
@@ -187,9 +372,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadFirearmProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                FirearmProfilesWrapper wrapper = Parse<FirearmProfilesWrapper>(file);
+                FirearmProfilesWrapper wrapper = Parse<FirearmProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.firearm_profiles == null)
                 {
                     report.Warning($"No 'firearm_profiles' array found in {FileName(file)}.");
@@ -206,9 +391,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadAmmoProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                AmmoProfilesWrapper wrapper = Parse<AmmoProfilesWrapper>(file);
+                AmmoProfilesWrapper wrapper = Parse<AmmoProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.ammo_profiles == null)
                 {
                     report.Warning($"No 'ammo_profiles' array found in {FileName(file)}.");
@@ -225,9 +410,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadArmorProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                ArmorProfilesWrapper wrapper = Parse<ArmorProfilesWrapper>(file);
+                ArmorProfilesWrapper wrapper = Parse<ArmorProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.armor_profiles == null)
                 {
                     report.Warning($"No 'armor_profiles' array found in {FileName(file)}.");
@@ -244,9 +429,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadPenetrationProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                PenetrationProfilesWrapper wrapper = Parse<PenetrationProfilesWrapper>(file);
+                PenetrationProfilesWrapper wrapper = Parse<PenetrationProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.penetration_profiles == null)
                 {
                     report.Warning($"No 'penetration_profiles' array found in {FileName(file)}.");
@@ -263,9 +448,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadActionsFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                ActionsWrapper wrapper = Parse<ActionsWrapper>(file);
+                ActionsWrapper wrapper = Parse<ActionsWrapper>(file, context);
                 if (wrapper == null || wrapper.actions == null)
                 {
                     report.Warning($"No 'actions' array found in {FileName(file)}.");
@@ -282,9 +467,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadItemsFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                ItemsWrapper wrapper = Parse<ItemsWrapper>(file);
+                ItemsWrapper wrapper = Parse<ItemsWrapper>(file, context);
                 if (wrapper == null || wrapper.items == null)
                 {
                     report.Warning($"No 'items' array found in {FileName(file)}.");
@@ -301,9 +486,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadItemStorageProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                ItemStorageProfilesWrapper wrapper = Parse<ItemStorageProfilesWrapper>(file);
+                ItemStorageProfilesWrapper wrapper = Parse<ItemStorageProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.item_storage_profiles == null)
                 {
                     report.Warning($"No 'item_storage_profiles' array found in {FileName(file)}.");
@@ -320,9 +505,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadEquipmentSlotsFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                EquipmentSlotsWrapper wrapper = Parse<EquipmentSlotsWrapper>(file);
+                EquipmentSlotsWrapper wrapper = Parse<EquipmentSlotsWrapper>(file, context);
                 if (wrapper == null || wrapper.equipment_slots == null)
                 {
                     report.Warning($"No 'equipment_slots' array found in {FileName(file)}.");
@@ -339,9 +524,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadEquipmentLayoutsFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                EquipmentLayoutsWrapper wrapper = Parse<EquipmentLayoutsWrapper>(file);
+                EquipmentLayoutsWrapper wrapper = Parse<EquipmentLayoutsWrapper>(file, context);
                 if (wrapper == null || wrapper.equipment_layouts == null)
                 {
                     report.Warning($"No 'equipment_layouts' array found in {FileName(file)}.");
@@ -358,9 +543,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadVisualRigCapabilitiesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                VisualRigCapabilitiesWrapper wrapper = Parse<VisualRigCapabilitiesWrapper>(file);
+                VisualRigCapabilitiesWrapper wrapper = Parse<VisualRigCapabilitiesWrapper>(file, context);
                 if (wrapper == null || wrapper.visual_rig_capabilities == null)
                 {
                     report.Warning($"No 'visual_rig_capabilities' array found in {FileName(file)}.");
@@ -377,9 +562,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadVisualRigProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                VisualRigProfilesWrapper wrapper = Parse<VisualRigProfilesWrapper>(file);
+                VisualRigProfilesWrapper wrapper = Parse<VisualRigProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.visual_rig_profiles == null)
                 {
                     report.Warning($"No 'visual_rig_profiles' array found in {FileName(file)}.");
@@ -396,9 +581,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadVisualAssetsFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                VisualAssetsWrapper wrapper = Parse<VisualAssetsWrapper>(file);
+                VisualAssetsWrapper wrapper = Parse<VisualAssetsWrapper>(file, context);
                 if (wrapper == null || wrapper.visual_assets == null)
                 {
                     report.Warning($"No 'visual_assets' array found in {FileName(file)}.");
@@ -415,9 +600,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadItemVisualProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                ItemVisualProfilesWrapper wrapper = Parse<ItemVisualProfilesWrapper>(file);
+                ItemVisualProfilesWrapper wrapper = Parse<ItemVisualProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.item_visual_profiles == null)
                 {
                     report.Warning($"No 'item_visual_profiles' array found in {FileName(file)}.");
@@ -434,9 +619,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadAttachmentPosesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                AttachmentPosesWrapper wrapper = Parse<AttachmentPosesWrapper>(file);
+                AttachmentPosesWrapper wrapper = Parse<AttachmentPosesWrapper>(file, context);
                 if (wrapper == null || wrapper.attachment_poses == null)
                 {
                     report.Warning($"No 'attachment_poses' array found in {FileName(file)}.");
@@ -453,9 +638,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadLootTablesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                LootTablesWrapper wrapper = Parse<LootTablesWrapper>(file);
+                LootTablesWrapper wrapper = Parse<LootTablesWrapper>(file, context);
                 if (wrapper == null || wrapper.loot_tables == null)
                 {
                     report.Warning($"No 'loot_tables' array found in {FileName(file)}.");
@@ -472,9 +657,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadActorProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                ActorProfilesWrapper wrapper = Parse<ActorProfilesWrapper>(file);
+                ActorProfilesWrapper wrapper = Parse<ActorProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.actor_profiles == null)
                 {
                     report.Warning($"No 'actor_profiles' array found in {FileName(file)}.");
@@ -491,9 +676,9 @@ namespace OldScars.Core.Data.Loading
 
         private void LoadWorldObjectProfilesFrom(string directory, ContentLoadContext context)
         {
-            foreach (string file in JsonFilesIn(directory))
+            foreach (string file in JsonFilesIn(directory, context))
             {
-                WorldObjectProfilesWrapper wrapper = Parse<WorldObjectProfilesWrapper>(file);
+                WorldObjectProfilesWrapper wrapper = Parse<WorldObjectProfilesWrapper>(file, context);
                 if (wrapper == null || wrapper.world_object_profiles == null)
                 {
                     report.Warning($"No 'world_object_profiles' array found in {FileName(file)}.");
@@ -508,28 +693,40 @@ namespace OldScars.Core.Data.Loading
             }
         }
 
-        private IEnumerable<string> JsonFilesIn(string directory)
+        private IEnumerable<string> JsonFilesIn(string directory, ContentLoadContext context)
         {
             if (!Directory.Exists(directory))
                 yield break;
 
             string[] files = Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly);
-            Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+            Array.Sort(files, StringComparer.Ordinal);
 
             foreach (string file in files)
                 yield return file;
         }
 
-        private T Parse<T>(string path) where T : class
+        private T Parse<T>(string path, ContentLoadContext context) where T : class
         {
             try
             {
-                string json = File.ReadAllText(path);
+                byte[] exactBytes = File.ReadAllBytes(path);
+                context.RecordRecognizedInput(path, exactBytes);
+                string json;
+                using (var reader = new StreamReader(
+                           new MemoryStream(exactBytes),
+                           Encoding.UTF8,
+                           true))
+                {
+                    json = reader.ReadToEnd();
+                }
                 return JsonConvert.DeserializeObject<T>(json, JsonSettings);
             }
             catch (Exception ex)
             {
-                report.Error($"Failed to parse '{path}': {ex.Message}");
+                string relativePath = Path.GetRelativePath(context.SourceRootPath, path).Replace('\\', '/');
+                report.Error(
+                    $"Content source '{context.SourceId}' failed to parse recognized input '{relativePath}': " +
+                    ex.Message);
                 return null;
             }
         }

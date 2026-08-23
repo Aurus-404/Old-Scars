@@ -20,7 +20,15 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. No existe todavía implementación de worldgen, sectores, transición, provenance ni world persistence.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. La foundation mínima de content source identity/provenance está implementada y validada; worldgen, topology, sectores, transición, generation compatibility y world persistence continúan no implementados.
+
+### ID TBD — Minimum Content Source Identity & Provenance Foundation
+
+Estado final:
+
+`VALIDATED — FOUNDATION COMPLETE`
+
+Cada content source requiere manifest mínimo, identidad/namespace/version estables y ownership único antes de registrar Definitions. Core usa el mismo pipeline. `LoadedContentSet` publica orden y SHA-256 de provenance sólo después de loader + `DataValidator` exitosos; no decide compatibilidad.
 
 ## Evidencia De Cierre
 
@@ -29,6 +37,7 @@ Estado de dirección:
 - Fight reutilizó Lee-Enfield, ammo/reload/disparo y armor del contrato M40; el estado final `0 loaded / 0 reserve` fue consumo manual deliberado, no un defecto.
 - LOS confirmó `Perceived → Occluded → LostContact → Idle`; al retirar la barrera y reasignar explícitamente el threat volvió a `Alerted`, sin omnisciencia.
 - El menú Editor muestra sólo la fixture M41.1 explícita; diagnostics históricos siguen invocables por automatización sin exposición manual obsoleta.
+- Runtime/Editor compile, real Core + `DataValidator`, `Minimum Content Source Identity & Provenance Foundation` y `Global Content ID Namespace Foundation`: `PASS` en Editor batchmode aislado.
 
 ## Contratos Cerrados
 
@@ -39,6 +48,6 @@ Estado de dirección:
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El primer coding unit propuesto es `ID TBD — Minimum Content Source Identity & Provenance Foundation`; permanece `PLANNED — NOT AUTHORIZED` y requiere autorización específica.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — World Identity, Topology & Determinism Foundation`; permanece `PLANNED — NOT AUTHORIZED` y requiere autorización específica.
 
 M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.

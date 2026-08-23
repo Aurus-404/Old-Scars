@@ -27,17 +27,18 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Commit documental de validacion | `2956bcae19719a5f9073e24d58da4705742732fa` |
 | Milestone activo | Ninguno |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
+| Estado ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
 | Estado M40.1 | `DONE — ARMOR / PENETRATION V1 VALIDATED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` |
-| Siguientes | ID TBD — Minimum Content Source Identity & Provenance Foundation (`PLANNED — NOT AUTHORIZED`) |
+| Siguientes | ID TBD — World Identity, Topology & Determinism Foundation (`PLANNED — NOT AUTHORIZED`) |
 
 M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. ID TBD — Global Content ID Namespace Foundation queda `VALIDATED — FOUNDATION COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
 
-No hay milestone de implementación activo. La dirección open-world fue aprobada arquitectónicamente, pero ninguna foundation futura queda autorizada por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+No hay milestone de implementación activo. La primera foundation open-world de source identity/provenance quedó validada; World Identity/Topology/Determinism y las unidades posteriores no quedan autorizadas por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
 
 ## Estados Canonicos
 
@@ -121,6 +122,7 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | M35.2.5 — Multiple Floating Storage Windows | `DEFERRED — RECLASSIFIED` | Retomar en UI/UX de produccion si la investigacion de uso justifica multiples ventanas. |
 | ID TBD — Container State / Naming Cleanup v0 | `DEFERRED — ID REQUIRED ON REACTIVATION` | Deuda de naming/tags legacy; no bloquea M36/M37. |
 | ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` | Foundation actual: `namespace:local_id`, namespace `core`, identidad canónica de `GameDatabase`, migración Core, compatibilidad legacy temporal, normalización schema-v1 y diagnósticos. No implementa manifests, provenance completa, dependencies ni patches/load-order. El nombre queda reservado con `ID TBD`; no consume un número histórico. |
+| ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` | Manifest mínimo por source, source ID/namespace/version, ownership de declaraciones, Core común, orden determinista, recognized inputs y SHA-256 de provenance por source/set. Excluye generation compatibility, dependencies, patches, world/save y version negotiation. |
 
 ## Open World Rebaseline — Dirección Futura Aprobada
 
@@ -130,7 +132,7 @@ Camino conceptual propuesto:
 
 | Orden | Unidad | Estado | Dependencia conceptual | Resultado esperado |
 | --- | --- | --- | --- | --- |
-| 1 | ID TBD — Minimum Content Source Identity & Provenance Foundation | `PLANNED — NOT AUTHORIZED` | Global Content ID Foundation validada | Fuentes/versiones/inputs identificables mediante el pipeline Core/mod existente, sin implementar el alcance completo M50.0. |
+| 1 | ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` | Global Content ID Foundation validada | Fuentes/versiones/inputs identificables mediante el pipeline Core/mod existente, sin implementar el alcance completo M50.0. |
 | 2 | ID TBD — World Identity, Topology & Determinism | `PLANNED — NOT AUTHORIZED` | Unidad 1 | Contratos lógicos mínimos de mundo/sector/topología, coordenadas separadas y determinismo, sin GameObjects. |
 | 3 | ID TBD — Macro Geography & Cross-Sector Networks | `PLANNED — NOT AUTHORIZED` | Unidad 2 | Geografía, ríos, carreteras, costa e infraestructura continua planificados a nivel mundial. |
 | 4 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | Unidad 3 | Historia estructurada acotada que produce/explica estado presente real sin event-sourced persistence. |
@@ -161,6 +163,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M40.1 — Armor & Penetration V1 | Jugable | `DONE — ARMOR / PENETRATION V1 VALIDATED` | M40.0 | Cobertura regional equipped-only, núcleo común de penetración para armor/world, trauma residual y round-trip fresh-session validados; gate `Combat Ready` aprobado. |
 | CERRADO | M41.0 — Navigation & Perception Foundation | Arquitectura/jugable | `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` | M38.0 | Navigation NPC y perception visual separadas, data-driven y validadas con automatización y prueba manual Unity. |
 | CERRADO | M41.1 — Human Encounter AI V1 | Jugable | `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` | M40.0, M41.0 | Avoid, Alerted, Flee, Fight y LostContact acotados, data-driven y validados; gate `AI Ready` aprobado. |
+| CERRADO | ID TBD — Minimum Content Source Identity & Provenance Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | Global Content ID Foundation; Open World Rebaseline | Manifest compartido Core/mod, ownership/orden estable y provenance SHA-256 validados sin generation compatibility, world code ni persistencia. |
 | RESECUENCIAR | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1; futura world/sector foundation aplicable | Clima, forecast, exposicion y proteccion permanecen planificados; ya no son el siguiente trabajo automático. |
 | RESECUENCIAR | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M42.0; M41.0 para animales moviles; world/sector context aplicable | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready` pendiente de reubicación revisada. |
 | RESECUENCIAR | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad; prioridad final posterior al playtest open-world. |
@@ -289,7 +292,7 @@ Implementa solamente:
 - migración explícita de `Mods/Core`, seam de source context y compatibilidad schema v1 para Definition ID/layout/equipment slots sin subir versión;
 - fixture Editor temporal para coexistencia entre namespaces y referencias cross-namespace.
 
-No implementa manifest, provenance persistida completa, dependencies, overrides/patches, Workshop, SDK, scripting, DLL mods, hot reload, AssetBundles ni namespace de tags. La primera extensión propuesta combina minimum content source identity/provenance sin congelar un manifest schema ni fingerprint universal; dependencies y patches permanecen en M50.0, que continúa futuro y no se considera iniciado.
+Esta foundation no implementó manifest, provenance, dependencies, overrides/patches, Workshop, SDK, scripting, DLL mods, hot reload, AssetBundles ni namespace de tags. La extensión posterior `ID TBD — Minimum Content Source Identity & Provenance Foundation` ya validó el manifest mínimo y provenance de inputs actuales; dependencies, patches y compatibilidad productiva permanecen en M50.0, que continúa futuro y no se considera iniciado.
 
 ### M37 — Limite Obligatorio
 

@@ -1,28 +1,62 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using OldScars.Core.Data.Definitions;
 
 namespace OldScars.Core.Data.Loading
 {
     /// <summary>
-    /// Transitional source context at the JSON loading boundary.
-    /// A future manifest can supply the namespace and richer provenance here.
+    /// Manifest-backed source context at the JSON loading boundary.
+    /// The physical root exists only for IO/diagnostics; durable identity and
+    /// provenance use manifest fields plus normalized source-relative inputs.
     /// </summary>
     internal sealed class ContentLoadContext
     {
         private readonly HashSet<string> legacyExamples = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, ContentInputFile> recognizedInputs =
+            new Dictionary<string, ContentInputFile>(StringComparer.Ordinal);
         private int legacyResolutionCount;
 
-        internal ContentLoadContext(string modName, string modDirectory, bool isCore)
+        internal ContentLoadContext(
+            string sourceId,
+            string ownedNamespace,
+            string version,
+            string sourceRootPath,
+            bool isOfficialCore)
         {
-            ModName = modName;
-            ModDirectory = modDirectory;
-            IsCore = isCore;
+            SourceId = sourceId;
+            OwnedNamespace = ownedNamespace;
+            Version = version;
+            SourceRootPath = Path.GetFullPath(sourceRootPath);
+            IsOfficialCore = isOfficialCore;
         }
 
-        internal string ModName { get; }
-        internal string ModDirectory { get; }
-        internal bool IsCore { get; }
+        internal string SourceId { get; }
+        internal string OwnedNamespace { get; }
+        internal string Version { get; }
+        internal string SourceRootPath { get; }
+        internal bool IsOfficialCore { get; }
+
+        internal void RecordRecognizedInput(string absolutePath, byte[] exactBytes)
+        {
+            string fullPath = Path.GetFullPath(absolutePath);
+            string relativePath = Path.GetRelativePath(SourceRootPath, fullPath)
+                .Replace('\\', '/');
+            if (relativePath == ".." || relativePath.StartsWith("../", StringComparison.Ordinal))
+                throw new InvalidOperationException(
+                    $"Recognized input '{fullPath}' is outside content source '{SourceId}'.");
+
+            recognizedInputs[relativePath] = new ContentInputFile(relativePath, exactBytes);
+        }
+
+        internal List<ContentInputFile> GetRecognizedInputs()
+        {
+            var result = new List<ContentInputFile>(recognizedInputs.Count);
+            foreach (ContentInputFile input in recognizedInputs.Values)
+                result.Add(input);
+            result.Sort((left, right) => string.CompareOrdinal(left.RelativePath, right.RelativePath));
+            return result;
+        }
 
         internal void RecordLegacy(string raw, string canonical, string fieldContext)
         {
@@ -37,11 +71,23 @@ namespace OldScars.Core.Data.Loading
                 return;
 
             report.Warning(
-                $"Mod source '{ModName}' used {legacyResolutionCount} unqualified legacy Global Content ID reference(s). " +
+                $"Content source '{SourceId}' used {legacyResolutionCount} unqualified legacy Global Content ID reference(s). " +
                 $"They were resolved against '{ContentId.CoreNamespace}' by temporary Core-only compatibility. " +
                 "Migrate them to namespace:local_id; this compatibility path is removable. " +
                 "Examples: " + string.Join("; ", legacyExamples));
         }
+    }
+
+    internal sealed class ContentInputFile
+    {
+        internal ContentInputFile(string relativePath, byte[] exactBytes)
+        {
+            RelativePath = relativePath;
+            ExactBytes = exactBytes != null ? (byte[])exactBytes.Clone() : Array.Empty<byte>();
+        }
+
+        internal string RelativePath { get; }
+        internal byte[] ExactBytes { get; }
     }
 
     /// <summary>
@@ -381,17 +427,11 @@ namespace OldScars.Core.Data.Loading
                 return false;
             }
 
-            if (context.IsCore && contentId.Namespace != ContentId.CoreNamespace)
+            if (!string.Equals(contentId.Namespace, context.OwnedNamespace, StringComparison.Ordinal))
             {
-                report.Error($"{Source(context, sourceFile)}: {definitionType} id '{contentId.Canonical}' cannot be " +
-                             $"declared by Core; Core definitions must use namespace '{ContentId.CoreNamespace}'.");
-                return false;
-            }
-
-            if (!context.IsCore && contentId.Namespace == ContentId.CoreNamespace)
-            {
-                report.Error($"{Source(context, sourceFile)}: {definitionType} id '{contentId.Canonical}' cannot be " +
-                             "declared by a non-Core source because namespace 'core' is reserved for official content.");
+                report.Error($"{Source(context, sourceFile)}: {definitionType} id '{contentId.Canonical}' is declared " +
+                             $"outside its owned namespace '{context.OwnedNamespace}'. Namespace ownership applies to " +
+                             "definitions; explicit cross-namespace references remain allowed.");
                 return false;
             }
 
@@ -451,7 +491,7 @@ namespace OldScars.Core.Data.Loading
             DataLoadReport report,
             ref bool valid)
         {
-            if (!context.IsCore)
+            if (!context.IsOfficialCore)
             {
                 ResolveReference(ref value, definitionType, definitionId, fieldPath,
                     context, sourceFile, report, ref valid);
@@ -516,8 +556,8 @@ namespace OldScars.Core.Data.Loading
         {
             return ContentId.TryResolve(
                 raw,
-                ContentId.CoreNamespace,
-                context.IsCore,
+                context.OwnedNamespace,
+                context.IsOfficialCore,
                 out contentId,
                 out usedLegacy,
                 out error);
@@ -525,7 +565,7 @@ namespace OldScars.Core.Data.Loading
 
         private static string Source(ContentLoadContext context, string sourceFile)
         {
-            return $"Mod source '{context.ModName}', file '{sourceFile}'";
+            return $"Content source '{context.SourceId}' (namespace '{context.OwnedNamespace}'), file '{sourceFile}'";
         }
 
         private static string Safe(string value)
