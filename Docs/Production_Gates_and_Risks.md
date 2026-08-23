@@ -65,8 +65,8 @@ Estas condiciones no crean un gate nuevo ni reservan milestone ID. Deben incorpo
 - content source identity/provenance mínima validada antes de crear mundos persistentes; su integración durable deberá revalidarse cuando exista World Plan/save;
 - generation compatibility explícita para sectores todavía no resueltos, sin usar silenciosamente versiones actuales;
 - identidad durable única a través de sectores activos e inactivos;
-- topología y features cross-sector coherentes antes de realización local;
-- determinismo y sector realization order independence;
+- identity/topology/determinism mínimos validados; macro geography y features cross-sector coherentes siguen requeridos antes de realización local;
+- derivación por dominios, canonical hashes y futura sector realization order independence;
 - world payload sobre M37 sin cambiar `current_slice_v1` ni crear un segundo save engine;
 - transición runtime recuperable sin confundirla con autosave policy;
 - un único sector con simulación pesada autoritativa, permitiendo staging inerte;
@@ -448,7 +448,7 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | R04 | `MITIGATING` | Mauro | Deuda OnGUI | Alta | Media | UI debug condiciona backends nuevos. | Congelar ampliaciones y reemplazar en M48.0. | Cerrar en Production Ready; aceptacion de deuda requiere decision explicita. |
 | R05 | `CLOSED` | Mauro | Persistencia introducida tarde | Media | Alta | Sistemas nuevos carecen de identidad durable. | M36.1 y M37.1 validaron identidad y Current Slice persistence. | Cerrado en Persistence Ready; revalidar en releases. |
 | R06 | `CLOSED` | Mauro | IA demasiado compleja | Media | Alta | Multiples capas antes de un encuentro funcional. | M41.1 quedó limitado a avoid/alert/flee/fight, reutilizando autoridades existentes. | Cerrado en AI Ready; revalidar ante una futura ampliación de IA. |
-| R07 | `MITIGATING` | Mauro | Worldgen prematuro o acoplado irreversiblemente | Media | Alta | GameObjects o sectores independientes se generan antes de provenance, macro truth, determinismo y persistencia. | Seguir el camino open-world aprobado: logical plan, validación, persistence y materialización por foundations autorizadas. | Revisar cada foundation; cerrar para el scope del Connected First Playable y reconfirmar en Production Ready. |
+| R07 | `MITIGATING` | Mauro | Worldgen prematuro o acoplado irreversiblemente | Media | Alta | GameObjects o sectores independientes se generan antes de provenance, macro truth, determinismo y persistencia. | Provenance e identity/topology/determinism mínimos ya validados como datos puros; continuar con logical plan, persistence y materialización sólo por foundations autorizadas. | Revisar cada foundation; cerrar para el scope del Connected First Playable y reconfirmar en Production Ready. |
 | R08 | `OPEN` | Mauro | Falta de herramientas de contenido | Alta | Alta | Cada contenido exige edicion manual fragil. | Validators, catalogos e inspector. | Cerrar en Content Pipeline Ready. |
 | R09 | `OPEN` | Mauro | Explosion de datos | Media | Alta | Duplicacion, IDs rotos y schemas divergentes. | Catalogos, validacion y compatibilidad. | Cerrar en Production Ready. |
 | R10 | `OPEN` | Mauro | Supervivencia frustrante | Media | Alta | Castigos sin informacion o decision. | Feedback explicable y playtests integrados. | Cerrar en Survival Systems Ready; revisar Alpha/Beta. |

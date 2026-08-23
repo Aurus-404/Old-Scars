@@ -6,21 +6,25 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `MINIMUM CONTENT SOURCE IDENTITY & PROVENANCE FOUNDATION CLOSED`.
+Estado: `WORLD IDENTITY / TOPOLOGY / DETERMINISM FOUNDATION CLOSED`.
 
 M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
-La dirección [Open World Architecture](Open_World_Architecture.md) está `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`. Su primera foundation quedó:
+La dirección [Open World Architecture](Open_World_Architecture.md) está `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`. Sus primeras dos foundations quedaron:
 
 `ID TBD — Minimum Content Source Identity & Provenance Foundation`
 
 Estado: `VALIDATED — FOUNDATION COMPLETE`.
 
-El próximo coding unit candidato es `ID TBD — World Identity, Topology & Determinism Foundation`, con estado `PLANNED — NOT AUTHORIZED`. Requiere autorización específica; este cierre no lo inicia.
+`ID TBD — World Identity, Topology & Determinism Foundation`
+
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+El próximo coding unit candidato es `ID TBD — World Session + Persistence V1 / New Game Save-Load Path`, con estado `PLANNED — NOT AUTHORIZED`. Debe definir un session owner mínimo y payload lógico hermano sobre M37 sin cambiar `current_slice_v1`; no autoriza menus, macro geography, history, materialización ni generation compatibility.
 
 Fuera de alcance mientras no exista autorización específica:
 
-- cualquier implementación open-world posterior a provenance;
+- cualquier implementación open-world posterior a identity/topology/determinism;
 - M42.0 u otro milestone jugable;
 - cambios de gameplay, datos o persistencia;
 - reabrir la arquitectura M41.1 validada.
@@ -41,7 +45,7 @@ Dependencies, overrides/patches y compatibilidad de producción permanecen en al
 
 ## No Iniciar Todavía
 
-- World Identity/Topology/Determinism, otros coding units open-world o M42.0 sin autorización específica;
+- World Session/Persistence/New Game, otros coding units open-world o M42.0 sin autorización específica;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;

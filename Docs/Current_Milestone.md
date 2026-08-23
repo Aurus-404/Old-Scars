@@ -20,7 +20,7 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. La foundation mínima de content source identity/provenance está implementada y validada; worldgen, topology, sectores, transición, generation compatibility y world persistence continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance y world identity/topology/determinism están implementadas y validadas; macro worldgen, geography/features, session/save, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
 
 ### ID TBD — Minimum Content Source Identity & Provenance Foundation
 
@@ -30,6 +30,14 @@ Estado final:
 
 Cada content source requiere manifest mínimo, identidad/namespace/version estables y ownership único antes de registrar Definitions. Core usa el mismo pipeline. `LoadedContentSet` publica orden y SHA-256 de provenance sólo después de loader + `DataValidator` exitosos; no decide compatibilidad.
 
+### ID TBD — World Identity, Topology & Determinism Foundation
+
+Estado final:
+
+`VALIDATED — FOUNDATION COMPLETE`
+
+`WorldId`, `WorldSeed`, `GeneratorVersion`, `SectorId`, derivación SHA-256 por scope/pass y `WorldTopology` conectado/multiconexión existen como datos lógicos puros. `WorldId` no entra en generación; provenance tampoco se convierte en compatibilidad ni input automático. No se implementaron session, save, menu, geography, history, materialización ni GameObjects.
+
 ## Evidencia De Cierre
 
 - Runtime/Editor compile y `M41.1 Human Encounter AI Diagnostics`: `PASS`.
@@ -38,6 +46,7 @@ Cada content source requiere manifest mínimo, identidad/namespace/version estab
 - LOS confirmó `Perceived → Occluded → LostContact → Idle`; al retirar la barrera y reasignar explícitamente el threat volvió a `Alerted`, sin omnisciencia.
 - El menú Editor muestra sólo la fixture M41.1 explícita; diagnostics históricos siguen invocables por automatización sin exposición manual obsoleta.
 - Runtime/Editor compile, real Core + `DataValidator`, `Minimum Content Source Identity & Provenance Foundation` y `Global Content ID Namespace Foundation`: `PASS` en Editor batchmode aislado.
+- Runtime/Editor compile y `World Identity / Topology / Determinism Foundation`: `PASS` en dos procesos aislados con domain/topology golden hashes estables; M36.1 Foundation Identity y M37.0 Persistence Core permanecen `PASS`.
 
 ## Contratos Cerrados
 
@@ -48,6 +57,6 @@ Cada content source requiere manifest mínimo, identidad/namespace/version estab
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — World Identity, Topology & Determinism Foundation`; permanece `PLANNED — NOT AUTHORIZED` y requiere autorización específica.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — World Session + Persistence V1 / New Game Save-Load Path`; permanece `PLANNED — NOT AUTHORIZED`, debe reutilizar M37 sin cambiar `current_slice_v1` y requiere autorización/alcance específico.
 
 M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.

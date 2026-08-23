@@ -23,9 +23,9 @@ Los nombres conceptuales utilizados aquí no congelan nombres públicos de clase
 La dirección de diseño está aprobada. No están implementados:
 
 - world generation;
-- world sectors;
+- world sectors como regiones jugables/materializadas;
 - sector loading o transición;
-- world-level topology o cross-sector features;
+- macro geography o cross-sector features;
 - world save payload;
 - generation compatibility, generation manifests o world-specific content contracts;
 - world history;
@@ -34,7 +34,7 @@ La dirección de diseño está aprobada. No están implementados:
 
 No se autoriza implementación por la existencia de este documento. Cada unidad requiere alcance, dependencia, validación y autorización propios bajo el Roadmap.
 
-La foundation mínima de content source identity/provenance sí está implementada: manifest por fuente, ownership de namespace, orden estable, recognized-input metadata y SHA-256 por fuente/set. No implementa ninguna capacidad mundial ni decide compatibilidad.
+Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. Existen manifest/ownership/provenance, `WorldId`, `WorldSeed`, generator context/version, `SectorId`, conexiones explícitas, topology validation y SHA-256 canónicos. No existen todavía world session/save, geography, features continuos, sectores jugables, materialización ni compatibility policy.
 
 ## Decisión Arquitectónica Central
 
@@ -172,7 +172,9 @@ La topología futura debe admitir:
 - mapeo coherente de posición y orientación;
 - futuro tránsito a pie, terrestre, acuático o ferroviario.
 
-Los nombres `sector graph`, `boundary connection` o equivalentes son conceptuales. No congelan clases ni schemas.
+La foundation implementada materializa el mínimo lógico como `SectorId`, `SectorConnection` y `WorldTopology`: nodos explícitos, connection keys únicas, endpoints existentes, más de una conexión por par, rechazo de self-loop y un único componente conectado. Las conexiones mínimas son no dirigidas y normalizan endpoints; dirección física/flujo pertenece a features futuros. Su descripción/hash SHA-256 es independiente del insertion order y no contiene geometry.
+
+Esto no implementa regiones jugables, crossing regions, features, shape, extensión, coordenadas, transición ni materialización. Esos contratos continúan conceptuales y se agregarán sólo con consumidores reales.
 
 ### Features Mundiales Primero
 
@@ -314,7 +316,9 @@ Requisitos:
 - cambios decorativos no desplazan infraestructura mayor;
 - outputs lógicos no dependen de frame timing, GameObject enumeration ni orden incidental de archivos.
 
-La implementación exacta del PRNG no se congela hasta evaluar runtime, portabilidad y migrations.
+La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. No existe todavía un PRNG porque ningún pass requiere sampling.
+
+Los golden hashes cubren domain derivation y topology. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
 
 ## Bounded Causal History
 
@@ -360,16 +364,19 @@ Se preservan sin reinterpretación:
 - `ActorInstanceId`;
 - `PersistentSceneObjectId`.
 
-El futuro mundo necesita dominios conceptuales separados para:
+Ya están implementados como dominios separados:
 
-- world identity;
-- sector identity;
+- `WorldId` durable `world_<32 hex lowercase>`, independiente del seed;
+- `SectorId` determinista `sector_<32 hex lowercase>`, independiente de scenes/Transforms/array index.
+
+El futuro mundo todavía necesita dominios conceptuales separados para:
+
 - cross-sector feature identity;
 - generated placement identity/key;
 - durable generated world-object identity cuando exista estado mutable;
 - structured historical-event identity.
 
-No se congelan nombres públicos ni formatos exactos.
+No se congelan todavía nombres públicos ni formatos exactos para los dominios futuros restantes.
 
 ### Placement Vs Durable Identity
 
@@ -557,6 +564,8 @@ Los IDs, estados y dependencias autorizadas viven exclusivamente en [Project_Roa
 10. Connected First Playable;
 11. Playtest / Rebaseline;
 12. sistemas posteriores según dependencias y evidencia reales.
+
+Los pasos 2 y 3 ya están `VALIDATED — FOUNDATION COMPLETE`. El próximo candidato operativo puede probar un World Session/payload mínimo para identity/topology, pero debe preservar la distinción con World Persistence completo y reconciliar dependencias del Roadmap antes de implementación.
 
 Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y producción no se eliminan. Su orden final posterior no queda permanentemente congelado aquí.
 

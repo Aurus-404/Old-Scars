@@ -30,6 +30,17 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Provenance usa campos manifest relevantes más path relativo normalizado y bytes exactos consumidos, en orden ordinal. Excluye root/folder/paths absolutos y archivos no reconocidos. Un cambio de fingerprint prueba diferencia de inputs, no incompatibilidad semántica de generación o save.
 - `GameDataManager` publica `LoadedContentSet` sólo después de `GameDataLoader` y `DataValidator` sin errores; en failure queda `null`. `GameDatabase`, `TagRegistry` y `DataValidator` conservan sus autoridades y no existe registry paralelo de gameplay.
 
+## Logical World Identity, Topology & Determinism Foundation
+
+- `WorldId` identifica de forma durable una lineage de mundo con formato `world_<32 hex lowercase>`. `CreateNew` usa un GUID independiente; no codifica seed, contenido, scene ni pose y nunca participa en generación.
+- `WorldSeed` conserva exactamente un entero signed de 64 bits y su texto decimal canónico. `GeneratorVersion` es un token explícito lowercase/versionado. `WorldGenerationContext` contiene sólo ambos porque todavía no existen familias de contenido generation-relevant.
+- `WorldDeterminism.DeriveDomainKey` escribe un contrato binario canónico length-prefixed con `WorldSeed + GeneratorVersion + ScopeStableKey + PassKey` y produce SHA-256 lowercase. Scope/pass keys admiten sólo ASCII lowercase, dígitos y `_`, con máximo 128 caracteres. No acepta `WorldId`, `LoadedContentSet`, `UnityEngine.Random`, `GetHashCode`, filesystem ni orden de ejecución como inputs.
+- `DeterministicDomainKey` es evidencia de un dominio/pase, no un PRNG ni una decisión de generation/save compatibility. Provenance de contenido continúa siendo evidencia separada y no mueve topología arbitrariamente.
+- `SectorId` usa `sector_<32 hex lowercase>` y puede derivarse de un domain key explícito. Es identidad lógica separada de scene name, Transform, array index, `ContentId` y `PersistentSceneObjectId`; no expresa shape, tamaño ni coordenadas.
+- `WorldTopology` es un grafo lógico inmutable y conectado. Ordena `SectorId` y conexiones explícitas canónicamente, rechaza sectores/connections duplicados, endpoints ausentes, self-connections y componentes desconectados. Connection keys usan el mismo contrato estable lowercase/dígitos/`_`; dos keys distintas pueden unir el mismo par. Sus endpoints son actualmente no dirigidos y se normalizan ordinalmente.
+- `CanonicalDescription` y `CanonicalHash` representan sólo la topología lógica mediante encoding explícito y SHA-256. No incluyen `WorldId`, paths, Unity objects, geometry ni insertion order; igualdad de hash es evidencia diagnóstica, no compatibility policy.
+- No existen todavía world session/manager, payload de save, New Game/Load Game, logical pose, geography, history, terrain, materialización, active-sector lifecycle ni GameObjects mundiales. `current_slice_v1` y Persistence Core permanecen sin cambios.
+
 ## Identidad Durable De Items Y Limite De Persistencia
 
 - `ItemInstance.InstanceId` es un `string` get-only autoritativo. Los IDs nuevos usan `item_<GUID N lowercase>`; son opacos para consumidores y no codifican comportamiento.

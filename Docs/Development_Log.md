@@ -3029,3 +3029,27 @@ Validación autónoma en Unity `6000.4.6f1`, Editor batchmode aislado:
 - no Play Mode/manual Mauro gate requerido: el cambio es loader/data contract con diagnostics deterministas y sin interacción visual.
 
 No se implementaron generation compatibility, WorldId/WorldSeed, topology, sectors, world persistence, saves, menus, dependencies, patches, overrides, load order, Workshop ni scripting/DLL mods. `ID TBD — World Identity, Topology & Determinism Foundation` queda como candidato `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — World Identity, Topology & Determinism Foundation
+
+Fecha: 2026-08-23.
+
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+Se implementó el mínimo mundo lógico puro bajo `OldScars.Core.World`. `WorldId` usa `world_<32 hex lowercase>` y permanece independiente de `WorldSeed`; `WorldSeed` conserva signed 64-bit exacto. `GeneratorVersion` y `WorldGenerationContext` forman el contexto mínimo actual sin convertir `LoadedContentSet` provenance en generation input o compatibility policy.
+
+`WorldDeterminism` deriva SHA-256 mediante encoding length-prefixed estable de `WorldSeed + GeneratorVersion + ScopeStableKey + PassKey`. No usa `WorldId`, `UnityEngine.Random`, `GetHashCode`, filesystem ni execution order. No se agregó PRNG porque todavía no existe un pass que consuma sampling.
+
+`SectorId` usa `sector_<32 hex lowercase>` derivable de un domain key. `WorldTopology` ordena nodos/conexiones canónicamente, admite múltiples connection keys para el mismo par, normaliza endpoints no dirigidos y rechaza duplicates, targets ausentes, self-loops y topologías desconectadas. `CanonicalDescription`/`CanonicalHash` son evidencia lógica SHA-256, no save compatibility.
+
+Validación autónoma en Unity `6000.4.6f1`, Editor batchmode aislado:
+
+- Runtime compile: `PASS`;
+- Editor compile: `PASS`;
+- `World Identity / Topology / Determinism Foundation`: `PASS` en dos procesos frescos y una pasada final posterior a review;
+- golden domain key `9e328386ee1245517f38557b3de565fb5afe7944fbd3e5dbca57659bd9116c0c`: estable;
+- golden topology hash `faf467c0c3f29921a67a39e7e938e9d1d6bd319b9e7a085edebfbb938d507cd9`: estable;
+- `Global Content ID Namespace Foundation`, `Minimum Content Source Identity & Provenance Foundation`, `M36.1 Foundation Identity Validation` y `M37.0 Persistence Core Diagnostics`: `PASS`;
+- no se requirió gate manual/visual; no existen GameObjects, scenes ni comportamiento jugable en este alcance.
+
+No se implementaron world session/manager, save payload, `current_slice_v1` changes, Main Menu, New Game/Load Game, logical pose type, finite/expandable decision, geography, roads/rivers, history, terrain, materialización, active-sector lifecycle, NavMesh ni procedural buildings. `ID TBD — World Session + Persistence V1 / New Game Save-Load Path` queda candidato `PLANNED — NOT AUTHORIZED`.
