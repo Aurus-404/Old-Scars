@@ -54,6 +54,7 @@ namespace OldScars.Core.World
         public static WorldSessionOperationResult Create(
             string displayName,
             WorldSeed worldSeed,
+            WorldGenerationSettings generationSettings,
             LoadedContentSet loadedContentSet,
             PersistenceFileStore store = null)
         {
@@ -62,7 +63,8 @@ namespace OldScars.Core.World
                     "Close the active WorldSession before creating another world.");
 
             if (!WorldSessionBootstrap.TryBuildNew(
-                    displayName, worldSeed, loadedContentSet, out WorldSession candidate, out string buildFailure))
+                    displayName, worldSeed, generationSettings, loadedContentSet,
+                    out WorldSession candidate, out string buildFailure))
             {
                 return Fail(WorldSessionOperationFailureCode.InvalidInput, "Bootstrap", buildFailure);
             }

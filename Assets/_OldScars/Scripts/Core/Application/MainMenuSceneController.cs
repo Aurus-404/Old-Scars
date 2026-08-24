@@ -22,6 +22,7 @@ namespace OldScars.Core.ApplicationShell
         private MenuScreen screen;
         private string worldName = "New World";
         private string seedText = string.Empty;
+        private WorldSizePreset worldSizePreset = WorldSizePreset.Large;
         private string selectedSlotId;
         private string statusMessage;
         private Vector2 saveScroll;
@@ -77,6 +78,7 @@ namespace OldScars.Core.ApplicationShell
         public bool TryCreateWorld(
             string requestedDisplayName,
             string requestedSeedText,
+            WorldSizePreset requestedWorldSize,
             PersistenceFileStore store = null)
         {
             if (!TryRequireValidatedContent(out string contentFailure))
@@ -99,6 +101,7 @@ namespace OldScars.Core.ApplicationShell
             WorldSessionOperationResult result = WorldSessionService.Create(
                 requestedDisplayName,
                 seed,
+                WorldGenerationSettings.ResolvePreset(requestedWorldSize),
                 GameDataManager.Instance.LoadedContentSet,
                 store);
             if (!result.Success)
@@ -107,7 +110,7 @@ namespace OldScars.Core.ApplicationShell
                 return false;
             }
 
-            statusMessage = $"Created '{result.Session.DisplayName}' with seed {seed.Canonical}.";
+            statusMessage = $"Created '{result.Session.DisplayName}' ({requestedWorldSize}) with seed {seed.Canonical}.";
             return TryEnterWorldRuntime("New Game");
         }
 
@@ -186,13 +189,21 @@ namespace OldScars.Core.ApplicationShell
             GUILayout.Space(14f);
             GUILayout.Label("Seed (optional signed 64-bit integer)");
             seedText = GUILayout.TextField(seedText, 32);
+            GUILayout.Space(14f);
+            GUILayout.Label("World Size");
+            GUILayout.BeginHorizontal();
+            DrawWorldSizeButton(WorldSizePreset.Small);
+            DrawWorldSizeButton(WorldSizePreset.Medium);
+            DrawWorldSizeButton(WorldSizePreset.Large);
+            DrawWorldSizeButton(WorldSizePreset.Huge);
+            GUILayout.EndHorizontal();
             GUILayout.Space(24f);
 
             bool ready = IsValidatedContentReady();
             bool previousEnabled = GUI.enabled;
             GUI.enabled = ready;
             if (GUILayout.Button("CREATE", GUILayout.Height(46f)))
-                TryCreateWorld(worldName, seedText);
+                TryCreateWorld(worldName, seedText, worldSizePreset);
             GUI.enabled = previousEnabled;
             GUILayout.Space(12f);
             if (GUILayout.Button("CANCEL", GUILayout.Height(40f)))
@@ -221,8 +232,11 @@ namespace OldScars.Core.ApplicationShell
                 {
                     WorldSaveCatalogEntry entry = catalog.Entries[index];
                     bool selected = entry.SlotId == selectedSlotId;
+                    string size = entry.SizePreset.HasValue
+                        ? "  |  " + entry.SizePreset.Value
+                        : "  |  legacy v1";
                     string label = (selected ? "> " : string.Empty) + entry.DisplayName + "\n" +
-                                   entry.WorldId.Canonical + "  |  seed " + entry.WorldSeed.Canonical;
+                                   entry.WorldId.Canonical + "  |  seed " + entry.WorldSeed.Canonical + size;
                     if (GUILayout.Button(label, GUILayout.Height(54f)))
                         selectedSlotId = entry.SlotId;
                 }
@@ -260,6 +274,14 @@ namespace OldScars.Core.ApplicationShell
                 Debug.LogError("[WorldApplication] " + statusMessage);
                 return false;
             }
+        }
+
+        private void DrawWorldSizeButton(WorldSizePreset preset)
+        {
+            bool selected = worldSizePreset == preset;
+            string label = selected ? "[ " + preset + " ]" : preset.ToString();
+            if (GUILayout.Button(label, GUILayout.Height(34f)))
+                worldSizePreset = preset;
         }
 
         private static bool TryRequireValidatedContent(out string failure)

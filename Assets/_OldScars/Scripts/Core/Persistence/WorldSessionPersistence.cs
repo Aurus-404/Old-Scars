@@ -39,12 +39,14 @@ namespace OldScars.Core.Persistence
 
     /// <summary>
     /// Sibling world_session_v1 payload adapter over M37's existing envelope and
-    /// file store. Deserialization and semantic preflight never publish a session.
+    /// file store. Schema 2 persists Macro World Plan V1. Schema 1 remains an
+    /// explicit legacy shape and is never assigned a fabricated size preset.
     /// </summary>
     public static class WorldSessionPersistenceService
     {
         public const string SnapshotType = "world_session_v1";
-        public const int CurrentSchemaVersion = 1;
+        public const int LegacySchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         private static readonly JsonSerializer PayloadSerializer = JsonSerializer.Create(
             new JsonSerializerSettings
@@ -62,100 +64,54 @@ namespace OldScars.Core.Persistence
         {
             if (session == null)
                 throw new ArgumentNullException(nameof(session));
-
-            var sectors = new string[session.Topology.Sectors.Count];
-            for (int index = 0; index < sectors.Length; index++)
-                sectors[index] = session.Topology.Sectors[index].Canonical;
-
-            var connections = new WorldConnectionSaveData[session.Topology.Connections.Count];
-            for (int index = 0; index < connections.Length; index++)
-            {
-                SectorConnection connection = session.Topology.Connections[index];
-                connections[index] = new WorldConnectionSaveData
-                {
-                    connectionKey = connection.ConnectionKey,
-                    firstSectorId = connection.FirstEndpoint.Canonical,
-                    secondSectorId = connection.SecondEndpoint.Canonical
-                };
-            }
-
-            IReadOnlyList<WorldCreationContentSourceEvidence> sourceEvidence =
-                session.CreationContentEvidence.Sources;
-            var sources = new WorldContentSourceEvidenceSaveData[sourceEvidence.Count];
-            for (int index = 0; index < sources.Length; index++)
-            {
-                WorldCreationContentSourceEvidence source = sourceEvidence[index];
-                sources[index] = new WorldContentSourceEvidenceSaveData
-                {
-                    sourceId = source.SourceId,
-                    ownedNamespace = source.OwnedNamespace,
-                    version = source.Version,
-                    isOfficialCore = source.IsOfficialCore,
-                    provenanceFingerprint = source.ProvenanceFingerprint
-                };
-            }
-
-            var saveData = new WorldSessionSaveData
-            {
-                snapshotType = SnapshotType,
-                schemaVersion = CurrentSchemaVersion,
-                worldId = session.WorldId.Canonical,
-                displayName = session.DisplayName,
-                generationContext = new WorldGenerationContextSaveData
-                {
-                    worldSeed = session.GenerationContext.WorldSeed.Canonical,
-                    generatorVersion = session.GenerationContext.GeneratorVersion.Canonical
-                },
-                topology = new WorldTopologySaveData
-                {
-                    canonicalHash = session.Topology.CanonicalHash,
-                    sectors = sectors,
-                    connections = connections
-                },
-                activeSectorId = session.ActiveSectorId.Canonical,
-                creationContentProvenance = new WorldContentEvidenceSaveData
-                {
-                    loadedContentSetFingerprint =
-                        session.CreationContentEvidence.LoadedContentSetFingerprint,
-                    sources = sources
-                }
-            };
-            return JToken.FromObject(saveData, PayloadSerializer);
+            return session.IsLegacySchemaV1
+                ? JToken.FromObject(BuildLegacySaveData(session), PayloadSerializer)
+                : JToken.FromObject(BuildCurrentSaveData(session), PayloadSerializer);
         }
 
         public static WorldSessionPersistenceResult FromPayload(JToken payload)
         {
             if (!(payload is JObject payloadObject))
-                return Fail(WorldSessionPersistenceFailureCode.MalformedPayload, "Deserialize",
-                    "World Session payload must be a JSON object.");
-
+                return Malformed("World Session payload must be a JSON object.");
             if (!(payloadObject["snapshotType"] is JValue snapshotTypeToken) ||
                 snapshotTypeToken.Type != JTokenType.String)
             {
-                return Fail(WorldSessionPersistenceFailureCode.MalformedPayload, "Deserialize",
-                    "snapshotType must be a present JSON string.");
+                return Malformed("snapshotType must be a present JSON string.");
             }
             if (!(payloadObject["schemaVersion"] is JValue schemaVersionToken) ||
                 schemaVersionToken.Type != JTokenType.Integer)
             {
-                return Fail(WorldSessionPersistenceFailureCode.MalformedPayload, "Deserialize",
-                    "schemaVersion must be a present JSON integer.");
+                return Malformed("schemaVersion must be a present JSON integer.");
             }
 
-            WorldSessionSaveData data;
+            string snapshotType = snapshotTypeToken.Value<string>();
+            int schemaVersion;
             try
             {
-                data = payload.ToObject<WorldSessionSaveData>(PayloadSerializer);
+                schemaVersion = schemaVersionToken.Value<int>();
+            }
+            catch (Exception exception) when (exception is OverflowException || exception is FormatException)
+            {
+                return Malformed("schemaVersion is outside the supported integer range.");
+            }
+            if (snapshotType != SnapshotType)
+                return SemanticFailure($"Unsupported World Session contract '{Safe(snapshotType)}' schema {schemaVersion}.");
+
+            try
+            {
+                if (schemaVersion == LegacySchemaVersion)
+                    return PreflightLegacy(payload.ToObject<WorldSessionV1SaveData>(PayloadSerializer));
+                if (schemaVersion == CurrentSchemaVersion)
+                    return PreflightCurrent(payload.ToObject<WorldSessionV2SaveData>(PayloadSerializer));
+                return SemanticFailure(
+                    $"Unsupported World Session contract '{snapshotType}' schema {schemaVersion}.");
             }
             catch (Exception exception) when (
                 exception is JsonException || exception is InvalidOperationException ||
                 exception is FormatException || exception is OverflowException)
             {
-                return Fail(WorldSessionPersistenceFailureCode.MalformedPayload, "Deserialize",
-                    "World Session payload deserialization failed: " + exception.Message);
+                return Malformed("World Session payload deserialization failed: " + exception.Message);
             }
-
-            return Preflight(data);
         }
 
         public static WorldSessionPersistenceResult Save(
@@ -163,8 +119,7 @@ namespace OldScars.Core.Persistence
             PersistenceFileStore store = null)
         {
             if (session == null)
-                return Fail(WorldSessionPersistenceFailureCode.SemanticPreflightFailed, "Preflight",
-                    "WorldSession is null.");
+                return SemanticFailure("WorldSession is null.");
 
             JToken payload = ToPayload(session);
             WorldSessionPersistenceResult preflight = FromPayload(payload);
@@ -202,68 +157,263 @@ namespace OldScars.Core.Persistence
                 return preflight;
             if (preflight.Session.WorldId != slotWorldId)
             {
-                return Fail(WorldSessionPersistenceFailureCode.SemanticPreflightFailed, "SemanticPreflight",
+                return SemanticFailure(
                     $"Payload WorldId '{preflight.Session.WorldId.Canonical}' does not match slot '{slotId}'.");
             }
             return Success("Read", preflight.Session);
         }
 
-        private static WorldSessionPersistenceResult Preflight(WorldSessionSaveData data)
+        private static WorldSessionPersistenceResult PreflightLegacy(WorldSessionV1SaveData data)
+        {
+            if (data == null)
+                return SemanticFailure("Legacy World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != LegacySchemaVersion)
+                return SemanticFailure("Legacy World Session header is inconsistent.");
+            if (!TryReadCommon(
+                    data.worldId, data.displayName, data.generationContext, data.activeSectorId,
+                    data.creationContentProvenance,
+                    out WorldId worldId, out string displayName, out WorldGenerationContext context,
+                    out SectorId activeSectorId, out WorldCreationContentEvidence contentEvidence,
+                    out string commonError))
+            {
+                return SemanticFailure(commonError);
+            }
+            if (!TryReadTopology(data.topology, "topology", out WorldTopology topology, out string topologyError))
+                return SemanticFailure(topologyError);
+            if (!WorldSession.TryCreateLegacySchemaV1(
+                    worldId, displayName, context, topology, activeSectorId, contentEvidence,
+                    out WorldSession session, out string sessionError))
+            {
+                return SemanticFailure(sessionError + ".");
+            }
+            return Success("SemanticPreflightLegacyV1", session);
+        }
+
+        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV2SaveData data)
         {
             if (data == null)
                 return SemanticFailure("World Session payload deserialized to null.");
             if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("World Session schema-2 header is inconsistent.");
+            if (!TryReadCommon(
+                    data.worldId, data.displayName, data.generationContext, data.activeSectorId,
+                    data.creationContentProvenance,
+                    out WorldId worldId, out string displayName, out WorldGenerationContext context,
+                    out SectorId activeSectorId, out WorldCreationContentEvidence contentEvidence,
+                    out string commonError))
             {
-                return SemanticFailure(
-                    $"Unsupported World Session contract '{Safe(data.snapshotType)}' schema {data.schemaVersion}.");
+                return SemanticFailure(commonError);
             }
-            if (!WorldId.TryParse(data.worldId, out WorldId worldId, out string worldIdError))
-                return SemanticFailure("worldId is invalid: " + worldIdError + ".");
-            if (data.generationContext == null)
-                return SemanticFailure("generationContext is required.");
-            if (!WorldSeed.TryParse(data.generationContext.worldSeed, out WorldSeed seed, out string seedError))
-                return SemanticFailure("generationContext.worldSeed is invalid: " + seedError + ".");
-            if (!GeneratorVersion.TryParse(
-                    data.generationContext.generatorVersion,
-                    out GeneratorVersion generatorVersion,
-                    out string generatorVersionError))
+            if (!TryReadMacroWorldPlan(data.macroWorldPlan, out MacroWorldPlan plan, out string planError))
+                return SemanticFailure(planError);
+            if (!WorldSession.TryCreate(
+                    worldId, displayName, context, plan, activeSectorId, contentEvidence,
+                    out WorldSession session, out string sessionError))
             {
-                return SemanticFailure(
-                    "generationContext.generatorVersion is invalid: " + generatorVersionError + ".");
+                return SemanticFailure(sessionError + ".");
+            }
+            return Success("SemanticPreflight", session);
+        }
+
+        private static bool TryReadMacroWorldPlan(
+            MacroWorldPlanSaveData data,
+            out MacroWorldPlan plan,
+            out string error)
+        {
+            plan = null;
+            error = null;
+            if (data == null)
+            {
+                error = "macroWorldPlan is required";
+                return false;
+            }
+            if (data.generationSettings == null)
+            {
+                error = "macroWorldPlan.generationSettings is required";
+                return false;
+            }
+            if (!WorldGenerationSettings.TryParsePreset(
+                    data.generationSettings.worldSizePreset,
+                    out WorldSizePreset preset,
+                    out string presetError))
+            {
+                error = "macroWorldPlan.generationSettings.worldSizePreset is invalid: " + presetError + ".";
+                return false;
+            }
+            if (!WorldGenerationSettings.TryCreateResolved(
+                    preset,
+                    data.generationSettings.resolvedSectorCount,
+                    data.generationSettings.resolvedWorldWidth,
+                    data.generationSettings.resolvedWorldHeight,
+                    data.generationSettings.resolvedMinimumSectorSpacing,
+                    out WorldGenerationSettings settings,
+                    out string settingsError))
+            {
+                error = "macroWorldPlan.generationSettings is invalid: " + settingsError + ".";
+                return false;
+            }
+            if (data.worldBounds == null)
+            {
+                error = "macroWorldPlan.worldBounds is required";
+                return false;
             }
 
-            if (data.topology == null)
-                return SemanticFailure("topology is required.");
-            if (data.topology.sectors == null)
-                return SemanticFailure("topology.sectors is required.");
-            if (data.topology.connections == null)
-                return SemanticFailure("topology.connections is required.");
-
-            var sectors = new List<SectorId>(data.topology.sectors.Length);
-            for (int index = 0; index < data.topology.sectors.Length; index++)
+            FiniteMacroWorldBounds bounds;
+            try
             {
-                if (!SectorId.TryParse(data.topology.sectors[index], out SectorId sectorId, out string sectorError))
+                bounds = new FiniteMacroWorldBounds(
+                    data.worldBounds.minX,
+                    data.worldBounds.minY,
+                    data.worldBounds.maxXExclusive,
+                    data.worldBounds.maxYExclusive);
+            }
+            catch (ArgumentException exception)
+            {
+                error = "macroWorldPlan.worldBounds is invalid: " + exception.Message;
+                return false;
+            }
+            if (data.sectorPlacements == null)
+            {
+                error = "macroWorldPlan.sectorPlacements is required";
+                return false;
+            }
+            var placements = new List<MacroSectorPlacement>(data.sectorPlacements.Length);
+            for (int index = 0; index < data.sectorPlacements.Length; index++)
+            {
+                MacroSectorPlacementSaveData placementData = data.sectorPlacements[index];
+                if (placementData == null)
                 {
-                    return SemanticFailure($"topology.sectors[{index}] is invalid: {sectorError}.");
+                    error = $"macroWorldPlan.sectorPlacements[{index}] is null";
+                    return false;
+                }
+                if (!SectorId.TryParse(placementData.sectorId, out SectorId sectorId, out string sectorError))
+                {
+                    error = $"macroWorldPlan.sectorPlacements[{index}].sectorId is invalid: {sectorError}.";
+                    return false;
+                }
+                placements.Add(new MacroSectorPlacement(
+                    sectorId, new MacroPoint2D(placementData.x, placementData.y)));
+            }
+            if (!TryReadTopology(
+                    data.topology, "macroWorldPlan.topology", out WorldTopology topology, out error))
+            {
+                return false;
+            }
+            if (!MacroWorldPlan.TryCreate(
+                    settings, bounds, placements, topology, out plan, out string validationError))
+            {
+                error = "macroWorldPlan failed validation: " + validationError;
+                return false;
+            }
+            if (!string.Equals(data.canonicalHash, plan.CanonicalHash, StringComparison.Ordinal))
+            {
+                error = $"macroWorldPlan.canonicalHash mismatch; persisted '{Safe(data.canonicalHash)}', " +
+                        $"reconstructed '{plan.CanonicalHash}'.";
+                plan = null;
+                return false;
+            }
+            return true;
+        }
+
+        private static bool TryReadCommon(
+            string rawWorldId,
+            string displayName,
+            WorldGenerationContextSaveData generationContext,
+            string rawActiveSectorId,
+            WorldContentEvidenceSaveData creationContentProvenance,
+            out WorldId worldId,
+            out string validatedDisplayName,
+            out WorldGenerationContext context,
+            out SectorId activeSectorId,
+            out WorldCreationContentEvidence contentEvidence,
+            out string error)
+        {
+            worldId = default;
+            validatedDisplayName = displayName;
+            context = null;
+            activeSectorId = default;
+            contentEvidence = null;
+            error = null;
+            if (!WorldId.TryParse(rawWorldId, out worldId, out string worldIdError))
+            {
+                error = "worldId is invalid: " + worldIdError + ".";
+                return false;
+            }
+            if (generationContext == null)
+            {
+                error = "generationContext is required";
+                return false;
+            }
+            if (!WorldSeed.TryParse(generationContext.worldSeed, out WorldSeed seed, out string seedError))
+            {
+                error = "generationContext.worldSeed is invalid: " + seedError + ".";
+                return false;
+            }
+            if (!GeneratorVersion.TryParse(
+                    generationContext.generatorVersion,
+                    out GeneratorVersion generatorVersion,
+                    out string versionError))
+            {
+                error = "generationContext.generatorVersion is invalid: " + versionError + ".";
+                return false;
+            }
+            context = new WorldGenerationContext(seed, generatorVersion);
+            if (!SectorId.TryParse(rawActiveSectorId, out activeSectorId, out string activeSectorError))
+            {
+                error = "activeSectorId is invalid: " + activeSectorError + ".";
+                return false;
+            }
+            if (!TryReadContentEvidence(creationContentProvenance, out contentEvidence, out error))
+                return false;
+            return true;
+        }
+
+        private static bool TryReadTopology(
+            WorldTopologySaveData data,
+            string path,
+            out WorldTopology topology,
+            out string error)
+        {
+            topology = null;
+            error = null;
+            if (data == null)
+            {
+                error = path + " is required";
+                return false;
+            }
+            if (data.sectors == null || data.connections == null)
+            {
+                error = path + ".sectors and .connections are required";
+                return false;
+            }
+            var sectors = new List<SectorId>(data.sectors.Length);
+            for (int index = 0; index < data.sectors.Length; index++)
+            {
+                if (!SectorId.TryParse(data.sectors[index], out SectorId sectorId, out string sectorError))
+                {
+                    error = $"{path}.sectors[{index}] is invalid: {sectorError}.";
+                    return false;
                 }
                 sectors.Add(sectorId);
             }
-
-            var connections = new List<SectorConnection>(data.topology.connections.Length);
-            for (int index = 0; index < data.topology.connections.Length; index++)
+            var connections = new List<SectorConnection>(data.connections.Length);
+            for (int index = 0; index < data.connections.Length; index++)
             {
-                WorldConnectionSaveData connectionData = data.topology.connections[index];
+                WorldConnectionSaveData connectionData = data.connections[index];
                 if (connectionData == null)
-                    return SemanticFailure($"topology.connections[{index}] is null.");
+                {
+                    error = $"{path}.connections[{index}] is null";
+                    return false;
+                }
                 if (!SectorId.TryParse(connectionData.firstSectorId, out SectorId first, out string firstError))
                 {
-                    return SemanticFailure(
-                        $"topology.connections[{index}].firstSectorId is invalid: {firstError}.");
+                    error = $"{path}.connections[{index}].firstSectorId is invalid: {firstError}.";
+                    return false;
                 }
                 if (!SectorId.TryParse(connectionData.secondSectorId, out SectorId second, out string secondError))
                 {
-                    return SemanticFailure(
-                        $"topology.connections[{index}].secondSectorId is invalid: {secondError}.");
+                    error = $"{path}.connections[{index}].secondSectorId is invalid: {secondError}.";
+                    return false;
                 }
                 try
                 {
@@ -271,40 +421,48 @@ namespace OldScars.Core.Persistence
                 }
                 catch (ArgumentException exception)
                 {
-                    return SemanticFailure(
-                        $"topology.connections[{index}] is invalid: {exception.Message}");
+                    error = $"{path}.connections[{index}] is invalid: {exception.Message}";
+                    return false;
                 }
             }
-
             if (!WorldTopology.TryCreate(
-                    sectors,
-                    connections,
-                    out WorldTopology topology,
-                    out WorldTopologyValidationResult topologyValidation))
+                    sectors, connections, out topology, out WorldTopologyValidationResult validation))
             {
-                return SemanticFailure("topology failed validation: " + topologyValidation.Description);
+                error = path + " failed validation: " + validation.Description;
+                return false;
             }
-            if (!string.Equals(data.topology.canonicalHash, topology.CanonicalHash, StringComparison.Ordinal))
+            if (!string.Equals(data.canonicalHash, topology.CanonicalHash, StringComparison.Ordinal))
             {
-                return SemanticFailure(
-                    $"topology.canonicalHash mismatch; persisted '{Safe(data.topology.canonicalHash)}', " +
-                    $"reconstructed '{topology.CanonicalHash}'.");
+                error = $"{path}.canonicalHash mismatch; persisted '{Safe(data.canonicalHash)}', " +
+                        $"reconstructed '{topology.CanonicalHash}'.";
+                topology = null;
+                return false;
             }
-            if (!SectorId.TryParse(data.activeSectorId, out SectorId activeSectorId, out string activeSectorError))
-                return SemanticFailure("activeSectorId is invalid: " + activeSectorError + ".");
+            return true;
+        }
 
-            if (data.creationContentProvenance == null)
-                return SemanticFailure("creationContentProvenance is required.");
-            if (data.creationContentProvenance.sources == null)
-                return SemanticFailure("creationContentProvenance.sources is required.");
-            var sourceEvidence = new List<WorldCreationContentSourceEvidence>(
-                data.creationContentProvenance.sources.Length);
-            for (int index = 0; index < data.creationContentProvenance.sources.Length; index++)
+        private static bool TryReadContentEvidence(
+            WorldContentEvidenceSaveData data,
+            out WorldCreationContentEvidence contentEvidence,
+            out string error)
+        {
+            contentEvidence = null;
+            error = null;
+            if (data == null || data.sources == null)
             {
-                WorldContentSourceEvidenceSaveData source = data.creationContentProvenance.sources[index];
+                error = "creationContentProvenance and its sources are required";
+                return false;
+            }
+            var sources = new List<WorldCreationContentSourceEvidence>(data.sources.Length);
+            for (int index = 0; index < data.sources.Length; index++)
+            {
+                WorldContentSourceEvidenceSaveData source = data.sources[index];
                 if (source == null)
-                    return SemanticFailure($"creationContentProvenance.sources[{index}] is null.");
-                sourceEvidence.Add(new WorldCreationContentSourceEvidence(
+                {
+                    error = $"creationContentProvenance.sources[{index}] is null";
+                    return false;
+                }
+                sources.Add(new WorldCreationContentSourceEvidence(
                     source.sourceId,
                     source.ownedNamespace,
                     source.version,
@@ -312,29 +470,136 @@ namespace OldScars.Core.Persistence
                     source.provenanceFingerprint));
             }
             if (!WorldCreationContentEvidence.TryCreate(
-                    data.creationContentProvenance.loadedContentSetFingerprint,
-                    sourceEvidence,
-                    out WorldCreationContentEvidence contentEvidence,
-                    out string evidenceError))
+                    data.loadedContentSetFingerprint, sources, out contentEvidence, out string evidenceError))
             {
-                return SemanticFailure("creationContentProvenance is invalid: " + evidenceError + ".");
+                error = "creationContentProvenance is invalid: " + evidenceError + ".";
+                return false;
             }
+            return true;
+        }
 
-            var context = new WorldGenerationContext(seed, generatorVersion);
-            if (!WorldSession.TryCreate(
-                    worldId,
-                    data.displayName,
-                    context,
-                    topology,
-                    activeSectorId,
-                    contentEvidence,
-                    out WorldSession session,
-                    out string sessionError))
+        private static WorldSessionV1SaveData BuildLegacySaveData(WorldSession session)
+        {
+            return new WorldSessionV1SaveData
             {
-                return SemanticFailure(sessionError + ".");
-            }
+                snapshotType = SnapshotType,
+                schemaVersion = LegacySchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                topology = BuildTopology(session.Topology),
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
 
-            return Success("SemanticPreflight", session);
+        private static WorldSessionV2SaveData BuildCurrentSaveData(WorldSession session)
+        {
+            MacroWorldPlan plan = session.MacroWorldPlan;
+            var placements = new MacroSectorPlacementSaveData[plan.SectorPlacements.Count];
+            for (int index = 0; index < placements.Length; index++)
+            {
+                MacroSectorPlacement placement = plan.SectorPlacements[index];
+                placements[index] = new MacroSectorPlacementSaveData
+                {
+                    sectorId = placement.SectorId.Canonical,
+                    x = placement.Position.X,
+                    y = placement.Position.Y
+                };
+            }
+            return new WorldSessionV2SaveData
+            {
+                snapshotType = SnapshotType,
+                schemaVersion = CurrentSchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                macroWorldPlan = new MacroWorldPlanSaveData
+                {
+                    generationSettings = new WorldGenerationSettingsSaveData
+                    {
+                        worldSizePreset = WorldGenerationSettings.ToCanonical(
+                            plan.GenerationSettings.WorldSizePreset),
+                        resolvedSectorCount = plan.GenerationSettings.ResolvedSectorCount,
+                        resolvedWorldWidth = plan.GenerationSettings.ResolvedWorldWidth,
+                        resolvedWorldHeight = plan.GenerationSettings.ResolvedWorldHeight,
+                        resolvedMinimumSectorSpacing = plan.GenerationSettings.ResolvedMinimumSectorSpacing
+                    },
+                    worldBounds = new FiniteMacroWorldBoundsSaveData
+                    {
+                        minX = plan.WorldBounds.MinX,
+                        minY = plan.WorldBounds.MinY,
+                        maxXExclusive = plan.WorldBounds.MaxXExclusive,
+                        maxYExclusive = plan.WorldBounds.MaxYExclusive
+                    },
+                    sectorPlacements = placements,
+                    topology = BuildTopology(plan.Topology),
+                    canonicalHash = plan.CanonicalHash
+                },
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static WorldGenerationContextSaveData BuildGenerationContext(WorldSession session)
+        {
+            return new WorldGenerationContextSaveData
+            {
+                worldSeed = session.GenerationContext.WorldSeed.Canonical,
+                generatorVersion = session.GenerationContext.GeneratorVersion.Canonical
+            };
+        }
+
+        private static WorldTopologySaveData BuildTopology(WorldTopology topology)
+        {
+            var sectors = new string[topology.Sectors.Count];
+            for (int index = 0; index < sectors.Length; index++)
+                sectors[index] = topology.Sectors[index].Canonical;
+            var connections = new WorldConnectionSaveData[topology.Connections.Count];
+            for (int index = 0; index < connections.Length; index++)
+            {
+                SectorConnection connection = topology.Connections[index];
+                connections[index] = new WorldConnectionSaveData
+                {
+                    connectionKey = connection.ConnectionKey,
+                    firstSectorId = connection.FirstEndpoint.Canonical,
+                    secondSectorId = connection.SecondEndpoint.Canonical
+                };
+            }
+            return new WorldTopologySaveData
+            {
+                canonicalHash = topology.CanonicalHash,
+                sectors = sectors,
+                connections = connections
+            };
+        }
+
+        private static WorldContentEvidenceSaveData BuildContentEvidence(
+            WorldCreationContentEvidence evidence)
+        {
+            var sources = new WorldContentSourceEvidenceSaveData[evidence.Sources.Count];
+            for (int index = 0; index < sources.Length; index++)
+            {
+                WorldCreationContentSourceEvidence source = evidence.Sources[index];
+                sources[index] = new WorldContentSourceEvidenceSaveData
+                {
+                    sourceId = source.SourceId,
+                    ownedNamespace = source.OwnedNamespace,
+                    version = source.Version,
+                    isOfficialCore = source.IsOfficialCore,
+                    provenanceFingerprint = source.ProvenanceFingerprint
+                };
+            }
+            return new WorldContentEvidenceSaveData
+            {
+                loadedContentSetFingerprint = evidence.LoadedContentSetFingerprint,
+                sources = sources
+            };
+        }
+
+        private static WorldSessionPersistenceResult Malformed(string failure)
+        {
+            return Fail(WorldSessionPersistenceFailureCode.MalformedPayload, "Deserialize", failure);
         }
 
         private static WorldSessionPersistenceResult SemanticFailure(string failure)
@@ -365,7 +630,7 @@ namespace OldScars.Core.Persistence
         }
 
         [Serializable]
-        private sealed class WorldSessionSaveData
+        private sealed class WorldSessionV1SaveData
         {
             public string snapshotType;
             public int schemaVersion;
@@ -378,10 +643,60 @@ namespace OldScars.Core.Persistence
         }
 
         [Serializable]
+        private sealed class WorldSessionV2SaveData
+        {
+            public string snapshotType;
+            public int schemaVersion;
+            public string worldId;
+            public string displayName;
+            public WorldGenerationContextSaveData generationContext;
+            public MacroWorldPlanSaveData macroWorldPlan;
+            public string activeSectorId;
+            public WorldContentEvidenceSaveData creationContentProvenance;
+        }
+
+        [Serializable]
         private sealed class WorldGenerationContextSaveData
         {
             public string worldSeed;
             public string generatorVersion;
+        }
+
+        [Serializable]
+        private sealed class MacroWorldPlanSaveData
+        {
+            public WorldGenerationSettingsSaveData generationSettings;
+            public FiniteMacroWorldBoundsSaveData worldBounds;
+            public MacroSectorPlacementSaveData[] sectorPlacements;
+            public WorldTopologySaveData topology;
+            public string canonicalHash;
+        }
+
+        [Serializable]
+        private sealed class WorldGenerationSettingsSaveData
+        {
+            public string worldSizePreset;
+            public int resolvedSectorCount;
+            public long resolvedWorldWidth;
+            public long resolvedWorldHeight;
+            public long resolvedMinimumSectorSpacing;
+        }
+
+        [Serializable]
+        private sealed class FiniteMacroWorldBoundsSaveData
+        {
+            public long minX;
+            public long minY;
+            public long maxXExclusive;
+            public long maxYExclusive;
+        }
+
+        [Serializable]
+        private sealed class MacroSectorPlacementSaveData
+        {
+            public string sectorId;
+            public long x;
+            public long y;
         }
 
         [Serializable]

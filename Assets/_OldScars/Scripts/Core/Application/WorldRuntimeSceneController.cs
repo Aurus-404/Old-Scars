@@ -51,6 +51,10 @@ namespace OldScars.Core.ApplicationShell
             GUILayout.Label(session.DisplayName, HeadingStyle());
             GUILayout.Label("World: " + session.WorldId.Canonical);
             GUILayout.Label("Seed: " + session.GenerationContext.WorldSeed.Canonical);
+            GUILayout.Label(session.HasMacroWorldPlan
+                ? "World size: " + session.MacroWorldPlan.GenerationSettings.WorldSizePreset +
+                  "  |  sectors: " + session.MacroWorldPlan.SectorPlacements.Count
+                : "World size: legacy schema 1 (no macro plan)");
             GUILayout.Label("Active sector: " + session.ActiveSectorId.Canonical);
             GUILayout.Label("Press Escape for menu");
             GUILayout.EndArea();

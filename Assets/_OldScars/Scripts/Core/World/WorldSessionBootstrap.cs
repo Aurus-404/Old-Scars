@@ -5,16 +5,18 @@ using OldScars.Core.Data.Loading;
 namespace OldScars.Core.World
 {
     /// <summary>
-    /// Replaceable minimum bootstrap used before macro world planning exists.
-    /// It creates exactly one deterministic starter sector and no geography.
+    /// New Game composition boundary. Macro World Plan V1 is the current plan
+    /// producer and remains replaceable by later versioned macro passes.
     /// </summary>
     public static class WorldSessionBootstrap
     {
-        public const string CurrentGeneratorVersion = "bootstrap_v1";
+        public const string CurrentGeneratorVersion = "macro_plan_v1";
+        public const string LegacyGeneratorVersion = "bootstrap_v1";
 
         public static bool TryBuildNew(
             string displayName,
             WorldSeed worldSeed,
+            WorldGenerationSettings generationSettings,
             LoadedContentSet loadedContentSet,
             out WorldSession session,
             out string error)
@@ -26,6 +28,11 @@ namespace OldScars.Core.World
                 error = "New Game requires a validated LoadedContentSet";
                 return false;
             }
+            if (generationSettings == null)
+            {
+                error = "New Game requires validated WorldGenerationSettings";
+                return false;
+            }
             if (!WorldSession.TryNormalizeDisplayName(displayName, out string normalizedName, out error))
                 return false;
 
@@ -34,24 +41,20 @@ namespace OldScars.Core.World
                 var context = new WorldGenerationContext(
                     worldSeed,
                     GeneratorVersion.Parse(CurrentGeneratorVersion));
-                SectorId starterSector = SectorId.FromDeterministicDomain(
-                    WorldDeterminism.DeriveDomainKey(context, "topology", "starter_sector"));
-                if (!WorldTopology.TryCreate(
-                        new[] { starterSector },
-                        Array.Empty<SectorConnection>(),
-                        out WorldTopology topology,
-                        out WorldTopologyValidationResult topologyValidation))
+                if (!MacroWorldPlanGenerator.TryGenerate(
+                        context, generationSettings, out MacroWorldPlan macroWorldPlan, out string planError))
                 {
-                    error = "Minimum bootstrap topology failed validation: " + topologyValidation.Description;
+                    error = planError;
                     return false;
                 }
+                SectorId starterSector = macroWorldPlan.FindCentralSectorId();
 
                 WorldCreationContentEvidence evidence = WorldCreationContentEvidence.Capture(loadedContentSet);
                 return WorldSession.TryCreate(
                     WorldId.CreateNew(),
                     normalizedName,
                     context,
-                    topology,
+                    macroWorldPlan,
                     starterSector,
                     evidence,
                     out session,

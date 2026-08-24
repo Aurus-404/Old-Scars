@@ -2,7 +2,7 @@
 
 - Estado: `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 - Alcance: arquitectura futura del mundo abierto, generación, sectores, materialización y persistencia mundial
-- Implementación actual: ninguna de las capacidades futuras descritas aquí está implementada salvo cuando se enlaza explícitamente una autoridad existente
+- Implementación actual: las foundations y seams señaladas explícitamente están implementadas; geography, sector detail/materialization y world gameplay continúan futuros
 
 ## Autoridad Del Documento
 
@@ -22,7 +22,7 @@ Los nombres conceptuales utilizados aquí no congelan nombres públicos de clase
 
 La dirección de diseño está aprobada. No están implementados:
 
-- world generation;
+- world generation más allá del esqueleto Macro World Plan V1;
 - world sectors como regiones jugables/materializadas;
 - sector loading o transición;
 - macro geography o cross-sector features;
@@ -34,7 +34,7 @@ La dirección de diseño está aprobada. No están implementados:
 
 No se autoriza implementación por la existencia de este documento. Cada unidad requiere alcance, dependencia, validación y autorización propios bajo el Roadmap.
 
-Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existe una application shell acotada: `WorldSession`, bootstrap determinista de un único sector, payload hermano `world_session_v1`, Main Menu, Load Game, World Runtime placeholder y Save/Return. No existen todavía macro world plan, geography, features continuos, sectores jugables/materializados, gameplay world state ni compatibility policy.
+Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existen una application shell acotada y `MacroWorldPlan V1`: `WorldSession`, mundo finito con bounds/placements/topology completos, payload hermano `world_session_v1` schema `2`, Main Menu con tamaño seleccionable, Load Game, World Runtime placeholder y Save/Return. No existen todavía elevation/landforms, geography, features continuos, sectores jugables/materializados, gameplay world state ni compatibility policy.
 
 ## Decisión Arquitectónica Central
 
@@ -242,6 +242,8 @@ El orden arquitectónico aprobado es:
 
 Se congelan el orden de autoridad y la separación logical/runtime, no nombres de clases ni un número fijo de pases.
 
+La implementación actual cubre sólo el esqueleto anterior a geography: generation context, settings resueltos, bounds finitos, placements macro y topology derivada dentro de `MacroWorldPlan V1`. No simula ni infiere elevation, landforms, climate, hydrology, roads, sites o history.
+
 Principio preferido:
 
 `generate → validate → materialize`
@@ -254,7 +256,7 @@ No:
 
 ### Truth Resuelta En New Game
 
-New Game debe generar y persistir suficiente verdad global para que el mundo sea coherente:
+New Game debe generar y persistir suficiente verdad global para que el mundo sea coherente. En V1 ya quedan resueltos y persistidos identity, generation context/settings, bounds, placements y topology; los demás puntos continúan en sus passes futuros:
 
 - world identity;
 - generation contract/context;
@@ -316,9 +318,11 @@ Requisitos:
 - cambios decorativos no desplazan infraestructura mayor;
 - outputs lógicos no dependen de frame timing, GameObject enumeration ni orden incidental de archivos.
 
-La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. No existe todavía un PRNG porque ningún pass requiere sampling.
+La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. `MacroWorldPlanGenerator` consume esas domain keys para sampling determinista mínimo de placements; no usa `System.Random` como contrato durable.
 
-Los golden hashes cubren domain derivation y topology. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
+Los golden hashes cubren domain derivation, topology y Macro World Plan. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
+
+El futuro presupuesto de CPU/workers es un setting de ejecución/rendimiento, no un generation-relevant world setting. No participa en SectorId, placements, topology, hashes, geography ni otros resultados. Cuando existan passes realmente paralelizables, `1 worker` y `N workers` con seed/settings idénticos deberán producir exactamente el mismo mundo lógico. No existe todavía selector ni soporte multithread sin consumidor.
 
 ## Bounded Causal History
 
@@ -410,7 +414,9 @@ La persistencia mundial reutiliza las garantías de M37:
 
 `current_slice_v1` queda sin cambios como regression path. No representa un sector y no se migra silenciosamente a uno.
 
-La primera implementación acotada cumple esa dirección mediante `world_session_v1`, schema `1`: un payload lógico hermano que conserva WorldId/display name, seed/generator version, topología completa, active sector y evidencia de provenance de creación. Usa el envelope, serializer, safe-write/recovery y slot rules de M37; `WorldId.Canonical` es el slot y el display name no es identidad de filesystem. Read reconstruye la topología por su validator real y sólo publica la session después del semantic preflight.
+La implementación actual usa el snapshot type hermano `world_session_v1`. Los mundos Macro Plan V1 se escriben con schema `2`, que conserva WorldId/display name, seed/generator version, settings resueltos, world bounds, macro placements, topología, evidencia canónica del plan, active sector y provenance de creación. Usa el envelope, serializer, safe-write/recovery y slot rules de M37; `WorldId.Canonical` es el slot y el display name no es identidad de filesystem. Read reconstruye settings, bounds, topology y plan por sus validators reales y sólo publica la session después del semantic preflight.
+
+Schema `1` conserva compatibilidad legacy explícita: carga su topología original sin inventar tamaño, bounds ni MacroWorldPlan y permanece schema `1` al guardarse. No se borra ni reinterpreta silenciosamente.
 
 Este V1 es application/session persistence, no la persistencia mundial completa de la futura unidad conceptual: todavía no contiene geography, history, sector blueprints, gameplay mutations, identidades durables mundiales ni partitions. No copia `CurrentSliceLoadService`, no crea serializer/file store paralelo y no aplica `current_slice_v1` como si fuera un sector.
 
@@ -557,35 +563,38 @@ Los IDs, estados y dependencias autorizadas viven exclusivamente en [Project_Roa
 1. Open World Rebaseline;
 2. Minimum Content Source Identity / Provenance;
 3. World Identity / Topology / Determinism;
-4. Macro Geography / Cross-Sector Networks;
-5. Bounded History / Present-Day Resolution;
-6. World Persistence;
-7. Sector Blueprint / Authored Composition;
-8. Large-Sector Navigation / Performance Gate;
-9. Sector Materialization / Transition;
-10. Connected First Playable;
-11. Playtest / Rebaseline;
-12. sistemas posteriores según dependencias y evidencia reales.
+4. Macro World Plan;
+5. Macro Elevation / Landforms;
+6. Macro Geography / Cross-Sector Networks;
+7. Bounded History / Present-Day Resolution;
+8. World Persistence;
+9. Sector Blueprint / Authored Composition;
+10. Large-Sector Navigation / Performance Gate;
+11. Sector Materialization / Transition;
+12. Connected First Playable;
+13. Playtest / Rebaseline;
+14. sistemas posteriores según dependencias y evidencia reales.
 
-Los pasos 2 y 3 están `VALIDATED — FOUNDATION COMPLETE`. Además quedó validada una shell operacional intermedia de World Session/New Game/Save/Load sobre M37. Esa shell no marca completo el paso 6: sólo persiste identity/topology/provenance evidence y mantiene vacíos macro plan, history y gameplay world state. El próximo candidato es `Macro World Plan V1`, según alcance y autorización del Roadmap.
+Los pasos 2–4 están `VALIDATED`; también quedó validada una shell operacional intermedia de World Session/New Game/Save/Load sobre M37. Esa shell no marca completo el paso 8: persiste identity, MacroWorldPlan/topology y provenance evidence, pero mantiene vacíos geography, history, local detail y gameplay world state. El próximo candidato es `Macro Elevation / Landforms V1`, según alcance y autorización del Roadmap.
 
 Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y producción no se eliminan. Su orden final posterior no queda permanentemente congelado aquí.
 
-## World Extent — Pending Mauro Decision
+## World Extent — Approved Product Decision
 
 Está aprobado:
 
 - un único mundo lógico gigante e interconectado;
+- un mundo finito pero muy grande, sin expansión procedural infinita durante la partida;
+- extensión macro completa, bounds físicos lógicos y distribución total de sectores resueltos al crear la partida;
 - sectores grandes de extensión variable;
-- geografía lógica continua.
+- geografía lógica continua;
+- selección durable de tamaño mediante `Small`, `Medium`, `Large` y `Huge`.
 
-No está aprobado todavía que el mundo de producción deba ser finito.
+El detalle local de sectores puede seguir resolviéndose lazy. Conocer el plan macro completo no congela polígonos, terrain, visualización del borde ni kilómetros exactos.
 
-Recomendación inicial: un mundo macro **finito pero muy grande**, con topología y relaciones mayores conocidas en New Game. Facilita coherencia geográfica, history acotada, reproducibilidad, reasoning de generator version y persistencia/migration manejables.
+Los valores resueltos V1 son tuning inicial, pero quedan persistidos junto al preset para que un mundo existente no cambie si los defaults futuros se ajustan.
 
-`FINITE VS FUTURE-EXPANDABLE WORLD — PENDING FINAL MAURO APPROVAL`
-
-Esta decisión pendiente no bloqueó las foundations ni la application shell ya cerradas. `Macro World Plan V1` debe conservarla explícitamente abierta salvo decisión de Mauro.
+`FINITE, BOUNDED, VERY LARGE WORLD — APPROVED`
 
 ## Explicitly Deferred
 

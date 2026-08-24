@@ -14,6 +14,13 @@ namespace OldScars.Core.Persistence
             DisplayName = session.DisplayName;
             WorldSeed = session.GenerationContext.WorldSeed;
             GeneratorVersion = session.GenerationContext.GeneratorVersion;
+            HasMacroWorldPlan = session.HasMacroWorldPlan;
+            SizePreset = session.HasMacroWorldPlan
+                ? session.MacroWorldPlan.GenerationSettings.WorldSizePreset
+                : (WorldSizePreset?)null;
+            MacroWorldPlanHash = session.HasMacroWorldPlan
+                ? session.MacroWorldPlan.CanonicalHash
+                : null;
             TopologyHash = session.Topology.CanonicalHash;
             ActiveSectorId = session.ActiveSectorId;
             CreationContentProvenanceFingerprint =
@@ -25,6 +32,9 @@ namespace OldScars.Core.Persistence
         public string DisplayName { get; }
         public WorldSeed WorldSeed { get; }
         public GeneratorVersion GeneratorVersion { get; }
+        public bool HasMacroWorldPlan { get; }
+        public WorldSizePreset? SizePreset { get; }
+        public string MacroWorldPlanHash { get; }
         public string TopologyHash { get; }
         public SectorId ActiveSectorId { get; }
         public string CreationContentProvenanceFingerprint { get; }

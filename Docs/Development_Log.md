@@ -3083,3 +3083,34 @@ No se implementaron macro world plan/geography, history, terrain, authored compo
 La revisión scoped detectó y corrigió un finding material antes del cierre: `GameDataManager` compartía root con `MainMenuSceneController`, por lo que `DontDestroyOnLoad` podía conservar UI de menú dentro de World Runtime. Ambos componentes quedaron en roots separados y el diagnóstico post-review exige que ningún `MainMenuSceneController` sobreviva en runtime; static contract y Play flow volvieron a `PASS`.
 
 `codex review --uncommitted` no pudo iniciarse por el issue conocido de Windows `codex.exe: Acceso denegado`. Se realizó revisión manual scoped de authorities, publication transaction, slot/path identity, provenance/compatibility boundary, hashing, scene lifecycle y scope. El arranque Play Mode batch aislado emitió además un `ArgumentOutOfRangeException` del indexador `UnityEditor.Search`; el stack fue íntegramente UnityEditor, sin frame de Old Scars, y el flujo post-review completó `PASS`. No se observaron errores/exceptions relevantes del producto.
+
+### ID TBD — Macro World Plan V1
+
+Fecha: 2026-08-24.
+
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+Se reemplazó el starter sector de New Game por `MacroWorldPlan V1`, dato lógico inmutable generado antes de runtime. `WorldGenerationSettings` posee únicamente `WorldSizePreset`; `Small`, `Medium`, `Large` y `Huge` resuelven counts, world extents y separación mínima distintos, y esos valores resueltos se persisten para impedir reinterpretación silenciosa si cambia el tuning futuro. El mundo de producto queda aprobado como finito pero muy grande, con bounds físicos lógicos y distribución macro completa al crear la partida; el detalle sectorial continúa lazy.
+
+`MacroWorldPlanGenerator` usa los domains SHA-256 existentes de `WorldDeterminism` para IDs y sampling maximin de posiciones dentro de `FiniteMacroWorldBounds`. La topology se deriva como árbol espacial mínimo conectado y mantiene las conexiones explícitas/multi-edge del contrato existente. No participan `WorldId`, `UnityEngine.Random`, `System.Random`, `GetHashCode`, Unity coordinates, filesystem ni insertion order. El único hash nuevo es la evidencia canónica del plan completo.
+
+`WorldSession` contiene el plan actual y deriva de él su topology. `world_session_v1` conserva su snapshot type y evoluciona a schema `2` para nuevos mundos: persiste generation context, settings resueltos, bounds, placements, topology/hash, plan hash, active sector y provenance evidence. Schema `1` conserva un path legacy explícito, sin preset/plan fabricado y sin reinterpretación al volver a guardar. M37 permanece como envelope/store/recovery authority y `current_slice_v1` no cambió.
+
+Main Menu agrega selección funcional de tamaño con default `Large`; Create genera y persiste el plan antes de entrar a `WorldRuntime`. No se agregó selector ni soporte artificial de workers. El futuro worker budget queda aprobado como setting de ejecución/rendimiento: `1 worker` y `N workers` deberán producir exactamente el mismo resultado lógico y nunca participarán en IDs, topology, plan hash o geography.
+
+Validación autónoma en Unity `6000.4.6f1`, worktree y roots temporales aislados:
+
+- Runtime compile: `PASS`;
+- Editor compile: `PASS`;
+- `Macro World Plan V1 Diagnostics`: `PASS` para same input, independencia de WorldId, escalas `Small < Medium < Large < Huge`, different-size, bounds, unicidad, spacing, connectivity, order independence y golden seed;
+- golden MacroWorldPlan SHA-256: `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`;
+- fuzz: `12 seeds × 4 presets`, todos los invariants `PASS`;
+- tiempos diagnósticos aproximados: Small `10 ms`, Medium `43 ms`, Large `206 ms`, Huge `1156 ms`; no son budgets de producción;
+- schema `2` save/read logical round-trip y compatibilidad schema `1`: `PASS`;
+- `World Session / Persistence V1 Application Shell Diagnostics` y Play Mode real Main Menu(size)→Runtime→Save/Return→Load: `PASS`;
+- fresh Process A/B: `PASS`; B reconstruyó desde disco `world_9600e0703d0f400790e46617959730da`, seed `-3141592653589793`, size `Huge`, plan hash `93cf399513b34c706088b1f0eee520e456695a415224bb91f10c08cca67e888d`, topology hash `347a831419d012d70501282dddb1b4a0e67ba81fa04d9fff141bb52d2c79b982` y active sector `sector_5ef1235b03d85764319ce1ec1d22f4fa`; el root temporal fue eliminado;
+- `World Identity / Topology / Determinism Foundation`, `Minimum Content Source Identity & Provenance Foundation`, `M37.0 Persistence Core`, `M37.1 Snapshot & Semantic Preflight` y `M37.1 Current Slice Persistent Round-Trip`: `PASS`.
+
+La revisión scoped confirmó una sola autoridad de topology/session/persistence, ausencia de grid/Unity/WorldId/provenance/worker leakage y compatibilidad schema 1 delimitada. Detectó y revirtió antes del cierre un drift incidental de `ProjectSettings.runInBackground` producido durante validación; el diff final no contiene `ProjectSettings`. `codex review --uncommitted` volvió a quedar bloqueado por `codex.exe: Acceso denegado`, por lo que se completó revisión manual del diff. No se observaron errores/exceptions relevantes de Old Scars; permanecieron warnings preexistentes de paquetes/compilación y mensajes de licensing/shutdown del Editor aislado.
+
+No se implementaron elevation/noise, landforms, climate, hydrology/oceans, geology, vegetation, roads/rail, settlements/sites, history, sector geometry, terrain, materialization, transitions, NavMesh ni multithread generation. El siguiente candidato queda `ID TBD — Macro Elevation / Landforms V1`, `PLANNED — NOT AUTHORIZED`.

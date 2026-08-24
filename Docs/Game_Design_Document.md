@@ -1,10 +1,16 @@
 # Old Scars - Documento de Diseño del Juego
 
-- Versión: línea base de repositorio 1.2
-- Actualizado: 23 de agosto de 2026
+- Versión: línea base de repositorio 1.3
+- Actualizado: 24 de agosto de 2026
 - Estado: `APPROVED — REVISED DESIGN BASELINE`
 - Derivado de: `Old_Scars_GDD_Maestro_v3.1.docx` (17 de julio de 2026)
 - SHA-256 de la fuente: `919966D0BFCDE1FD77C6D7765EE087B4D04211FBDEAAD06B4AAFCCFEE7308AF4`
+
+## Changelog 1.3
+
+- Se aprueba que el mundo de producción sea finito pero muy grande, con extensión/bounds físicos lógicos y distribución macro completa resueltos al crear la partida; no se expande proceduralmente de forma infinita durante el juego.
+- Se aprueban los presets seleccionables y durables `Small`, `Medium`, `Large` y `Huge`; sus valores internos siguen siendo tuning, pero una partida persiste sus valores resueltos.
+- Se aprueba un futuro presupuesto de CPU/workers sólo como opción de rendimiento: nunca puede cambiar el resultado lógico y no se muestra hasta controlar trabajo real.
 
 ## Changelog 1.2
 
@@ -295,7 +301,7 @@ La dirección de diseño está confirmada, pero su implementación no se incorpo
 | Protagonista | Comenzar siendo nadie es una propuesta de progresión, no un contrato fijo. | `PENDING MAURO DECISION` |
 | Abuelo y bandidos con cicatrices | Semilla narrativa opcional. | `PROPOSAL — PENDING MAURO DECISION` |
 | Campaña principal | Dirección más libertad; objetivo, estructura y finales abiertos. | `PENDING MAURO DECISION` |
-| Mapa y regiones | Está aprobado un mundo lógico gigante, continuo y dividido en sectores grandes variables. Los arquetipos previos siguen siendo lentes, no topología concreta. Mundo finito vs future-expandable continúa abierto. | `PARTIAL CONFIRMATION — EXTENT PENDING MAURO DECISION` |
+| Mapa y regiones | Está aprobado un mundo lógico finito pero muy grande, continuo y dividido en sectores grandes variables. New Game resuelve la extensión/bounds y distribución macro completa; el detalle local puede ser lazy. El jugador elige `Small`, `Medium`, `Large` o `Huge`. No existe expansión procedural infinita durante la partida. Los arquetipos previos siguen siendo lentes, no topología concreta. | `CONFIRMED — RECENT PRODUCT DECISION` |
 | Facciones modernas | No hay roster aprobado. | `PENDING MAURO DECISION` |
 | Sin zombis | Dirección explícita. | `CONFIRMED — RECENT DECISION` |
 | Compañeros | Posible propuesta sin milestone reservado. | `DEFERRED — PENDING MAURO DECISION` |
@@ -371,7 +377,7 @@ Las definiciones de arsenal y vehículos fijan dirección de diseño. No adelant
 14. profundidad del refugio;
 15. alcance técnico, milestones y prioridad de los vehículos usables;
 16. balance, catálogo exacto y reglas de modificación del arsenal;
-17. mundo macro finito o future-expandable y límites posteriores de variación procedural secundaria;
+17. tuning final de tamaños macro, representación materializada de límites físicos y límites posteriores de variación procedural secundaria dentro del mundo finito;
 18. plataforma, tienda, modelo comercial, clasificación e idiomas;
 19. art bible y especificación de producción de la dirección nostálgica confirmada;
 20. dispositivos de input, resoluciones objetivo y baseline de accesibilidad;
