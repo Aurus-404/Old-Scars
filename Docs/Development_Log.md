@@ -3203,3 +3203,26 @@ Limitación de evidencia: el primer import limpio de este worktree quedó bloque
 La revisión scoped confirmó que no queda ningún consumidor de `DeriveDomainKey`, la versión global no entra en SectorId/placements/topology/Geography/Water/starter, Water cambia sólo por dependencia real de Geography, no hay framework determinista paralelo, SHA inner-loop, schema nuevo, regeneración legacy, runtime simulation, GameObjects ni scope creep a Climate. Se revirtió el drift automático `ProjectSettings.runInBackground`; `DataDriven_JSON_Rules.md` no cambió porque no existe contrato JSON nuevo.
 
 No se implementaron Climate/Moisture, rivers, terrain/materialization, sectors/transitions, GameObjects ni runtime world-scale processing. El siguiente candidato continúa `ID TBD — Macro Climate / Moisture V1`, `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — Worldgen / World Session Observability Correction
+
+Fecha: 2026-08-24.
+
+Estado: `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`.
+
+Se agregaron eventos lifecycle estructurados en los límites existentes, sin introducir un logger o manager paralelo. Después de que Create genera, guarda y publica correctamente, `[Worldgen][WORLD_CREATED]` resume `WorldId`, seed, pipeline, size/coverage, contratos y hashes de Plan/Geography/Water, sector count, sea level, starter, muestra landform/elevation/surface, candidates adecuados y tiempo de generación. Load publicado emite `[WorldSession][LOAD_OK]` con schema/truth presente o ausente; `WorldRuntimeSceneController.Start` emite `[WorldRuntime][SESSION_READY]` una sola vez por entrada; Save manual agrega `[WorldSession][SAVE_OK]` sin sustituir `[Persistence][WRITE_COMMIT]` como autoridad del commit físico.
+
+Los diagnostics de Application Shell se ampliaron con captura scoped y cardinalidad exacta. Edit Mode probó un único Create/Save/Load, campos completos y schemas `1`/`2`/`3` con `PLAN/GEOGRAPHY/WATER=<ABSENT>` donde corresponde. Play Mode Main Menu→Runtime→Save→Return→Load→Runtime terminó `PASS` con `WORLD_CREATED=1`, `LOAD_OK=1`, `SESSION_READY=2`, `SAVE_OK=1` y `WRITE_COMMIT=2`. No existe logging en `Update`, `OnGUI`, samples, celdas, sectores ni consultas rutinarias.
+
+Validación autónoma en Unity `6000.4.6f1`, worktree y persistence roots aislados:
+
+- Runtime compile y Editor compile: `PASS`;
+- `World Session / Persistence V1 Application Shell Diagnostics`: `PASS`;
+- Play Mode lifecycle/cardinality: `PASS`;
+- `Worldgen Pass Isolation Correction`, `Macro World Plan V1`, `Macro Elevation/Landforms V1`, `Worldgen Gameplay Quality + Macro Water V1` y M37.0 Persistence Core: `PASS`;
+- goldens sin drift: Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`, Water `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`;
+- `git diff --check`: `PASS`.
+
+La revisión scoped confirmó que los logs consumen truth ya calculada, no alteran seed/contracts/hashes, no fabrican evidence legacy, no duplican filesystem/session authorities y no agregan schema, GameObjects, runtime simulation ni scope creep. Corrigió un detalle antes del cierre: una muestra starter inesperadamente no disponible ahora declara `<UNAVAILABLE>` en lugar de mostrar el valor default de la estructura. `codex review --uncommitted` continuó bloqueado por `codex.exe: Acceso denegado`, por lo que se completó revisión manual del diff. El Play Mode aislado produjo de nuevo una excepción interna de `UnityEditor.Search.SearchDatabase.IndexationOnStartup`; el stack permaneció fuera de Old Scars y el flujo terminó `PASS`. El drift automático `ProjectSettings.runInBackground` fue revertido y no forma parte del cambio.
+
+Unity MCP se conserva como vía preferida de inspección del Editor normal cuando está disponible y es seguro; los procesos aislados quedan para imports/fresh-process/diagnostics que lo necesitan. Ninguna validación cerró o perturbó el Editor de Mauro. No se implementaron Climate, roads, settlements, worldgen adicional ni cambios de persistencia. El siguiente candidato queda `ID TBD — Macro Human Geography / Road Network V1`, `PLANNED — NOT AUTHORIZED`.

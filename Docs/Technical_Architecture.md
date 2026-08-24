@@ -84,6 +84,13 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - El flujo de producto es `MainMenu → WorldRuntime`. `MainMenu` contiene `GameDataManager` y New Game/Load Game/Exit; New Game permite nombre, seed opcional, size default `Large` y Land Coverage default `High`, y debe generar/persistir antes de entrar al runtime. `WorldRuntime` es un placeholder separado de `SampleScene` y sólo demuestra una session validada; Escape abre Continue/Save/Return/Exit. Return cierra la session sin autosave implícito. `SampleScene` permanece como laboratorio de regressions y continúa en Build Settings.
 - Esta shell no persiste gameplay/sector state, no aplica `CurrentSliceLoadService` y no completa climate, rivers, local detail ni la futura World Persistence de producción.
 
+### Observabilidad De Worldgen Y World Session
+
+- `WorldSessionService` emite un único `[Worldgen][WORLD_CREATED]` después de generar, persistir y publicar correctamente un mundo nuevo. El evento resume `WorldId`, seed, versión global del pipeline, size/coverage, contratos y hashes canónicos de Plan/Geography/Water, sector count, sea level, starter y muestra geográfica/suitability ya calculada; no regenera ni introduce truth nueva.
+- Una carga publicada emite un único `[WorldSession][LOAD_OK]` con schema, identidad, seed, pipeline, hashes disponibles y active sector. Schemas legacy declaran explícitamente `PLAN/GEOGRAPHY/WATER=<ABSENT>` según su contrato; nunca fabrican evidence posterior.
+- `WorldRuntimeSceneController.Start` emite una sola vez `[WorldRuntime][SESSION_READY]` por entrada al runtime. Un save manual exitoso puede emitir `[WorldSession][SAVE_OK]`, mientras `[Persistence][WRITE_COMMIT]` permanece la autoridad de commit físico.
+- Estos eventos son boundary logs concisos: no existen logs por frame, sample, celda, sector o consulta. Los prefixes y claves estables permiten filtrar lifecycle real y distinguir éxito semántico de escritura física sin crear telemetry, analytics, file logger ni manager paralelo.
+
 ## Identidad Durable De Items Y Limite De Persistencia
 
 - `ItemInstance.InstanceId` es un `string` get-only autoritativo. Los IDs nuevos usan `item_<GUID N lowercase>`; son opacos para consumidores y no codifican comportamiento.

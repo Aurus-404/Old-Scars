@@ -6,7 +6,7 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `WORLDGEN PASS ISOLATION CORRECTION CLOSED`.
+Estado: `WORLDGEN / WORLD SESSION OBSERVABILITY CORRECTION CLOSED`.
 
 M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
@@ -40,9 +40,13 @@ Estado: `VALIDATED — FOUNDATION COMPLETE`.
 
 Estado: `VALIDATED — SYSTEMIC CORRECTION COMPLETE`.
 
+`ID TBD — Worldgen / World Session Observability Correction`
+
+Estado: `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`.
+
 La shell implementada posee session lifecycle único, save catalog, Main Menu, World Runtime placeholder e in-game Save/Return. New Game genera plan finito → elevation/landforms → Macro Water → quality analysis/starter. Land Coverage es un setting separado del pass Water y no cambia MacroWorldPlan ni MacroGeography. La versión global `world_pipeline_v2` queda separada de los contratos deterministas `macro_plan_v1`, `macro_geography_v1` y `macro_water_v1`; evolución downstream no re-seedea upstream truth. `world_session_v1` schema `4` persiste plan + geography + Water committed sobre M37 y mantiene compatibilidad explícita con schemas `1`/`2`/`3` sin fabricar truth posterior. `current_slice_v1` permanece intacto y provenance se guarda sólo como evidencia.
 
-El próximo coding unit candidato es `ID TBD — Macro Climate / Moisture V1`, con estado `PLANNED — NOT AUTHORIZED`. Debe consumir MacroWorldPlan + MacroGeography + MacroWater como truth global sin reinterpretar worlds committed. No autoriza terrain, materialización, final rivers, geology, vegetation/biomes, roads, settlements, history, sector transitions, generation compatibility ni gameplay world simulation.
+El próximo coding unit candidato es `ID TBD — Macro Human Geography / Road Network V1`, con estado `PLANNED — NOT AUTHORIZED`. Debe consumir MacroWorldPlan + MacroGeography + MacroWater como truth global, mantener el MST existente como scaffold lógico y definir su propia future network truth sin reinterpretar worlds committed. No autoriza terrain, materialización, climate, final rivers, settlements, history, sector transitions, generation compatibility ni gameplay world simulation.
 
 Fuera de alcance mientras no exista autorización específica:
 
@@ -67,7 +71,7 @@ Dependencies, overrides/patches y compatibilidad de producción permanecen en al
 
 ## No Iniciar Todavía
 
-- Macro Climate / Moisture V1, otros coding units open-world o M42.0 sin autorización específica;
+- Macro Human Geography / Road Network V1, Macro Climate / Moisture V1, otros coding units open-world o M42.0 sin autorización específica;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;

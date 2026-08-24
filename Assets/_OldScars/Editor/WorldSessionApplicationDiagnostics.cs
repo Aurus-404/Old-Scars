@@ -26,12 +26,18 @@ namespace OldScars.EditorTools
         private const string PlayGeographyHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayGeographyHash";
         private const string PlayWaterHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayWaterHash";
         private const string PlayTopologyHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayTopologyHash";
+        private const string PlayWorldCreatedLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.WorldCreatedLogs";
+        private const string PlayLoadOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.LoadOkLogs";
+        private const string PlaySessionReadyLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.SessionReadyLogs";
+        private const string PlaySaveOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.SaveOkLogs";
+        private const string PlayWriteCommitLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.WriteCommitLogs";
         private const string FreshRootEnvironment = "OLD_SCARS_WORLD_SESSION_DIAGNOSTIC_ROOT";
         private const long ExplicitSeed = -3141592653589793L;
 
         static WorldSessionApplicationDiagnostics()
         {
             EditorApplication.update += RunPlayModeWhenReady;
+            Application.logMessageReceived += CapturePlayLifecycleLog;
         }
 
         public static void Run()
@@ -45,6 +51,7 @@ namespace OldScars.EditorTools
                 LoadedContentSet content = LoadValidatedCore(failures);
                 if (content != null)
                 {
+                    ValidateLifecycleObservability(root, content, failures);
                     ValidateCreateRoundTripCatalogAndLifecycle(root, content, failures);
                     ValidateSemanticRejection(root, content, failures);
                 }
@@ -70,6 +77,7 @@ namespace OldScars.EditorTools
                 "- duplicate display names with distinct WorldId slots",
                 "- safe catalog filtering plus corrupt-save isolation",
                 "- create/close/load lifecycle without partial publication",
+                "- one-shot structured create/load/save evidence plus explicit schema 1/2/3 absence",
                 "- Main Menu / World Runtime / Build Settings contracts",
                 "- temporary persistence fixtures removed");
         }
@@ -84,6 +92,11 @@ namespace OldScars.EditorTools
                 "OldScars_WorldSessionPlayMode_" + Guid.NewGuid().ToString("N"));
             SessionState.SetString(PlayRootKey, root);
             SessionState.SetInt(PlayPhaseKey, 0);
+            SessionState.SetInt(PlayWorldCreatedLogCountKey, 0);
+            SessionState.SetInt(PlayLoadOkLogCountKey, 0);
+            SessionState.SetInt(PlaySessionReadyLogCountKey, 0);
+            SessionState.SetInt(PlaySaveOkLogCountKey, 0);
+            SessionState.SetInt(PlayWriteCommitLogCountKey, 0);
             SessionState.SetBool(PlayPendingKey, true);
             EditorSceneManager.OpenScene(WorldApplicationScenes.MainMenuScenePath, OpenSceneMode.Single);
             EditorApplication.EnterPlaymode();
@@ -213,6 +226,162 @@ namespace OldScars.EditorTools
                 "E. catalog must ignore Current Slice and unrelated slots.", failures);
             Check(ContainsCatalogIssue(catalog, corruptId.Canonical),
                 "F. corrupt WorldId-shaped save must be isolated as an actionable catalog issue.", failures);
+        }
+
+        private static void ValidateLifecycleObservability(
+            string root,
+            LoadedContentSet content,
+            List<string> failures)
+        {
+            string observabilityRoot = Path.Combine(root, "observability");
+            var store = new PersistenceFileStore(observabilityRoot);
+            using (var logs = new LifecycleLogCapture())
+            {
+                WorldSessionService.Close();
+                WorldSessionOperationResult create = WorldSessionService.Create(
+                    "Observability World", new WorldSeed(ExplicitSeed),
+                    WorldGenerationSettings.ResolvePreset(WorldSizePreset.Small),
+                    LandCoveragePreset.Medium, content, store);
+                Check(create.Success,
+                    "Observability fixture New Game failed: " +
+                    (string.IsNullOrEmpty(create.Failure) ? "<NONE>" : create.Failure), failures);
+                if (!create.Success)
+                    return;
+
+                WorldSession currentSession = create.Session;
+                JObject currentPayload = (JObject)WorldSessionPersistenceService.ToPayload(currentSession);
+                string created = logs.Single(WorldCreatedPrefix);
+                Check(logs.Count(WorldCreatedPrefix) == 1 &&
+                      ContainsAll(created,
+                          "WorldId: " + currentSession.WorldId.Canonical,
+                          "Seed: " + currentSession.GenerationContext.WorldSeed.Canonical,
+                          "PipelineVersion: " + currentSession.GenerationContext.GeneratorVersion.Canonical,
+                          "WorldSize: Small",
+                          "LandCoverage: Medium",
+                          "MacroWorldPlanContract: " + MacroWorldPlanGenerator.DeterministicGenerationContract,
+                          "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
+                          "SectorCount: " + currentSession.MacroWorldPlan.SectorPlacements.Count,
+                          "MacroGeographyContract: " + MacroGeographyGenerator.DeterministicGenerationContract,
+                          "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
+                          "MacroWaterContract: " + currentSession.MacroWater.GenerationSettings.GenerationContract,
+                          "MacroWaterHash: " + currentSession.MacroWater.CanonicalHash,
+                          "SeaLevel: " + currentSession.MacroWater.SeaLevel + "/65535",
+                          "ActiveSector: " + currentSession.ActiveSectorId.Canonical,
+                          "StarterLandform:", "StarterElevation:", "StarterSurface:",
+                          "SuitableStarterCandidates:", "GenerationElapsedMs:"),
+                    "New Game must emit exactly one complete [Worldgen][WORLD_CREATED] record.", failures);
+
+                WorldSessionOperationResult save = WorldSessionService.Save(store);
+                Check(save.Success && logs.Count(SaveOkPrefix) == 1 &&
+                      logs.Count(WriteCommitPrefix) == 2 &&
+                      ContainsAll(logs.Single(SaveOkPrefix),
+                          "WorldId: " + currentSession.WorldId.Canonical,
+                          "SchemaVersion: " + WorldSessionPersistenceService.CurrentSchemaVersion,
+                          "ActiveSector: " + currentSession.ActiveSectorId.Canonical),
+                    "Explicit Save must keep WRITE_COMMIT authority and add exactly one semantic SAVE_OK.", failures);
+
+                WorldSessionService.Close();
+                WorldSessionOperationResult currentLoad =
+                    WorldSessionService.Load(currentSession.WorldId.Canonical, store);
+                string currentLoadLog = logs.Last(LoadOkPrefix);
+                Check(currentLoad.Success && logs.Count(LoadOkPrefix) == 1 &&
+                      ContainsAll(currentLoadLog,
+                          "SchemaVersion: " + WorldSessionPersistenceService.CurrentSchemaVersion,
+                          "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
+                          "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
+                          "MacroWaterHash: " + currentSession.MacroWater.CanonicalHash,
+                          "LegacyState: none (current schema)"),
+                    "Current world Load must emit exactly one complete LOAD_OK record.", failures);
+
+                ValidateLegacyLoadObservability(
+                    store, currentPayload, WorldSessionPersistenceService.MacroGeographySchemaVersion,
+                    "schema 3; MacroWater absent by contract",
+                    new[] { "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
+                            "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
+                            "MacroWaterHash: <ABSENT>" }, logs, failures);
+                ValidateLegacyLoadObservability(
+                    store, currentPayload, WorldSessionPersistenceService.MacroPlanSchemaVersion,
+                    "schema 2; MacroGeography/Water absent by contract",
+                    new[] { "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
+                            "MacroGeographyHash: <ABSENT>", "MacroWaterHash: <ABSENT>" },
+                    logs, failures);
+                ValidateLegacySchemaOneObservability(
+                    store, currentPayload, logs, failures);
+
+                Check(logs.Count(WorldCreatedPrefix) == 1 &&
+                      logs.Count(SaveOkPrefix) == 1 &&
+                      logs.Count(SessionReadyPrefix) == 0,
+                    "Edit-mode lifecycle calls must not repeat create/save logs or fabricate runtime entry.", failures);
+            }
+            WorldSessionService.Close();
+        }
+
+        private static void ValidateLegacyLoadObservability(
+            PersistenceFileStore store,
+            JObject currentPayload,
+            int schemaVersion,
+            string expectedLegacyState,
+            string[] expectedHashLines,
+            LifecycleLogCapture logs,
+            List<string> failures)
+        {
+            WorldId worldId = WorldId.CreateNew();
+            JObject payload = (JObject)currentPayload.DeepClone();
+            payload["worldId"] = worldId.Canonical;
+            payload["displayName"] = "Legacy Observability " + schemaVersion;
+            payload["schemaVersion"] = schemaVersion;
+            payload.Remove("macroWater");
+            if (schemaVersion == WorldSessionPersistenceService.MacroPlanSchemaVersion)
+                payload.Remove("macroGeography");
+
+            WorldSessionService.Close();
+            int previousLoads = logs.Count(LoadOkPrefix);
+            PersistenceWriteResult write = store.Write(worldId.Canonical, payload);
+            WorldSessionOperationResult load = WorldSessionService.Load(worldId.Canonical, store);
+            string message = logs.Last(LoadOkPrefix);
+            Check(write.Success && load.Success && logs.Count(LoadOkPrefix) == previousLoads + 1 &&
+                  ContainsAll(message,
+                      "WorldId: " + worldId.Canonical,
+                      "SchemaVersion: " + schemaVersion,
+                      "LegacyState: " + expectedLegacyState) &&
+                  ContainsAll(message, expectedHashLines),
+                "Legacy schema " + schemaVersion +
+                " Load must report absent later-pass truth exactly once without fabricating it.", failures);
+        }
+
+        private static void ValidateLegacySchemaOneObservability(
+            PersistenceFileStore store,
+            JObject currentPayload,
+            LifecycleLogCapture logs,
+            List<string> failures)
+        {
+            WorldId worldId = WorldId.CreateNew();
+            var payload = new JObject
+            {
+                ["snapshotType"] = WorldSessionPersistenceService.SnapshotType,
+                ["schemaVersion"] = WorldSessionPersistenceService.LegacySchemaVersion,
+                ["worldId"] = worldId.Canonical,
+                ["displayName"] = "Legacy Observability 1",
+                ["generationContext"] = currentPayload["generationContext"].DeepClone(),
+                ["topology"] = currentPayload["macroWorldPlan"]["topology"].DeepClone(),
+                ["activeSectorId"] = currentPayload["activeSectorId"].DeepClone(),
+                ["creationContentProvenance"] = currentPayload["creationContentProvenance"].DeepClone()
+            };
+
+            WorldSessionService.Close();
+            int previousLoads = logs.Count(LoadOkPrefix);
+            PersistenceWriteResult write = store.Write(worldId.Canonical, payload);
+            WorldSessionOperationResult load = WorldSessionService.Load(worldId.Canonical, store);
+            string message = logs.Last(LoadOkPrefix);
+            Check(write.Success && load.Success && logs.Count(LoadOkPrefix) == previousLoads + 1 &&
+                  ContainsAll(message,
+                      "WorldId: " + worldId.Canonical,
+                      "SchemaVersion: 1",
+                      "MacroWorldPlanHash: <ABSENT>",
+                      "MacroGeographyHash: <ABSENT>",
+                      "MacroWaterHash: <ABSENT>",
+                      "LegacyState: schema 1; MacroWorldPlan/Geography/Water absent by contract"),
+                "Legacy schema 1 Load must explicitly report all absent macro truth exactly once.", failures);
         }
 
         private static void ValidateSemanticRejection(
@@ -356,11 +525,24 @@ namespace OldScars.EditorTools
                         FailPlay("World Runtime is missing its authority or retained a Main Menu controller.", root);
                         return;
                     }
+                    if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
+                        PlayLogCount(PlaySessionReadyLogCountKey) != 1 ||
+                        PlayLogCount(PlayLoadOkLogCountKey) != 0)
+                    {
+                        FailPlay("New Game must emit one WORLD_CREATED and one SESSION_READY before any LOAD_OK.", root);
+                        return;
+                    }
 
                     runtime.OpenMenu();
                     if (!runtime.IsMenuOpen || !runtime.SaveGame(store))
                     {
                         FailPlay("In-game menu did not open or Save did not invoke WorldSession persistence.", root);
+                        return;
+                    }
+                    if (PlayLogCount(PlaySaveOkLogCountKey) != 1 ||
+                        PlayLogCount(PlayWriteCommitLogCountKey) != 2)
+                    {
+                        FailPlay("Initial persistence plus one explicit Save must emit two WRITE_COMMIT records and one SAVE_OK.", root);
                         return;
                     }
                     runtime.ContinueGame();
@@ -423,6 +605,14 @@ namespace OldScars.EditorTools
                         FailPlay("Load action did not restore the recorded world/topology in World Runtime.", root);
                         return;
                     }
+                    if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
+                        PlayLogCount(PlayLoadOkLogCountKey) != 1 ||
+                        PlayLogCount(PlaySessionReadyLogCountKey) != 2 ||
+                        PlayLogCount(PlaySaveOkLogCountKey) != 1)
+                    {
+                        FailPlay("Load flow must add exactly one LOAD_OK and one SESSION_READY without repeating create/save evidence.", root);
+                        return;
+                    }
 
                     runtime.ReturnToMainMenu();
                     SessionState.SetInt(PlayPhaseKey, 4);
@@ -446,6 +636,7 @@ namespace OldScars.EditorTools
                         "- in-game menu open/continue/save\n" +
                         "- Return to Main Menu clears session without implicit save\n" +
                         "- Main Menu Load restores same world and re-enters runtime\n" +
+                        "- logs: WORLD_CREATED=1, LOAD_OK=1, SESSION_READY=2, SAVE_OK=1, WRITE_COMMIT=2\n" +
                         "- temporary persistence root removed");
                     EditorApplication.Exit(0);
                 }
@@ -476,6 +667,11 @@ namespace OldScars.EditorTools
             SessionState.EraseString(PlayGeographyHashKey);
             SessionState.EraseString(PlayWaterHashKey);
             SessionState.EraseString(PlayTopologyHashKey);
+            SessionState.EraseInt(PlayWorldCreatedLogCountKey);
+            SessionState.EraseInt(PlayLoadOkLogCountKey);
+            SessionState.EraseInt(PlaySessionReadyLogCountKey);
+            SessionState.EraseInt(PlaySaveOkLogCountKey);
+            SessionState.EraseInt(PlayWriteCommitLogCountKey);
             if (!string.IsNullOrEmpty(root) && Directory.Exists(root))
                 Directory.Delete(root, true);
         }
@@ -717,6 +913,90 @@ namespace OldScars.EditorTools
         {
             if (!condition)
                 failures.Add(failure);
+        }
+
+        private const string WorldCreatedPrefix = "[Worldgen][WORLD_CREATED]";
+        private const string LoadOkPrefix = "[WorldSession][LOAD_OK]";
+        private const string SessionReadyPrefix = "[WorldRuntime][SESSION_READY]";
+        private const string SaveOkPrefix = "[WorldSession][SAVE_OK]";
+        private const string WriteCommitPrefix = "[Persistence][WRITE_COMMIT]";
+
+        private static void CapturePlayLifecycleLog(string message, string stackTrace, LogType type)
+        {
+            if (!SessionState.GetBool(PlayPendingKey, false) || string.IsNullOrEmpty(message))
+                return;
+            if (message.StartsWith(WorldCreatedPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayWorldCreatedLogCountKey);
+            else if (message.StartsWith(LoadOkPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayLoadOkLogCountKey);
+            else if (message.StartsWith(SessionReadyPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlaySessionReadyLogCountKey);
+            else if (message.StartsWith(SaveOkPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlaySaveOkLogCountKey);
+            else if (message.StartsWith(WriteCommitPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayWriteCommitLogCountKey);
+        }
+
+        private static void IncrementPlayLog(string key) =>
+            SessionState.SetInt(key, SessionState.GetInt(key, 0) + 1);
+
+        private static int PlayLogCount(string key) => SessionState.GetInt(key, 0);
+
+        private static bool ContainsAll(string message, params string[] values)
+        {
+            if (string.IsNullOrEmpty(message))
+                return false;
+            for (int index = 0; index < values.Length; index++)
+                if (!message.Contains(values[index]))
+                    return false;
+            return true;
+        }
+
+        private sealed class LifecycleLogCapture : IDisposable
+        {
+            private readonly List<string> messages = new List<string>();
+
+            public LifecycleLogCapture()
+            {
+                Application.logMessageReceived += Capture;
+            }
+
+            public int Count(string prefix)
+            {
+                int count = 0;
+                for (int index = 0; index < messages.Count; index++)
+                    if (messages[index].StartsWith(prefix, StringComparison.Ordinal)) count++;
+                return count;
+            }
+
+            public string Single(string prefix)
+            {
+                string found = null;
+                for (int index = 0; index < messages.Count; index++)
+                {
+                    if (!messages[index].StartsWith(prefix, StringComparison.Ordinal)) continue;
+                    if (found != null) return null;
+                    found = messages[index];
+                }
+                return found;
+            }
+
+            public string Last(string prefix)
+            {
+                for (int index = messages.Count - 1; index >= 0; index--)
+                    if (messages[index].StartsWith(prefix, StringComparison.Ordinal)) return messages[index];
+                return null;
+            }
+
+            public void Dispose()
+            {
+                Application.logMessageReceived -= Capture;
+            }
+
+            private void Capture(string message, string stackTrace, LogType type)
+            {
+                messages.Add(message);
+            }
         }
     }
 }

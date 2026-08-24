@@ -18,9 +18,9 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone/coding unit cerrado mas reciente | ID TBD — Worldgen Pass Isolation Correction |
+| Milestone/coding unit cerrado mas reciente | ID TBD — Worldgen / World Session Observability Correction |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
-| Ultimo milestone/coding unit funcional cerrado | ID TBD — Worldgen Pass Isolation Correction |
+| Ultimo milestone/coding unit funcional cerrado | ID TBD — Worldgen / World Session Observability Correction |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado de M41.1 | `1c843961ed72b554f485b86105c443669337e8c0` |
@@ -34,17 +34,18 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Estado ID TBD — Macro Elevation / Landforms V1 | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — Worldgen Gameplay Quality + Macro Water V1 | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — Worldgen Pass Isolation Correction | `VALIDATED — SYSTEMIC CORRECTION COMPLETE` |
+| Estado ID TBD — Worldgen / World Session Observability Correction | `VALIDATED — OBSERVABILITY CORRECTION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
 | Estado M40.1 | `DONE — ARMOR / PENETRATION V1 VALIDATED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` |
-| Siguientes | ID TBD — Macro Climate / Moisture V1 (`PLANNED — NOT AUTHORIZED`) |
+| Siguientes | ID TBD — Macro Human Geography / Road Network V1 (`PLANNED — NOT AUTHORIZED`) |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance, World Identity/Topology/Determinism, Macro World Plan V1, Macro Elevation/Landforms V1 y Worldgen Gameplay Quality/Macro Water V1 quedan `VALIDATED — FOUNDATION COMPLETE`; Worldgen Pass Isolation queda `VALIDATED — SYSTEMIC CORRECTION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance, World Identity/Topology/Determinism, Macro World Plan V1, Macro Elevation/Landforms V1 y Worldgen Gameplay Quality/Macro Water V1 quedan `VALIDATED — FOUNDATION COMPLETE`; Worldgen Pass Isolation queda `VALIDATED — SYSTEMIC CORRECTION COMPLETE`; Worldgen/World Session Observability queda `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
 
-No hay milestone de implementación activo. Las foundations open-world de source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1 y Gameplay Quality/Macro Water V1, más la application shell acotada de World Session/New Game/Save/Load, quedaron validadas. `Macro Climate / Moisture V1` y las unidades posteriores no quedan autorizadas por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+No hay milestone de implementación activo. Las foundations open-world de source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1 y Gameplay Quality/Macro Water V1, más la application shell y su observabilidad acotada, quedaron validadas. `Macro Human Geography / Road Network V1`, `Macro Climate / Moisture V1` y las unidades posteriores no quedan autorizadas por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
 
 ## Estados Canonicos
 
@@ -151,6 +152,8 @@ Camino conceptual propuesto:
 | 4 | ID TBD — Macro Elevation / Landforms V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidad 3 | Campo de elevation y landforms regionales globales, committed y consultable sin terrain/materialización local. |
 | 5 | ID TBD — Worldgen Gameplay Quality + Macro Water V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidades 3–4 | Water/coastline truth global committed, quality hard/soft y starter suitable sin terrain, rivers ni runtime simulation. |
 | Correction | ID TBD — Worldgen Pass Isolation Correction | `VALIDATED — SYSTEMIC CORRECTION COMPLETE` | Unidad 5 | Versión global separada de contratos deterministas por pass antes de sumar Climate. |
+| Correction | ID TBD — Worldgen / World Session Observability Correction | `VALIDATED — OBSERVABILITY CORRECTION COMPLETE` | Pass Isolation y application shell | Eventos únicos Create/Load/Runtime Ready/Save con evidence ya existente; sin cambio de generation, schema o runtime simulation. |
+| Candidate | ID TBD — Macro Human Geography / Road Network V1 | `PLANNED — NOT AUTHORIZED` | Unidades 3–5 | Red mundial lógica que consume truth macro sin convertir el MST scaffold en physical adjacency/travel graph ni materializar roads. |
 | 6 | ID TBD — Macro Climate / Moisture V1 | `PLANNED — NOT AUTHORIZED` | Unidades 4–5 | Campos climáticos globales coherentes que consumen geography/Water sin materialización local. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | Unidad 6 y geography/features requeridos | Historia estructurada acotada que produce/explica estado presente real sin event-sourced persistence. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | Unidades 1–7; M37 validado | Persistencia de geography, history, sector blueprints y gameplay world state que reutiliza garantías M37 y deja `current_slice_v1` intacto. |
@@ -162,7 +165,7 @@ Camino conceptual propuesto:
 
 Esta tabla no asigna milestone numbers ni autoriza su implementación. Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y production permanecen en el producto; su orden final se revisará con evidencia del Connected First Playable.
 
-El próximo candidato operativo es `ID TBD — Macro Climate / Moisture V1`, `PLANNED — NOT AUTHORIZED`. La application shell, Macro World Plan V1, Macro Elevation/Landforms V1 y Gameplay Quality/Macro Water V1 no adelantan el estado de World Persistence completo de la unidad 8. El mundo finito/muy grande, sus bounds, relief y Water global committed ya existen; los siguientes passes deben consumir esa truth antes de realization local y no iniciar final rivers, geology, biomes, roads, history, terrain/materialization ni sector transitions sin autorización expresa.
+El próximo candidato operativo es `ID TBD — Macro Human Geography / Road Network V1`, `PLANNED — NOT AUTHORIZED`. La application shell, Macro World Plan V1, Macro Elevation/Landforms V1 y Gameplay Quality/Macro Water V1 no adelantan el estado de World Persistence completo de la unidad 8. El mundo finito/muy grande, sus bounds, relief y Water global committed ya existen; la futura network deberá consumir esa truth sin reutilizar el MST como road/travel authority y sin iniciar settlements, history, terrain/materialization ni sector transitions sin autorización expresa. Macro Climate / Moisture V1 permanece planificado pero no es el siguiente trabajo autorizado.
 
 ## Roadmap Estrategico Desde M36
 
@@ -189,6 +192,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | ID TBD — Macro Elevation / Landforms V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro World Plan V1; application shell | Campo global fixed-point de elevation/landforms committed, consultable y persistido schema 3; sin terrain, hydrology, climate ni materialización. |
 | CERRADO | ID TBD — Worldgen Gameplay Quality + Macro Water V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro Elevation/Landforms V1; application shell | Water/coastline/drainage truth global, analysis quality y starter suitable persistidos schema 4; sin climate, rivers, terrain ni runtime simulation. |
 | CERRADO | ID TBD — Worldgen Pass Isolation Correction | Arquitectura/worldgen | `VALIDATED — SYSTEMIC CORRECTION COMPLETE` | Gameplay Quality + Macro Water V1 | Contratos deterministas separados por pass y pipeline global sólo metadata; Plan/Geography goldens V1 restaurados sin schema nuevo ni regeneración legacy. |
+| CERRADO | ID TBD — Worldgen / World Session Observability Correction | Arquitectura/diagnóstico | `VALIDATED — OBSERVABILITY CORRECTION COMPLETE` | Pass Isolation; World Session shell | Lifecycle Create/Load/Runtime Ready/Save observable con cardinalidad estable, truth legacy explícita y `WRITE_COMMIT` preservado; sin cambio de schema/worldgen. |
 | RESECUENCIAR | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1; futura world/sector foundation aplicable | Clima, forecast, exposicion y proteccion permanecen planificados; ya no son el siguiente trabajo automático. |
 | RESECUENCIAR | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M42.0; M41.0 para animales moviles; world/sector context aplicable | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready` pendiente de reubicación revisada. |
 | RESECUENCIAR | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad; prioridad final posterior al playtest open-world. |

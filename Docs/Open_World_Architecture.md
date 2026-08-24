@@ -529,6 +529,12 @@ Old Scars prioriza geografía comprimida creíble sobre distancias 1:1. El world
 
 Whole-world NavMesh queda rechazado. La realización futura del sector activo y sus partitions internas producirán las surfaces/links locales que consume el `ActorNavigationController` existente; worldgen no crea un navigator paralelo. Terrain deformation queda como seam futuro de mutación local durable: esta arquitectura no autoriza ni implica voxels o una simulación global de suelo.
 
+## Observabilidad En Límites Del Pipeline
+
+Cada pass mantiene su truth/hashing determinista y los lifecycle boundaries publican resúmenes estructurados, no dumps del campo mundial. Create debe hacer observables la identidad del mundo, settings, contratos y evidencia canónica ya producida; Load debe distinguir truth presente de schemas legacy ausente; Runtime Ready debe confirmar la session publicada. La persistencia física conserva su propio commit observable y no se confunde con el éxito semántico de session.
+
+La observabilidad no puede convertirse en simulación, profiler continuo, logging por celda/sector/frame ni autoridad paralela. En desarrollo normal, Unity MCP es la vía preferida para inspeccionar el Editor que ya posee el proyecto cuando está disponible y es seguro; los procesos Unity aislados permanecen para fresh-process, imports limpios y diagnósticos que requieran aislamiento. Ninguna ruta debe cerrar o interferir con un Editor propiedad de Mauro.
+
 ### Future Consumer Matrix
 
 | Consumidor futuro | Truth macro que puede consumir | Sigue pendiente / no inferir ahora |

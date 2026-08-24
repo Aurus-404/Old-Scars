@@ -21,7 +21,10 @@ namespace OldScars.Core.ApplicationShell
         private void Start()
         {
             if (WorldSessionService.HasActiveSession)
+            {
+                WorldSessionObservability.LogRuntimeReady(WorldSessionService.ActiveSession);
                 return;
+            }
 
             Debug.LogError("[WorldApplication] World Runtime opened without an active WorldSession; returning to Main Menu.");
             WorldSessionService.Close();
