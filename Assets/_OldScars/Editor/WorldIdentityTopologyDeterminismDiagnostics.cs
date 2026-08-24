@@ -8,9 +8,9 @@ namespace OldScars.Editor
     public static class WorldIdentityTopologyDeterminismDiagnostics
     {
         private const string ExpectedDomainKey =
-            "9e328386ee1245517f38557b3de565fb5afe7944fbd3e5dbca57659bd9116c0c";
+            "b437abdb6f2ee8ea4edb571e5e80c12b186debdee4f51f020e798b9381d0dec6";
         private const string ExpectedTopologyHash =
-            "faf467c0c3f29921a67a39e7e938e9d1d6bd319b9e7a085edebfbb938d507cd9";
+            "3be0326555e55dfce4ea12dddf6f66c61452f4aafffb3c1539dec21c81ef1589";
 
         public static void Run()
         {
@@ -37,7 +37,7 @@ namespace OldScars.Editor
             Debug.Log(
                 "World Identity / Topology / Determinism Foundation: PASS\n" +
                 "- WorldId and WorldSeed domains round-trip independently\n" +
-                "- SHA-256 scope/pass derivation is seed/version stable and WorldId-free\n" +
+                "- SHA-256 derivation is seed/pass-contract stable, pipeline-version independent and WorldId-free\n" +
                 "- SectorId and explicit multi-edge topology validated\n" +
                 "- duplicate/missing/self/disconnected failures are actionable\n" +
                 "- canonical topology is insertion and endpoint-order independent\n" +
@@ -89,22 +89,32 @@ namespace OldScars.Editor
             WorldId firstWorld = WorldId.Parse("world_11111111111111111111111111111111");
             WorldId secondWorld = WorldId.Parse("world_22222222222222222222222222222222");
 
-            DeterministicDomainKey first = WorldDeterminism.DeriveDomainKey(context, "world", "topology");
-            DeterministicDomainKey repeated = WorldDeterminism.DeriveDomainKey(context, "world", "topology");
+            const string foundationContract = "worldgen_1_0_0";
+            DeterministicDomainKey first = WorldDeterminism.DerivePassDomainKey(
+                context.WorldSeed, foundationContract, "world", "topology");
+            DeterministicDomainKey repeated = WorldDeterminism.DerivePassDomainKey(
+                context.WorldSeed, foundationContract, "world", "topology");
             Check(first == repeated && first.IsValid,
-                "Same seed/version/scope/pass must derive the same valid domain key.", failures);
+                "Same seed/pass-contract/scope/pass must derive the same valid domain key.", failures);
 
             var changedSeedContext = new WorldGenerationContext(new WorldSeed(424242424243L), version);
-            Check(first != WorldDeterminism.DeriveDomainKey(changedSeedContext, "world", "topology"),
+            Check(first != WorldDeterminism.DerivePassDomainKey(
+                      changedSeedContext.WorldSeed, foundationContract, "world", "topology"),
                 "Changing WorldSeed must change the domain key.", failures);
             var changedVersionContext = new WorldGenerationContext(
                 context.WorldSeed,
                 GeneratorVersion.Parse("worldgen_1.0.1"));
-            Check(first != WorldDeterminism.DeriveDomainKey(changedVersionContext, "world", "topology"),
-                "Changing GeneratorVersion must change the domain key.", failures);
-            Check(first != WorldDeterminism.DeriveDomainKey(context, "world", "roads"),
+            Check(first == WorldDeterminism.DerivePassDomainKey(
+                      changedVersionContext.WorldSeed, foundationContract, "world", "topology"),
+                "Changing only overall GeneratorVersion must not change a pass domain key.", failures);
+            Check(first != WorldDeterminism.DerivePassDomainKey(
+                      context.WorldSeed, "worldgen_1_0_1", "world", "topology"),
+                "Changing the owning pass generation contract must change its domain key.", failures);
+            Check(first != WorldDeterminism.DerivePassDomainKey(
+                      context.WorldSeed, foundationContract, "world", "roads"),
                 "Different pass keys must isolate deterministic domains.", failures);
-            Check(first != WorldDeterminism.DeriveDomainKey(context, "sector_alpha", "topology"),
+            Check(first != WorldDeterminism.DerivePassDomainKey(
+                      context.WorldSeed, foundationContract, "sector_alpha", "topology"),
                 "Different scope keys must isolate deterministic domains.", failures);
 
             // WorldIds are intentionally not accepted by context or derivation.
@@ -210,7 +220,8 @@ namespace OldScars.Editor
         {
             if (!ignoredIdentity.IsValid)
                 throw new ArgumentException("Probe requires a valid WorldId.", nameof(ignoredIdentity));
-            return WorldDeterminism.DeriveDomainKey(context, "world", "topology");
+            return WorldDeterminism.DerivePassDomainKey(
+                context.WorldSeed, "worldgen_1_0_0", "world", "topology");
         }
 
         private static WorldTopology BuildIdentityIndependentTopology(
@@ -232,7 +243,8 @@ namespace OldScars.Editor
         private static SectorId Sector(WorldGenerationContext context, string passKey)
         {
             return SectorId.FromDeterministicDomain(
-                WorldDeterminism.DeriveDomainKey(context, "topology", passKey));
+                WorldDeterminism.DerivePassDomainKey(
+                    context.WorldSeed, "worldgen_1_0_0", "topology", passKey));
         }
 
         private static bool HasConnection(WorldTopology topology, string key)

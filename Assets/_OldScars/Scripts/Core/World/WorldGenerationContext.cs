@@ -3,8 +3,10 @@ using System;
 namespace OldScars.Core.World
 {
     /// <summary>
-    /// Canonical generator implementation version. It versions generation
-    /// behavior; it does not negotiate compatibility with existing worlds.
+    /// Canonical overall world-generation pipeline version recorded as creation
+    /// metadata. Individual procedural passes own separate stable deterministic
+    /// generation contracts; this value does not seed their domains and does not
+    /// negotiate compatibility with existing worlds.
     /// </summary>
     public readonly struct GeneratorVersion : IEquatable<GeneratorVersion>
     {

@@ -84,25 +84,26 @@ namespace OldScars.Core.World
         private const string DomainContract = "old_scars_world_domain_v1";
 
         /// <summary>
-        /// Derives a domain key solely from the generation context and explicit
-        /// stable scope/pass keys. WorldId and content provenance are absent by
-        /// contract; execution order and global random state are irrelevant.
+        /// Derives a domain key solely from the world seed, the owning pass's
+        /// stable generation contract, and explicit scope/pass keys. The overall
+        /// pipeline GeneratorVersion, WorldId and content provenance are absent
+        /// by contract; execution order and global random state are irrelevant.
         /// </summary>
-        public static DeterministicDomainKey DeriveDomainKey(
-            WorldGenerationContext context,
+        public static DeterministicDomainKey DerivePassDomainKey(
+            WorldSeed worldSeed,
+            string passGenerationContract,
             string scopeStableKey,
             string passKey)
         {
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
+            WorldStableKey.Require(passGenerationContract, nameof(passGenerationContract));
             WorldStableKey.Require(scopeStableKey, nameof(scopeStableKey));
             WorldStableKey.Require(passKey, nameof(passKey));
 
             string hash = WorldCanonicalEncoding.ComputeSha256(stream =>
             {
                 WorldCanonicalEncoding.WriteString(stream, DomainContract);
-                WorldCanonicalEncoding.WriteInt64(stream, context.WorldSeed.Value);
-                WorldCanonicalEncoding.WriteString(stream, context.GeneratorVersion.Canonical);
+                WorldCanonicalEncoding.WriteInt64(stream, worldSeed.Value);
+                WorldCanonicalEncoding.WriteString(stream, passGenerationContract);
                 WorldCanonicalEncoding.WriteString(stream, scopeStableKey);
                 WorldCanonicalEncoding.WriteString(stream, passKey);
             });

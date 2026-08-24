@@ -3178,3 +3178,28 @@ Validación autónoma en Unity `6000.4.6f1`, worktree, persistence roots y proce
 La revisión scoped confirmó: sin authority paralela, topology física falsa, `WorldId`/path/provenance leakage, setting-domain leakage, runtime simulation, SHA inner-loop, fake workers, whole-world NavMesh, silent legacy upgrade ni scope creep a climate/rivers/terrain. Detectó y corrigió un refuerzo semantic-preflight: el ocean mask ahora debe coincidir exactamente con sea level + finite-boundary flood, además de sus validaciones internas. `codex review --uncommitted` volvió a no poder iniciarse por `codex.exe: Acceso denegado`; se completó revisión manual del diff. Los warnings de packages/licensing y failures de fixtures negativos permanecieron diferenciados de errores del producto. El drift automático `ProjectSettings.runInBackground` de batch Play Mode fue revertido y no forma parte del cambio.
 
 No se implementaron climate/moisture, final rivers, terrain/materialization, sector transitions, roads/rail, vehicles/boats, buildings, history, whole-world NavMesh, threading ni continuous world simulation. El siguiente candidato queda `ID TBD — Macro Climate / Moisture V1`, `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — Worldgen Pass Isolation Correction
+
+Fecha: 2026-08-24.
+
+Estado: `VALIDATED — SYSTEMIC CORRECTION COMPLETE`.
+
+Se corrigió la dependencia sistémica por la que `WorldDeterminism.DeriveDomainKey` incorporaba el `GeneratorVersion` global y cada milestone downstream re-seedeaba Plan/Geography aunque sus contratos no hubieran cambiado. La API anterior fue reemplazada por `DerivePassDomainKey(WorldSeed, passGenerationContract, scope, pass)`, que no acepta `WorldGenerationContext`. `GeneratorVersion` queda como metadata global de creación; New Game usa `world_pipeline_v2`. `MacroWorldPlanGenerator` posee `macro_plan_v1`, `MacroGeographyGenerator` posee `macro_geography_v1` y Water conserva `macro_water_v1` sobre sus inputs committed.
+
+La separación recuperó naturalmente —sin hardcodes de output— los goldens originales: MacroWorldPlan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a` y MacroGeography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`. Water cambió legítimamente al volver a consumir esa Geography original y su nuevo golden es `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`. No se agregó schema `5`: schemas `1`/`2`/`3`/`4` rehidratan truth committed y nunca regeneran ni se actualizan silenciosamente.
+
+Validación autónoma en Unity `6000.4.6f1`, worktree y persistence roots temporales aislados:
+
+- Runtime/Editor compile: `PASS` con sólo los seis warnings preexistentes de `BuildingVisibilityManager`/`ItemStorageDebugPanel`;
+- `Worldgen Pass Isolation Correction Diagnostics`: `PASS`; versiones globales histórica/actual/Climate sintética produjeron exactamente el mismo Plan/Geography/Water, un contrato Geography sintético conservó Plan y cambió Geography/Water, Land Coverage continuó Water-only, WorldId independence permaneció y el fuzz `2 seeds × 4 sizes` pasó;
+- `Macro World Plan V1`, `Macro Elevation/Landforms V1`, `Worldgen Gameplay Quality + Macro Water V1` y `World Identity/Topology/Determinism`: `PASS` con los goldens corregidos;
+- fresh Process A/B: `PASS`; el segundo proceso descubrió y reconstruyó desde schema `4` el mismo WorldId, seed, size, Plan/Geography/Water/topology hashes y active sector, y eliminó su root temporal;
+- M37.0 Persistence Core, Content Source Identity/Provenance y Global Content ID Namespace: `PASS`;
+- los diagnostics de Plan/Geography/Water cubrieron round-trip schema `4` y paths legacy schemas `1`/`2`/`3` sin fabricar truth posterior; `current_slice_v1` no cambió.
+
+Limitación de evidencia: el primer import limpio de este worktree quedó bloqueado en el prompt Windows firewall antes de lanzar Asset Import Workers. Un `Library` copiado del worktree Water permitió compile y diagnostics lógicos, pero Unity no resolvió los MonoBehaviours de escenas al abrirlas desde ese cache trasladado. Por eso el aggregate edit-mode de Application Shell terminó sólo con los checks de scene wiring `I/J` no observables, y Play Mode/M37.1 Current Slice/M41.0 no se declararon reejecutados. Los YAML/GUIDs de Main Menu/World Runtime permanecieron intactos, fresh Process A/B y la persistencia no-escena pasaron, y el diff no toca scenes, prefabs, navigation, gameplay ni `current_slice_v1`; no se fingió evidencia de esos gates.
+
+La revisión scoped confirmó que no queda ningún consumidor de `DeriveDomainKey`, la versión global no entra en SectorId/placements/topology/Geography/Water/starter, Water cambia sólo por dependencia real de Geography, no hay framework determinista paralelo, SHA inner-loop, schema nuevo, regeneración legacy, runtime simulation, GameObjects ni scope creep a Climate. Se revirtió el drift automático `ProjectSettings.runInBackground`; `DataDriven_JSON_Rules.md` no cambió porque no existe contrato JSON nuevo.
+
+No se implementaron Climate/Moisture, rivers, terrain/materialization, sectors/transitions, GameObjects ni runtime world-scale processing. El siguiente candidato continúa `ID TBD — Macro Climate / Moisture V1`, `PLANNED — NOT AUTHORIZED`.

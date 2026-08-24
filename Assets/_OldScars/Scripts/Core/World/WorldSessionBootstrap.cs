@@ -10,7 +10,7 @@ namespace OldScars.Core.World
     /// </summary>
     public static class WorldSessionBootstrap
     {
-        public const string CurrentGeneratorVersion = "macro_water_quality_v1";
+        public const string CurrentGeneratorVersion = "world_pipeline_v2";
         public const string LegacyMacroGeographyGeneratorVersion = "macro_geography_v1";
         public const string LegacyGeneratorVersion = "bootstrap_v1";
         public const string LegacyMacroPlanGeneratorVersion = "macro_plan_v1";

@@ -305,7 +305,7 @@ Este documento no elige todavía la estrategia productiva. Está prohibido reint
 
 Principio congelado:
 
-`same seed + same generator version + same generation-relevant settings + compatible generation content = same initial logical world plan`
+`same seed + same pass generation contracts + same generation-relevant settings + compatible generation content = same initial logical result`
 
 Requisitos:
 
@@ -318,7 +318,9 @@ Requisitos:
 - cambios decorativos no desplazan infraestructura mayor;
 - outputs lógicos no dependen de frame timing, GameObject enumeration ni orden incidental de archivos.
 
-La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. `MacroWorldPlanGenerator` consume esas domain keys para placements. `MacroGeographyGenerator` deriva una vez domains separados de regiones, upheaval/base, detail, ridges y roughness; luego usa sampling fixed-point/mixer estable en el inner loop, sin `System.Random`, Unity Perlin ni SHA por celda. `MacroWaterGenerator` es determinista por construcción sobre geography + settings del pass: su sea-level search, boundary flood, priority conditioning y D8 usan órdenes/tie-breaks canónicos y tampoco dependen de sectores, topology edges ni estado mutable.
+La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DerivePassDomainKey`. La versión global del pipeline es metadata de creación/compatibilidad futura; cada pass procedural posee un contrato estable propio. La derivación SHA-256 canónica usa seed/contrato-del-pass/scope/pass y excluye la versión global, `WorldId`, provenance, global random, runtime hash y orden de ejecución. `MacroWorldPlanGenerator` posee `macro_plan_v1`; `MacroGeographyGenerator`, `macro_geography_v1`; Water conserva `macro_water_v1` y es determinista por construcción sobre geography + settings del pass. Downstream evolution no puede perturbar upstream generation sin una dependencia explícita. Geography continúa derivando una vez domains separados de regiones, upheaval/base, detail, ridges y roughness y luego usa sampling fixed-point/mixer estable en el inner loop, sin `System.Random`, Unity Perlin ni SHA por celda.
+
+Regla permanente: **overall pipeline version is compatibility/creation metadata; each procedural pass owns a stable generation contract. Downstream evolution must not perturb unrelated upstream generation.** Un pass downstream sí puede cambiar cuando cambia una entrada upstream real que consume; por ejemplo, Water puede cambiar si cambia MacroGeography.
 
 Los golden hashes cubren domain derivation, topology, Macro World Plan, Macro Geography y una única evidencia canónica de Macro Water. Quality analysis no agrega otro fingerprint. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
 

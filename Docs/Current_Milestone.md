@@ -36,7 +36,7 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-`WorldId`, `WorldSeed`, `GeneratorVersion`, `SectorId`, derivación SHA-256 por scope/pass y `WorldTopology` conectado/multiconexión existen como datos lógicos puros. `WorldId` no entra en generación; provenance tampoco se convierte en compatibilidad ni input automático.
+`WorldId`, `WorldSeed`, `GeneratorVersion`, `SectorId`, derivación SHA-256 por contrato/scope/pass y `WorldTopology` conectado/multiconexión existen como datos lógicos puros. `GeneratorVersion` es metadata global de creación; Plan y Geography poseen contratos deterministas propios. `WorldId` no entra en generación; provenance tampoco se convierte en compatibilidad ni input automático.
 
 ### ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell
 
@@ -70,6 +70,14 @@ Estado final:
 
 New Game genera `MacroWaterPlan` global después de MacroGeography: Land Coverage `Low`/`Medium`/`High` —default `High`—, sea level, ocean mask/bodies, coastline, conditioned drainage y basin candidates. Un quality analysis fixed-point distingue hard failures de soft findings y selecciona el starter desde anchors terrestres adecuados; no declara Walkable/NavMesh/Buildable. `world_session_v1` schema `4` persiste Water committed y schemas `1`/`2`/`3` conservan su truth legacy sin fabricación. El MST del plan sigue siendo scaffold lógico, no physical adjacency/road/travel graph.
 
+### ID TBD — Worldgen Pass Isolation Correction
+
+Estado final:
+
+`VALIDATED — SYSTEMIC CORRECTION COMPLETE`
+
+`WorldDeterminism.DerivePassDomainKey` separa `WorldSeed + pass generation contract + scope + pass` de la versión global del pipeline. Plan conserva `macro_plan_v1`, Geography `macro_geography_v1`, Water `macro_water_v1`, y New Game registra `world_pipeline_v2` sólo como metadata global. Cambiar una versión downstream ya no re-seedea Plan/Geography/Water sin una dependencia real; los saves schemas `1`–`4` continúan rehidratando truth committed sin regeneración ni upgrade silencioso.
+
 ## Evidencia De Cierre
 
 - Runtime/Editor compile y `M41.1 Human Encounter AI Diagnostics`: `PASS`.
@@ -87,7 +95,8 @@ New Game genera `MacroWaterPlan` global después de MacroGeography: Land Coverag
 - Preview 2D golden inspeccionada: grandes lowlands, macizos/ridges altos y regiones contiguas de los cuatro landforms, con sector overlay sin seams. Timings diagnósticos plan+geography: Small `14 ms`, Medium `49 ms`, Large `199 ms`, Huge `910 ms`; samples raw `7.2–38.3 KB`.
 - Fresh process A/B schema `3`: `PASS`; reconstruyó el mismo WorldId, seed, size, MacroWorldPlan hash, MacroGeography hash, topology y active sector. World Session edit-mode, Play Mode Main Menu→Runtime→Save/Return→Load, M37.0, M37.1 Current Slice, World Foundation y Content Provenance permanecen `PASS`.
 - Baseline previo a thresholds: `192` mundos (`48 seeds × 4 sizes`) confirmó regiones low-relief amplias y ruggedness conservada; no se retuneó MacroGeography. Stress ampliado: `384` variantes (`32 seeds × 4 sizes × 3 coverages`), `0` hard rejections y `0` generation failures después de un ajuste conservador del piso de corredor/anchor neighborhood.
-- `Worldgen Gameplay Quality + Macro Water V1 Diagnostics`: `PASS` para determinismo/WorldId independence, isolation de Land Coverage, plan/geography hashes invariantes, ocean/coastline/drainage/basins, quality/starter, routine fuzz, schema `4` round-trip, schemas `1`/`2`/`3` legacy y preview de seis paneles. Golden Water hash: `c4563b2469d9315fb6c966b3b5bf7297d1ebca2de48e253df4c01abce0c8b727`.
+- `Worldgen Gameplay Quality + Macro Water V1 Diagnostics`: `PASS` para determinismo/WorldId independence, isolation de Land Coverage, plan/geography hashes invariantes, ocean/coastline/drainage/basins, quality/starter, routine fuzz, schema `4` round-trip, schemas `1`/`2`/`3` legacy y preview de seis paneles. Después de restaurar la Geography V1 original, el golden Water legítimo es `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`.
+- `Worldgen Pass Isolation Correction Diagnostics`: `PASS` en procesos frescos; cambiar sólo la versión global histórica/actual/futura conserva Plan/Geography/Water, cambiar el contrato Geography conserva Plan y cambia Geography/Water, y el fuzz `2 seeds × 4 sizes` permanece aislado. Goldens restaurados: Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`.
 - Timings diagnósticos finales plan+geography+Water+quality aproximados: Small `16 ms`, Medium `53 ms`, Large `209 ms`, Huge `907 ms`; payload schema `4` serializado `45.0/83.6/134.1/250.6 KB` y raw Water estimado `16.9/29.8/46.3/90.0 KB`. No son budgets de producción. La preview inspeccionada mostró plains/hills/highlands/mountains, land/ocean/coastline significativa, suitability/corridors y drainage/basins sin seams sectoriales.
 - Schema `4` edit/Play flow y fresh Process A/B: `PASS`; el segundo proceso reconstruyó mismo WorldId, seed `-3141592653589793`, size `Huge`, coverage `High`, Water hash, topology y active sector y limpió su root temporal. M37.0, M37.1 snapshot/round-trip, Macro World/Geography, World Foundation, Content Provenance/Namespaces y M41 Navigation/Perception permanecen `PASS`.
 

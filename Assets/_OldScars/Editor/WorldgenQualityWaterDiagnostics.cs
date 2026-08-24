@@ -16,7 +16,7 @@ namespace OldScars.EditorTools
     {
         private const long GoldenSeed = 8675309123456789L;
         private const string GoldenWaterHash =
-            "c4563b2469d9315fb6c966b3b5bf7297d1ebca2de48e253df4c01abce0c8b727";
+            "ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0";
         private const int RoutineSeedsPerPreset = 4;
 
         public static void Run()

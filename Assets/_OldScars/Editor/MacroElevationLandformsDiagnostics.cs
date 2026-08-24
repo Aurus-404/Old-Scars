@@ -15,7 +15,7 @@ namespace OldScars.EditorTools
     {
         private const long GoldenSeed = 8675309123456789L;
         private const string GoldenGeographyHash =
-            "7ea378c2fb710ad3c6ad8ebe98f71663cdfd4b4903c5213dc078afc6f229d343";
+            "c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e";
         private const int FuzzSeedsPerPreset = 8;
 
         public static void Run()

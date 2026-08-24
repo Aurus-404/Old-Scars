@@ -255,8 +255,11 @@ namespace OldScars.EditorTools
 
             JObject invalidActiveSector = (JObject)valid.DeepClone();
             SectorId otherSector = SectorId.FromDeterministicDomain(
-                WorldDeterminism.DeriveDomainKey(
-                    create.Session.GenerationContext, "topology", "other_sector"));
+                WorldDeterminism.DerivePassDomainKey(
+                    create.Session.GenerationContext.WorldSeed,
+                    MacroWorldPlanGenerator.DeterministicGenerationContract,
+                    "topology",
+                    "other_sector"));
             invalidActiveSector["activeSectorId"] = otherSector.Canonical;
             Check(!WorldSessionPersistenceService.FromPayload(invalidActiveSector).Success,
                 "G. active SectorId absent from topology must fail semantic preflight.", failures);

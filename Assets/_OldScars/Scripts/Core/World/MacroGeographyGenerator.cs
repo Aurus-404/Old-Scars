@@ -11,9 +11,47 @@ namespace OldScars.Core.World
     /// </summary>
     public static class MacroGeographyGenerator
     {
+        public const string DeterministicGenerationContract = "macro_geography_v1";
+
         public static bool TryGenerate(
             WorldGenerationContext context,
             MacroWorldPlan macroWorldPlan,
+            out MacroGeographyPlan geography,
+            out string error)
+        {
+            return TryGenerateWithPassContract(
+                context,
+                macroWorldPlan,
+                DeterministicGenerationContract,
+                out geography,
+                out error);
+        }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor-only contract probe used to prove pass-version isolation. New
+        /// Game always uses <see cref="DeterministicGenerationContract"/>.
+        /// </summary>
+        public static bool TryGenerateForPassContractDiagnostics(
+            WorldGenerationContext context,
+            MacroWorldPlan macroWorldPlan,
+            string passGenerationContract,
+            out MacroGeographyPlan geography,
+            out string error)
+        {
+            return TryGenerateWithPassContract(
+                context,
+                macroWorldPlan,
+                passGenerationContract,
+                out geography,
+                out error);
+        }
+#endif
+
+        private static bool TryGenerateWithPassContract(
+            WorldGenerationContext context,
+            MacroWorldPlan macroWorldPlan,
+            string passGenerationContract,
             out MacroGeographyPlan geography,
             out string error)
         {
@@ -39,7 +77,8 @@ namespace OldScars.Core.World
                 try
                 {
                     GenerateSamples(
-                        context,
+                        context.WorldSeed,
+                        passGenerationContract,
                         macroWorldPlan.GenerationSettings,
                         settings,
                         out ushort[] elevations,
@@ -72,7 +111,8 @@ namespace OldScars.Core.World
         }
 
         private static void GenerateSamples(
-            WorldGenerationContext context,
+            WorldSeed worldSeed,
+            string passGenerationContract,
             WorldGenerationSettings worldSettings,
             MacroGeographyGenerationSettings settings,
             out ushort[] elevations,
@@ -86,12 +126,18 @@ namespace OldScars.Core.World
 
             string scope = "macro_" + WorldGenerationSettings.ToCanonical(worldSettings.WorldSizePreset) +
                            "_" + settings.DeterministicKey;
-            ulong landformSeed = DeriveNumericSeed(context, scope, "landform_regions");
-            ulong upheavalSeed = DeriveNumericSeed(context, scope, "regional_upheaval");
-            ulong baseElevationSeed = DeriveNumericSeed(context, scope, "base_elevation");
-            ulong detailSeed = DeriveNumericSeed(context, scope, "relief_detail");
-            ulong ridgeSeed = DeriveNumericSeed(context, scope, "mountain_ridges");
-            ulong roughnessSeed = DeriveNumericSeed(context, scope, "surface_roughness");
+            ulong landformSeed = DeriveNumericSeed(
+                worldSeed, passGenerationContract, scope, "landform_regions");
+            ulong upheavalSeed = DeriveNumericSeed(
+                worldSeed, passGenerationContract, scope, "regional_upheaval");
+            ulong baseElevationSeed = DeriveNumericSeed(
+                worldSeed, passGenerationContract, scope, "base_elevation");
+            ulong detailSeed = DeriveNumericSeed(
+                worldSeed, passGenerationContract, scope, "relief_detail");
+            ulong ridgeSeed = DeriveNumericSeed(
+                worldSeed, passGenerationContract, scope, "mountain_ridges");
+            ulong roughnessSeed = DeriveNumericSeed(
+                worldSeed, passGenerationContract, scope, "surface_roughness");
 
             for (int y = 0; y < settings.SampleRows; y++)
             {
@@ -188,11 +234,13 @@ namespace OldScars.Core.World
         }
 
         private static ulong DeriveNumericSeed(
-            WorldGenerationContext context,
+            WorldSeed worldSeed,
+            string passGenerationContract,
             string scope,
             string pass)
         {
-            DeterministicDomainKey domain = WorldDeterminism.DeriveDomainKey(context, scope, pass);
+            DeterministicDomainKey domain = WorldDeterminism.DerivePassDomainKey(
+                worldSeed, passGenerationContract, scope, pass);
             ulong value = 0;
             for (int index = 0; index < 16; index++)
             {

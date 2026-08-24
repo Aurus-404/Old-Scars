@@ -11,6 +11,7 @@ namespace OldScars.Core.World
     /// </summary>
     public static class MacroWorldPlanGenerator
     {
+        public const string DeterministicGenerationContract = "macro_plan_v1";
         private const int CandidateCountPerSector = 24;
 
         public static bool TryGenerate(
@@ -41,7 +42,8 @@ namespace OldScars.Core.World
                     minY,
                     minX + settings.ResolvedWorldWidth,
                     minY + settings.ResolvedWorldHeight);
-                List<MacroSectorPlacement> placements = GeneratePlacements(context, settings, bounds);
+                List<MacroSectorPlacement> placements = GeneratePlacements(
+                    context.WorldSeed, settings, bounds);
                 if (!TryBuildSpatialTopology(placements, out WorldTopology topology, out error))
                     return false;
                 if (!MacroWorldPlan.TryCreate(settings, bounds, placements, topology, out plan, out error))
@@ -58,7 +60,7 @@ namespace OldScars.Core.World
         }
 
         private static List<MacroSectorPlacement> GeneratePlacements(
-            WorldGenerationContext context,
+            WorldSeed worldSeed,
             WorldGenerationSettings settings,
             FiniteMacroWorldBounds bounds)
         {
@@ -70,15 +72,17 @@ namespace OldScars.Core.World
                 string scope = settings.DeterministicKey + "_sector_" +
                                sectorIndex.ToString("D6", CultureInfo.InvariantCulture);
                 SectorId sectorId = SectorId.FromDeterministicDomain(
-                    WorldDeterminism.DeriveDomainKey(context, scope, "identity"));
+                    WorldDeterminism.DerivePassDomainKey(
+                        worldSeed, DeterministicGenerationContract, scope, "identity"));
 
                 bool found = false;
                 MacroPoint2D selected = default;
                 long selectedScore = long.MinValue;
                 for (int candidateIndex = 0; candidateIndex < CandidateCountPerSector; candidateIndex++)
                 {
-                    DeterministicDomainKey domain = WorldDeterminism.DeriveDomainKey(
-                        context,
+                    DeterministicDomainKey domain = WorldDeterminism.DerivePassDomainKey(
+                        worldSeed,
+                        DeterministicGenerationContract,
                         scope,
                         "placement_" + candidateIndex.ToString("D2", CultureInfo.InvariantCulture));
                     MacroPoint2D candidate = SamplePoint(domain, bounds, settings.ResolvedMinimumSectorSpacing / 2);

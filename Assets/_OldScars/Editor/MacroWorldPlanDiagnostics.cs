@@ -15,7 +15,7 @@ namespace OldScars.EditorTools
     {
         private const long GoldenSeed = 8675309123456789L;
         private const string GoldenPlanHash =
-            "f08bbe358d8dc2759ac2c92fee2bbf1dc5c9b56088918503424c453a5699c26b";
+            "3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a";
         private const int FuzzSeedsPerPreset = 12;
 
         public static void Run()
@@ -221,7 +221,11 @@ namespace OldScars.EditorTools
             var legacyContext = new WorldGenerationContext(
                 new WorldSeed(77), GeneratorVersion.Parse(WorldSessionBootstrap.LegacyGeneratorVersion));
             SectorId legacySector = SectorId.FromDeterministicDomain(
-                WorldDeterminism.DeriveDomainKey(legacyContext, "topology", "starter_sector"));
+                WorldDeterminism.DerivePassDomainKey(
+                    legacyContext.WorldSeed,
+                    WorldSessionBootstrap.LegacyGeneratorVersion,
+                    "topology",
+                    "starter_sector"));
             Check(WorldTopology.TryCreate(
                       new[] { legacySector }, Array.Empty<SectorConnection>(),
                       out WorldTopology legacyTopology, out WorldTopologyValidationResult legacyValidation),
