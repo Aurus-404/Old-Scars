@@ -15,7 +15,7 @@ namespace OldScars.EditorTools
     {
         private const long GoldenSeed = 8675309123456789L;
         private const string GoldenGeographyHash =
-            "c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e";
+            "7ea378c2fb710ad3c6ad8ebe98f71663cdfd4b4903c5213dc078afc6f229d343";
         private const int FuzzSeedsPerPreset = 8;
 
         public static void Run()
@@ -62,7 +62,7 @@ namespace OldScars.EditorTools
                 "- insertion/order independence and no sector/topology terrain authority\n" +
                 "- golden geography hash: " + GoldenGeographyHash + "\n" +
                 "- fuzz: " + FuzzSeedsPerPreset + " seeds x 4 size presets\n" +
-                "- schema-3 committed sample round-trip; schemas 1/2 remain explicit legacy\n" +
+                "- schema-4 session preserves committed geography; schemas 1/2 remain explicit legacy\n" +
                 "- diagnostic elevation/landform PNG export succeeded and temporary file was removed\n" +
                 "- approximate plan + geography timings: " + string.Join("; ", performance));
         }
@@ -257,7 +257,7 @@ namespace OldScars.EditorTools
             JToken currentPayload = WorldSessionPersistenceService.ToPayload(expected);
             Check((int)currentPayload["schemaVersion"] == WorldSessionPersistenceService.CurrentSchemaVersion &&
                   currentPayload["macroGeography"] != null,
-                "O. Current World Session must use schema 3 with committed macro geography.", failures);
+                "O. Current World Session must use schema 4 with committed macro geography.", failures);
             WorldSessionService.Close();
             WorldSessionPersistenceResult read =
                 WorldSessionPersistenceService.Read(expected.WorldId.Canonical, store);
@@ -277,6 +277,7 @@ namespace OldScars.EditorTools
             JObject schemaTwo = (JObject)currentPayload.DeepClone();
             schemaTwo["schemaVersion"] = WorldSessionPersistenceService.MacroPlanSchemaVersion;
             schemaTwo.Remove("macroGeography");
+            schemaTwo.Remove("macroWater");
             WorldSessionPersistenceResult legacyTwo =
                 WorldSessionPersistenceService.FromPayload(schemaTwo);
             Check(legacyTwo.Success && legacyTwo.Session.IsLegacySchemaV2 &&

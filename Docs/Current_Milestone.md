@@ -20,7 +20,7 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1 y Macro Elevation/Landforms V1, más la shell acotada de World Session/New Game/Save/Load, están implementadas y validadas; hydrology/coastlines, climate/geology/biomes, otros geography/features, gameplay world persistence, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1 y Gameplay Quality/Macro Water V1, más la shell acotada de World Session/New Game/Save/Load, están implementadas y validadas; climate/moisture, rivers, geology/biomes, otros features, gameplay world persistence, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
 
 ### ID TBD — Minimum Content Source Identity & Provenance Foundation
 
@@ -60,7 +60,15 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` persiste samples/settings/hash committed; schemas `1`/`2` siguen legacy sin geografía fabricada. No existen todavía terrain, hydrology/coastlines, climate, geology, vegetation/biomes ni materialización.
+New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` conserva ese formato legacy sin Water fabricada. No existen todavía terrain, climate, geology, vegetation/biomes ni materialización.
+
+### ID TBD — Worldgen Gameplay Quality + Macro Water V1
+
+Estado final:
+
+`VALIDATED — FOUNDATION COMPLETE`
+
+New Game genera `MacroWaterPlan` global después de MacroGeography: Land Coverage `Low`/`Medium`/`High` —default `High`—, sea level, ocean mask/bodies, coastline, conditioned drainage y basin candidates. Un quality analysis fixed-point distingue hard failures de soft findings y selecciona el starter desde anchors terrestres adecuados; no declara Walkable/NavMesh/Buildable. `world_session_v1` schema `4` persiste Water committed y schemas `1`/`2`/`3` conservan su truth legacy sin fabricación. El MST del plan sigue siendo scaffold lógico, no physical adjacency/road/travel graph.
 
 ## Evidencia De Cierre
 
@@ -73,11 +81,15 @@ New Game genera después del plan un `MacroGeographyPlan` global fixed-point, co
 - Runtime/Editor compile y `World Identity / Topology / Determinism Foundation`: `PASS` en dos procesos aislados con domain/topology golden hashes estables; M36.1 Foundation Identity y M37.0 Persistence Core permanecen `PASS`.
 - Runtime/Editor compile, `World Session / Persistence V1 Application Shell Diagnostics`, flujo Play Mode real Main Menu→Runtime→Menu→Main Menu→Load y scene wiring: `PASS`.
 - Fresh process A/B creó y reabrió desde disco el mismo `WorldId`, seed, topology hash y active sector; `M37.0`, M37.1 semantic preflight, World Identity/Topology/Determinism y Content Source Identity/Provenance permanecen `PASS`.
-- Runtime/Editor compile y `Macro World Plan V1 Diagnostics`: `PASS`; cubre same-input/WorldId independence, cuatro escalas, bounds/spacing/uniqueness/connectivity, insertion order, golden plan, 12 seeds por preset, schema 3 round-trip, schemas 1/2 legacy y timing de los cuatro presets.
+- Runtime/Editor compile y `Macro World Plan V1 Diagnostics`: `PASS`; cubre same-input/WorldId independence, cuatro escalas, bounds/spacing/uniqueness/connectivity, insertion order, golden plan, 12 seeds por preset, schema 4 round-trip, schemas 1/2 legacy y timing de los cuatro presets.
 - Fresh process A/B reconstruyó exactamente `WorldId`, seed, size `Huge`, MacroWorldPlan hash, topology hash y active sector desde disco; el flujo Play Mode Main Menu con size seleccionado, Save/Return/Load y las regresiones M37.0/M37.1, World Foundation y Content Provenance permanecen `PASS`.
 - Runtime/Editor compile y `Macro Elevation / Landforms V1 Diagnostics`: `PASS`; cubre same-input/WorldId independence, different seed, bounds/interpolation, continuidad global sin SectorId, variedad/coherencia/range, order independence, golden geography, `8 seeds × 4 presets`, schema `3` round-trip y schemas `1`/`2` legacy.
 - Preview 2D golden inspeccionada: grandes lowlands, macizos/ridges altos y regiones contiguas de los cuatro landforms, con sector overlay sin seams. Timings diagnósticos plan+geography: Small `14 ms`, Medium `49 ms`, Large `199 ms`, Huge `910 ms`; samples raw `7.2–38.3 KB`.
 - Fresh process A/B schema `3`: `PASS`; reconstruyó el mismo WorldId, seed, size, MacroWorldPlan hash, MacroGeography hash, topology y active sector. World Session edit-mode, Play Mode Main Menu→Runtime→Save/Return→Load, M37.0, M37.1 Current Slice, World Foundation y Content Provenance permanecen `PASS`.
+- Baseline previo a thresholds: `192` mundos (`48 seeds × 4 sizes`) confirmó regiones low-relief amplias y ruggedness conservada; no se retuneó MacroGeography. Stress ampliado: `384` variantes (`32 seeds × 4 sizes × 3 coverages`), `0` hard rejections y `0` generation failures después de un ajuste conservador del piso de corredor/anchor neighborhood.
+- `Worldgen Gameplay Quality + Macro Water V1 Diagnostics`: `PASS` para determinismo/WorldId independence, isolation de Land Coverage, plan/geography hashes invariantes, ocean/coastline/drainage/basins, quality/starter, routine fuzz, schema `4` round-trip, schemas `1`/`2`/`3` legacy y preview de seis paneles. Golden Water hash: `c4563b2469d9315fb6c966b3b5bf7297d1ebca2de48e253df4c01abce0c8b727`.
+- Timings diagnósticos finales plan+geography+Water+quality aproximados: Small `16 ms`, Medium `53 ms`, Large `209 ms`, Huge `907 ms`; payload schema `4` serializado `45.0/83.6/134.1/250.6 KB` y raw Water estimado `16.9/29.8/46.3/90.0 KB`. No son budgets de producción. La preview inspeccionada mostró plains/hills/highlands/mountains, land/ocean/coastline significativa, suitability/corridors y drainage/basins sin seams sectoriales.
+- Schema `4` edit/Play flow y fresh Process A/B: `PASS`; el segundo proceso reconstruyó mismo WorldId, seed `-3141592653589793`, size `Huge`, coverage `High`, Water hash, topology y active sector y limpió su root temporal. M37.0, M37.1 snapshot/round-trip, Macro World/Geography, World Foundation, Content Provenance/Namespaces y M41 Navigation/Perception permanecen `PASS`.
 
 ## Contratos Cerrados
 
@@ -88,6 +100,6 @@ New Game genera después del plan un `MacroGeographyPlan` global fixed-point, co
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Hydrology / Coastlines V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la verdad global de MacroWorldPlan + MacroGeography sin implementar terrain/materialization, climate, geology, vegetation/biomes, roads, history o sector transitions fuera de su alcance autorizado.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Climate / Moisture V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la verdad global de MacroWorldPlan + MacroGeography + MacroWater sin implementar terrain/materialization, final rivers, geology, vegetation/biomes, roads, history o sector transitions fuera de su alcance autorizado.
 
 M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.

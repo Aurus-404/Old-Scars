@@ -39,15 +39,16 @@ namespace OldScars.Core.Persistence
 
     /// <summary>
     /// Sibling world_session_v1 payload adapter over M37's existing envelope and
-    /// file store. Schema 3 persists Macro Elevation / Landforms V1. Schemas 1
-    /// and 2 remain explicit legacy shapes and never receive fabricated truth.
+    /// file store. Schema 4 persists Macro Water V1. Schemas 1-3 remain
+    /// explicit legacy shapes and never receive fabricated later-pass truth.
     /// </summary>
     public static class WorldSessionPersistenceService
     {
         public const string SnapshotType = "world_session_v1";
         public const int LegacySchemaVersion = 1;
         public const int MacroPlanSchemaVersion = 2;
-        public const int CurrentSchemaVersion = 3;
+        public const int MacroGeographySchemaVersion = 3;
+        public const int CurrentSchemaVersion = 4;
 
         private static readonly JsonSerializer PayloadSerializer = JsonSerializer.Create(
             new JsonSerializerSettings
@@ -69,6 +70,8 @@ namespace OldScars.Core.Persistence
                 return JToken.FromObject(BuildLegacySaveData(session), PayloadSerializer);
             if (session.IsLegacySchemaV2)
                 return JToken.FromObject(BuildMacroPlanSaveData(session), PayloadSerializer);
+            if (session.IsLegacySchemaV3)
+                return JToken.FromObject(BuildMacroGeographySaveData(session), PayloadSerializer);
             return JToken.FromObject(BuildCurrentSaveData(session), PayloadSerializer);
         }
 
@@ -106,8 +109,10 @@ namespace OldScars.Core.Persistence
                     return PreflightLegacy(payload.ToObject<WorldSessionV1SaveData>(PayloadSerializer));
                 if (schemaVersion == MacroPlanSchemaVersion)
                     return PreflightMacroPlan(payload.ToObject<WorldSessionV2SaveData>(PayloadSerializer));
+                if (schemaVersion == MacroGeographySchemaVersion)
+                    return PreflightMacroGeography(payload.ToObject<WorldSessionV3SaveData>(PayloadSerializer));
                 if (schemaVersion == CurrentSchemaVersion)
-                    return PreflightCurrent(payload.ToObject<WorldSessionV3SaveData>(PayloadSerializer));
+                    return PreflightCurrent(payload.ToObject<WorldSessionV4SaveData>(PayloadSerializer));
                 return SemanticFailure(
                     $"Unsupported World Session contract '{snapshotType}' schema {schemaVersion}.");
             }
@@ -220,11 +225,11 @@ namespace OldScars.Core.Persistence
             return Success("SemanticPreflightLegacyV2", session);
         }
 
-        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV3SaveData data)
+        private static WorldSessionPersistenceResult PreflightMacroGeography(WorldSessionV3SaveData data)
         {
             if (data == null)
-                return SemanticFailure("World Session payload deserialized to null.");
-            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("Legacy schema-3 World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != MacroGeographySchemaVersion)
                 return SemanticFailure("World Session schema-3 header is inconsistent.");
             if (!TryReadCommon(
                     data.worldId, data.displayName, data.generationContext, data.activeSectorId,
@@ -243,8 +248,49 @@ namespace OldScars.Core.Persistence
             {
                 return SemanticFailure(geographyError);
             }
-            if (!WorldSession.TryCreate(
+            if (!WorldSession.TryCreateLegacySchemaV3(
                     worldId, displayName, context, plan, geography, activeSectorId, contentEvidence,
+                    out WorldSession session, out string sessionError))
+            {
+                return SemanticFailure(sessionError + ".");
+            }
+            return Success("SemanticPreflightLegacyV3", session);
+        }
+
+        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV4SaveData data)
+        {
+            if (data == null)
+                return SemanticFailure("World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("World Session schema-4 header is inconsistent.");
+            if (!TryReadCommon(
+                    data.worldId, data.displayName, data.generationContext, data.activeSectorId,
+                    data.creationContentProvenance,
+                    out WorldId worldId, out string displayName, out WorldGenerationContext context,
+                    out SectorId activeSectorId, out WorldCreationContentEvidence contentEvidence,
+                    out string commonError))
+            {
+                return SemanticFailure(commonError);
+            }
+            if (!TryReadMacroWorldPlan(data.macroWorldPlan, out MacroWorldPlan plan, out string planError))
+                return SemanticFailure(planError);
+            if (!TryReadMacroGeography(
+                    data.macroGeography, plan.WorldBounds,
+                    out MacroGeographyPlan geography, out string geographyError))
+                return SemanticFailure(geographyError);
+            if (!TryReadMacroWater(
+                    data.macroWater, geography, out MacroWaterPlan water, out string waterError))
+                return SemanticFailure(waterError);
+            if (!WorldGameplayQualityAnalyzer.TryAnalyze(
+                    plan, geography, water,
+                    out WorldGameplayQualityAnalysis quality, out string qualityError))
+                return SemanticFailure("gameplay-quality analysis failed: " + qualityError + ".");
+            if (!quality.MeetsHardRequirements)
+                return SemanticFailure("persisted world fails hard gameplay-quality preflight: " +
+                                       string.Join(" | ", quality.HardFailures) + ".");
+            if (!WorldSession.TryCreate(
+                    worldId, displayName, context, plan, geography, water, quality,
+                    activeSectorId, contentEvidence,
                     out WorldSession session, out string sessionError))
             {
                 return SemanticFailure(sessionError + ".");
@@ -425,6 +471,134 @@ namespace OldScars.Core.Persistence
                 return false;
             }
             return true;
+        }
+
+        private static bool TryReadMacroWater(
+            MacroWaterSaveData data,
+            MacroGeographyPlan geography,
+            out MacroWaterPlan water,
+            out string error)
+        {
+            water = null;
+            error = null;
+            if (data == null || data.generationSettings == null)
+            {
+                error = "macroWater and its generationSettings are required";
+                return false;
+            }
+            MacroWaterGenerationSettingsSaveData settingsData = data.generationSettings;
+            if (!MacroWaterGenerationSettings.TryParseCoverage(
+                    settingsData.landCoverage, out LandCoveragePreset coverage,
+                    out string coverageError))
+            {
+                error = "macroWater.generationSettings is invalid: " + coverageError + ".";
+                return false;
+            }
+            if (!MacroWaterGenerationSettings.TryCreateResolved(
+                    settingsData.generationContract,
+                    coverage,
+                    settingsData.sampleColumns,
+                    settingsData.sampleRows,
+                    settingsData.targetLandRatioQ16,
+                    settingsData.minimumBasinCells,
+                    out MacroWaterGenerationSettings settings,
+                    out string settingsError))
+            {
+                error = "macroWater.generationSettings is invalid: " + settingsError + ".";
+                return false;
+            }
+
+            if (!TryDecodeBase64(data.oceanMaskBase64, "macroWater.oceanMaskBase64",
+                    out byte[] ocean, out error) ||
+                !TryDecodeBase64(data.oceanBodyLabelsBase64, "macroWater.oceanBodyLabelsBase64",
+                    out byte[] labelBytes, out error) ||
+                !TryDecodeBase64(data.coastlineMaskBase64, "macroWater.coastlineMaskBase64",
+                    out byte[] coastline, out error) ||
+                !TryDecodeBase64(data.conditionedElevationBase64, "macroWater.conditionedElevationBase64",
+                    out byte[] conditionedBytes, out error) ||
+                !TryDecodeBase64(data.drainageDirectionsBase64, "macroWater.drainageDirectionsBase64",
+                    out byte[] drainage, out error))
+            {
+                return false;
+            }
+
+            int sampleCount = checked(settings.SampleColumns * settings.SampleRows);
+            if (ocean.Length != sampleCount || coastline.Length != sampleCount ||
+                drainage.Length != sampleCount || labelBytes.Length != sampleCount * 2 ||
+                conditionedBytes.Length != sampleCount * 2)
+            {
+                error = "macroWater raster byte lengths do not match the resolved grid";
+                return false;
+            }
+            var labels = new ushort[sampleCount];
+            var conditioned = new ushort[sampleCount];
+            for (int index = 0; index < sampleCount; index++)
+            {
+                labels[index] = (ushort)((labelBytes[index * 2] << 8) | labelBytes[index * 2 + 1]);
+                conditioned[index] = (ushort)((conditionedBytes[index * 2] << 8) |
+                                               conditionedBytes[index * 2 + 1]);
+            }
+            var basins = new List<MacroBasinCandidate>();
+            if (data.basinCandidates == null)
+            {
+                error = "macroWater.basinCandidates must be a present array";
+                return false;
+            }
+            for (int index = 0; index < data.basinCandidates.Length; index++)
+            {
+                MacroBasinCandidateSaveData basin = data.basinCandidates[index];
+                if (basin == null || basin.spillElevation < 0 || basin.spillElevation > ushort.MaxValue ||
+                    basin.maximumFillDepth < 0 || basin.maximumFillDepth > ushort.MaxValue)
+                {
+                    error = "macroWater.basinCandidates[" + index + "] is malformed";
+                    return false;
+                }
+                basins.Add(new MacroBasinCandidate(
+                    basin.representativeSampleIndex,
+                    basin.sampleCount,
+                    (ushort)basin.spillElevation,
+                    (ushort)basin.maximumFillDepth));
+            }
+            if (data.seaLevel < 0 || data.seaLevel > ushort.MaxValue)
+            {
+                error = "macroWater.seaLevel is outside the committed ushort range";
+                return false;
+            }
+            if (!MacroWaterPlan.TryCreate(
+                    settings, geography, (ushort)data.seaLevel, ocean, labels, coastline,
+                    conditioned, drainage, basins, out water, out string validationError))
+            {
+                error = "macroWater failed validation: " + validationError;
+                return false;
+            }
+            if (!string.Equals(data.canonicalHash, water.CanonicalHash, StringComparison.Ordinal))
+            {
+                error = "macroWater.canonicalHash mismatch; persisted '" +
+                        Safe(data.canonicalHash) + "', reconstructed '" + water.CanonicalHash + "'.";
+                water = null;
+                return false;
+            }
+            return true;
+        }
+
+        private static bool TryDecodeBase64(
+            string raw,
+            string field,
+            out byte[] bytes,
+            out string error)
+        {
+            bytes = null;
+            error = null;
+            try
+            {
+                bytes = Convert.FromBase64String(raw ?? string.Empty);
+                return true;
+            }
+            catch (FormatException exception)
+            {
+                error = field + " is not valid Base64: " + exception.Message;
+                return false;
+            }
         }
 
         private static bool TryReadCommon(
@@ -620,9 +794,41 @@ namespace OldScars.Core.Persistence
             };
         }
 
-        private static WorldSessionV3SaveData BuildCurrentSaveData(WorldSession session)
+        private static WorldSessionV3SaveData BuildMacroGeographySaveData(WorldSession session)
         {
-            MacroGeographyPlan geography = session.MacroGeography;
+            return new WorldSessionV3SaveData
+            {
+                snapshotType = SnapshotType,
+                schemaVersion = MacroGeographySchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
+                macroGeography = BuildMacroGeography(session.MacroGeography),
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static WorldSessionV4SaveData BuildCurrentSaveData(WorldSession session)
+        {
+            return new WorldSessionV4SaveData
+            {
+                snapshotType = SnapshotType,
+                schemaVersion = CurrentSchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
+                macroGeography = BuildMacroGeography(session.MacroGeography),
+                macroWater = BuildMacroWater(session.MacroWater),
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static MacroGeographySaveData BuildMacroGeography(MacroGeographyPlan geography)
+        {
             ushort[] elevationSamples = geography.CopyElevationSamples();
             var elevationBytes = new byte[elevationSamples.Length * 2];
             for (int index = 0; index < elevationSamples.Length; index++)
@@ -631,33 +837,70 @@ namespace OldScars.Core.Persistence
                 elevationBytes[index * 2 + 1] = (byte)elevationSamples[index];
             }
             MacroGeographyGenerationSettings geographySettings = geography.GenerationSettings;
-            return new WorldSessionV3SaveData
+            return new MacroGeographySaveData
             {
-                snapshotType = SnapshotType,
-                schemaVersion = CurrentSchemaVersion,
-                worldId = session.WorldId.Canonical,
-                displayName = session.DisplayName,
-                generationContext = BuildGenerationContext(session),
-                macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
-                macroGeography = new MacroGeographySaveData
+                generationSettings = new MacroGeographyGenerationSettingsSaveData
                 {
-                    generationSettings = new MacroGeographyGenerationSettingsSaveData
-                    {
-                        generationContract = geographySettings.GenerationContract,
-                        sampleColumns = geographySettings.SampleColumns,
-                        sampleRows = geographySettings.SampleRows,
-                        regionalFrequencyQ16 = geographySettings.RegionalFrequencyQ16,
-                        baseElevationFrequencyQ16 = geographySettings.BaseElevationFrequencyQ16,
-                        detailFrequencyQ16 = geographySettings.DetailFrequencyQ16,
-                        roughnessFrequencyQ16 = geographySettings.RoughnessFrequencyQ16,
-                        resolvedAttempt = geographySettings.ResolvedAttempt
-                    },
-                    elevationSamplesBase64 = Convert.ToBase64String(elevationBytes),
-                    landformSamplesBase64 = Convert.ToBase64String(geography.CopyLandformSamples()),
-                    canonicalHash = geography.CanonicalHash
+                    generationContract = geographySettings.GenerationContract,
+                    sampleColumns = geographySettings.SampleColumns,
+                    sampleRows = geographySettings.SampleRows,
+                    regionalFrequencyQ16 = geographySettings.RegionalFrequencyQ16,
+                    baseElevationFrequencyQ16 = geographySettings.BaseElevationFrequencyQ16,
+                    detailFrequencyQ16 = geographySettings.DetailFrequencyQ16,
+                    roughnessFrequencyQ16 = geographySettings.RoughnessFrequencyQ16,
+                    resolvedAttempt = geographySettings.ResolvedAttempt
                 },
-                activeSectorId = session.ActiveSectorId.Canonical,
-                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+                elevationSamplesBase64 = Convert.ToBase64String(elevationBytes),
+                landformSamplesBase64 = Convert.ToBase64String(geography.CopyLandformSamples()),
+                canonicalHash = geography.CanonicalHash
+            };
+        }
+
+        private static MacroWaterSaveData BuildMacroWater(MacroWaterPlan water)
+        {
+            MacroWaterGenerationSettings settings = water.GenerationSettings;
+            ushort[] labels = water.CopyOceanBodyLabels();
+            ushort[] conditioned = water.CopyConditionedElevations();
+            var labelBytes = new byte[labels.Length * 2];
+            var conditionedBytes = new byte[conditioned.Length * 2];
+            for (int index = 0; index < labels.Length; index++)
+            {
+                labelBytes[index * 2] = (byte)(labels[index] >> 8);
+                labelBytes[index * 2 + 1] = (byte)labels[index];
+                conditionedBytes[index * 2] = (byte)(conditioned[index] >> 8);
+                conditionedBytes[index * 2 + 1] = (byte)conditioned[index];
+            }
+            var basins = new MacroBasinCandidateSaveData[water.BasinCandidates.Count];
+            for (int index = 0; index < basins.Length; index++)
+            {
+                MacroBasinCandidate basin = water.BasinCandidates[index];
+                basins[index] = new MacroBasinCandidateSaveData
+                {
+                    representativeSampleIndex = basin.RepresentativeSampleIndex,
+                    sampleCount = basin.SampleCount,
+                    spillElevation = basin.SpillElevation,
+                    maximumFillDepth = basin.MaximumFillDepth
+                };
+            }
+            return new MacroWaterSaveData
+            {
+                generationSettings = new MacroWaterGenerationSettingsSaveData
+                {
+                    generationContract = settings.GenerationContract,
+                    landCoverage = MacroWaterGenerationSettings.ToCanonical(settings.LandCoverage),
+                    sampleColumns = settings.SampleColumns,
+                    sampleRows = settings.SampleRows,
+                    targetLandRatioQ16 = settings.TargetLandRatioQ16,
+                    minimumBasinCells = settings.MinimumBasinCells
+                },
+                seaLevel = water.SeaLevel,
+                oceanMaskBase64 = Convert.ToBase64String(water.CopyOceanMask()),
+                oceanBodyLabelsBase64 = Convert.ToBase64String(labelBytes),
+                coastlineMaskBase64 = Convert.ToBase64String(water.CopyCoastlineMask()),
+                conditionedElevationBase64 = Convert.ToBase64String(conditionedBytes),
+                drainageDirectionsBase64 = Convert.ToBase64String(water.CopyDrainageDirections()),
+                basinCandidates = basins,
+                canonicalHash = water.CanonicalHash
             };
         }
 
@@ -827,6 +1070,21 @@ namespace OldScars.Core.Persistence
         }
 
         [Serializable]
+        private sealed class WorldSessionV4SaveData
+        {
+            public string snapshotType;
+            public int schemaVersion;
+            public string worldId;
+            public string displayName;
+            public WorldGenerationContextSaveData generationContext;
+            public MacroWorldPlanSaveData macroWorldPlan;
+            public MacroGeographySaveData macroGeography;
+            public MacroWaterSaveData macroWater;
+            public string activeSectorId;
+            public WorldContentEvidenceSaveData creationContentProvenance;
+        }
+
+        [Serializable]
         private sealed class WorldGenerationContextSaveData
         {
             public string worldSeed;
@@ -863,6 +1121,40 @@ namespace OldScars.Core.Persistence
             public int detailFrequencyQ16;
             public int roughnessFrequencyQ16;
             public int resolvedAttempt;
+        }
+
+        [Serializable]
+        private sealed class MacroWaterSaveData
+        {
+            public MacroWaterGenerationSettingsSaveData generationSettings;
+            public int seaLevel;
+            public string oceanMaskBase64;
+            public string oceanBodyLabelsBase64;
+            public string coastlineMaskBase64;
+            public string conditionedElevationBase64;
+            public string drainageDirectionsBase64;
+            public MacroBasinCandidateSaveData[] basinCandidates;
+            public string canonicalHash;
+        }
+
+        [Serializable]
+        private sealed class MacroWaterGenerationSettingsSaveData
+        {
+            public string generationContract;
+            public string landCoverage;
+            public int sampleColumns;
+            public int sampleRows;
+            public int targetLandRatioQ16;
+            public int minimumBasinCells;
+        }
+
+        [Serializable]
+        private sealed class MacroBasinCandidateSaveData
+        {
+            public int representativeSampleIndex;
+            public int sampleCount;
+            public int spillElevation;
+            public int maximumFillDepth;
         }
 
         [Serializable]

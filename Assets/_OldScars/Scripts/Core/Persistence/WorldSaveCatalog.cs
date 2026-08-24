@@ -25,6 +25,13 @@ namespace OldScars.Core.Persistence
             MacroGeographyHash = session.HasMacroGeography
                 ? session.MacroGeography.CanonicalHash
                 : null;
+            HasMacroWater = session.HasMacroWater;
+            LandCoverage = session.HasMacroWater
+                ? session.MacroWater.GenerationSettings.LandCoverage
+                : (LandCoveragePreset?)null;
+            MacroWaterHash = session.HasMacroWater
+                ? session.MacroWater.CanonicalHash
+                : null;
             TopologyHash = session.Topology.CanonicalHash;
             ActiveSectorId = session.ActiveSectorId;
             CreationContentProvenanceFingerprint =
@@ -41,6 +48,9 @@ namespace OldScars.Core.Persistence
         public string MacroWorldPlanHash { get; }
         public bool HasMacroGeography { get; }
         public string MacroGeographyHash { get; }
+        public bool HasMacroWater { get; }
+        public LandCoveragePreset? LandCoverage { get; }
+        public string MacroWaterHash { get; }
         public string TopologyHash { get; }
         public SectorId ActiveSectorId { get; }
         public string CreationContentProvenanceFingerprint { get; }

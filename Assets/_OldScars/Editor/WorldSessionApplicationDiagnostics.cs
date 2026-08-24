@@ -24,6 +24,7 @@ namespace OldScars.EditorTools
         private const string PlayWorldIdKey = "OldScars.WorldSessionApplicationDiagnostics.PlayWorldId";
         private const string PlayPlanHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayPlanHash";
         private const string PlayGeographyHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayGeographyHash";
+        private const string PlayWaterHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayWaterHash";
         private const string PlayTopologyHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayTopologyHash";
         private const string FreshRootEnvironment = "OLD_SCARS_WORLD_SESSION_DIAGNOSTIC_ROOT";
         private const long ExplicitSeed = -3141592653589793L;
@@ -65,7 +66,7 @@ namespace OldScars.EditorTools
                 failures,
                 "- explicit/random seed Macro World Plan V1 and immediate M37 write",
                 "- same-seed WorldId independence and deterministic macro plan",
-                "- world_session_v1 schema 3 semantic preflight and exact committed-geography round-trip",
+                "- world_session_v1 schema 4 semantic preflight and exact committed geography/water round-trip",
                 "- duplicate display names with distinct WorldId slots",
                 "- safe catalog filtering plus corrupt-save isolation",
                 "- create/close/load lifecycle without partial publication",
@@ -115,7 +116,8 @@ namespace OldScars.EditorTools
 
             WorldSessionOperationResult firstCreate = WorldSessionService.Create(
                 "Shared Display Name", seed,
-                WorldGenerationSettings.ResolvePreset(WorldSizePreset.Large), content, store);
+                WorldGenerationSettings.ResolvePreset(WorldSizePreset.Large),
+                LandCoveragePreset.Medium, content, store);
             Check(firstCreate.Success && WorldSessionService.ActiveSession == firstCreate.Session,
                 "A. explicit-seed New Game must publish only after its initial save succeeds.", failures);
             if (!firstCreate.Success)
@@ -125,6 +127,8 @@ namespace OldScars.EditorTools
             Check(first.WorldId.IsValid && first.GenerationContext.WorldSeed == seed &&
                   first.HasMacroWorldPlan &&
                   first.HasMacroGeography &&
+                  first.HasMacroWater && first.HasGameplayQuality &&
+                  first.MacroWater.GenerationSettings.LandCoverage == LandCoveragePreset.Medium &&
                   first.MacroWorldPlan.GenerationSettings.WorldSizePreset == WorldSizePreset.Large &&
                   first.Topology.Sectors.Count == 128 && first.Topology.Connections.Count == 127,
                 "A. New Game must produce a valid WorldId and selected deterministic Macro World Plan.", failures);
@@ -140,8 +144,10 @@ namespace OldScars.EditorTools
                   firstPayload["macroWorldPlan"]?["topology"]?["sectors"] is JArray &&
                   firstPayload["macroGeography"]?["elevationSamplesBase64"]?.Type == JTokenType.String &&
                   firstPayload["macroGeography"]?["landformSamplesBase64"]?.Type == JTokenType.String &&
+                  firstPayload["macroWater"]?["oceanMaskBase64"]?.Type == JTokenType.String &&
+                  firstPayload["macroWater"]?["drainageDirectionsBase64"]?.Type == JTokenType.String &&
                   firstPayload["creationContentProvenance"]?["sources"] is JArray,
-                "world_session_v1 schema 3 must expose identity/context/plan/geography/topology/provenance.",
+                "world_session_v1 schema 4 must expose identity/context/plan/geography/water/topology/provenance.",
                 failures);
 
             WorldSessionOperationResult overwrite = WorldSessionService.Save(store);
@@ -152,7 +158,8 @@ namespace OldScars.EditorTools
 
             WorldSessionOperationResult secondCreate = WorldSessionService.Create(
                 "Shared Display Name", seed,
-                WorldGenerationSettings.ResolvePreset(WorldSizePreset.Large), content, store);
+                WorldGenerationSettings.ResolvePreset(WorldSizePreset.Large),
+                LandCoveragePreset.Medium, content, store);
             Check(secondCreate.Success, "B/D. second same-seed, same-name New Game must succeed.", failures);
             if (!secondCreate.Success)
                 return;
@@ -162,6 +169,7 @@ namespace OldScars.EditorTools
                 "B/D. same seed/display name must still create a distinct WorldId.", failures);
             Check(second.MacroWorldPlan.CanonicalHash == first.MacroWorldPlan.CanonicalHash &&
                   second.MacroGeography.CanonicalHash == first.MacroGeography.CanonicalHash &&
+                  second.MacroWater.CanonicalHash == first.MacroWater.CanonicalHash &&
                   second.Topology.CanonicalHash == first.Topology.CanonicalHash &&
                   second.ActiveSectorId == first.ActiveSectorId,
                 "B. WorldId must not alter deterministic macro plan/topology evidence.", failures);
@@ -240,6 +248,11 @@ namespace OldScars.EditorTools
             Check(!WorldSessionPersistenceService.FromPayload(invalidGeography).Success,
                 "G. canonical macro geography evidence mismatch must fail semantic preflight.", failures);
 
+            JObject invalidWater = (JObject)valid.DeepClone();
+            invalidWater["macroWater"]["canonicalHash"] = new string('0', 64);
+            Check(!WorldSessionPersistenceService.FromPayload(invalidWater).Success,
+                "G. canonical Macro Water evidence mismatch must fail semantic preflight.", failures);
+
             JObject invalidActiveSector = (JObject)valid.DeepClone();
             SectorId otherSector = SectorId.FromDeterministicDomain(
                 WorldDeterminism.DeriveDomainKey(
@@ -305,7 +318,8 @@ namespace OldScars.EditorTools
                     MainMenuSceneController menu =
                         UnityEngine.Object.FindAnyObjectByType<MainMenuSceneController>();
                     if (menu == null || !menu.TryCreateWorld(
-                            "Play Flow World", ExplicitSeed.ToString(), WorldSizePreset.Medium, store))
+                            "Play Flow World", ExplicitSeed.ToString(), WorldSizePreset.Medium,
+                            LandCoveragePreset.Medium, store))
                     {
                         FailPlay("Main Menu Create action failed to create, save and request World Runtime entry.", root);
                         return;
@@ -320,6 +334,7 @@ namespace OldScars.EditorTools
                     SessionState.SetString(PlayWorldIdKey, created.WorldId.Canonical);
                     SessionState.SetString(PlayPlanHashKey, created.MacroWorldPlan.CanonicalHash);
                     SessionState.SetString(PlayGeographyHashKey, created.MacroGeography.CanonicalHash);
+                    SessionState.SetString(PlayWaterHashKey, created.MacroWater.CanonicalHash);
                     SessionState.SetString(PlayTopologyHashKey, created.Topology.CanonicalHash);
                     SessionState.SetInt(PlayPhaseKey, 1);
                     return;
@@ -392,12 +407,14 @@ namespace OldScars.EditorTools
                     string worldId = SessionState.GetString(PlayWorldIdKey, string.Empty);
                     string planHash = SessionState.GetString(PlayPlanHashKey, string.Empty);
                     string geographyHash = SessionState.GetString(PlayGeographyHashKey, string.Empty);
+                    string waterHash = SessionState.GetString(PlayWaterHashKey, string.Empty);
                     string topologyHash = SessionState.GetString(PlayTopologyHashKey, string.Empty);
                     WorldRuntimeSceneController runtime =
                         UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
                     if (loaded == null || runtime == null || loaded.WorldId.Canonical != worldId ||
                         !loaded.HasMacroWorldPlan || loaded.MacroWorldPlan.CanonicalHash != planHash ||
                         !loaded.HasMacroGeography || loaded.MacroGeography.CanonicalHash != geographyHash ||
+                        !loaded.HasMacroWater || loaded.MacroWater.CanonicalHash != waterHash ||
                         loaded.Topology.CanonicalHash != topologyHash)
                     {
                         FailPlay("Load action did not restore the recorded world/topology in World Runtime.", root);
@@ -454,6 +471,7 @@ namespace OldScars.EditorTools
             SessionState.EraseString(PlayWorldIdKey);
             SessionState.EraseString(PlayPlanHashKey);
             SessionState.EraseString(PlayGeographyHashKey);
+            SessionState.EraseString(PlayWaterHashKey);
             SessionState.EraseString(PlayTopologyHashKey);
             if (!string.IsNullOrEmpty(root) && Directory.Exists(root))
                 Directory.Delete(root, true);
@@ -489,7 +507,8 @@ namespace OldScars.EditorTools
 
                     WorldSessionOperationResult result = WorldSessionService.Create(
                         "Fresh Process World", new WorldSeed(ExplicitSeed),
-                        WorldGenerationSettings.ResolvePreset(WorldSizePreset.Huge), content, store);
+                        WorldGenerationSettings.ResolvePreset(WorldSizePreset.Huge),
+                        LandCoveragePreset.High, content, store);
                     if (!result.Success)
                         throw new InvalidOperationException(result.Phase + ": " + result.Failure);
 
@@ -503,6 +522,9 @@ namespace OldScars.EditorTools
                             session.MacroWorldPlan.GenerationSettings.WorldSizePreset),
                         session.MacroWorldPlan.CanonicalHash,
                         session.MacroGeography.CanonicalHash,
+                        MacroWaterGenerationSettings.ToCanonical(
+                            session.MacroWater.GenerationSettings.LandCoverage),
+                        session.MacroWater.CanonicalHash,
                         session.Topology.CanonicalHash,
                         session.ActiveSectorId.Canonical
                     });
@@ -513,13 +535,15 @@ namespace OldScars.EditorTools
                         "Size: " + session.MacroWorldPlan.GenerationSettings.WorldSizePreset + "\n" +
                         "MacroWorldPlanHash: " + session.MacroWorldPlan.CanonicalHash + "\n" +
                         "MacroGeographyHash: " + session.MacroGeography.CanonicalHash + "\n" +
+                        "LandCoverage: " + session.MacroWater.GenerationSettings.LandCoverage + "\n" +
+                        "MacroWaterHash: " + session.MacroWater.CanonicalHash + "\n" +
                         "TopologyHash: " + session.Topology.CanonicalHash + "\n" +
                         "ActiveSectorId: " + session.ActiveSectorId.Canonical);
                 }
                 else
                 {
                     string[] record = File.ReadAllLines(recordPath);
-                    if (record.Length != 7)
+                    if (record.Length != 9)
                         throw new InvalidOperationException("Fresh-process record is missing or malformed.");
 
                     WorldSaveCatalogResult catalog = WorldSaveCatalog.Discover(store);
@@ -538,8 +562,12 @@ namespace OldScars.EditorTools
                         session.MacroWorldPlan.CanonicalHash != record[3] ||
                         !session.HasMacroGeography ||
                         session.MacroGeography.CanonicalHash != record[4] ||
-                        session.Topology.CanonicalHash != record[5] ||
-                        session.ActiveSectorId.Canonical != record[6])
+                        !session.HasMacroWater ||
+                        MacroWaterGenerationSettings.ToCanonical(
+                            session.MacroWater.GenerationSettings.LandCoverage) != record[5] ||
+                        session.MacroWater.CanonicalHash != record[6] ||
+                        session.Topology.CanonicalHash != record[7] ||
+                        session.ActiveSectorId.Canonical != record[8])
                     {
                         throw new InvalidOperationException("Fresh-process loaded evidence differs from Process A.");
                     }
@@ -551,6 +579,8 @@ namespace OldScars.EditorTools
                         "Size: " + session.MacroWorldPlan.GenerationSettings.WorldSizePreset + "\n" +
                         "MacroWorldPlanHash: " + session.MacroWorldPlan.CanonicalHash + "\n" +
                         "MacroGeographyHash: " + session.MacroGeography.CanonicalHash + "\n" +
+                        "LandCoverage: " + session.MacroWater.GenerationSettings.LandCoverage + "\n" +
+                        "MacroWaterHash: " + session.MacroWater.CanonicalHash + "\n" +
                         "TopologyHash: " + session.Topology.CanonicalHash + "\n" +
                         "ActiveSectorId: " + session.ActiveSectorId.Canonical);
                     WorldSessionService.Close();
@@ -595,6 +625,8 @@ namespace OldScars.EditorTools
                  expected.HasMacroWorldPlan && expected.MacroWorldPlan.CanonicalHash != actual.MacroWorldPlan.CanonicalHash ||
                  expected.HasMacroGeography != actual.HasMacroGeography ||
                  expected.HasMacroGeography && expected.MacroGeography.CanonicalHash != actual.MacroGeography.CanonicalHash ||
+                 expected.HasMacroWater != actual.HasMacroWater ||
+                 expected.HasMacroWater && expected.MacroWater.CanonicalHash != actual.MacroWater.CanonicalHash ||
                  expected.Topology.CanonicalHash != actual.Topology.CanonicalHash ||
                 expected.ActiveSectorId != actual.ActiveSectorId ||
                 expected.CreationContentEvidence.LoadedContentSetFingerprint !=

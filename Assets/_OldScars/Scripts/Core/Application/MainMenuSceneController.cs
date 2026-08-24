@@ -23,6 +23,7 @@ namespace OldScars.Core.ApplicationShell
         private string worldName = "New World";
         private string seedText = string.Empty;
         private WorldSizePreset worldSizePreset = WorldSizePreset.Large;
+        private LandCoveragePreset landCoveragePreset = LandCoveragePreset.High;
         private string selectedSlotId;
         private string statusMessage;
         private Vector2 saveScroll;
@@ -40,7 +41,7 @@ namespace OldScars.Core.ApplicationShell
         private void OnGUI()
         {
             float width = Mathf.Min(620f, Mathf.Max(360f, Screen.width - 40f));
-            float height = Mathf.Min(620f, Mathf.Max(420f, Screen.height - 40f));
+            float height = Mathf.Min(700f, Mathf.Max(420f, Screen.height - 40f));
             var area = new Rect(
                 Mathf.Max(20f, (Screen.width - width) * 0.5f),
                 Mathf.Max(20f, (Screen.height - height) * 0.5f),
@@ -81,6 +82,18 @@ namespace OldScars.Core.ApplicationShell
             WorldSizePreset requestedWorldSize,
             PersistenceFileStore store = null)
         {
+            return TryCreateWorld(
+                requestedDisplayName, requestedSeedText, requestedWorldSize,
+                LandCoveragePreset.High, store);
+        }
+
+        public bool TryCreateWorld(
+            string requestedDisplayName,
+            string requestedSeedText,
+            WorldSizePreset requestedWorldSize,
+            LandCoveragePreset requestedLandCoverage,
+            PersistenceFileStore store = null)
+        {
             if (!TryRequireValidatedContent(out string contentFailure))
             {
                 statusMessage = contentFailure;
@@ -102,6 +115,7 @@ namespace OldScars.Core.ApplicationShell
                 requestedDisplayName,
                 seed,
                 WorldGenerationSettings.ResolvePreset(requestedWorldSize),
+                requestedLandCoverage,
                 GameDataManager.Instance.LoadedContentSet,
                 store);
             if (!result.Success)
@@ -110,7 +124,7 @@ namespace OldScars.Core.ApplicationShell
                 return false;
             }
 
-            statusMessage = $"Created '{result.Session.DisplayName}' ({requestedWorldSize}) with seed {seed.Canonical}.";
+            statusMessage = $"Created '{result.Session.DisplayName}' ({requestedWorldSize}, {requestedLandCoverage} land) with seed {seed.Canonical}.";
             return TryEnterWorldRuntime("New Game");
         }
 
@@ -197,13 +211,20 @@ namespace OldScars.Core.ApplicationShell
             DrawWorldSizeButton(WorldSizePreset.Large);
             DrawWorldSizeButton(WorldSizePreset.Huge);
             GUILayout.EndHorizontal();
+            GUILayout.Space(14f);
+            GUILayout.Label("Land Coverage");
+            GUILayout.BeginHorizontal();
+            DrawLandCoverageButton(LandCoveragePreset.Low);
+            DrawLandCoverageButton(LandCoveragePreset.Medium);
+            DrawLandCoverageButton(LandCoveragePreset.High);
+            GUILayout.EndHorizontal();
             GUILayout.Space(24f);
 
             bool ready = IsValidatedContentReady();
             bool previousEnabled = GUI.enabled;
             GUI.enabled = ready;
             if (GUILayout.Button("CREATE", GUILayout.Height(46f)))
-                TryCreateWorld(worldName, seedText, worldSizePreset);
+                TryCreateWorld(worldName, seedText, worldSizePreset, landCoveragePreset);
             GUI.enabled = previousEnabled;
             GUILayout.Space(12f);
             if (GUILayout.Button("CANCEL", GUILayout.Height(40f)))
@@ -236,7 +257,10 @@ namespace OldScars.Core.ApplicationShell
                         ? "  |  legacy v1"
                         : !entry.HasMacroGeography
                             ? "  |  " + entry.SizePreset.Value + "  |  legacy v2"
-                            : "  |  " + entry.SizePreset.Value;
+                            : !entry.HasMacroWater
+                                ? "  |  " + entry.SizePreset.Value + "  |  legacy v3"
+                                : "  |  " + entry.SizePreset.Value + "  |  " +
+                                  entry.LandCoverage.Value + " land";
                     string label = (selected ? "> " : string.Empty) + entry.DisplayName + "\n" +
                                    entry.WorldId.Canonical + "  |  seed " + entry.WorldSeed.Canonical + size;
                     if (GUILayout.Button(label, GUILayout.Height(54f)))
@@ -284,6 +308,14 @@ namespace OldScars.Core.ApplicationShell
             string label = selected ? "[ " + preset + " ]" : preset.ToString();
             if (GUILayout.Button(label, GUILayout.Height(34f)))
                 worldSizePreset = preset;
+        }
+
+        private void DrawLandCoverageButton(LandCoveragePreset preset)
+        {
+            bool selected = landCoveragePreset == preset;
+            string label = selected ? "[ " + preset + " ]" : preset.ToString();
+            if (GUILayout.Button(label, GUILayout.Height(34f)))
+                landCoveragePreset = preset;
         }
 
         private static bool TryRequireValidatedContent(out string failure)

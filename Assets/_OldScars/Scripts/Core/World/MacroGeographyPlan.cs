@@ -315,6 +315,21 @@ namespace OldScars.Core.World
         public int SampleCount => elevations.Length;
         public string CanonicalHash { get; }
 
+        /// <summary>
+        /// Returns one committed grid sample without interpolation. This is a
+        /// logical worldgen query for later global passes and diagnostics; it
+        /// does not expose the mutable backing raster.
+        /// </summary>
+        public ushort ElevationSampleAt(int column, int row)
+        {
+            return elevations[RequireSampleIndex(column, row)];
+        }
+
+        public MacroLandform LandformSampleAt(int column, int row)
+        {
+            return (MacroLandform)landforms[RequireSampleIndex(column, row)];
+        }
+
         public static bool TryCreate(
             MacroGeographyGenerationSettings generationSettings,
             FiniteMacroWorldBounds worldBounds,
@@ -477,6 +492,17 @@ namespace OldScars.Core.World
         internal byte[] CopyLandformSamples()
         {
             return (byte[])landforms.Clone();
+        }
+
+        private int RequireSampleIndex(int column, int row)
+        {
+            if (column < 0 || column >= SampleColumns)
+                throw new ArgumentOutOfRangeException(nameof(column), column,
+                    "Macro geography sample column is outside the committed grid.");
+            if (row < 0 || row >= SampleRows)
+                throw new ArgumentOutOfRangeException(nameof(row), row,
+                    "Macro geography sample row is outside the committed grid.");
+            return row * SampleColumns + column;
         }
 
         private void AccumulateEdge(

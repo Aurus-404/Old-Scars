@@ -58,12 +58,25 @@ namespace OldScars.Core.World
             LoadedContentSet loadedContentSet,
             PersistenceFileStore store = null)
         {
+            return Create(
+                displayName, worldSeed, generationSettings, LandCoveragePreset.High,
+                loadedContentSet, store);
+        }
+
+        public static WorldSessionOperationResult Create(
+            string displayName,
+            WorldSeed worldSeed,
+            WorldGenerationSettings generationSettings,
+            LandCoveragePreset landCoverage,
+            LoadedContentSet loadedContentSet,
+            PersistenceFileStore store = null)
+        {
             if (ActiveSession != null)
                 return Fail(WorldSessionOperationFailureCode.ActiveSessionAlreadyExists, "Create",
                     "Close the active WorldSession before creating another world.");
 
             if (!WorldSessionBootstrap.TryBuildNew(
-                    displayName, worldSeed, generationSettings, loadedContentSet,
+                    displayName, worldSeed, generationSettings, landCoverage, loadedContentSet,
                     out WorldSession candidate, out string buildFailure))
             {
                 return Fail(WorldSessionOperationFailureCode.InvalidInput, "Bootstrap", buildFailure);

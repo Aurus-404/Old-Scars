@@ -22,10 +22,10 @@ Los nombres conceptuales utilizados aquí no congelan nombres públicos de clase
 
 La dirección de diseño está aprobada. No están implementados:
 
-- world generation más allá de Macro World Plan + Macro Elevation/Landforms V1;
+- world generation más allá de Macro World Plan + Macro Elevation/Landforms + Gameplay Quality/Macro Water V1;
 - world sectors como regiones jugables/materializadas;
 - sector loading o transición;
-- hydrology/coastlines, climate, geology, biomes u otros cross-sector features;
+- climate/moisture, rivers, geology, biomes u otros cross-sector features posteriores a Macro Water V1;
 - world persistence de geography posterior, sector blueprints, gameplay mutations y estado activo/inactivo más allá de la shell mínima;
 - generation compatibility, generation manifests o world-specific content contracts;
 - world history;
@@ -34,7 +34,7 @@ La dirección de diseño está aprobada. No están implementados:
 
 No se autoriza implementación por la existencia de este documento. Cada unidad requiere alcance, dependencia, validación y autorización propios bajo el Roadmap.
 
-Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existen una application shell acotada, `MacroWorldPlan V1` y `Macro Elevation / Landforms V1`: `WorldSession`, mundo finito con bounds/placements/topology, campo mundial fixed-point de elevation/landforms, payload hermano `world_session_v1` schema `3`, Main Menu con tamaño seleccionable, Load Game, World Runtime placeholder y Save/Return. No existen todavía hydrology/coastlines, climate/geology/biomes, otros features continuos, sectores jugables/materializados, gameplay world state ni compatibility policy.
+Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existen una application shell acotada, `MacroWorldPlan V1`, `Macro Elevation / Landforms V1` y `Gameplay Quality + Macro Water V1`: `WorldSession`, mundo finito con bounds/placements/topology, campos mundiales fixed-point de elevation/landforms/Water, quality analysis derivada, starter suitable, payload hermano `world_session_v1` schema `4`, Main Menu con tamaño y Land Coverage seleccionables, Load Game, World Runtime placeholder y Save/Return. No existen todavía climate/moisture, rivers, geology/biomes, sectores jugables/materializados, gameplay world state ni compatibility policy.
 
 ## Decisión Arquitectónica Central
 
@@ -242,7 +242,7 @@ El orden arquitectónico aprobado es:
 
 Se congelan el orden de autoridad y la separación logical/runtime, no nombres de clases ni un número fijo de pases.
 
-La implementación actual cubre generation context, settings resueltos, bounds finitos, placements/topology dentro de `MacroWorldPlan V1`, más un campo mundial committed de elevation normalizada y landforms (`Plains`, `RollingHills`, `Highlands`, `Mountains`). Esa verdad se consulta por coordenadas macro y precede todo detalle sectorial. No simula ni infiere climate, hydrology/coastlines, geology, vegetation/biomes, roads, sites o history.
+La implementación actual cubre generation context, settings resueltos, bounds finitos y placements/topology dentro de `MacroWorldPlan V1`; un campo mundial committed de elevation normalizada y landforms (`Plains`, `RollingHills`, `Highlands`, `Mountains`); Macro Water committed con sea/ocean/coastline/conditioned drainage/basin candidates; y quality analysis para rechazar casos claramente patológicos y seleccionar el starter. Esa verdad se consulta por coordenadas macro y precede todo detalle sectorial. No simula ni infiere climate/moisture, rivers, geology, vegetation/biomes, roads, sites o history.
 
 Principio preferido:
 
@@ -256,7 +256,7 @@ No:
 
 ### Truth Resuelta En New Game
 
-New Game debe generar y persistir suficiente verdad global para que el mundo sea coherente. En V1 ya quedan resueltos y persistidos identity, generation context/settings, bounds, placements, topology y elevation/landforms; los demás puntos continúan en sus passes futuros:
+New Game debe generar y persistir suficiente verdad global para que el mundo sea coherente. En V1 ya quedan resueltos y persistidos identity, generation context/settings, bounds, placements, topology, elevation/landforms y Macro Water; los demás puntos continúan en sus passes futuros:
 
 - world identity;
 - generation contract/context;
@@ -318,9 +318,9 @@ Requisitos:
 - cambios decorativos no desplazan infraestructura mayor;
 - outputs lógicos no dependen de frame timing, GameObject enumeration ni orden incidental de archivos.
 
-La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. `MacroWorldPlanGenerator` consume esas domain keys para placements. `MacroGeographyGenerator` deriva una vez domains separados de regiones, upheaval/base, detail, ridges y roughness; luego usa sampling fixed-point/mixer estable en el inner loop, sin `System.Random`, Unity Perlin ni SHA por celda.
+La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. `MacroWorldPlanGenerator` consume esas domain keys para placements. `MacroGeographyGenerator` deriva una vez domains separados de regiones, upheaval/base, detail, ridges y roughness; luego usa sampling fixed-point/mixer estable en el inner loop, sin `System.Random`, Unity Perlin ni SHA por celda. `MacroWaterGenerator` es determinista por construcción sobre geography + settings del pass: su sea-level search, boundary flood, priority conditioning y D8 usan órdenes/tie-breaks canónicos y tampoco dependen de sectores, topology edges ni estado mutable.
 
-Los golden hashes cubren domain derivation, topology, Macro World Plan y la única evidencia canónica de Macro Geography. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
+Los golden hashes cubren domain derivation, topology, Macro World Plan, Macro Geography y una única evidencia canónica de Macro Water. Quality analysis no agrega otro fingerprint. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
 
 El futuro presupuesto de CPU/workers es un setting de ejecución/rendimiento, no un generation-relevant world setting. No participa en SectorId, placements, topology, hashes, geography ni otros resultados. Cuando existan passes realmente paralelizables, `1 worker` y `N workers` con seed/settings idénticos deberán producir exactamente el mismo mundo lógico. No existe todavía selector ni soporte multithread sin consumidor.
 
@@ -414,11 +414,11 @@ La persistencia mundial reutiliza las garantías de M37:
 
 `current_slice_v1` queda sin cambios como regression path. No representa un sector y no se migra silenciosamente a uno.
 
-La implementación actual usa el snapshot type hermano `world_session_v1`. Los mundos Macro Elevation/Landforms V1 se escriben con schema `3`, que conserva WorldId/display name, seed/generator version, MacroWorldPlan, settings resueltos y samples compactos de elevation/landforms, evidencia canónica de plan/geography, active sector y provenance de creación. Usa el envelope, serializer, safe-write/recovery y slot rules de M37; `WorldId.Canonical` es el slot y el display name no es identidad de filesystem. Read reconstruye plan y geografía por validators reales desde truth committed —no por seed-only regeneration— y sólo publica la session después del semantic preflight.
+La implementación actual usa el snapshot type hermano `world_session_v1`. Los mundos Gameplay Quality + Macro Water V1 se escriben con schema `4`, que conserva WorldId/display name, seed/generator version, MacroWorldPlan, MacroGeography, settings/sea/masks/bodies/coastline/conditioned surface/drainage/basins/hash de Water, active sector y provenance de creación. Usa el envelope, serializer, safe-write/recovery y slot rules de M37; `WorldId.Canonical` es el slot y el display name no es identidad de filesystem. Read reconstruye plan, geografía y Water por validators reales desde truth committed —no por seed-only regeneration—, deriva quality de esa truth y sólo publica la session después del semantic preflight.
 
-Schemas `1` y `2` conservan compatibilidad legacy explícita: schema `1` carga su topología sin inventar tamaño/plan/geografía; schema `2` carga el MacroWorldPlan existente sin fabricar elevation/landforms. Ambos permanecen en su schema al guardarse y no se reinterpretan silenciosamente.
+Schemas `1`, `2` y `3` conservan compatibilidad legacy explícita: schema `1` carga su topología sin inventar tamaño/plan/geografía/Water; schema `2` carga el MacroWorldPlan sin fabricar elevation/landforms/Water; schema `3` carga MacroWorldPlan + MacroGeography sin fabricar Water ni quality truth. Todos permanecen en su schema al guardarse y no se reinterpretan silenciosamente.
 
-Este V1 es application/session persistence con truth macro geográfica acotada, no la persistencia mundial completa de la futura unidad conceptual: todavía no contiene hydrology/climate/geology, history, sector blueprints, gameplay mutations, identidades durables mundiales ni partitions. No copia `CurrentSliceLoadService`, no crea serializer/file store paralelo y no aplica `current_slice_v1` como si fuera un sector.
+Este V1 es application/session persistence con truth macro geográfica/hídrica acotada, no la persistencia mundial completa de la futura unidad conceptual: todavía no contiene climate/moisture, rivers, geology, history, sector blueprints, gameplay mutations, identidades durables mundiales ni partitions. No copia `CurrentSliceLoadService`, no crea serializer/file store paralelo y no aplica `current_slice_v1` como si fuera un sector.
 
 ### Logical Persistence Vs Physical Storage
 
@@ -515,6 +515,32 @@ Cuando una estructura se materializa, continúan siendo autoridades los sistemas
 
 Worldgen decide contexto y baseline; no reimplementa gameplay.
 
+## Runtime Performance Y Travel Pacing
+
+Regla transversal para datos mundiales costosos:
+
+`precompute → persist → event-driven/low-frequency → continuous simulation only with real gameplay consumer`
+
+Macro fields, Water conditioning y futuros planes globales se calculan al generar, se validan y se persisten. No deben convertirse en una simulación continua world-scale. Una actualización event-driven o de baja frecuencia requiere un consumidor y autoridad concretos; una simulación continua sólo se justifica cuando gameplay real la necesita y su coste está medido.
+
+Old Scars prioriza geografía comprimida creíble sobre distancias 1:1. El world/sector design futuro debe ofrecer identidad regional y barreras significativas sin convertir viaje normal en largos trayectos vacíos. Vehículos, máquinas y barcos podrán cambiar pacing, pero no justifican por anticipado una verdad falsa de transitabilidad o infrastructure.
+
+Whole-world NavMesh queda rechazado. La realización futura del sector activo y sus partitions internas producirán las surfaces/links locales que consume el `ActorNavigationController` existente; worldgen no crea un navigator paralelo. Terrain deformation queda como seam futuro de mutación local durable: esta arquitectura no autoriza ni implica voxels o una simulación global de suelo.
+
+### Future Consumer Matrix
+
+| Consumidor futuro | Truth macro que puede consumir | Sigue pendiente / no inferir ahora |
+| --- | --- | --- |
+| Player/AI navigation | relief/Water y corridors como hints de blueprint | Walkable/NavMesh/path final; usar partitions activas y `ActorNavigationController` |
+| Vehicles/machines | relief, Water y futuros networks para route feasibility | vehicle physics, grades físicas, roads y performance runtime |
+| Boats | ocean bodies/coastline y futura hydrology | navigable depth, rivers, ports y boat simulation |
+| Roads/rail | corridors, relief y crossings de futuras redes mundiales | trazado, bridges, grade/curvature y travel graph |
+| Buildings/construction | site-placement potential y future local blueprint | Buildable final, metros, foundations y terrain mutation |
+| POIs | anchor suitability y relación con geography/networks | authored selection/composition y condición histórica |
+| Factions/history | bounds, regions y future sites/networks | strategic simulation y event-sourced persistence |
+| Underground | world bounds y future geology | caves, strata, entrances y relación con surface terrain |
+| Terrain mutation | committed local baseline futura | voxel implementation o edición de macro truth global |
+
 ## System Harmony — M32 A M41.1
 
 | Área validada | Autoridad preservada | Integración futura permitida | Prohibición |
@@ -565,17 +591,18 @@ Los IDs, estados y dependencias autorizadas viven exclusivamente en [Project_Roa
 3. World Identity / Topology / Determinism;
 4. Macro World Plan;
 5. Macro Elevation / Landforms;
-6. Macro Geography / Cross-Sector Networks;
-7. Bounded History / Present-Day Resolution;
-8. World Persistence;
-9. Sector Blueprint / Authored Composition;
-10. Large-Sector Navigation / Performance Gate;
-11. Sector Materialization / Transition;
-12. Connected First Playable;
-13. Playtest / Rebaseline;
-14. sistemas posteriores según dependencias y evidencia reales.
+6. Gameplay Quality / Macro Water;
+7. Macro Geography / Cross-Sector Networks;
+8. Bounded History / Present-Day Resolution;
+9. World Persistence;
+10. Sector Blueprint / Authored Composition;
+11. Large-Sector Navigation / Performance Gate;
+12. Sector Materialization / Transition;
+13. Connected First Playable;
+14. Playtest / Rebaseline;
+15. sistemas posteriores según dependencias y evidencia reales.
 
-Los pasos 2–5 están `VALIDATED`; también quedó validada una shell operacional intermedia de World Session/New Game/Save/Load sobre M37. Esa shell no marca completo el paso 8: persiste identity, MacroWorldPlan/topology, Macro Elevation/Landforms y provenance evidence, pero mantiene vacíos hydrology/climate/geology, history, local detail y gameplay world state. El próximo candidato es `Macro Hydrology / Coastlines V1`, según alcance y autorización del Roadmap.
+Los pasos 2–6 están `VALIDATED`; también quedó validada una shell operacional intermedia de World Session/New Game/Save/Load sobre M37. Esa shell no marca completo el paso 9: persiste identity, MacroWorldPlan/topology, Macro Elevation/Landforms, Macro Water y provenance evidence, pero mantiene vacíos climate/moisture, rivers/geology, history, local detail y gameplay world state. El próximo candidato es `Macro Climate / Moisture V1`, según alcance y autorización del Roadmap.
 
 Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y producción no se eliminan. Su orden final posterior no queda permanentemente congelado aquí.
 

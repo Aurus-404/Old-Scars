@@ -47,7 +47,7 @@ namespace OldScars.Core.ApplicationShell
             if (session == null)
                 return;
 
-            GUILayout.BeginArea(new Rect(18f, 18f, Mathf.Min(620f, Screen.width - 36f), 178f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(18f, 18f, Mathf.Min(620f, Screen.width - 36f), 210f), GUI.skin.box);
             GUILayout.Label(session.DisplayName, HeadingStyle());
             GUILayout.Label("World: " + session.WorldId.Canonical);
             GUILayout.Label("Seed: " + session.GenerationContext.WorldSeed.Canonical);
@@ -64,6 +64,16 @@ namespace OldScars.Core.ApplicationShell
             else if (session.HasMacroWorldPlan)
             {
                 GUILayout.Label("Macro geography: legacy schema 2 (not fabricated)");
+            }
+            if (TryGetActiveSectorWaterSample(out MacroWaterSample waterSample))
+            {
+                GUILayout.Label("Macro water: " +
+                                (waterSample.IsOcean ? "Ocean" : waterSample.IsCoastline ? "Coast" : "Land") +
+                                "  |  coverage " + session.MacroWater.GenerationSettings.LandCoverage);
+            }
+            else if (session.HasMacroGeography)
+            {
+                GUILayout.Label("Macro water: legacy schema 3 (not fabricated)");
             }
             GUILayout.Label("Press Escape for menu");
             GUILayout.EndArea();
@@ -131,6 +141,18 @@ namespace OldScars.Core.ApplicationShell
                 return false;
             }
             return session.MacroGeography.TrySampleAt(placement.Position, out sample);
+        }
+
+        public bool TryGetActiveSectorWaterSample(out MacroWaterSample sample)
+        {
+            sample = default;
+            WorldSession session = WorldSessionService.ActiveSession;
+            if (session == null || !session.HasMacroWorldPlan || !session.HasMacroWater ||
+                !session.MacroWorldPlan.TryGetSectorPlacement(
+                    session.ActiveSectorId, out MacroSectorPlacement placement))
+                return false;
+            sample = session.MacroWater.SampleAt(placement.Position);
+            return true;
         }
 
         public void ReturnToMainMenu()

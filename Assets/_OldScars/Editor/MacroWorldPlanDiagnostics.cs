@@ -15,7 +15,7 @@ namespace OldScars.EditorTools
     {
         private const long GoldenSeed = 8675309123456789L;
         private const string GoldenPlanHash =
-            "abaca9d8dbe0c30aa6a970cd9a0a89dfa5e89660006fc2d2db63b632425b9c5d";
+            "f08bbe358d8dc2759ac2c92fee2bbf1dc5c9b56088918503424c453a5699c26b";
         private const int FuzzSeedsPerPreset = 12;
 
         public static void Run()
@@ -60,7 +60,7 @@ namespace OldScars.EditorTools
                 "- insertion-order-independent canonical plan evidence\n" +
                 $"- golden plan hash: {GoldenPlanHash}\n" +
                 $"- fuzz: {FuzzSeedsPerPreset} seeds x 4 presets\n" +
-                "- schema-3 save round-trip plus explicit schema-1/schema-2 legacy paths\n" +
+                "- schema-4 save round-trip plus explicit schema-1/schema-2 legacy paths\n" +
                 "- approximate generation timings: " + string.Join("; ", performance) + "\n" +
                 "- temporary persistence fixtures removed");
         }
@@ -204,6 +204,7 @@ namespace OldScars.EditorTools
             JObject schemaTwoPayload = (JObject)current.DeepClone();
             schemaTwoPayload["schemaVersion"] = WorldSessionPersistenceService.MacroPlanSchemaVersion;
             schemaTwoPayload.Remove("macroGeography");
+            schemaTwoPayload.Remove("macroWater");
             WorldSessionPersistenceResult schemaTwoRead =
                 WorldSessionPersistenceService.FromPayload(schemaTwoPayload);
             Check(schemaTwoRead.Success && schemaTwoRead.Session.IsLegacySchemaV2 &&

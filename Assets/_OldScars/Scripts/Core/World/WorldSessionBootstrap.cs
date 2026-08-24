@@ -10,7 +10,8 @@ namespace OldScars.Core.World
     /// </summary>
     public static class WorldSessionBootstrap
     {
-        public const string CurrentGeneratorVersion = "macro_geography_v1";
+        public const string CurrentGeneratorVersion = "macro_water_quality_v1";
+        public const string LegacyMacroGeographyGeneratorVersion = "macro_geography_v1";
         public const string LegacyGeneratorVersion = "bootstrap_v1";
         public const string LegacyMacroPlanGeneratorVersion = "macro_plan_v1";
 
@@ -18,6 +19,20 @@ namespace OldScars.Core.World
             string displayName,
             WorldSeed worldSeed,
             WorldGenerationSettings generationSettings,
+            LoadedContentSet loadedContentSet,
+            out WorldSession session,
+            out string error)
+        {
+            return TryBuildNew(
+                displayName, worldSeed, generationSettings, LandCoveragePreset.High,
+                loadedContentSet, out session, out error);
+        }
+
+        public static bool TryBuildNew(
+            string displayName,
+            WorldSeed worldSeed,
+            WorldGenerationSettings generationSettings,
+            LandCoveragePreset landCoverage,
             LoadedContentSet loadedContentSet,
             out WorldSession session,
             out string error)
@@ -55,7 +70,26 @@ namespace OldScars.Core.World
                     error = geographyError;
                     return false;
                 }
-                SectorId starterSector = macroWorldPlan.FindCentralSectorId();
+                if (!MacroWaterGenerator.TryGenerate(
+                        macroWorldPlan, macroGeography, landCoverage,
+                        out MacroWaterPlan macroWater, out string waterError))
+                {
+                    error = waterError;
+                    return false;
+                }
+                if (!WorldGameplayQualityAnalyzer.TryAnalyze(
+                        macroWorldPlan, macroGeography, macroWater,
+                        out WorldGameplayQualityAnalysis quality, out string qualityError))
+                {
+                    error = qualityError;
+                    return false;
+                }
+                if (!WorldStarterSectorSelector.TrySelect(
+                        quality, out SectorId starterSector, out string starterError))
+                {
+                    error = starterError;
+                    return false;
+                }
 
                 WorldCreationContentEvidence evidence = WorldCreationContentEvidence.Capture(loadedContentSet);
                 return WorldSession.TryCreate(
@@ -64,6 +98,8 @@ namespace OldScars.Core.World
                     context,
                     macroWorldPlan,
                     macroGeography,
+                    macroWater,
+                    quality,
                     starterSector,
                     evidence,
                     out session,
