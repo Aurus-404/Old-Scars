@@ -15,7 +15,7 @@ namespace OldScars.EditorTools
     {
         private const long GoldenSeed = 8675309123456789L;
         private const string GoldenPlanHash =
-            "3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a";
+            "abaca9d8dbe0c30aa6a970cd9a0a89dfa5e89660006fc2d2db63b632425b9c5d";
         private const int FuzzSeedsPerPreset = 12;
 
         public static void Run()
@@ -60,7 +60,7 @@ namespace OldScars.EditorTools
                 "- insertion-order-independent canonical plan evidence\n" +
                 $"- golden plan hash: {GoldenPlanHash}\n" +
                 $"- fuzz: {FuzzSeedsPerPreset} seeds x 4 presets\n" +
-                "- schema-2 save round-trip and explicit schema-1 legacy path\n" +
+                "- schema-3 save round-trip plus explicit schema-1/schema-2 legacy paths\n" +
                 "- approximate generation timings: " + string.Join("; ", performance) + "\n" +
                 "- temporary persistence fixtures removed");
         }
@@ -190,15 +190,33 @@ namespace OldScars.EditorTools
             WorldSessionPersistenceResult read = WorldSessionPersistenceService.Read(
                 expected.WorldId.Canonical, store);
             Check(read.Success && read.Session.HasMacroWorldPlan &&
+                  read.Session.HasMacroGeography &&
                   read.Session.WorldId == expected.WorldId &&
                   read.Session.GenerationContext.WorldSeed == expected.GenerationContext.WorldSeed &&
                   read.Session.MacroWorldPlan.CanonicalHash == expected.MacroWorldPlan.CanonicalHash &&
+                  read.Session.MacroGeography.CanonicalHash == expected.MacroGeography.CanonicalHash &&
                   read.Session.Topology.CanonicalHash == expected.Topology.CanonicalHash &&
                   read.Session.ActiveSectorId == expected.ActiveSectorId,
-                "K. Schema-2 save/read must reconstruct the identical logical plan/session. " +
+                "K. Schema-3 save/read must reconstruct the identical logical plan/geography/session. " +
                 Safe(read.Failure), failures);
 
             JToken current = WorldSessionPersistenceService.ToPayload(expected);
+            JObject schemaTwoPayload = (JObject)current.DeepClone();
+            schemaTwoPayload["schemaVersion"] = WorldSessionPersistenceService.MacroPlanSchemaVersion;
+            schemaTwoPayload.Remove("macroGeography");
+            WorldSessionPersistenceResult schemaTwoRead =
+                WorldSessionPersistenceService.FromPayload(schemaTwoPayload);
+            Check(schemaTwoRead.Success && schemaTwoRead.Session.IsLegacySchemaV2 &&
+                  schemaTwoRead.Session.HasMacroWorldPlan &&
+                  !schemaTwoRead.Session.HasMacroGeography &&
+                  schemaTwoRead.Session.MacroWorldPlan.CanonicalHash ==
+                  expected.MacroWorldPlan.CanonicalHash &&
+                  (int)WorldSessionPersistenceService.ToPayload(schemaTwoRead.Session)["schemaVersion"] ==
+                  WorldSessionPersistenceService.MacroPlanSchemaVersion &&
+                  WorldSessionPersistenceService.ToPayload(schemaTwoRead.Session)["macroGeography"] == null,
+                "L. Existing schema-2 world must load and re-save without fabricated macro geography. " +
+                Safe(schemaTwoRead.Failure), failures);
+
             var legacyContext = new WorldGenerationContext(
                 new WorldSeed(77), GeneratorVersion.Parse(WorldSessionBootstrap.LegacyGeneratorVersion));
             SectorId legacySector = SectorId.FromDeterministicDomain(
@@ -206,7 +224,7 @@ namespace OldScars.EditorTools
             Check(WorldTopology.TryCreate(
                       new[] { legacySector }, Array.Empty<SectorConnection>(),
                       out WorldTopology legacyTopology, out WorldTopologyValidationResult legacyValidation),
-                "L. Legacy fixture topology failed: " + legacyValidation.Description, failures);
+                "L. Schema-1 legacy fixture topology failed: " + legacyValidation.Description, failures);
             if (legacyTopology == null)
                 return;
             JObject legacyPayload = BuildLegacyPayload(

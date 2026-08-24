@@ -232,9 +232,11 @@ namespace OldScars.Core.ApplicationShell
                 {
                     WorldSaveCatalogEntry entry = catalog.Entries[index];
                     bool selected = entry.SlotId == selectedSlotId;
-                    string size = entry.SizePreset.HasValue
-                        ? "  |  " + entry.SizePreset.Value
-                        : "  |  legacy v1";
+                    string size = !entry.SizePreset.HasValue
+                        ? "  |  legacy v1"
+                        : !entry.HasMacroGeography
+                            ? "  |  " + entry.SizePreset.Value + "  |  legacy v2"
+                            : "  |  " + entry.SizePreset.Value;
                     string label = (selected ? "> " : string.Empty) + entry.DisplayName + "\n" +
                                    entry.WorldId.Canonical + "  |  seed " + entry.WorldSeed.Canonical + size;
                     if (GUILayout.Button(label, GUILayout.Height(54f)))

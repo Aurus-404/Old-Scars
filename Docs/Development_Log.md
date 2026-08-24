@@ -3114,3 +3114,36 @@ Validación autónoma en Unity `6000.4.6f1`, worktree y roots temporales aislado
 La revisión scoped confirmó una sola autoridad de topology/session/persistence, ausencia de grid/Unity/WorldId/provenance/worker leakage y compatibilidad schema 1 delimitada. Detectó y revirtió antes del cierre un drift incidental de `ProjectSettings.runInBackground` producido durante validación; el diff final no contiene `ProjectSettings`. `codex review --uncommitted` volvió a quedar bloqueado por `codex.exe: Acceso denegado`, por lo que se completó revisión manual del diff. No se observaron errores/exceptions relevantes de Old Scars; permanecieron warnings preexistentes de paquetes/compilación y mensajes de licensing/shutdown del Editor aislado.
 
 No se implementaron elevation/noise, landforms, climate, hydrology/oceans, geology, vegetation, roads/rail, settlements/sites, history, sector geometry, terrain, materialization, transitions, NavMesh ni multithread generation. El siguiente candidato queda `ID TBD — Macro Elevation / Landforms V1`, `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — Macro Elevation / Landforms V1
+
+Fecha: 2026-08-24.
+
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+Se agregó `MacroGeographyPlan` como verdad lógica mundial separada de `MacroWorldPlan`, `WorldTopology`, sectores y Unity. Cubre exactamente los bounds finitos con un raster fixed-point compacto: elevation `ushort` normalizada y landform `byte` con `Plains`, `RollingHills`, `Highlands` y `Mountains`. `ElevationAt(MacroPoint2D)` interpola enteros de forma determinista/boundary-safe y `LandformAt` consulta la región; ninguna API de geografía recibe `SectorId`, por lo que futuros sectores consumen el mismo field global en lugar de intentar reconciliar relieve local.
+
+`MacroGeographyGenerator` separa domains de landform regions, regional upheaval, base elevation, relief detail, mountain ridges y surface roughness. SHA-256 se usa sólo para derivar esos domains una vez; el inner loop usa value noise/fBm fixed-point y mixer explícito, sin `Mathf.PerlinNoise`, `UnityEngine.Random`, `System.Random`, `GetHashCode` ni SHA por sample. La clasificación global por percentile evita worlds casi enteramente planos/montañosos y un análisis committed exige distribución, coherencia regional, connected plains/mountains, rango vertical y mayor roughness montañosa. Vintage Story fue referencia conceptual para múltiples escalas, passes separados y landforms regionales; no se copió su algoritmo.
+
+El tuning resuelto/persistido usa grids Small `49×49`, Medium `65×65`, Large `81×81` y Huge `113×113`; elevation+landform ocupan `3 bytes` raw por sample, aproximadamente `7.2–38.3 KB` antes del envelope/Base64. No se fija equivalencia a metros, sea level, sector shape ni terrain tiles. Un único `MacroGeographyPlan.CanonicalHash` prueba igualdad lógica para golden, persistence preflight y fresh process; no es compatibility policy.
+
+`WorldSessionBootstrap` usa `macro_geography_v1` y genera plan → geografía → session. `world_session_v1` evoluciona a schema `3`: persiste settings resueltos, elevation/landform samples, geography hash y el MacroWorldPlan/provenance/active sector existentes sobre el mismo envelope/store M37. Read reconstruye la truth committed por validators y rechaza bytes/length/hash semánticamente inválidos antes de publicar; no regenera desde seed. Schema `1` permanece topology-only legacy y schema `2` MacroWorldPlan-only legacy; ambos vuelven a guardarse en su schema sin geografía fabricada. `current_slice_v1` no cambió.
+
+Se agregó `MacroGeographyPreviewExporter` como herramienta Editor/diagnóstica sin autoridad. La preview golden inspeccionada mostró grandes lowlands continuos, macizos/ridges altos y regiones amplias de los cuatro landforms; los sector placements aparecen sólo como overlay y no crean seams ni estructuran el relief. El PNG de validación fue temporal y se eliminó.
+
+Validación autónoma en Unity `6000.4.6f1`, worktree y roots temporales aislados:
+
+- Runtime compile: `PASS`;
+- Editor compile: `PASS`;
+- `Macro Elevation / Landforms V1 Diagnostics`: `PASS` para same input, WorldId independence, different seed, exact bounds, interpolation/boundaries, global cross-sector query, variety/coherence, plains/mountains, elevation range, order independence y preview export;
+- golden MacroGeography SHA-256: `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`;
+- fuzz: `8 seeds × 4 presets`, todos los invariants `PASS`;
+- tiempos diagnósticos aproximados plan+geography: Small `14 ms`, Medium `49 ms`, Large `199 ms`, Huge `910 ms`; se reportan como evidencia, no budgets de producción;
+- schema `3` save/read exact round-trip y compatibilidad explícita schemas `1`/`2`: `PASS`;
+- `Macro World Plan V1 Diagnostics`, `World Session / Persistence V1 Application Shell Diagnostics` y Play Mode real Main Menu→Runtime→Save/Return→Load: `PASS`;
+- fresh Process A/B: `PASS`; el segundo proceso reconstruyó desde disco el mismo WorldId, seed, size, MacroWorldPlan hash, MacroGeography hash, topology hash y active sector, y eliminó el root temporal;
+- `World Identity / Topology / Determinism Foundation`, `Minimum Content Source Identity & Provenance Foundation`, `M37.0 Persistence Core` y `M37.1 Current Slice Persistent Round-Trip`: `PASS`.
+
+No se implementaron Unity Terrain, sector meshes, hydrology/coastlines, sea level final, climate/moisture, geology, vegetation/biomes, caves, roads/rail, settlements, history, sector polygons, materialization, transitions, NavMesh ni threading. No existe selector fake de workers; el futuro worker budget continúa performance-only y deberá conservar evidencia idéntica con `1` o `N` workers. El siguiente candidato queda `ID TBD — Macro Hydrology / Coastlines V1`, `PLANNED — NOT AUTHORIZED`.
+
+La revisión scoped confirmó que geography no consume WorldId, SectorId, topology edges ni Unity coordinates; no hay SHA inner-loop, global random, one-noise authority, parallel loader/save engine, hash proliferation, worker option falsa ni scope creep hacia terrain. Schemas `1`/`2` preservan su truth original y schema `3` rehidrata samples committed antes de publicar la session. Se detectó y revirtió el drift incidental `ProjectSettings.runInBackground` producido por Play Mode aislado; el diff final no incluye ProjectSettings. `codex review --uncommitted` continuó bloqueado por `codex.exe: Acceso denegado`, por lo que se completó revisión manual del diff. Los logs conservaron warnings preexistentes de packages/licensing y failures intencionales de fixtures; los diagnostics terminaron `PASS` sin errores/exceptions relevantes del producto.

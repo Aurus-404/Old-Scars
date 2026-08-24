@@ -22,11 +22,11 @@ Los nombres conceptuales utilizados aquí no congelan nombres públicos de clase
 
 La dirección de diseño está aprobada. No están implementados:
 
-- world generation más allá del esqueleto Macro World Plan V1;
+- world generation más allá de Macro World Plan + Macro Elevation/Landforms V1;
 - world sectors como regiones jugables/materializadas;
 - sector loading o transición;
-- macro geography o cross-sector features;
-- world persistence de geography, sector blueprints, gameplay mutations y estado activo/inactivo más allá de la shell mínima;
+- hydrology/coastlines, climate, geology, biomes u otros cross-sector features;
+- world persistence de geography posterior, sector blueprints, gameplay mutations y estado activo/inactivo más allá de la shell mínima;
 - generation compatibility, generation manifests o world-specific content contracts;
 - world history;
 - world-scale identity catalogs;
@@ -34,7 +34,7 @@ La dirección de diseño está aprobada. No están implementados:
 
 No se autoriza implementación por la existencia de este documento. Cada unidad requiere alcance, dependencia, validación y autorización propios bajo el Roadmap.
 
-Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existen una application shell acotada y `MacroWorldPlan V1`: `WorldSession`, mundo finito con bounds/placements/topology completos, payload hermano `world_session_v1` schema `2`, Main Menu con tamaño seleccionable, Load Game, World Runtime placeholder y Save/Return. No existen todavía elevation/landforms, geography, features continuos, sectores jugables/materializados, gameplay world state ni compatibility policy.
+Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existen una application shell acotada, `MacroWorldPlan V1` y `Macro Elevation / Landforms V1`: `WorldSession`, mundo finito con bounds/placements/topology, campo mundial fixed-point de elevation/landforms, payload hermano `world_session_v1` schema `3`, Main Menu con tamaño seleccionable, Load Game, World Runtime placeholder y Save/Return. No existen todavía hydrology/coastlines, climate/geology/biomes, otros features continuos, sectores jugables/materializados, gameplay world state ni compatibility policy.
 
 ## Decisión Arquitectónica Central
 
@@ -242,7 +242,7 @@ El orden arquitectónico aprobado es:
 
 Se congelan el orden de autoridad y la separación logical/runtime, no nombres de clases ni un número fijo de pases.
 
-La implementación actual cubre sólo el esqueleto anterior a geography: generation context, settings resueltos, bounds finitos, placements macro y topology derivada dentro de `MacroWorldPlan V1`. No simula ni infiere elevation, landforms, climate, hydrology, roads, sites o history.
+La implementación actual cubre generation context, settings resueltos, bounds finitos, placements/topology dentro de `MacroWorldPlan V1`, más un campo mundial committed de elevation normalizada y landforms (`Plains`, `RollingHills`, `Highlands`, `Mountains`). Esa verdad se consulta por coordenadas macro y precede todo detalle sectorial. No simula ni infiere climate, hydrology/coastlines, geology, vegetation/biomes, roads, sites o history.
 
 Principio preferido:
 
@@ -256,7 +256,7 @@ No:
 
 ### Truth Resuelta En New Game
 
-New Game debe generar y persistir suficiente verdad global para que el mundo sea coherente. En V1 ya quedan resueltos y persistidos identity, generation context/settings, bounds, placements y topology; los demás puntos continúan en sus passes futuros:
+New Game debe generar y persistir suficiente verdad global para que el mundo sea coherente. En V1 ya quedan resueltos y persistidos identity, generation context/settings, bounds, placements, topology y elevation/landforms; los demás puntos continúan en sus passes futuros:
 
 - world identity;
 - generation contract/context;
@@ -318,9 +318,9 @@ Requisitos:
 - cambios decorativos no desplazan infraestructura mayor;
 - outputs lógicos no dependen de frame timing, GameObject enumeration ni orden incidental de archivos.
 
-La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. `MacroWorldPlanGenerator` consume esas domain keys para sampling determinista mínimo de placements; no usa `System.Random` como contrato durable.
+La foundation implementada agrega `WorldGenerationContext` con `WorldSeed` signed 64-bit y `GeneratorVersion`, más `WorldDeterminism.DeriveDomainKey`. La derivación SHA-256 canónica usa seed/version/scope/pass; no usa `WorldId`, provenance, global random, runtime hash ni orden de ejecución. `MacroWorldPlanGenerator` consume esas domain keys para placements. `MacroGeographyGenerator` deriva una vez domains separados de regiones, upheaval/base, detail, ridges y roughness; luego usa sampling fixed-point/mixer estable en el inner loop, sin `System.Random`, Unity Perlin ni SHA por celda.
 
-Los golden hashes cubren domain derivation, topology y Macro World Plan. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
+Los golden hashes cubren domain derivation, topology, Macro World Plan y la única evidencia canónica de Macro Geography. Continúa sin implementarse generation compatibility ni una selección de generation-relevant content inputs; `LoadedContentSet` no se incorpora automáticamente a randomness.
 
 El futuro presupuesto de CPU/workers es un setting de ejecución/rendimiento, no un generation-relevant world setting. No participa en SectorId, placements, topology, hashes, geography ni otros resultados. Cuando existan passes realmente paralelizables, `1 worker` y `N workers` con seed/settings idénticos deberán producir exactamente el mismo mundo lógico. No existe todavía selector ni soporte multithread sin consumidor.
 
@@ -414,11 +414,11 @@ La persistencia mundial reutiliza las garantías de M37:
 
 `current_slice_v1` queda sin cambios como regression path. No representa un sector y no se migra silenciosamente a uno.
 
-La implementación actual usa el snapshot type hermano `world_session_v1`. Los mundos Macro Plan V1 se escriben con schema `2`, que conserva WorldId/display name, seed/generator version, settings resueltos, world bounds, macro placements, topología, evidencia canónica del plan, active sector y provenance de creación. Usa el envelope, serializer, safe-write/recovery y slot rules de M37; `WorldId.Canonical` es el slot y el display name no es identidad de filesystem. Read reconstruye settings, bounds, topology y plan por sus validators reales y sólo publica la session después del semantic preflight.
+La implementación actual usa el snapshot type hermano `world_session_v1`. Los mundos Macro Elevation/Landforms V1 se escriben con schema `3`, que conserva WorldId/display name, seed/generator version, MacroWorldPlan, settings resueltos y samples compactos de elevation/landforms, evidencia canónica de plan/geography, active sector y provenance de creación. Usa el envelope, serializer, safe-write/recovery y slot rules de M37; `WorldId.Canonical` es el slot y el display name no es identidad de filesystem. Read reconstruye plan y geografía por validators reales desde truth committed —no por seed-only regeneration— y sólo publica la session después del semantic preflight.
 
-Schema `1` conserva compatibilidad legacy explícita: carga su topología original sin inventar tamaño, bounds ni MacroWorldPlan y permanece schema `1` al guardarse. No se borra ni reinterpreta silenciosamente.
+Schemas `1` y `2` conservan compatibilidad legacy explícita: schema `1` carga su topología sin inventar tamaño/plan/geografía; schema `2` carga el MacroWorldPlan existente sin fabricar elevation/landforms. Ambos permanecen en su schema al guardarse y no se reinterpretan silenciosamente.
 
-Este V1 es application/session persistence, no la persistencia mundial completa de la futura unidad conceptual: todavía no contiene geography, history, sector blueprints, gameplay mutations, identidades durables mundiales ni partitions. No copia `CurrentSliceLoadService`, no crea serializer/file store paralelo y no aplica `current_slice_v1` como si fuera un sector.
+Este V1 es application/session persistence con truth macro geográfica acotada, no la persistencia mundial completa de la futura unidad conceptual: todavía no contiene hydrology/climate/geology, history, sector blueprints, gameplay mutations, identidades durables mundiales ni partitions. No copia `CurrentSliceLoadService`, no crea serializer/file store paralelo y no aplica `current_slice_v1` como si fuera un sector.
 
 ### Logical Persistence Vs Physical Storage
 
@@ -575,7 +575,7 @@ Los IDs, estados y dependencias autorizadas viven exclusivamente en [Project_Roa
 13. Playtest / Rebaseline;
 14. sistemas posteriores según dependencias y evidencia reales.
 
-Los pasos 2–4 están `VALIDATED`; también quedó validada una shell operacional intermedia de World Session/New Game/Save/Load sobre M37. Esa shell no marca completo el paso 8: persiste identity, MacroWorldPlan/topology y provenance evidence, pero mantiene vacíos geography, history, local detail y gameplay world state. El próximo candidato es `Macro Elevation / Landforms V1`, según alcance y autorización del Roadmap.
+Los pasos 2–5 están `VALIDATED`; también quedó validada una shell operacional intermedia de World Session/New Game/Save/Load sobre M37. Esa shell no marca completo el paso 8: persiste identity, MacroWorldPlan/topology, Macro Elevation/Landforms y provenance evidence, pero mantiene vacíos hydrology/climate/geology, history, local detail y gameplay world state. El próximo candidato es `Macro Hydrology / Coastlines V1`, según alcance y autorización del Roadmap.
 
 Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y producción no se eliminan. Su orden final posterior no queda permanentemente congelado aquí.
 

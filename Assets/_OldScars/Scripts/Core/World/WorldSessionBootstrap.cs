@@ -10,8 +10,9 @@ namespace OldScars.Core.World
     /// </summary>
     public static class WorldSessionBootstrap
     {
-        public const string CurrentGeneratorVersion = "macro_plan_v1";
+        public const string CurrentGeneratorVersion = "macro_geography_v1";
         public const string LegacyGeneratorVersion = "bootstrap_v1";
+        public const string LegacyMacroPlanGeneratorVersion = "macro_plan_v1";
 
         public static bool TryBuildNew(
             string displayName,
@@ -47,6 +48,13 @@ namespace OldScars.Core.World
                     error = planError;
                     return false;
                 }
+                if (!MacroGeographyGenerator.TryGenerate(
+                        context, macroWorldPlan, out MacroGeographyPlan macroGeography,
+                        out string geographyError))
+                {
+                    error = geographyError;
+                    return false;
+                }
                 SectorId starterSector = macroWorldPlan.FindCentralSectorId();
 
                 WorldCreationContentEvidence evidence = WorldCreationContentEvidence.Capture(loadedContentSet);
@@ -55,6 +63,7 @@ namespace OldScars.Core.World
                     normalizedName,
                     context,
                     macroWorldPlan,
+                    macroGeography,
                     starterSector,
                     evidence,
                     out session,

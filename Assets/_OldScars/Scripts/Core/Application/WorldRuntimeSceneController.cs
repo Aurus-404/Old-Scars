@@ -47,7 +47,7 @@ namespace OldScars.Core.ApplicationShell
             if (session == null)
                 return;
 
-            GUILayout.BeginArea(new Rect(18f, 18f, Mathf.Min(620f, Screen.width - 36f), 150f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(18f, 18f, Mathf.Min(620f, Screen.width - 36f), 178f), GUI.skin.box);
             GUILayout.Label(session.DisplayName, HeadingStyle());
             GUILayout.Label("World: " + session.WorldId.Canonical);
             GUILayout.Label("Seed: " + session.GenerationContext.WorldSeed.Canonical);
@@ -56,6 +56,15 @@ namespace OldScars.Core.ApplicationShell
                   "  |  sectors: " + session.MacroWorldPlan.SectorPlacements.Count
                 : "World size: legacy schema 1 (no macro plan)");
             GUILayout.Label("Active sector: " + session.ActiveSectorId.Canonical);
+            if (TryGetActiveSectorMacroSample(out MacroGeographySample geographySample))
+            {
+                GUILayout.Label("Macro geography: " + geographySample.Landform +
+                                "  |  elevation " + geographySample.Elevation + "/65535");
+            }
+            else if (session.HasMacroWorldPlan)
+            {
+                GUILayout.Label("Macro geography: legacy schema 2 (not fabricated)");
+            }
             GUILayout.Label("Press Escape for menu");
             GUILayout.EndArea();
 
@@ -109,6 +118,19 @@ namespace OldScars.Core.ApplicationShell
                 ? "World saved."
                 : $"Save failed during {result.Phase}: {result.Failure}";
             return result.Success;
+        }
+
+        public bool TryGetActiveSectorMacroSample(out MacroGeographySample sample)
+        {
+            sample = default;
+            WorldSession session = WorldSessionService.ActiveSession;
+            if (session == null || !session.HasMacroWorldPlan || !session.HasMacroGeography ||
+                !session.MacroWorldPlan.TryGetSectorPlacement(
+                    session.ActiveSectorId, out MacroSectorPlacement placement))
+            {
+                return false;
+            }
+            return session.MacroGeography.TrySampleAt(placement.Position, out sample);
         }
 
         public void ReturnToMainMenu()

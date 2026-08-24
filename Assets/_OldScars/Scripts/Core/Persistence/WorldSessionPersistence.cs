@@ -39,14 +39,15 @@ namespace OldScars.Core.Persistence
 
     /// <summary>
     /// Sibling world_session_v1 payload adapter over M37's existing envelope and
-    /// file store. Schema 2 persists Macro World Plan V1. Schema 1 remains an
-    /// explicit legacy shape and is never assigned a fabricated size preset.
+    /// file store. Schema 3 persists Macro Elevation / Landforms V1. Schemas 1
+    /// and 2 remain explicit legacy shapes and never receive fabricated truth.
     /// </summary>
     public static class WorldSessionPersistenceService
     {
         public const string SnapshotType = "world_session_v1";
         public const int LegacySchemaVersion = 1;
-        public const int CurrentSchemaVersion = 2;
+        public const int MacroPlanSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         private static readonly JsonSerializer PayloadSerializer = JsonSerializer.Create(
             new JsonSerializerSettings
@@ -64,9 +65,11 @@ namespace OldScars.Core.Persistence
         {
             if (session == null)
                 throw new ArgumentNullException(nameof(session));
-            return session.IsLegacySchemaV1
-                ? JToken.FromObject(BuildLegacySaveData(session), PayloadSerializer)
-                : JToken.FromObject(BuildCurrentSaveData(session), PayloadSerializer);
+            if (session.IsLegacySchemaV1)
+                return JToken.FromObject(BuildLegacySaveData(session), PayloadSerializer);
+            if (session.IsLegacySchemaV2)
+                return JToken.FromObject(BuildMacroPlanSaveData(session), PayloadSerializer);
+            return JToken.FromObject(BuildCurrentSaveData(session), PayloadSerializer);
         }
 
         public static WorldSessionPersistenceResult FromPayload(JToken payload)
@@ -101,8 +104,10 @@ namespace OldScars.Core.Persistence
             {
                 if (schemaVersion == LegacySchemaVersion)
                     return PreflightLegacy(payload.ToObject<WorldSessionV1SaveData>(PayloadSerializer));
+                if (schemaVersion == MacroPlanSchemaVersion)
+                    return PreflightMacroPlan(payload.ToObject<WorldSessionV2SaveData>(PayloadSerializer));
                 if (schemaVersion == CurrentSchemaVersion)
-                    return PreflightCurrent(payload.ToObject<WorldSessionV2SaveData>(PayloadSerializer));
+                    return PreflightCurrent(payload.ToObject<WorldSessionV3SaveData>(PayloadSerializer));
                 return SemanticFailure(
                     $"Unsupported World Session contract '{snapshotType}' schema {schemaVersion}.");
             }
@@ -189,11 +194,11 @@ namespace OldScars.Core.Persistence
             return Success("SemanticPreflightLegacyV1", session);
         }
 
-        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV2SaveData data)
+        private static WorldSessionPersistenceResult PreflightMacroPlan(WorldSessionV2SaveData data)
         {
             if (data == null)
-                return SemanticFailure("World Session payload deserialized to null.");
-            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("Legacy schema-2 World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != MacroPlanSchemaVersion)
                 return SemanticFailure("World Session schema-2 header is inconsistent.");
             if (!TryReadCommon(
                     data.worldId, data.displayName, data.generationContext, data.activeSectorId,
@@ -206,8 +211,40 @@ namespace OldScars.Core.Persistence
             }
             if (!TryReadMacroWorldPlan(data.macroWorldPlan, out MacroWorldPlan plan, out string planError))
                 return SemanticFailure(planError);
-            if (!WorldSession.TryCreate(
+            if (!WorldSession.TryCreateLegacySchemaV2(
                     worldId, displayName, context, plan, activeSectorId, contentEvidence,
+                    out WorldSession session, out string sessionError))
+            {
+                return SemanticFailure(sessionError + ".");
+            }
+            return Success("SemanticPreflightLegacyV2", session);
+        }
+
+        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV3SaveData data)
+        {
+            if (data == null)
+                return SemanticFailure("World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("World Session schema-3 header is inconsistent.");
+            if (!TryReadCommon(
+                    data.worldId, data.displayName, data.generationContext, data.activeSectorId,
+                    data.creationContentProvenance,
+                    out WorldId worldId, out string displayName, out WorldGenerationContext context,
+                    out SectorId activeSectorId, out WorldCreationContentEvidence contentEvidence,
+                    out string commonError))
+            {
+                return SemanticFailure(commonError);
+            }
+            if (!TryReadMacroWorldPlan(data.macroWorldPlan, out MacroWorldPlan plan, out string planError))
+                return SemanticFailure(planError);
+            if (!TryReadMacroGeography(
+                    data.macroGeography, plan.WorldBounds,
+                    out MacroGeographyPlan geography, out string geographyError))
+            {
+                return SemanticFailure(geographyError);
+            }
+            if (!WorldSession.TryCreate(
+                    worldId, displayName, context, plan, geography, activeSectorId, contentEvidence,
                     out WorldSession session, out string sessionError))
             {
                 return SemanticFailure(sessionError + ".");
@@ -310,6 +347,81 @@ namespace OldScars.Core.Persistence
                 error = $"macroWorldPlan.canonicalHash mismatch; persisted '{Safe(data.canonicalHash)}', " +
                         $"reconstructed '{plan.CanonicalHash}'.";
                 plan = null;
+                return false;
+            }
+            return true;
+        }
+
+        private static bool TryReadMacroGeography(
+            MacroGeographySaveData data,
+            FiniteMacroWorldBounds worldBounds,
+            out MacroGeographyPlan geography,
+            out string error)
+        {
+            geography = null;
+            error = null;
+            if (data == null || data.generationSettings == null)
+            {
+                error = "macroGeography and its generationSettings are required";
+                return false;
+            }
+            MacroGeographyGenerationSettingsSaveData settingsData = data.generationSettings;
+            if (!MacroGeographyGenerationSettings.TryCreateResolved(
+                    settingsData.generationContract,
+                    settingsData.sampleColumns,
+                    settingsData.sampleRows,
+                    settingsData.regionalFrequencyQ16,
+                    settingsData.baseElevationFrequencyQ16,
+                    settingsData.detailFrequencyQ16,
+                    settingsData.roughnessFrequencyQ16,
+                    settingsData.resolvedAttempt,
+                    out MacroGeographyGenerationSettings settings,
+                    out string settingsError))
+            {
+                error = "macroGeography.generationSettings is invalid: " + settingsError + ".";
+                return false;
+            }
+
+            byte[] elevationBytes;
+            byte[] landformBytes;
+            try
+            {
+                elevationBytes = Convert.FromBase64String(data.elevationSamplesBase64 ?? string.Empty);
+                landformBytes = Convert.FromBase64String(data.landformSamplesBase64 ?? string.Empty);
+            }
+            catch (FormatException exception)
+            {
+                error = "macroGeography sample data is not valid Base64: " + exception.Message;
+                return false;
+            }
+            int sampleCount = checked(settings.SampleColumns * settings.SampleRows);
+            if (elevationBytes.Length != sampleCount * 2 || landformBytes.Length != sampleCount)
+            {
+                error = "macroGeography sample byte lengths do not match the resolved grid";
+                return false;
+            }
+            var elevations = new ushort[sampleCount];
+            for (int index = 0; index < elevations.Length; index++)
+                elevations[index] = (ushort)((elevationBytes[index * 2] << 8) |
+                                             elevationBytes[index * 2 + 1]);
+
+            if (!MacroGeographyPlan.TryCreate(
+                    settings,
+                    worldBounds,
+                    elevations,
+                    landformBytes,
+                    out geography,
+                    out string validationError))
+            {
+                error = "macroGeography failed validation: " + validationError;
+                return false;
+            }
+            if (!string.Equals(data.canonicalHash, geography.CanonicalHash, StringComparison.Ordinal))
+            {
+                error = "macroGeography.canonicalHash mismatch; persisted '" +
+                        Safe(data.canonicalHash) + "', reconstructed '" +
+                        geography.CanonicalHash + "'.";
+                geography = null;
                 return false;
             }
             return true;
@@ -493,9 +605,64 @@ namespace OldScars.Core.Persistence
             };
         }
 
-        private static WorldSessionV2SaveData BuildCurrentSaveData(WorldSession session)
+        private static WorldSessionV2SaveData BuildMacroPlanSaveData(WorldSession session)
         {
-            MacroWorldPlan plan = session.MacroWorldPlan;
+            return new WorldSessionV2SaveData
+            {
+                snapshotType = SnapshotType,
+                schemaVersion = MacroPlanSchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static WorldSessionV3SaveData BuildCurrentSaveData(WorldSession session)
+        {
+            MacroGeographyPlan geography = session.MacroGeography;
+            ushort[] elevationSamples = geography.CopyElevationSamples();
+            var elevationBytes = new byte[elevationSamples.Length * 2];
+            for (int index = 0; index < elevationSamples.Length; index++)
+            {
+                elevationBytes[index * 2] = (byte)(elevationSamples[index] >> 8);
+                elevationBytes[index * 2 + 1] = (byte)elevationSamples[index];
+            }
+            MacroGeographyGenerationSettings geographySettings = geography.GenerationSettings;
+            return new WorldSessionV3SaveData
+            {
+                snapshotType = SnapshotType,
+                schemaVersion = CurrentSchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
+                macroGeography = new MacroGeographySaveData
+                {
+                    generationSettings = new MacroGeographyGenerationSettingsSaveData
+                    {
+                        generationContract = geographySettings.GenerationContract,
+                        sampleColumns = geographySettings.SampleColumns,
+                        sampleRows = geographySettings.SampleRows,
+                        regionalFrequencyQ16 = geographySettings.RegionalFrequencyQ16,
+                        baseElevationFrequencyQ16 = geographySettings.BaseElevationFrequencyQ16,
+                        detailFrequencyQ16 = geographySettings.DetailFrequencyQ16,
+                        roughnessFrequencyQ16 = geographySettings.RoughnessFrequencyQ16,
+                        resolvedAttempt = geographySettings.ResolvedAttempt
+                    },
+                    elevationSamplesBase64 = Convert.ToBase64String(elevationBytes),
+                    landformSamplesBase64 = Convert.ToBase64String(geography.CopyLandformSamples()),
+                    canonicalHash = geography.CanonicalHash
+                },
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static MacroWorldPlanSaveData BuildMacroWorldPlan(MacroWorldPlan plan)
+        {
             var placements = new MacroSectorPlacementSaveData[plan.SectorPlacements.Count];
             for (int index = 0; index < placements.Length; index++)
             {
@@ -507,37 +674,27 @@ namespace OldScars.Core.Persistence
                     y = placement.Position.Y
                 };
             }
-            return new WorldSessionV2SaveData
+            return new MacroWorldPlanSaveData
             {
-                snapshotType = SnapshotType,
-                schemaVersion = CurrentSchemaVersion,
-                worldId = session.WorldId.Canonical,
-                displayName = session.DisplayName,
-                generationContext = BuildGenerationContext(session),
-                macroWorldPlan = new MacroWorldPlanSaveData
+                generationSettings = new WorldGenerationSettingsSaveData
                 {
-                    generationSettings = new WorldGenerationSettingsSaveData
-                    {
-                        worldSizePreset = WorldGenerationSettings.ToCanonical(
-                            plan.GenerationSettings.WorldSizePreset),
-                        resolvedSectorCount = plan.GenerationSettings.ResolvedSectorCount,
-                        resolvedWorldWidth = plan.GenerationSettings.ResolvedWorldWidth,
-                        resolvedWorldHeight = plan.GenerationSettings.ResolvedWorldHeight,
-                        resolvedMinimumSectorSpacing = plan.GenerationSettings.ResolvedMinimumSectorSpacing
-                    },
-                    worldBounds = new FiniteMacroWorldBoundsSaveData
-                    {
-                        minX = plan.WorldBounds.MinX,
-                        minY = plan.WorldBounds.MinY,
-                        maxXExclusive = plan.WorldBounds.MaxXExclusive,
-                        maxYExclusive = plan.WorldBounds.MaxYExclusive
-                    },
-                    sectorPlacements = placements,
-                    topology = BuildTopology(plan.Topology),
-                    canonicalHash = plan.CanonicalHash
+                    worldSizePreset = WorldGenerationSettings.ToCanonical(
+                        plan.GenerationSettings.WorldSizePreset),
+                    resolvedSectorCount = plan.GenerationSettings.ResolvedSectorCount,
+                    resolvedWorldWidth = plan.GenerationSettings.ResolvedWorldWidth,
+                    resolvedWorldHeight = plan.GenerationSettings.ResolvedWorldHeight,
+                    resolvedMinimumSectorSpacing = plan.GenerationSettings.ResolvedMinimumSectorSpacing
                 },
-                activeSectorId = session.ActiveSectorId.Canonical,
-                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+                worldBounds = new FiniteMacroWorldBoundsSaveData
+                {
+                    minX = plan.WorldBounds.MinX,
+                    minY = plan.WorldBounds.MinY,
+                    maxXExclusive = plan.WorldBounds.MaxXExclusive,
+                    maxYExclusive = plan.WorldBounds.MaxYExclusive
+                },
+                sectorPlacements = placements,
+                topology = BuildTopology(plan.Topology),
+                canonicalHash = plan.CanonicalHash
             };
         }
 
@@ -656,6 +813,20 @@ namespace OldScars.Core.Persistence
         }
 
         [Serializable]
+        private sealed class WorldSessionV3SaveData
+        {
+            public string snapshotType;
+            public int schemaVersion;
+            public string worldId;
+            public string displayName;
+            public WorldGenerationContextSaveData generationContext;
+            public MacroWorldPlanSaveData macroWorldPlan;
+            public MacroGeographySaveData macroGeography;
+            public string activeSectorId;
+            public WorldContentEvidenceSaveData creationContentProvenance;
+        }
+
+        [Serializable]
         private sealed class WorldGenerationContextSaveData
         {
             public string worldSeed;
@@ -670,6 +841,28 @@ namespace OldScars.Core.Persistence
             public MacroSectorPlacementSaveData[] sectorPlacements;
             public WorldTopologySaveData topology;
             public string canonicalHash;
+        }
+
+        [Serializable]
+        private sealed class MacroGeographySaveData
+        {
+            public MacroGeographyGenerationSettingsSaveData generationSettings;
+            public string elevationSamplesBase64;
+            public string landformSamplesBase64;
+            public string canonicalHash;
+        }
+
+        [Serializable]
+        private sealed class MacroGeographyGenerationSettingsSaveData
+        {
+            public string generationContract;
+            public int sampleColumns;
+            public int sampleRows;
+            public int regionalFrequencyQ16;
+            public int baseElevationFrequencyQ16;
+            public int detailFrequencyQ16;
+            public int roughnessFrequencyQ16;
+            public int resolvedAttempt;
         }
 
         [Serializable]

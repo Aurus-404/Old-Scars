@@ -23,6 +23,7 @@ namespace OldScars.EditorTools
         private const string PlayPhaseKey = "OldScars.WorldSessionApplicationDiagnostics.PlayPhase";
         private const string PlayWorldIdKey = "OldScars.WorldSessionApplicationDiagnostics.PlayWorldId";
         private const string PlayPlanHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayPlanHash";
+        private const string PlayGeographyHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayGeographyHash";
         private const string PlayTopologyHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayTopologyHash";
         private const string FreshRootEnvironment = "OLD_SCARS_WORLD_SESSION_DIAGNOSTIC_ROOT";
         private const long ExplicitSeed = -3141592653589793L;
@@ -64,7 +65,7 @@ namespace OldScars.EditorTools
                 failures,
                 "- explicit/random seed Macro World Plan V1 and immediate M37 write",
                 "- same-seed WorldId independence and deterministic macro plan",
-                "- world_session_v1 schema 2 semantic preflight and exact round-trip",
+                "- world_session_v1 schema 3 semantic preflight and exact committed-geography round-trip",
                 "- duplicate display names with distinct WorldId slots",
                 "- safe catalog filtering plus corrupt-save isolation",
                 "- create/close/load lifecycle without partial publication",
@@ -123,6 +124,7 @@ namespace OldScars.EditorTools
             WorldSession first = firstCreate.Session;
             Check(first.WorldId.IsValid && first.GenerationContext.WorldSeed == seed &&
                   first.HasMacroWorldPlan &&
+                  first.HasMacroGeography &&
                   first.MacroWorldPlan.GenerationSettings.WorldSizePreset == WorldSizePreset.Large &&
                   first.Topology.Sectors.Count == 128 && first.Topology.Connections.Count == 127,
                 "A. New Game must produce a valid WorldId and selected deterministic Macro World Plan.", failures);
@@ -136,8 +138,10 @@ namespace OldScars.EditorTools
                   firstPayload["generationContext"]?["worldSeed"]?.Type == JTokenType.String &&
                   firstPayload["macroWorldPlan"]?["sectorPlacements"] is JArray &&
                   firstPayload["macroWorldPlan"]?["topology"]?["sectors"] is JArray &&
+                  firstPayload["macroGeography"]?["elevationSamplesBase64"]?.Type == JTokenType.String &&
+                  firstPayload["macroGeography"]?["landformSamplesBase64"]?.Type == JTokenType.String &&
                   firstPayload["creationContentProvenance"]?["sources"] is JArray,
-                "world_session_v1 schema 2 must expose identity/context/plan/topology/provenance.",
+                "world_session_v1 schema 3 must expose identity/context/plan/geography/topology/provenance.",
                 failures);
 
             WorldSessionOperationResult overwrite = WorldSessionService.Save(store);
@@ -157,6 +161,7 @@ namespace OldScars.EditorTools
             Check(second.WorldId != first.WorldId,
                 "B/D. same seed/display name must still create a distinct WorldId.", failures);
             Check(second.MacroWorldPlan.CanonicalHash == first.MacroWorldPlan.CanonicalHash &&
+                  second.MacroGeography.CanonicalHash == first.MacroGeography.CanonicalHash &&
                   second.Topology.CanonicalHash == first.Topology.CanonicalHash &&
                   second.ActiveSectorId == first.ActiveSectorId,
                 "B. WorldId must not alter deterministic macro plan/topology evidence.", failures);
@@ -229,6 +234,11 @@ namespace OldScars.EditorTools
             invalidTopology["macroWorldPlan"]["topology"]["canonicalHash"] = new string('0', 64);
             Check(!WorldSessionPersistenceService.FromPayload(invalidTopology).Success,
                 "G. canonical topology evidence mismatch must fail semantic preflight.", failures);
+
+            JObject invalidGeography = (JObject)valid.DeepClone();
+            invalidGeography["macroGeography"]["canonicalHash"] = new string('0', 64);
+            Check(!WorldSessionPersistenceService.FromPayload(invalidGeography).Success,
+                "G. canonical macro geography evidence mismatch must fail semantic preflight.", failures);
 
             JObject invalidActiveSector = (JObject)valid.DeepClone();
             SectorId otherSector = SectorId.FromDeterministicDomain(
@@ -309,6 +319,7 @@ namespace OldScars.EditorTools
                     }
                     SessionState.SetString(PlayWorldIdKey, created.WorldId.Canonical);
                     SessionState.SetString(PlayPlanHashKey, created.MacroWorldPlan.CanonicalHash);
+                    SessionState.SetString(PlayGeographyHashKey, created.MacroGeography.CanonicalHash);
                     SessionState.SetString(PlayTopologyHashKey, created.Topology.CanonicalHash);
                     SessionState.SetInt(PlayPhaseKey, 1);
                     return;
@@ -380,11 +391,13 @@ namespace OldScars.EditorTools
                     WorldSession loaded = WorldSessionService.ActiveSession;
                     string worldId = SessionState.GetString(PlayWorldIdKey, string.Empty);
                     string planHash = SessionState.GetString(PlayPlanHashKey, string.Empty);
+                    string geographyHash = SessionState.GetString(PlayGeographyHashKey, string.Empty);
                     string topologyHash = SessionState.GetString(PlayTopologyHashKey, string.Empty);
                     WorldRuntimeSceneController runtime =
                         UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
                     if (loaded == null || runtime == null || loaded.WorldId.Canonical != worldId ||
                         !loaded.HasMacroWorldPlan || loaded.MacroWorldPlan.CanonicalHash != planHash ||
+                        !loaded.HasMacroGeography || loaded.MacroGeography.CanonicalHash != geographyHash ||
                         loaded.Topology.CanonicalHash != topologyHash)
                     {
                         FailPlay("Load action did not restore the recorded world/topology in World Runtime.", root);
@@ -440,6 +453,7 @@ namespace OldScars.EditorTools
             SessionState.EraseInt(PlayPhaseKey);
             SessionState.EraseString(PlayWorldIdKey);
             SessionState.EraseString(PlayPlanHashKey);
+            SessionState.EraseString(PlayGeographyHashKey);
             SessionState.EraseString(PlayTopologyHashKey);
             if (!string.IsNullOrEmpty(root) && Directory.Exists(root))
                 Directory.Delete(root, true);
@@ -488,6 +502,7 @@ namespace OldScars.EditorTools
                         WorldGenerationSettings.ToCanonical(
                             session.MacroWorldPlan.GenerationSettings.WorldSizePreset),
                         session.MacroWorldPlan.CanonicalHash,
+                        session.MacroGeography.CanonicalHash,
                         session.Topology.CanonicalHash,
                         session.ActiveSectorId.Canonical
                     });
@@ -497,13 +512,14 @@ namespace OldScars.EditorTools
                         "Seed: " + session.GenerationContext.WorldSeed.Canonical + "\n" +
                         "Size: " + session.MacroWorldPlan.GenerationSettings.WorldSizePreset + "\n" +
                         "MacroWorldPlanHash: " + session.MacroWorldPlan.CanonicalHash + "\n" +
+                        "MacroGeographyHash: " + session.MacroGeography.CanonicalHash + "\n" +
                         "TopologyHash: " + session.Topology.CanonicalHash + "\n" +
                         "ActiveSectorId: " + session.ActiveSectorId.Canonical);
                 }
                 else
                 {
                     string[] record = File.ReadAllLines(recordPath);
-                    if (record.Length != 6)
+                    if (record.Length != 7)
                         throw new InvalidOperationException("Fresh-process record is missing or malformed.");
 
                     WorldSaveCatalogResult catalog = WorldSaveCatalog.Discover(store);
@@ -520,8 +536,10 @@ namespace OldScars.EditorTools
                         WorldGenerationSettings.ToCanonical(
                             session.MacroWorldPlan.GenerationSettings.WorldSizePreset) != record[2] ||
                         session.MacroWorldPlan.CanonicalHash != record[3] ||
-                        session.Topology.CanonicalHash != record[4] ||
-                        session.ActiveSectorId.Canonical != record[5])
+                        !session.HasMacroGeography ||
+                        session.MacroGeography.CanonicalHash != record[4] ||
+                        session.Topology.CanonicalHash != record[5] ||
+                        session.ActiveSectorId.Canonical != record[6])
                     {
                         throw new InvalidOperationException("Fresh-process loaded evidence differs from Process A.");
                     }
@@ -532,6 +550,7 @@ namespace OldScars.EditorTools
                         "Seed: " + session.GenerationContext.WorldSeed.Canonical + "\n" +
                         "Size: " + session.MacroWorldPlan.GenerationSettings.WorldSizePreset + "\n" +
                         "MacroWorldPlanHash: " + session.MacroWorldPlan.CanonicalHash + "\n" +
+                        "MacroGeographyHash: " + session.MacroGeography.CanonicalHash + "\n" +
                         "TopologyHash: " + session.Topology.CanonicalHash + "\n" +
                         "ActiveSectorId: " + session.ActiveSectorId.Canonical);
                     WorldSessionService.Close();
@@ -572,9 +591,11 @@ namespace OldScars.EditorTools
                 expected.DisplayName != actual.DisplayName ||
                 expected.GenerationContext.WorldSeed != actual.GenerationContext.WorldSeed ||
                 expected.GenerationContext.GeneratorVersion != actual.GenerationContext.GeneratorVersion ||
-                expected.HasMacroWorldPlan != actual.HasMacroWorldPlan ||
-                expected.HasMacroWorldPlan && expected.MacroWorldPlan.CanonicalHash != actual.MacroWorldPlan.CanonicalHash ||
-                expected.Topology.CanonicalHash != actual.Topology.CanonicalHash ||
+                 expected.HasMacroWorldPlan != actual.HasMacroWorldPlan ||
+                 expected.HasMacroWorldPlan && expected.MacroWorldPlan.CanonicalHash != actual.MacroWorldPlan.CanonicalHash ||
+                 expected.HasMacroGeography != actual.HasMacroGeography ||
+                 expected.HasMacroGeography && expected.MacroGeography.CanonicalHash != actual.MacroGeography.CanonicalHash ||
+                 expected.Topology.CanonicalHash != actual.Topology.CanonicalHash ||
                 expected.ActiveSectorId != actual.ActiveSectorId ||
                 expected.CreationContentEvidence.LoadedContentSetFingerprint !=
                 actual.CreationContentEvidence.LoadedContentSetFingerprint ||

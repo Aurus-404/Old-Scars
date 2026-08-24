@@ -143,6 +143,31 @@ namespace OldScars.Core.World
             return best.SectorId;
         }
 
+        public bool TryGetSectorPlacement(SectorId sectorId, out MacroSectorPlacement placement)
+        {
+            placement = null;
+            if (!sectorId.IsValid)
+                return false;
+            int lower = 0;
+            int upper = sectorPlacements.Count - 1;
+            while (lower <= upper)
+            {
+                int middle = lower + (upper - lower) / 2;
+                MacroSectorPlacement candidate = sectorPlacements[middle];
+                int comparison = candidate.SectorId.CompareTo(sectorId);
+                if (comparison == 0)
+                {
+                    placement = candidate;
+                    return true;
+                }
+                if (comparison < 0)
+                    lower = middle + 1;
+                else
+                    upper = middle - 1;
+            }
+            return false;
+        }
+
         public static bool TryCreate(
             WorldGenerationSettings generationSettings,
             FiniteMacroWorldBounds worldBounds,

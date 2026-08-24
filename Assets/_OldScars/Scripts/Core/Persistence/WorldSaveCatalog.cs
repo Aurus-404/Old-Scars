@@ -21,6 +21,10 @@ namespace OldScars.Core.Persistence
             MacroWorldPlanHash = session.HasMacroWorldPlan
                 ? session.MacroWorldPlan.CanonicalHash
                 : null;
+            HasMacroGeography = session.HasMacroGeography;
+            MacroGeographyHash = session.HasMacroGeography
+                ? session.MacroGeography.CanonicalHash
+                : null;
             TopologyHash = session.Topology.CanonicalHash;
             ActiveSectorId = session.ActiveSectorId;
             CreationContentProvenanceFingerprint =
@@ -35,6 +39,8 @@ namespace OldScars.Core.Persistence
         public bool HasMacroWorldPlan { get; }
         public WorldSizePreset? SizePreset { get; }
         public string MacroWorldPlanHash { get; }
+        public bool HasMacroGeography { get; }
+        public string MacroGeographyHash { get; }
         public string TopologyHash { get; }
         public SectorId ActiveSectorId { get; }
         public string CreationContentProvenanceFingerprint { get; }

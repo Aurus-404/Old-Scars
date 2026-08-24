@@ -15,6 +15,7 @@ namespace OldScars.Core.World
             string displayName,
             WorldGenerationContext generationContext,
             MacroWorldPlan macroWorldPlan,
+            MacroGeographyPlan macroGeography,
             WorldTopology legacyTopology,
             SectorId activeSectorId,
             WorldCreationContentEvidence creationContentEvidence)
@@ -23,6 +24,7 @@ namespace OldScars.Core.World
             DisplayName = displayName;
             GenerationContext = generationContext;
             MacroWorldPlan = macroWorldPlan;
+            MacroGeography = macroGeography;
             this.legacyTopology = legacyTopology;
             ActiveSectorId = activeSectorId;
             CreationContentEvidence = creationContentEvidence;
@@ -32,8 +34,11 @@ namespace OldScars.Core.World
         public string DisplayName { get; }
         public WorldGenerationContext GenerationContext { get; }
         public MacroWorldPlan MacroWorldPlan { get; }
+        public MacroGeographyPlan MacroGeography { get; }
         public bool HasMacroWorldPlan => MacroWorldPlan != null;
         public bool IsLegacySchemaV1 => MacroWorldPlan == null;
+        public bool HasMacroGeography => MacroGeography != null;
+        public bool IsLegacySchemaV2 => MacroWorldPlan != null && MacroGeography == null;
         public WorldTopology Topology => MacroWorldPlan != null ? MacroWorldPlan.Topology : legacyTopology;
         public SectorId ActiveSectorId { get; }
         public WorldCreationContentEvidence CreationContentEvidence { get; }
@@ -45,6 +50,7 @@ namespace OldScars.Core.World
             string displayName,
             WorldGenerationContext generationContext,
             MacroWorldPlan macroWorldPlan,
+            MacroGeographyPlan macroGeography,
             SectorId activeSectorId,
             WorldCreationContentEvidence creationContentEvidence,
             out WorldSession session,
@@ -67,6 +73,16 @@ namespace OldScars.Core.World
             if (macroWorldPlan == null)
             {
                 error = "New WorldSession requires a validated MacroWorldPlan";
+                return false;
+            }
+            if (macroGeography == null)
+            {
+                error = "New WorldSession requires validated Macro Elevation / Landforms";
+                return false;
+            }
+            if (macroGeography.WorldBounds != macroWorldPlan.WorldBounds)
+            {
+                error = "Macro geography WorldBounds do not match MacroWorldPlan WorldBounds";
                 return false;
             }
             if (!activeSectorId.IsValid)
@@ -99,6 +115,63 @@ namespace OldScars.Core.World
                 displayName,
                 generationContext,
                 macroWorldPlan,
+                macroGeography,
+                null,
+                activeSectorId,
+                creationContentEvidence);
+            return true;
+        }
+
+        /// <summary>
+        /// Explicit schema-2 compatibility path. It preserves the complete
+        /// MacroWorldPlan V1 but never fabricates elevation or landforms.
+        /// </summary>
+        internal static bool TryCreateLegacySchemaV2(
+            WorldId worldId,
+            string displayName,
+            WorldGenerationContext generationContext,
+            MacroWorldPlan macroWorldPlan,
+            SectorId activeSectorId,
+            WorldCreationContentEvidence creationContentEvidence,
+            out WorldSession session,
+            out string error)
+        {
+            session = null;
+            error = null;
+            if (!worldId.IsValid)
+            {
+                error = "Legacy schema-2 WorldSession requires a valid WorldId";
+                return false;
+            }
+            if (!TryValidateDisplayName(displayName, out error))
+                return false;
+            if (generationContext == null || !generationContext.GeneratorVersion.IsValid)
+            {
+                error = "Legacy schema-2 WorldSession requires a valid WorldGenerationContext";
+                return false;
+            }
+            if (macroWorldPlan == null)
+            {
+                error = "Legacy schema-2 WorldSession requires a validated MacroWorldPlan";
+                return false;
+            }
+            if (!ContainsSector(macroWorldPlan.Topology, activeSectorId))
+            {
+                error = "Legacy schema-2 active SectorId does not exist in the committed topology";
+                return false;
+            }
+            if (creationContentEvidence == null)
+            {
+                error = "Legacy schema-2 WorldSession requires creation content provenance evidence";
+                return false;
+            }
+
+            session = new WorldSession(
+                worldId,
+                displayName,
+                generationContext,
+                macroWorldPlan,
+                null,
                 null,
                 activeSectorId,
                 creationContentEvidence);
@@ -163,10 +236,21 @@ namespace OldScars.Core.World
                 displayName,
                 generationContext,
                 null,
+                null,
                 topology,
                 activeSectorId,
                 creationContentEvidence);
             return true;
+        }
+
+        private static bool ContainsSector(WorldTopology topology, SectorId sectorId)
+        {
+            if (topology == null || !sectorId.IsValid)
+                return false;
+            for (int index = 0; index < topology.Sectors.Count; index++)
+                if (topology.Sectors[index] == sectorId)
+                    return true;
+            return false;
         }
 
         internal static bool TryNormalizeDisplayName(string raw, out string normalized, out string error)
