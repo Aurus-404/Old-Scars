@@ -3295,3 +3295,32 @@ La revisión scoped detectó y corrigió antes del cierre: alias mutable de conf
 Unity Terrain continúa recomendado como backend provisional después del spike: heightmap/TerrainCollider/local NavMesh funcionan con la truth actual y dejan un seam natural para futura mutación local. No prueba todavía final tiling/streaming, road/water surfaces, interiors/links, rendering/vegetation, persistence de mutations, caves/overhangs ni production performance. La composición futura queda `committed base terrain truth + durable local terrain mutations → materialized physical terrain`, sin implicar voxels.
 
 No se implementaron Biomes/Environment, settlements/streets, final sector streaming, terrain mutations, vegetation, final roads/water, climate, rivers ni gameplay world persistence. El siguiente candidato queda `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`; un Terrain Materialization V1 estrecho sólo deberá adelantarse si evidencia futura descubre un blocker fundacional real.
+
+### ID TBD — World Runtime / Player / Save Continuity System Harmony Correction
+
+Fecha: 2026-08-25.
+
+Estado: `VALIDATED — SYSTEM HARMONY CORRECTION COMPLETE`.
+
+El product `WorldRuntime` dejó de usar la cápsula/cámara técnica del spike y ahora instancia la misma composición authored de player/camera que consume `SampleScene`. `PFB_PlayerGameplayComposition` conserva el player real con profile Core, `PersistentSceneObjectId`, `ActorRuntimeIdentity`, Inventory, Equipment/ownership, health/medical/needs, visual rig/animación, `PlayerMovementController`/input y el `CameraRigController` existente. El materializador vuelve a ser un consumer físico acotado: terrain, water/roads proyectadas y NavMesh local, sin ownership de player/camera.
+
+Se agregó `world_gameplay_v1` schema `1` como payload hermano sobre M37, enlazado por `WorldId` + `ActiveSectorId` y con `current_slice_v1` sin cambios como truth gameplay. Load sigue el orden terrain → composición/profile → semantic binding preflight → Current Slice transactional apply/compare-or-rollback → camera bind. Worlds schema `5` anteriores sin sidecar usan bootstrap legacy explícito; un sidecar de otro world/sector falla antes de aplicar. Save preflighta gameplay antes de escribir y sólo declara éxito cuando terminan world session + gameplay; un fallo del segundo commit queda parcial, failed y accionable, sin fingir transacción multi-file.
+
+La identidad authored legacy `scene_sample_scene_actor_player_primary` se preservó intencionalmente como valor opaco para mantener continuidad. M36 validó formato/unicidad en `SampleScene`; M37/M38 y los ciclos WorldRuntime demostraron un único `ActorInstanceId`/player role/registry representation, sin duplicar autoridad durable. Return to Main Menu libera representaciones Current Slice antes del unload, limpia la session y resetea `WorldClock` sin destruir `GameDataManager`.
+
+Validación autónoma en Unity `6000.4.6f1`, worktree y roots temporales aislados:
+
+- Runtime compile y Editor compile: `PASS`;
+- static/semantic shared-composition y WorldSession application contracts: `PASS`;
+- Play Mode New Game → materialization → real player movement/camera → health mutation → Save → Menu → Load, dos ciclos consecutivos: `PASS`; pose, `PersistentSceneObjectId`, `ActorInstanceId` y health restaurados con cardinalidad 1;
+- world legacy sin gameplay sidecar: `PASS` mediante `LegacySafeSpawn`; copia deliberada A→B rechazada en `SemanticPreflight` sin publicar gameplay ready;
+- fresh Process A/B en dos Unity separados: `PASS`; mismo WorldId, SectorId, topology, seed, actor identity, pose y health desde disco;
+- M36.1 Foundation Identity, M37.0 Persistence Core, M37.1 Snapshot/Semantic Preflight y Current Slice persistent round-trip, M38 Actor Lifecycle, M38 Needs/WorldClock, M39 Health, Player Controls/Camera, M41 Navigation/Perception, Terrain Materialization, World Identity/Topology, Content Provenance, Macro Plan, Pass Isolation, Geography, Water y Human Geography: `PASS`;
+- tres capturas Terrain inland/rugged/coastal fueron exportadas fuera del repo e inspeccionadas con render activo; no mostraron cápsula/camera fixture del materializador y luego se eliminaron;
+- el intento de Terrain con `-nographics` se descartó por `RenderTexture.Create failed`; la repetición batch con render terminó `PASS`. Los mensajes del cliente de licensing fueron infraestructura y los procesos devolvieron exit `0` en las pruebas aceptadas.
+
+La revisión System Harmony confirmó que no existe segundo persistence engine, Current Slice loader, player/camera authority, WorldManager, schema `6`, upgrade legacy silencioso ni scope creep. `codex review` continuó bloqueado por `codex.exe: Acceso denegado`, por lo que se completó una revisión manual scoped. El cambio automático `ProjectSettings.runInBackground` del Editor aislado se revirtió y no forma parte del diff; los scripts temporales de authoring, saves y capturas fueron eliminados.
+
+Regla permanente: reutilizar la misma clase no constituye integración suficiente si ya existe una composición/autoridad gameplay. Product runtime debe consumir las autoridades establecidas de player, camera, identity, persistence y gameplay en vez de construir fixtures técnicos paralelos.
+
+No se implementaron Biomes, terrain scale tuning, streaming, settlements ni optimización de NavMesh. El siguiente candidato permanece `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`.

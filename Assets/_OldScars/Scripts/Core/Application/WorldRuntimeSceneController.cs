@@ -1,3 +1,5 @@
+using System.Globalization;
+using OldScars.Core.Actors;
 using OldScars.Core.Persistence;
 using OldScars.Core.World;
 using UnityEngine;
@@ -6,6 +8,14 @@ using UnityEngine.SceneManagement;
 
 namespace OldScars.Core.ApplicationShell
 {
+    public enum WorldRuntimePlayerBindSource
+    {
+        None,
+        NewGameSafeSpawn,
+        LegacySafeSpawn,
+        SaveRestore
+    }
+
     /// <summary>
     /// Product runtime shell for one validated WorldSession. The terrain spike
     /// is an explicit derived consumer at this scene boundary; session and
@@ -19,10 +29,23 @@ namespace OldScars.Core.ApplicationShell
         private bool menuOpen;
         private string statusMessage;
         private WorldTerrainMaterializationController materializationController;
+        private PlayerGameplayComposition playerComposition;
+        private GameObject lightingRoot;
+        private bool gameplayRestoreAttempted;
+        private bool compositionReadyBeforeRestore;
+        private bool gameplayStateReady;
+        private WorldGameplayLoadResult gameplayLoadResult;
+        private WorldRuntimePlayerBindSource playerBindSource;
 
         public bool IsMenuOpen => menuOpen;
         public string StatusMessage => statusMessage;
         public WorldTerrainMaterializationController MaterializationController => materializationController;
+        public PlayerGameplayComposition PlayerComposition => playerComposition;
+        public bool GameplayRestoreAttempted => gameplayRestoreAttempted;
+        public bool CompositionReadyBeforeRestore => compositionReadyBeforeRestore;
+        public bool GameplayStateReady => gameplayStateReady;
+        public WorldGameplayLoadResult GameplayLoadResult => gameplayLoadResult;
+        public WorldRuntimePlayerBindSource PlayerBindSource => playerBindSource;
 
         private void Start()
         {
@@ -39,7 +62,61 @@ namespace OldScars.Core.ApplicationShell
                         session, terrainMaterialization))
                 {
                     statusMessage = "Terrain materialization failed: " + materializationController.Failure;
+                    return;
                 }
+
+                EnsureWorldLighting();
+                if (!PlayerGameplayComposition.TryInstantiateAtSurface(
+                        materializationController.Result.SpawnPosition,
+                        transform,
+                        out playerComposition,
+                        out string playerFailure))
+                {
+                    statusMessage = "Player gameplay composition failed: " + playerFailure;
+                    Debug.LogError("[WorldRuntime][PLAYER_BIND_FAIL]\nWorldId: " +
+                                   session.WorldId.Canonical + "\nFailure: " + playerFailure);
+                    return;
+                }
+
+                if (WorldSessionService.ActiveSessionSource == WorldSessionActivationSource.Loaded)
+                {
+                    gameplayRestoreAttempted = true;
+                    compositionReadyBeforeRestore = materializationController.IsReady &&
+                                                    playerComposition.TryValidateRuntime(out _);
+                    if (!compositionReadyBeforeRestore)
+                    {
+                        FailGameplayInitialization(
+                            "Gameplay restore was rejected because terrain/player composition was not ready.");
+                        return;
+                    }
+
+                    gameplayLoadResult = WorldGameplayPersistenceService.LoadAndApply(
+                        session,
+                        WorldSessionService.ActivePersistenceStore);
+                    if (!gameplayLoadResult.Success)
+                    {
+                        FailGameplayInitialization(
+                            "Gameplay load failed during " + gameplayLoadResult.Phase + ": " +
+                            gameplayLoadResult.Failure);
+                        return;
+                    }
+
+                    playerBindSource = gameplayLoadResult.Disposition == WorldGameplayLoadDisposition.Restored
+                        ? WorldRuntimePlayerBindSource.SaveRestore
+                        : WorldRuntimePlayerBindSource.LegacySafeSpawn;
+                }
+                else
+                {
+                    ResetGameplayClockForBootstrap();
+                    playerBindSource = WorldRuntimePlayerBindSource.NewGameSafeSpawn;
+                }
+
+                if (playerBindSource == WorldRuntimePlayerBindSource.LegacySafeSpawn)
+                    ResetGameplayClockForBootstrap();
+
+                playerComposition.BindCameraToPlayer();
+                gameplayStateReady = true;
+                LogPlayerBound(session, playerComposition, playerBindSource);
                 return;
             }
 
@@ -83,6 +160,11 @@ namespace OldScars.Core.ApplicationShell
                                 result.Plan.Configuration.PhysicalLength +
                                 "  |  NavMesh vertices " + result.NavMeshVertexCount +
                                 "  |  roads " + result.Plan.IntersectingRoadCount);
+            }
+            if (playerComposition != null && gameplayStateReady)
+            {
+                GUILayout.Label("Player: " + playerComposition.PlayerIdentity.ActorInstanceId +
+                                "  |  " + playerBindSource);
             }
             else if (materializationController != null && !string.IsNullOrEmpty(materializationController.Failure))
             {
@@ -155,9 +237,15 @@ namespace OldScars.Core.ApplicationShell
 
         public bool SaveGame(PersistenceFileStore store = null)
         {
-            WorldSessionOperationResult result = WorldSessionService.Save(store);
+            if (!gameplayStateReady || playerComposition == null)
+            {
+                statusMessage = "Save failed: gameplay player/state is not ready.";
+                return false;
+            }
+
+            WorldRuntimeSaveResult result = WorldRuntimeSaveService.SaveActive(store);
             statusMessage = result.Success
-                ? "World saved."
+                ? "World and gameplay state saved."
                 : $"Save failed during {result.Phase}: {result.Failure}";
             return result.Success;
         }
@@ -190,6 +278,14 @@ namespace OldScars.Core.ApplicationShell
         public void ReturnToMainMenu()
         {
             SetMenuOpen(false);
+            if (playerComposition != null &&
+                !CurrentSliceLoadService.TryReleaseCurrentSceneRepresentations(out string releaseFailure))
+            {
+                statusMessage = "Return to Main Menu failed during gameplay teardown: " + releaseFailure;
+                SetMenuOpen(true);
+                return;
+            }
+            ResetGameplayClockForBootstrap();
             WorldSessionService.Close();
             SceneManager.LoadScene(WorldApplicationScenes.MainMenuSceneName, LoadSceneMode.Single);
         }
@@ -209,6 +305,70 @@ namespace OldScars.Core.ApplicationShell
         {
             menuOpen = value;
             Time.timeScale = menuOpen ? 0f : 1f;
+        }
+
+        private void FailGameplayInitialization(string failure)
+        {
+            gameplayStateReady = false;
+            statusMessage = failure;
+            playerComposition?.SetGameplayInputEnabled(false);
+            Debug.LogError("[WorldRuntime][GAMEPLAY_INIT_FAIL]\n" + failure +
+                           "\nActionTaken: gameplay input disabled; no fallback snapshot was fabricated");
+            SetMenuOpen(true);
+        }
+
+        private void EnsureWorldLighting()
+        {
+            Light[] lights = FindObjectsByType<Light>(FindObjectsInactive.Exclude);
+            for (int index = 0; index < lights.Length; index++)
+            {
+                if (lights[index] != null && lights[index].type == LightType.Directional)
+                {
+                    RenderSettings.sun = lights[index];
+                    return;
+                }
+            }
+
+            lightingRoot = new GameObject("World Runtime Directional Light");
+            lightingRoot.transform.SetParent(transform, false);
+            lightingRoot.transform.rotation = Quaternion.Euler(48f, -32f, 0f);
+            Light light = lightingRoot.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 1.25f;
+            light.color = new Color(1f, 0.96f, 0.88f, 1f);
+            RenderSettings.sun = light;
+        }
+
+        private static void ResetGameplayClockForBootstrap()
+        {
+            WorldClock clock = WorldClock.Current;
+            if (clock != null &&
+                !clock.TryRestoreElapsedGameSeconds(
+                    WorldClock.DefaultElapsedGameSeconds,
+                    out string clockFailure))
+            {
+                Debug.LogError(
+                    "[WorldRuntime][CLOCK_RESET_FAIL]\nFailure: " + clockFailure);
+            }
+        }
+
+        private static void LogPlayerBound(
+            WorldSession session,
+            PlayerGameplayComposition composition,
+            WorldRuntimePlayerBindSource source)
+        {
+            Vector3 position = composition.PlayerTransform.position;
+            Debug.Log(
+                "[WorldRuntime][PLAYER_BOUND]\n" +
+                "WorldId: " + session.WorldId.Canonical + "\n" +
+                "ActorInstanceId: " + composition.PlayerIdentity.ActorInstanceId + "\n" +
+                "PersistentSceneObjectId: " + composition.PersistentIdentity.PersistentId + "\n" +
+                "ActorProfile: " + composition.PlayerProfile.ActorProfileId + "\n" +
+                "Source: " + source + "\n" +
+                "SectorId: " + session.ActiveSectorId.Canonical + "\n" +
+                "LocalPosition: (" + position.x.ToString("R", CultureInfo.InvariantCulture) + ", " +
+                position.y.ToString("R", CultureInfo.InvariantCulture) + ", " +
+                position.z.ToString("R", CultureInfo.InvariantCulture) + ")");
         }
 
         private static GUIStyle HeadingStyle()

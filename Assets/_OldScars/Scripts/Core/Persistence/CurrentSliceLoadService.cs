@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using OldScars.Core.Actors;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
@@ -79,11 +80,114 @@ namespace OldScars.Core.Persistence
             if (!read.Success)
                 return Failure(CurrentSliceLoadFailureCode.ReadFailed, "Read", $"{read.FailureCode}: {read.Failure}");
 
-            CurrentSliceResult preflight = CurrentSliceSnapshotService.FromPayload(read.Payload);
+            return LoadPayload(read.Payload, slotId);
+        }
+
+        /// <summary>
+        /// Applies a Current Slice payload already delivered by the M37 store.
+        /// This is the sibling-payload composition seam; semantic preflight,
+        /// scene resolution, transactional apply, compare, and rollback remain
+        /// owned by this service exactly as they are for a direct slot load.
+        /// </summary>
+        public static CurrentSliceLoadResult LoadPayload(JToken payload, string sourceLabel)
+        {
+            if (!Application.isPlaying)
+                return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "SceneResolution", "Load requires Play Mode.");
+
+            CurrentSliceResult preflight = CurrentSliceSnapshotService.FromPayload(payload);
             if (!preflight.Success)
                 return Failure(CurrentSliceLoadFailureCode.SemanticPreflightFailed, "SemanticPreflight", preflight.Failure);
 
-            if (!ResolvedScene.TryCreate(preflight.Snapshot, true, out ResolvedScene targetScene, out string resolutionError))
+            return ApplyPreflight(preflight.Snapshot, sourceLabel);
+        }
+
+        /// <summary>
+        /// Releases the active scene's Current Slice item/runtime representations
+        /// before a product scene unload. This prevents runtime registries from
+        /// retaining representation-only identities after their GameObjects are
+        /// destroyed; it does not save or mutate durable world truth.
+        /// </summary>
+        public static bool TryReleaseCurrentSceneRepresentations(out string failure)
+        {
+            failure = null;
+            if (!Application.isPlaying)
+            {
+                failure = "Current Slice scene release requires Play Mode.";
+                return false;
+            }
+
+            CurrentSliceResult capture = CurrentSliceSnapshotService.Capture();
+            if (!capture.Success)
+            {
+                failure = "Current Slice capture failed before scene release: " + capture.Failure;
+                return false;
+            }
+            if (!ResolvedScene.TryCreate(
+                    capture.Snapshot,
+                    true,
+                    out ResolvedScene scene,
+                    out string resolutionError))
+            {
+                failure = "Current Slice scene release preflight failed: " + resolutionError;
+                return false;
+            }
+
+            try
+            {
+                var ids = new HashSet<string>(
+                    Items(capture.Snapshot.items).Select(item => item.instanceId),
+                    StringComparer.Ordinal);
+                TeardownSlice(capture.Snapshot, scene, scene, ids);
+                foreach (ActorRuntimeIdentity runtime in ActorRuntimeRegistry.ActiveRepresentations
+                             .Where(identity => identity != null &&
+                                                identity.OriginKind == ActorOriginKind.Runtime)
+                             .OrderBy(identity => identity.ActorInstanceId, StringComparer.Ordinal)
+                             .ToArray())
+                {
+                    if (!ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(
+                            runtime.ActorInstanceId,
+                            out string actorError))
+                    {
+                        throw new InvalidOperationException(
+                            "Runtime actor scene release failed for '" + runtime.ActorInstanceId +
+                            "': " + actorError);
+                    }
+                }
+
+                Debug.Log(
+                    "[CurrentSlice][SCENE_RELEASE_OK]\n" +
+                    "Player: " + capture.Snapshot.player.persistentId + "\n" +
+                    "ReleasedItemIdentities: " + ids.Count);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                failure = exception.GetType().Name + ": " + exception.Message;
+                Debug.LogError(
+                    "[CurrentSlice][SCENE_RELEASE_FAIL]\nFailure: " + failure +
+                    "\nActionTaken: scene transition was not authorized");
+                return false;
+            }
+        }
+
+        internal static CurrentSliceLoadResult LoadValidatedSnapshot(
+            CurrentSliceSaveData snapshot,
+            string sourceLabel)
+        {
+            if (!Application.isPlaying)
+                return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "SceneResolution", "Load requires Play Mode.");
+            if (snapshot == null)
+                return Failure(CurrentSliceLoadFailureCode.SemanticPreflightFailed, "SemanticPreflight", "Current Slice snapshot is missing.");
+            return ApplyPreflight(snapshot, sourceLabel);
+        }
+
+        private static CurrentSliceLoadResult ApplyPreflight(
+            CurrentSliceSaveData snapshot,
+            string sourceLabel)
+        {
+            string logSource = string.IsNullOrWhiteSpace(sourceLabel) ? "<PAYLOAD>" : sourceLabel;
+
+            if (!ResolvedScene.TryCreate(snapshot, true, out ResolvedScene targetScene, out string resolutionError))
                 return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "SceneResolution", resolutionError);
 
             CurrentSliceResult rollbackCapture = CurrentSliceSnapshotService.Capture();
@@ -93,7 +197,7 @@ namespace OldScars.Core.Persistence
                 return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "RollbackResolution", resolutionError);
 
             var rollbackIds = new HashSet<string>(Items(rollbackCapture.Snapshot.items).Select(item => item.instanceId), StringComparer.Ordinal);
-            foreach (ItemState item in Items(preflight.Snapshot.items))
+            foreach (ItemState item in Items(snapshot.items))
             {
                 if (ItemInstanceIdRegistry.Instance.IsActive(item.instanceId) && !rollbackIds.Contains(item.instanceId))
                     return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "IdentityCollision",
@@ -104,7 +208,7 @@ namespace OldScars.Core.Persistence
                 .Where(actor => actor != null).Select(actor => actor.actorInstanceId), StringComparer.Ordinal);
             if (!string.IsNullOrWhiteSpace(rollbackCapture.Snapshot.player?.actorInstanceId))
                 rollbackActorIds.Add(rollbackCapture.Snapshot.player.actorInstanceId);
-            foreach (ActorState actor in Items(preflight.Snapshot.actors))
+            foreach (ActorState actor in Items(snapshot.actors))
             {
                 if (actor != null && ActorRuntimeRegistry.TryGet(actor.actorInstanceId, out _) &&
                     !rollbackActorIds.Contains(actor.actorInstanceId))
@@ -112,40 +216,40 @@ namespace OldScars.Core.Persistence
                         $"Target ActorInstanceId '{actor.actorInstanceId}' is active outside the captured Current Slice.");
             }
 
-            var sliceActorIds = new HashSet<string>(StringComparer.Ordinal) { preflight.Snapshot.player.persistentId };
+            var sliceActorIds = new HashSet<string>(StringComparer.Ordinal) { snapshot.player.persistentId };
             sliceActorIds.Add(rollbackCapture.Snapshot.player.persistentId);
-            if (!string.IsNullOrWhiteSpace(preflight.Snapshot.player.actorInstanceId))
-                sliceActorIds.Add(preflight.Snapshot.player.actorInstanceId);
+            if (!string.IsNullOrWhiteSpace(snapshot.player.actorInstanceId))
+                sliceActorIds.Add(snapshot.player.actorInstanceId);
             if (!string.IsNullOrWhiteSpace(rollbackCapture.Snapshot.player.actorInstanceId))
                 sliceActorIds.Add(rollbackCapture.Snapshot.player.actorInstanceId);
-            foreach (ActorState actor in Items(preflight.Snapshot.actors)) sliceActorIds.Add(actor.actorInstanceId);
+            foreach (ActorState actor in Items(snapshot.actors)) sliceActorIds.Add(actor.actorInstanceId);
             foreach (ActorState actor in Items(rollbackCapture.Snapshot.actors)) sliceActorIds.Add(actor.actorInstanceId);
-            foreach (CorpseState corpse in Items(preflight.Snapshot.corpses)) sliceActorIds.Add(corpse.persistentId);
+            foreach (CorpseState corpse in Items(snapshot.corpses)) sliceActorIds.Add(corpse.persistentId);
             foreach (CorpseState corpse in Items(rollbackCapture.Snapshot.corpses)) sliceActorIds.Add(corpse.persistentId);
             if (!ExternalBindings.TryCapture(sliceActorIds, out ExternalBindings external, out resolutionError))
                 return Failure(CurrentSliceLoadFailureCode.SceneResolutionFailed, "ExternalBindingCapture", resolutionError);
 
             var teardownIds = new HashSet<string>(rollbackIds, StringComparer.Ordinal);
-            teardownIds.UnionWith(Items(preflight.Snapshot.items).Select(item => item.instanceId));
+            teardownIds.UnionWith(Items(snapshot.items).Select(item => item.instanceId));
             bool injectActorFailure = ShouldInjectActorDiagnosticFailure();
             bool injectStorageFailure = ShouldInjectStorageDiagnosticFailure();
             bool injectRuntimeStateFailure = ShouldInjectRuntimeStateDiagnosticFailure();
             bool injectFirearmStateFailure = ShouldInjectFirearmStateDiagnosticFailure();
             bool mutationStarted;
-            if (TryApplyCore(preflight.Snapshot, targetScene, rollbackScene, teardownIds, external,
+            if (TryApplyCore(snapshot, targetScene, rollbackScene, teardownIds, external,
                     injectActorFailure, injectStorageFailure, injectRuntimeStateFailure, injectFirearmStateFailure,
                     out mutationStarted, out string applyFailure))
             {
                 CurrentSliceLoadResult success = new CurrentSliceLoadResult(
                     CurrentSliceLoadFailureCode.Success, "Complete", null, mutationStarted, false, false);
-                Log(slotId, success, preflight.Snapshot);
+                Log(logSource, success, snapshot);
                 return success;
             }
 
             if (!mutationStarted)
             {
                 CurrentSliceLoadResult rejected = Failure(CurrentSliceLoadFailureCode.ApplyFailed, "Apply", applyFailure);
-                Log(slotId, rejected, null);
+                Log(logSource, rejected, null);
                 return rejected;
             }
 
@@ -166,7 +270,7 @@ namespace OldScars.Core.Persistence
                 ? new CurrentSliceLoadResult(CurrentSliceLoadFailureCode.ApplyFailed, "Apply", applyFailure, true, true, true)
                 : new CurrentSliceLoadResult(CurrentSliceLoadFailureCode.RollbackFailed, "Rollback",
                     $"Apply failed: {applyFailure}\nRollback failed: {rollbackFailure}", true, true, false);
-            Log(slotId, result, null);
+            Log(logSource, result, null);
             return result;
         }
 

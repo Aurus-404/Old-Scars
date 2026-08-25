@@ -287,7 +287,7 @@ namespace OldScars.Core.Actors
             if (string.IsNullOrWhiteSpace(profile.visual_rig_profile_id))
                 return;
 
-            EntityVisualRigRuntime visualRig = GetComponent<EntityVisualRigRuntime>();
+            EntityVisualRigRuntime visualRig = GetComponentInChildren<EntityVisualRigRuntime>(true);
             if (visualRig == null)
                 return;
 

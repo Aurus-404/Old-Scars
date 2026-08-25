@@ -39,6 +39,13 @@ namespace OldScars.Core.World
         public WorldSession Session { get; }
     }
 
+    public enum WorldSessionActivationSource
+    {
+        None,
+        Created,
+        Loaded
+    }
+
     /// <summary>
     /// Single logical authority for the currently opened world. It owns only
     /// lifecycle publication; persistence IO remains in PersistenceFileStore.
@@ -47,11 +54,15 @@ namespace OldScars.Core.World
     {
         public static WorldSession ActiveSession { get; private set; }
         public static bool HasActiveSession => ActiveSession != null;
+        public static WorldSessionActivationSource ActiveSessionSource { get; private set; }
+        public static PersistenceFileStore ActivePersistenceStore { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetRuntimeState()
         {
             ActiveSession = null;
+            ActiveSessionSource = WorldSessionActivationSource.None;
+            ActivePersistenceStore = null;
         }
 
         public static WorldSessionOperationResult Create(
@@ -88,7 +99,8 @@ namespace OldScars.Core.World
                 return Fail(WorldSessionOperationFailureCode.InvalidInput, "Bootstrap", buildFailure);
             }
 
-            WorldSessionPersistenceResult save = WorldSessionPersistenceService.Save(candidate, store);
+            PersistenceFileStore resolvedStore = store ?? new PersistenceFileStore();
+            WorldSessionPersistenceResult save = WorldSessionPersistenceService.Save(candidate, resolvedStore);
             if (!save.Success)
             {
                 return Fail(WorldSessionOperationFailureCode.WriteFailed, "InitialSave",
@@ -96,6 +108,8 @@ namespace OldScars.Core.World
             }
 
             ActiveSession = candidate;
+            ActiveSessionSource = WorldSessionActivationSource.Created;
+            ActivePersistenceStore = resolvedStore;
             WorldSessionObservability.LogWorldCreated(
                 candidate, generationStopwatch.ElapsedMilliseconds);
             return Success("Create", candidate);
@@ -109,7 +123,8 @@ namespace OldScars.Core.World
                 return Fail(WorldSessionOperationFailureCode.ActiveSessionAlreadyExists, "Load",
                     "Close the active WorldSession before loading another world.");
 
-            WorldSessionPersistenceResult load = WorldSessionPersistenceService.Read(slotId, store);
+            PersistenceFileStore resolvedStore = store ?? new PersistenceFileStore();
+            WorldSessionPersistenceResult load = WorldSessionPersistenceService.Read(slotId, resolvedStore);
             if (!load.Success)
             {
                 WorldSessionOperationFailureCode code = load.FailureCode == WorldSessionPersistenceFailureCode.SemanticPreflightFailed
@@ -119,6 +134,8 @@ namespace OldScars.Core.World
             }
 
             ActiveSession = load.Session;
+            ActiveSessionSource = WorldSessionActivationSource.Loaded;
+            ActivePersistenceStore = resolvedStore;
             WorldSessionObservability.LogLoadOk(ActiveSession);
             return Success("Load", ActiveSession);
         }
@@ -129,13 +146,15 @@ namespace OldScars.Core.World
                 return Fail(WorldSessionOperationFailureCode.NoActiveSession, "Save",
                     "No WorldSession is active.");
 
-            WorldSessionPersistenceResult save = WorldSessionPersistenceService.Save(ActiveSession, store);
+            PersistenceFileStore resolvedStore = store ?? ActivePersistenceStore ?? new PersistenceFileStore();
+            WorldSessionPersistenceResult save = WorldSessionPersistenceService.Save(ActiveSession, resolvedStore);
             if (!save.Success)
             {
                 return Fail(WorldSessionOperationFailureCode.WriteFailed, save.Phase,
                     $"{save.FailureCode}: {save.Failure}");
             }
 
+            ActivePersistenceStore = resolvedStore;
             WorldSessionObservability.LogSaveOk(ActiveSession);
             return Success("Save", ActiveSession);
         }
@@ -143,6 +162,8 @@ namespace OldScars.Core.World
         public static void Close()
         {
             ActiveSession = null;
+            ActiveSessionSource = WorldSessionActivationSource.None;
+            ActivePersistenceStore = null;
         }
 
         private static WorldSessionOperationResult Success(string phase, WorldSession session)

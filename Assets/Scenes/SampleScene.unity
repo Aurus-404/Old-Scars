@@ -222,12 +222,12 @@ Transform:
   - {fileID: 1709637215}
   - {fileID: 1150529138}
   - {fileID: 344824650}
-  - {fileID: 1022389977}
   - {fileID: 3200000101}
   - {fileID: 2500000101}
   - {fileID: 2500000201}
   - {fileID: 2700000001}
   - {fileID: 3200000201}
+  - {fileID: 1077472543}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &94605717 stripped
@@ -240,37 +240,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 146d638aec8f4538aaa7de5955ee271e, type: 3}
   m_PrefabInstance: {fileID: 160324583}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &100625331
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 100625332}
-  m_Layer: 0
-  m_Name: OS_SOCKET_HandRight
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &100625332
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 100625331}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 821233918}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &118713953
 GameObject:
   m_ObjectHideFlags: 0
@@ -384,37 +353,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 118713953}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &123535724
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 123535725}
-  m_Layer: 0
-  m_Name: OS_SOCKET_Sling
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &123535725
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 123535724}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1592837294}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &133373096
 GameObject:
   m_ObjectHideFlags: 0
@@ -532,7 +470,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 150633523}
   rules:
@@ -589,7 +527,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a984f960e146d741b641319b4c73250, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorProfileComponent
   actorProfileId: debug_house_npc_01
 --- !u!114 &150633519
@@ -602,7 +540,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3c0bbcde888c4c41bd3c63fa1ff13149, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.LootableActorInventoryComponent
   inventory: {fileID: 150633521}
   equipment: {fileID: 0}
@@ -618,7 +556,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5c813272116e44378d09e976f72ca777, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorHealthComponent
   maxHealth: 100
   currentHealth: 100
@@ -636,7 +574,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a15b9d2d81a3462ca192aa559e7f0014, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId:
   useGridLayout: 1
@@ -652,7 +590,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Debug NPC Capsule
   inspectText: Actor debug vivo para probar salud y loot de actor.
@@ -700,7 +638,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - human
@@ -1108,86 +1046,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 237270554}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &243764992
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 243764993}
-  - component: {fileID: 243764995}
-  - component: {fileID: 243764994}
-  m_Layer: 0
-  m_Name: Visual
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &243764993
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 243764992}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1006616993}
-  m_Father: {fileID: 1022389977}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &243764994
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 243764992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5584e5f3428843d697a9702161a761b9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.EntityEquipmentVisualSynchronizer
-  equipmentVisualSourceBehaviour: {fileID: 3400000002}
-  visualRig: {fileID: 243764995}
-  logWarnings: 1
---- !u!114 &243764995
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 243764992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c576b1b722c46289212684e619056fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.EntityVisualRigRuntime
-  visualRigProfileId: human_standard_visual_rig
-  partBindings:
-  - partId: torso
-    target: {fileID: 1592837294}
-  - partId: arm_left
-    target: {fileID: 1422693496}
-  - partId: arm_right
-    target: {fileID: 821233918}
-  socketBindings:
-  - socketId: human_back_socket
-    target: {fileID: 1399638403}
-  - socketId: human_waist_socket
-    target: {fileID: 758160741}
-  - socketId: human_sling_socket
-    target: {fileID: 123535725}
-  - socketId: human_hand_left_socket
-    target: {fileID: 2145588918}
-  - socketId: human_hand_right_socket
-    target: {fileID: 100625332}
 --- !u!1 &269289501
 GameObject:
   m_ObjectHideFlags: 0
@@ -1336,143 +1194,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1663689009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &330585543
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 330585546}
-  - component: {fileID: 330585545}
-  - component: {fileID: 330585544}
-  - component: {fileID: 330585547}
-  m_Layer: 0
-  m_Name: Main Camera
-  m_TagString: MainCamera
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!81 &330585544
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
---- !u!20 &330585545
-Camera:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_projectionMatrixMode: 1
-  m_GateFitMode: 2
-  m_FOVAxisMode: 0
-  m_Iso: 200
-  m_ShutterSpeed: 0.005
-  m_Aperture: 16
-  m_FocusDistance: 10
-  m_FocalLength: 50
-  m_BladeCount: 5
-  m_Curvature: {x: 2, y: 11}
-  m_BarrelClipping: 0.25
-  m_Anamorphism: 0
-  m_SensorSize: {x: 36, y: 24}
-  m_LensShift: {x: 0, y: 0}
-  m_NormalizedViewPortRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
-  orthographic: 0
-  orthographic size: 5
-  m_Depth: -1
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 0
-  m_TargetEye: 3
-  m_HDR: 1
-  m_AllowMSAA: 1
-  m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
-  m_StereoConvergence: 10
-  m_StereoSeparation: 0.022
---- !u!4 &330585546
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.38268343, y: 0, z: 0, w: 0.92387956}
-  m_LocalPosition: {x: 0, y: 10, z: -10}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 382861323}
-  m_LocalEulerAnglesHint: {x: 45, y: 0, z: 0}
---- !u!114 &330585547
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier:
-  m_RenderShadows: 1
-  m_RequiresDepthTextureOption: 2
-  m_RequiresOpaqueTextureOption: 2
-  m_CameraType: 0
-  m_Cameras: []
-  m_RendererIndex: -1
-  m_VolumeLayerMask:
-    serializedVersion: 2
-    m_Bits: 1
-  m_VolumeTrigger: {fileID: 0}
-  m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 1
-  m_Antialiasing: 0
-  m_AntialiasingQuality: 2
-  m_StopNaN: 0
-  m_Dithering: 0
-  m_ClearDepth: 1
-  m_AllowXRRendering: 1
-  m_AllowHDROutput: 1
-  m_UseScreenCoordOverride: 0
-  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
-  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
-  m_RequiresDepthTexture: 0
-  m_RequiresColorTexture: 0
-  m_TaaSettings:
-    m_Quality: 3
-    m_FrameInfluence: 0.1
-    m_JitterScale: 1
-    m_MipBias: 0
-    m_VarianceClampScale: 0.9
-    m_ContrastAdaptiveSharpening: 0
-  m_Version: 2
 --- !u!1 &344824649
 GameObject:
   m_ObjectHideFlags: 0
@@ -1703,62 +1424,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 348366889}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &382861322
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 382861323}
-  - component: {fileID: 382861324}
-  m_Layer: 0
-  m_Name: CameraRig
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &382861323
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 382861322}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 330585546}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &382861324
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 382861322}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a6da45d7a2f74ac3bcb68aac862116ce, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.CameraRigController
-  recenterTarget: {fileID: 1022389977}
-  inventorySessionController: {fileID: 0}
-  uiInputBlocker: {fileID: 0}
-  snapToTargetOnStart: 1
-  targetOffset: {x: 0, y: 0, z: 0}
-  zoomSpeed: 1
-  minZoomDistance: 1
-  maxZoomDistance: 28
-  rightDragThresholdPixels: 8
-  yawDegreesPerMousePixel: 0.2
-  enableRecenterInput: 1
 --- !u!1 &392754406
 GameObject:
   m_ObjectHideFlags: 0
@@ -1981,7 +1646,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier:
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
@@ -2059,7 +1724,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e58a77c60c51403c9ce32ce94965dd0a, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContextualActionDebugResultPanel
 --- !u!4 &435223649
 Transform:
@@ -2103,7 +1768,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 65207fe4793003341971049e3d665a5f, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.GameDataManager
   modsFolderName: Mods
   haltOnDataErrors: 1
@@ -2264,7 +1929,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4863ddd2f538d9f4c9450b27aa2acdd6, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContextualActionDebugPanel
   progressController: {fileID: 803616387}
   resultPanel: {fileID: 0}
@@ -2870,37 +2535,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 740694649}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &758160740
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 758160741}
-  m_Layer: 0
-  m_Name: OS_SOCKET_Waist
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &758160741
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 758160740}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1592837294}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &776913591
 GameObject:
   m_ObjectHideFlags: 0
@@ -3072,7 +2706,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f3b7ce4dfe84b0499dd7d8d9fa5b631, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DebugActionProgressController
   resultPanel: {fileID: 435223648}
 --- !u!114 &803616388
@@ -3085,7 +2719,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a38b8339ff942c4ab4cfe948a7f540d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContextualActionDebugProgressPanel
   progressController: {fileID: 803616387}
 --- !u!4 &803616389
@@ -3103,11 +2737,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1373605503}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &821233918 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -7338050205949528730, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-  m_PrefabInstance: {fileID: 1962243746}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -3135,7 +2764,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier:
   m_IsGlobal: 1
   priority: 0
@@ -3673,7 +3302,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags: []
 --- !u!65 &989393222
@@ -3780,7 +3409,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName:
   inspectText: La puerta esta trabada por oxido. Una herramienta de palanca podria
@@ -3888,218 +3517,211 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
   m_PrefabInstance: {fileID: 994822253}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1006616992 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-  m_PrefabInstance: {fileID: 1962243746}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1006616993 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-  m_PrefabInstance: {fileID: 1962243746}
-  m_PrefabAsset: {fileID: 0}
---- !u!95 &1006616994
-Animator:
-  serializedVersion: 7
+--- !u!1001 &1077472541
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1006616992}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-  m_Controller: {fileID: 9100000, guid: 13fdcf17977ddc344933e5c90db25791, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage:
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
---- !u!1 &1022389976
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1022389977}
-  - component: {fileID: 1022389982}
-  - component: {fileID: 1022389981}
-  - component: {fileID: 3400000002}
-  - component: {fileID: 1022389979}
-  - component: {fileID: 1022389978}
-  - component: {fileID: 1022389983}
-  - component: {fileID: 1022389984}
-  - component: {fileID: 2200000001}
-  - component: {fileID: 2900000001}
-  - component: {fileID: 2500000001}
-  - component: {fileID: 2500000002}
-  - component: {fileID: 2500000003}
-  - component: {fileID: 2500000004}
-  - component: {fileID: 3100000001}
-  - component: {fileID: 3400000001}
-  - component: {fileID: 3400000003}
-  - component: {fileID: 3400000004}
-  - component: {fileID: 3400000005}
-  m_Layer: 0
-  m_Name: Debug Player
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1022389977
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.2, y: 1.01, z: -9.65}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 243764993}
-  m_Father: {fileID: 34060390}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1022389978
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 34060390}
+    m_Modifications:
+    - target: {fileID: 1111001339885890387, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_Name
+      value: Player Gameplay Composition
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -9.65
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5930283286975009305, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: uiInputBlocker
+      value:
+      objectReference: {fileID: 2080113302}
+    - target: {fileID: 5930283286975009305, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: inventorySessionController
+      value:
+      objectReference: {fileID: 2080113304}
+    - target: {fileID: 7180415898265155517, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: uiInputBlocker
+      value:
+      objectReference: {fileID: 2080113302}
+    - target: {fileID: 7180415898265155517, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: progressController
+      value:
+      objectReference: {fileID: 803616387}
+    - target: {fileID: 7180415898265155517, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: inventorySessionController
+      value:
+      objectReference: {fileID: 2080113304}
+    - target: {fileID: 7347510941826114422, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      propertyPath: debugInventory
+      value:
+      objectReference: {fileID: 1077472553}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1067347138483668188, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1077472553}
+    - targetCorrespondingSourceObject: {fileID: 1067347138483668188, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1077472552}
+  m_SourcePrefab: {fileID: 100100000, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+--- !u!4 &1077472542 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5432406927029731933, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
+--- !u!4 &1077472543 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4946937847806359282, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1077472544 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5805825361835087593, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1077472549}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a50f5cf6538441caa62d55e0e835746, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ActorInteractionContext
-  actorTags:
-  - player
-  - human
-  actorStats:
-  - id: strength
-    value: 4
-  equippedItemDefinitionId:
-  inventoryComponent: {fileID: 2200000001}
-  debugInventory: {fileID: 1022389984}
---- !u!114 &1022389979
+  m_Script: {fileID: 11500000, guid: 31f4b9a3e0f04f9fb4527a5d4f6522aa, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorNeedsComponent
+--- !u!114 &1077472545 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 7180415898265155517, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
+  m_GameObject: {fileID: 1077472549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95d20ae177664d809801e4ed36186095, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.PlayerMovementInputController
+--- !u!114 &1077472546 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5158948930147110515, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1077472549}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 889f4da42b4b4bb9899aee61cc58381c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.PointClickMovementController
-  moveSpeed: 4
-  rotateTowardsMovement: 1
-  rotationSpeedDegrees: 720
-  gravity: 20
---- !u!23 &1022389981
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+--- !u!114 &1077472547 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6207833436448695981, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 0
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1022389982
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
---- !u!143 &1022389983
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
+  m_GameObject: {fileID: 1077472549}
   m_Enabled: 1
-  serializedVersion: 3
-  m_Height: 1.86
-  m_Radius: 0.24
-  m_SlopeLimit: 45
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1022389984
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c813272116e44378d09e976f72ca777, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorHealthComponent
+--- !u!114 &1077472548 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1671211020046059730, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1077472549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a15b9d2d81a3462ca192aa559e7f0014, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
+--- !u!1 &1077472549 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1067347138483668188, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1077472550 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7347510941826114422, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1077472549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a50f5cf6538441caa62d55e0e835746, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ActorInteractionContext
+--- !u!20 &1077472551 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 3557293864738898037, guid: 89cacc679426a5c47a517b9d20cc23ca, type: 3}
+  m_PrefabInstance: {fileID: 1077472541}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1077472552
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
+  m_GameObject: {fileID: 1077472549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63d53727bd3b47cc887a44eb6b5706e7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Combat.FirearmDebugController
+  inventory: {fileID: 1077472548}
+  inputCamera: {fileID: 1077472551}
+  uiInputBlocker: {fileID: 2080113302}
+  movementInput: {fileID: 1077472545}
+  hitLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  muzzleHeight: 0
+  tracerDuration: 0.12
+--- !u!114 &1077472553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1077472549}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0fb8ad0f7d314af3be2e9a641ea736c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.DebugInventory
   initialItemDefinitionIds: []
   equippedItemIndex: -1
@@ -4134,7 +3756,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Maquina industrial apagada
   inspectText: La maquina esta apagada y sus indicadores quedaron fijos en una lectura
@@ -4150,7 +3772,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - inspectable
@@ -4713,37 +4335,6 @@ Transform:
   - {fileID: 994822254}
   m_Father: {fileID: 150633516}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1399638402
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1399638403}
-  m_Layer: 0
-  m_Name: OS_SOCKET_Back
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1399638403
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1399638402}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1592837294}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1403501687
 GameObject:
   m_ObjectHideFlags: 0
@@ -4920,11 +4511,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1663689009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &1422693496 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -6436488735565283833, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-  m_PrefabInstance: {fileID: 1962243746}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1453140795
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5356,7 +4942,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6ed8a294dd394a20be1044c365972fca, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectProfileComponent
   worldObjectProfileId: debug_locked_door_01
 --- !u!114 &1535098511
@@ -5369,7 +4955,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 1535098513}
   rules:
@@ -5440,7 +5026,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName:
   inspectText: La puerta esta trabada por oxido. Una herramienta de palanca podria
@@ -5492,7 +5078,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags: []
 --- !u!65 &1535098514
@@ -5640,11 +5226,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 23440728}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &1592837294 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -1435591996415127397, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-  m_PrefabInstance: {fileID: 1962243746}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1652977291
 GameObject:
   m_ObjectHideFlags: 0
@@ -6049,7 +5630,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - sealed_container
@@ -6162,7 +5743,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Contenedor sellado de mantenimiento
   inspectText: La tapa esta sellada y torcida. Parece forzable con una palanca.
@@ -6430,7 +6011,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6ed8a294dd394a20be1044c365972fca, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectProfileComponent
   worldObjectProfileId: debug_closed_door_01
 --- !u!114 &1947774381
@@ -6443,7 +6024,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 1947774383}
   rules:
@@ -6514,7 +6095,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName:
   inspectText: La puerta esta trabada por oxido. Una herramienta de palanca podria
@@ -6566,7 +6147,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags: []
 --- !u!65 &1947774384
@@ -6679,81 +6260,6 @@ Transform:
   - {fileID: 285387889}
   m_Father: {fileID: 2700000001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1962243746
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 243764993}
-    m_Modifications:
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -1.007
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 919132149155446097, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      propertyPath: m_Name
-      value: PSX_Char_Male_Base
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: -1435591996415127397, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1399638403}
-    - targetCorrespondingSourceObject: {fileID: -1435591996415127397, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 758160741}
-    - targetCorrespondingSourceObject: {fileID: -1435591996415127397, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 123535725}
-    - targetCorrespondingSourceObject: {fileID: -6436488735565283833, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2145588918}
-    - targetCorrespondingSourceObject: {fileID: -7338050205949528730, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 100625332}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1006616994}
-  m_SourcePrefab: {fileID: 100100000, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
 --- !u!1 &1988715441
 GameObject:
   m_ObjectHideFlags: 0
@@ -7025,7 +6531,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2080113301}
-  - component: {fileID: 2080113303}
   - component: {fileID: 2080113302}
   - component: {fileID: 2080113304}
   m_Layer: 0
@@ -7060,7 +6565,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b3f60db0da1e4827a96d77b9f20750f4, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DebugWorldUiInputBlocker
   actionPanel: {fileID: 541554164}
   resultPanel: {fileID: 435223648}
@@ -7069,23 +6574,6 @@ MonoBehaviour:
   actorNeedsPanel: {fileID: 2600000102}
   actorHealthWindow: {fileID: 0}
   inventorySessionController: {fileID: 2080113304}
---- !u!114 &2080113303
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2080113300}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95d20ae177664d809801e4ed36186095, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.PointClickMovementInputController
-  inputCamera: {fileID: 330585545}
-  movementController: {fileID: 1022389979}
-  uiInputBlocker: {fileID: 2080113302}
-  progressController: {fileID: 803616387}
-  inventorySessionController: {fileID: 0}
 --- !u!114 &2080113304
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7096,12 +6584,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b2580cefd94e4d68958998a67fb59741, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryUISessionController
   inventoryPanel: {fileID: 2200000102}
   storagePanel: {fileID: 2600000202}
-  playerInventory: {fileID: 2200000001}
-  movementController: {fileID: 1022389979}
+  playerInventory: {fileID: 1077472548}
+  movementController: {fileID: 1077472546}
   actorHealthWindow: {fileID: 0}
 --- !u!1 &2088085935
 GameObject:
@@ -7130,13 +6618,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bd67a7859eaf62469147fbce063e66d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldInteractionDebugTester
   debugPanel: {fileID: 541554164}
   progressController: {fileID: 803616387}
   availabilityPanel: {fileID: 2200000402}
   uiInputBlocker: {fileID: 2080113302}
-  actorInteractionContext: {fileID: 1022389978}
+  actorInteractionContext: {fileID: 1077472550}
   interactableLayerMask:
     serializedVersion: 2
     m_Bits: 64
@@ -7272,53 +6760,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2091371035}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &2145588917
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2145588918}
-  m_Layer: 0
-  m_Name: OS_SOCKET_HandLeft
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2145588918
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2145588917}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1422693496}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2200000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a15b9d2d81a3462ca192aa559e7f0014, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
-  rightHandItemInstanceId:
-  useGridLayout: 1
-  gridWidth: 6
-  gridHeight: 8
 --- !u!1 &2200000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -7361,13 +6802,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d763e87c6a1a4bc582ee6efa2c851647, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryDebugPanel
   gridVisualCellSize: 32
-  inventory: {fileID: 2200000001}
-  actorNeeds: {fileID: 2500000001}
-  actorHealth: {fileID: 2500000003}
-  firearmController: {fileID: 2900000001}
+  inventory: {fileID: 1077472548}
+  actorNeeds: {fileID: 1077472544}
+  actorHealth: {fileID: 1077472547}
+  firearmController: {fileID: 1077472552}
   actorEquipment: {fileID: 0}
 --- !u!1 &2200000300
 GameObject:
@@ -7412,7 +6853,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1845af6e52f94337b6dbdb20e2d6c705, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Feedback.GameplayFeedbackLog
   maxEntries: 50
 --- !u!114 &2200000303
@@ -7425,7 +6866,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ac65296635c941a2b7fede84b93527cb, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Feedback.DebugFeedbackLogPanel
   feedbackLog: {fileID: 2200000302}
   visibleOnStart: 0
@@ -7474,7 +6915,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: db1b7cd8576949a5b116cae798bc904c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DebugActionAvailabilityPanel
   visibleOnStart: 0
   toggleKey: 101
@@ -7491,7 +6932,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: debug_sealed_container_loot_01
   useGridLayout: 1
@@ -7507,7 +6948,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 989393221}
   rules:
@@ -7700,7 +7141,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 1709637211}
   rules:
@@ -8077,120 +7518,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &2500000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 31f4b9a3e0f04f9fb4527a5d4f6522aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorNeedsComponent
-  profile:
-    needs:
-    - needId: hunger
-      displayName: Hunger
-      maxValue: 100
-      initialValue: 100
-      decayPerSecond: 0.03
-    - needId: thirst
-      displayName: Thirst
-      maxValue: 100
-      initialValue: 100
-      decayPerSecond: 0.05
-  runtimeStates: []
---- !u!114 &2500000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
-  tags:
-  - alive_actor
---- !u!114 &2500000003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5c813272116e44378d09e976f72ca777, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorHealthComponent
-  maxHealth: 100
-  currentHealth: 100
-  lowHealthThreshold: 0.25
-  worldObjectTags: {fileID: 2500000002}
-  becomesLootableOnDeath: 0
-  canHealFromZero: 1
---- !u!114 &2500000004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
-  worldObjectTags: {fileID: 2500000002}
-  rules:
-  - stateName: alive_actor
-    priority: 0
-    requiredTags:
-    - alive_actor
-    forbiddenTags:
-    - low_health_actor
-    - dead_actor
-    activateGameObjects: []
-    deactivateGameObjects: []
-    rotateTransform: {fileID: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    colorRenderers:
-    - {fileID: 1022389981}
-    applyDebugColor: 1
-    debugColor: {r: 0.1, g: 0.75, b: 0.2, a: 1}
-  - stateName: low_health_actor
-    priority: 10
-    requiredTags:
-    - alive_actor
-    - low_health_actor
-    forbiddenTags:
-    - dead_actor
-    activateGameObjects: []
-    deactivateGameObjects: []
-    rotateTransform: {fileID: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    colorRenderers:
-    - {fileID: 1022389981}
-    applyDebugColor: 1
-    debugColor: {r: 0.9, g: 0.05, b: 0.05, a: 1}
-  - stateName: dead_actor
-    priority: 20
-    requiredTags:
-    - dead_actor
-    forbiddenTags: []
-    activateGameObjects: []
-    deactivateGameObjects: []
-    rotateTransform: {fileID: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    colorRenderers:
-    - {fileID: 1022389981}
-    applyDebugColor: 1
-    debugColor: {r: 0.02, g: 0.02, b: 0.02, a: 1}
 --- !u!1 &2500000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -8320,7 +7647,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -8336,7 +7663,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Survival Supply Debug Crate
   inspectText: Una caja debug abierta con agua, raciones y vendajes para probar necesidades
@@ -8352,7 +7679,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: debug_food_water_crate_loot_01
   useGridLayout: 1
@@ -8368,7 +7695,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 2500000105}
   rules:
@@ -8586,7 +7913,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -8602,7 +7929,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Misc Debug Crate
   inspectText: Una caja debug abierta para suministros futuros.
@@ -8617,7 +7944,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: debug_misc_supply_crate_loot_01
   useGridLayout: 1
@@ -8633,7 +7960,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 2500000205}
   rules:
@@ -8764,9 +8091,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62f54b8a40984a1bbf1046a0d0a1f6b1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorNeedsDebugPanel
-  actorNeeds: {fileID: 2500000001}
+  actorNeeds: {fileID: 1077472544}
   worldClock: {fileID: 0}
   inventorySessionController: {fileID: 0}
   visible: 1
@@ -8812,7 +8139,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7c02d4e47a244154bf45c68d0f15b826, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.ItemStorageDebugPanel
   gridVisualCellSize: 32
 --- !u!1 &2700000000
@@ -8953,7 +8280,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - human
@@ -8969,7 +8296,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Debug NPC Capsule
   inspectText: Actor debug vivo para probar salud y loot de actor.
@@ -9017,7 +8344,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a15b9d2d81a3462ca192aa559e7f0014, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.InventoryComponent
   rightHandItemInstanceId:
   useGridLayout: 1
@@ -9033,7 +8360,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5c813272116e44378d09e976f72ca777, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorHealthComponent
   maxHealth: 100
   currentHealth: 100
@@ -9051,7 +8378,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3c0bbcde888c4c41bd3c63fa1ff13149, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.LootableActorInventoryComponent
   inventory: {fileID: 2700000007}
   equipment: {fileID: 0}
@@ -9067,7 +8394,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3a984f960e146d741b641319b4c73250, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorProfileComponent
   actorProfileId: debug_npc_capsule_rifle_test_01
 --- !u!114 &2700000011
@@ -9080,7 +8407,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 2700000005}
   rules:
@@ -9137,7 +8464,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5584e5f3428843d697a9702161a761b9, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.EntityEquipmentVisualSynchronizer
   equipmentVisualSourceBehaviour: {fileID: 2700000015}
   visualRig: {fileID: 2700000014}
@@ -9152,7 +8479,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3c576b1b722c46289212684e619056fb, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.EntityVisualRigRuntime
   visualRigProfileId: human_standard_visual_rig
   partBindings:
@@ -9183,7 +8510,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6150b2d000ab4f8f88e6d486ffd33dc2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorEquipmentComponent
   equipmentLayoutId: human_standard_01
   inventoryComponent: {fileID: 2700000007}
@@ -9198,7 +8525,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 677c932a938a425f96f6fb1fe3fa3338, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorItemOwnershipComponent
   inventoryComponent: {fileID: 2700000007}
   equipmentComponent: {fileID: 2700000015}
@@ -9237,7 +8564,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6ed8a294dd394a20be1044c365972fca, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectProfileComponent
   worldObjectProfileId: debug_locked_door_01
 --- !u!114 &2800000002
@@ -9253,27 +8580,6 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Identity.PersistentSceneObjectId
   persistentId: scene_sample_scene_door_debug_locked
---- !u!114 &2900000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63d53727bd3b47cc887a44eb6b5706e7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Combat.FirearmDebugController
-  inventory: {fileID: 2200000001}
-  inputCamera: {fileID: 330585545}
-  uiInputBlocker: {fileID: 2080113302}
-  movementInput: {fileID: 2080113303}
-  hitLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  muzzleHeight: 0
-  tracerDuration: 0.12
 --- !u!114 &3000000101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9284,7 +8590,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6b9f45fd3fa4b83a1c4edb27b9d7ba2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.WorldObjectVisualBinder
   visualPrefabId: PFB_VIS_Crate_PSX
 --- !u!114 &3000000102
@@ -9310,7 +8616,7 @@ MonoBehaviour:
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6b9f45fd3fa4b83a1c4edb27b9d7ba2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.WorldObjectVisualBinder
   visualPrefabId: PFB_VIS_Crate_PSX
 --- !u!114 &3000000202
@@ -9336,7 +8642,7 @@ MonoBehaviour:
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6b9f45fd3fa4b83a1c4edb27b9d7ba2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.WorldObjectVisualBinder
   visualPrefabId: PFB_VIS_Crate_PSX
 --- !u!114 &3000000302
@@ -9352,24 +8658,6 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Identity.PersistentSceneObjectId
   persistentId: scene_sample_scene_container_misc_supply_crate
---- !u!114 &3100000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32307265670e48dfbcb96781ad924f5a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorVisualAnimatorDriver
-  animator: {fileID: 1006616994}
-  speedParameter: Speed
-  movingThreshold: 0.05
-  speedScale: 1
-  damping: 0.1
-  usePlanarVelocityOnly: 1
 --- !u!114 &3100001001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9380,7 +8668,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
   worldObjectTags: {fileID: 1535098513}
   doorPivot: {fileID: 1201045974}
@@ -9433,7 +8721,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b8cb4bc4fe074ac1a3e1d8e0d5b1442e, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.DoorSwingController
   worldObjectTags: {fileID: 1947774383}
   doorPivot: {fileID: 133373097}
@@ -9626,7 +8914,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -9644,7 +8932,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Heladera
   inspectText: Una heladera vieja. Puede contener comida, agua o suministros basicos.
@@ -9659,7 +8947,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_fridge_loot_01
   useGridLayout: 1
@@ -9675,7 +8963,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000101}
   rules:
@@ -9774,7 +9062,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -9794,7 +9082,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Horno
   inspectText: Un horno viejo. Puede contener restos de comida o utensilios.
@@ -9809,7 +9097,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_oven_loot_01
   useGridLayout: 1
@@ -9825,7 +9113,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000201}
   rules:
@@ -9924,7 +9212,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -9943,7 +9231,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Mesada
   inspectText: Una mesada de cocina con espacio para guardar objetos pequenos.
@@ -9958,7 +9246,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_countertop_loot_01
   useGridLayout: 1
@@ -9974,7 +9262,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000301}
   rules:
@@ -10073,7 +9361,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -10092,7 +9380,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Alacena
   inspectText: Una alacena vieja. Puede contener suministros domesticos, medicina
@@ -10108,7 +9396,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_cupboard_loot_01
   useGridLayout: 1
@@ -10124,7 +9412,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000401}
   rules:
@@ -10223,7 +9511,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
   tags:
   - opened_container
@@ -10242,7 +9530,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
   displayName: Alacena superior
   inspectText: Un mueble alto de cocina. Puede contener objetos pequenos o suministros
@@ -10258,7 +9546,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42e7b5824ad4be1a6d08d88e22bf247, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.ContainerLootComponent
   lootTableId: house_upper_cupboard_loot_01
   useGridLayout: 1
@@ -10274,7 +9562,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3db6dce55754672aa463cbed4ab2742, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectStateView
   worldObjectTags: {fileID: 3300000501}
   rules:
@@ -10363,76 +9651,6 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Identity.PersistentSceneObjectId
   persistentId: scene_sample_scene_container_house_upper_cupboard
---- !u!114 &3400000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1fe7807a406646c38ac3d67edb9448ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorCarryWeightComponent
-  inventoryComponent: {fileID: 2200000001}
-  ownershipComponent: {fileID: 3400000003}
-  baseCarryCapacityKg: 30
-  hardLimitMultiplier: 1.3
---- !u!114 &3400000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6150b2d000ab4f8f88e6d486ffd33dc2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorEquipmentComponent
-  equipmentLayoutId: human_standard_01
-  inventoryComponent: {fileID: 2200000001}
-  ownershipComponent: {fileID: 3400000003}
---- !u!114 &3400000003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 677c932a938a425f96f6fb1fe3fa3338, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorItemOwnershipComponent
-  inventoryComponent: {fileID: 2200000001}
-  equipmentComponent: {fileID: 3400000002}
---- !u!114 &3400000004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 39d1b19df6d37124ead656d4b0f39f8a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Identity.PersistentSceneObjectId
-  persistentId: scene_sample_scene_actor_player_primary
---- !u!114 &3400000005
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022389976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cb0615769c6c00c48afa52a08f75eae2, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.ActorMedicalStateComponent
 --- !u!114 &4200000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10443,11 +9661,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a57ffbb420c47fd8e85d5ce5e1e7e9d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingVisibilityManager
-  mainCamera: {fileID: 330585545}
-  playerContext: {fileID: 1022389978}
-  playerTransform: {fileID: 1022389977}
+  mainCamera: {fileID: 1077472551}
+  playerContext: {fileID: 1077472550}
+  playerTransform: {fileID: 1077472542}
   interiorVolumes:
   - {fileID: 4200000203}
   occluderTargets:
@@ -10570,7 +9788,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 48701acc725e482aa80385439da274c5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingInteriorVolume
   buildingId: m32_debug_test_house
   manager: {fileID: 4200000001}
@@ -10585,7 +9803,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 0
@@ -10605,7 +9823,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 0
@@ -10625,7 +9843,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 0
@@ -10645,7 +9863,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 0
@@ -10665,7 +9883,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 2
@@ -10686,7 +9904,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 0
@@ -10706,7 +9924,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 0
@@ -10726,7 +9944,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f923dc2874a67b39b12e813dfe1a2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.BuildingOccluderTarget
   buildingId: m32_debug_test_house
   targetType: 0
@@ -10747,7 +9965,6 @@ SceneRoots:
   - {fileID: 1468729046}
   - {fileID: 34060390}
   - {fileID: 1913606300}
-  - {fileID: 382861323}
   - {fileID: 2066079640}
   - {fileID: 700668412}
   - {fileID: 1248067453}

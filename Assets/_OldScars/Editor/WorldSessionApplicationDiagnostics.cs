@@ -29,12 +29,27 @@ namespace OldScars.EditorTools
         private const string PlayWaterHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayWaterHash";
         private const string PlayHumanHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayHumanHash";
         private const string PlayTopologyHashKey = "OldScars.WorldSessionApplicationDiagnostics.PlayTopologyHash";
+        private const string PlayPlayerActorIdKey = "OldScars.WorldSessionApplicationDiagnostics.PlayerActorId";
+        private const string PlayPlayerPersistentIdKey = "OldScars.WorldSessionApplicationDiagnostics.PlayerPersistentId";
+        private const string PlayPlayerPositionXKey = "OldScars.WorldSessionApplicationDiagnostics.PlayerPositionX";
+        private const string PlayPlayerPositionYKey = "OldScars.WorldSessionApplicationDiagnostics.PlayerPositionY";
+        private const string PlayPlayerPositionZKey = "OldScars.WorldSessionApplicationDiagnostics.PlayerPositionZ";
+        private const string PlayPlayerHealthKey = "OldScars.WorldSessionApplicationDiagnostics.PlayerHealth";
+        private const string PlayMovementOriginXKey = "OldScars.WorldSessionApplicationDiagnostics.MovementOriginX";
+        private const string PlayMovementOriginYKey = "OldScars.WorldSessionApplicationDiagnostics.MovementOriginY";
+        private const string PlayMovementOriginZKey = "OldScars.WorldSessionApplicationDiagnostics.MovementOriginZ";
+        private const string PlayWorldBIdKey = "OldScars.WorldSessionApplicationDiagnostics.WorldBId";
         private const string PlayWorldCreatedLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.WorldCreatedLogs";
         private const string PlayLoadOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.LoadOkLogs";
         private const string PlaySessionReadyLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.SessionReadyLogs";
         private const string PlayMaterializationReadyLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.MaterializationReadyLogs";
         private const string PlaySaveOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.SaveOkLogs";
         private const string PlayWriteCommitLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.WriteCommitLogs";
+        private const string PlayGameplaySaveOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.GameplaySaveOkLogs";
+        private const string PlayGameplayLoadOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.GameplayLoadOkLogs";
+        private const string PlayGameplayAbsentLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.GameplayAbsentLogs";
+        private const string PlayGameplayLoadFailLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.GameplayLoadFailLogs";
+        private const string PlayPlayerBoundLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.PlayerBoundLogs";
         private const string FreshRootEnvironment = "OLD_SCARS_WORLD_SESSION_DIAGNOSTIC_ROOT";
         private const long ExplicitSeed = -3141592653589793L;
 
@@ -102,6 +117,11 @@ namespace OldScars.EditorTools
             SessionState.SetInt(PlayMaterializationReadyLogCountKey, 0);
             SessionState.SetInt(PlaySaveOkLogCountKey, 0);
             SessionState.SetInt(PlayWriteCommitLogCountKey, 0);
+            SessionState.SetInt(PlayGameplaySaveOkLogCountKey, 0);
+            SessionState.SetInt(PlayGameplayLoadOkLogCountKey, 0);
+            SessionState.SetInt(PlayGameplayAbsentLogCountKey, 0);
+            SessionState.SetInt(PlayGameplayLoadFailLogCountKey, 0);
+            SessionState.SetInt(PlayPlayerBoundLogCountKey, 0);
             SessionState.SetBool(PlayPendingKey, true);
             EditorSceneManager.OpenScene(WorldApplicationScenes.MainMenuScenePath, OpenSceneMode.Single);
             EditorApplication.EnterPlaymode();
@@ -491,8 +511,33 @@ namespace OldScars.EditorTools
 
             Scene runtime = EditorSceneManager.OpenScene(
                 WorldApplicationScenes.WorldRuntimeScenePath, OpenSceneMode.Single);
-            Check(FindSceneComponents<WorldRuntimeSceneController>(runtime).Count == 1,
-                "J. World Runtime scene must wire one WorldRuntimeSceneController.", failures);
+            Check(FindSceneComponents<WorldRuntimeSceneController>(runtime).Count == 1 &&
+                  FindSceneComponents<PlayerGameplayComposition>(runtime).Count == 0 &&
+                  FindSceneComponents<CameraRigController>(runtime).Count == 0 &&
+                  FindSceneComponents<Camera>(runtime).Count == 0,
+                "J. World Runtime must wire one shell controller and no parallel authored player/camera fixture.",
+                failures);
+
+            PlayerGameplayComposition sharedPrefab =
+                AssetDatabase.LoadAssetAtPath<PlayerGameplayComposition>(
+                    "Assets/_OldScars/Resources/PFB_PlayerGameplayComposition.prefab");
+            string prefabFailure = null;
+            Check(sharedPrefab != null && sharedPrefab.TryValidateStructure(out prefabFailure),
+                "Shared product player prefab is missing or incomplete: " +
+                (prefabFailure ?? "<NO PREFAB>"), failures);
+
+            Scene sample = EditorSceneManager.OpenScene(
+                WorldApplicationScenes.SampleScenePath, OpenSceneMode.Single);
+            List<PlayerGameplayComposition> sampleCompositions =
+                FindSceneComponents<PlayerGameplayComposition>(sample);
+            Check(sampleCompositions.Count == 1 &&
+                  PrefabUtility.GetCorrespondingObjectFromSource(sampleCompositions[0]) == sharedPrefab &&
+                  FindSceneComponents<ActorInteractionContext>(sample)
+                      .FindAll(context => Array.IndexOf(context.ActorTags, "player") >= 0).Count == 1 &&
+                  FindSceneComponents<CameraRigController>(sample).Count == 1 &&
+                  FindSceneComponents<Camera>(sample).Count == 1,
+                "SampleScene must consume exactly one instance of the same authored player/camera composition.",
+                failures);
             Check(File.Exists(WorldApplicationScenes.SampleScenePath),
                 "SampleScene must remain available as the regression laboratory.", failures);
         }
@@ -563,24 +608,107 @@ namespace OldScars.EditorTools
                     if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
                         PlayLogCount(PlaySessionReadyLogCountKey) != 1 ||
                         PlayLogCount(PlayMaterializationReadyLogCountKey) != 1 ||
-                        PlayLogCount(PlayLoadOkLogCountKey) != 0)
+                        PlayLogCount(PlayLoadOkLogCountKey) != 0 ||
+                        PlayLogCount(PlayPlayerBoundLogCountKey) != 1 ||
+                        runtime.PlayerBindSource != WorldRuntimePlayerBindSource.NewGameSafeSpawn ||
+                        runtime.GameplayRestoreAttempted)
                     {
-                        FailPlay("New Game must emit one WORLD_CREATED and one SESSION_READY before any LOAD_OK.", root);
+                        FailPlay("New Game did not bind exactly one shared player from safe-spawn bootstrap.", root);
                         return;
                     }
 
-                    runtime.OpenMenu();
-                    if (!runtime.IsMenuOpen || !runtime.SaveGame(store))
+                    PlayerGameplayComposition player = runtime.PlayerComposition;
+                    Vector3 movementOrigin = player.PlayerTransform.position;
+                    SessionState.SetFloat(PlayMovementOriginXKey, movementOrigin.x);
+                    SessionState.SetFloat(PlayMovementOriginYKey, movementOrigin.y);
+                    SessionState.SetFloat(PlayMovementOriginZKey, movementOrigin.z);
+                    player.MovementController.SetMovementDirection(Vector3.right);
+                    SessionState.SetInt(PlayPhaseKey, 101);
+                    return;
+                }
+
+                if (phase == 101)
+                {
+                    WorldRuntimeSceneController runtime =
+                        UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    if (runtime == null || !runtime.GameplayStateReady || runtime.PlayerComposition == null)
                     {
-                        FailPlay("In-game menu did not open or Save did not invoke WorldSession persistence.", root);
+                        FailPlay("Shared player disappeared during movement proof.", root);
+                        return;
+                    }
+
+                    PlayerGameplayComposition player = runtime.PlayerComposition;
+                    Vector3 movementOrigin = new Vector3(
+                        SessionState.GetFloat(PlayMovementOriginXKey, 0f),
+                        SessionState.GetFloat(PlayMovementOriginYKey, 0f),
+                        SessionState.GetFloat(PlayMovementOriginZKey, 0f));
+                    if (Vector3.Distance(player.PlayerTransform.position, movementOrigin) < 0.08f)
+                        return;
+                    player.MovementController.ClearMovement();
+
+                    if (!player.CameraRig.HasContinuousFollow || player.CameraRig.AllowsIndependentPan ||
+                        player.GameplayCamera != Camera.main)
+                    {
+                        FailPlay("Existing CameraRig follow/MainCamera contract is not active on the shared player.", root);
+                        return;
+                    }
+                    player.CameraRig.OrbitAroundTarget(12f);
+                    player.CameraRig.ApplyZoom(1f);
+                    player.CameraRig.FollowTargetNow();
+
+                    TerrainMaterializationResult materialized = runtime.MaterializationController.Result;
+                    player.PlacePlayerAtSurface(materialized.PathDestination, Quaternion.Euler(0f, 33f, 0f));
+                    ActorHealthComponent health = player.PlayerContext.GetComponent<ActorHealthComponent>();
+                    if (health == null || !health.ApplyDamage(7f))
+                    {
+                        FailPlay("Health mutation fixture could not establish non-pose Current Slice evidence.", root);
+                        return;
+                    }
+
+                    Vector3 savedPosition = player.PlayerTransform.position;
+                    SessionState.SetString(PlayPlayerActorIdKey, player.PlayerIdentity.ActorInstanceId);
+                    SessionState.SetString(PlayPlayerPersistentIdKey, player.PersistentIdentity.PersistentId);
+                    SessionState.SetFloat(PlayPlayerPositionXKey, savedPosition.x);
+                    SessionState.SetFloat(PlayPlayerPositionYKey, savedPosition.y);
+                    SessionState.SetFloat(PlayPlayerPositionZKey, savedPosition.z);
+                    SessionState.SetFloat(PlayPlayerHealthKey, health.CurrentHealth);
+
+                    int writesBeforeFailure = PlayLogCount(PlayWriteCommitLogCountKey);
+                    WorldGameplayPersistenceService.DiagnosticInjectPrepareFailure = true;
+                    runtime.OpenMenu();
+                    bool injectedSave = runtime.SaveGame(store);
+                    if (injectedSave || PlayLogCount(PlayWriteCommitLogCountKey) != writesBeforeFailure ||
+                        PlayLogCount(PlaySaveOkLogCountKey) != 0 ||
+                        PlayLogCount(PlayGameplaySaveOkLogCountKey) != 0)
+                    {
+                        FailPlay("Gameplay capture failure incorrectly reported/committed an overall Save.", root);
+                        return;
+                    }
+
+                    if (!runtime.SaveGame(store))
+                    {
+                        FailPlay("In-game Save did not commit the world-bound Current Slice sibling.", root);
                         return;
                     }
                     if (PlayLogCount(PlaySaveOkLogCountKey) != 1 ||
-                        PlayLogCount(PlayWriteCommitLogCountKey) != 2)
+                        PlayLogCount(PlayGameplaySaveOkLogCountKey) != 1 ||
+                        PlayLogCount(PlayWriteCommitLogCountKey) != 3)
                     {
-                        FailPlay("Initial persistence plus one explicit Save must emit two WRITE_COMMIT records and one SAVE_OK.", root);
+                        FailPlay("Initial world write plus one coherent Save must emit three WRITE_COMMIT, one gameplay and one overall SAVE_OK.", root);
                         return;
                     }
+                    PersistenceLoadResult gameplayRead = store.Read(
+                        WorldGameplayPersistenceService.GetSlotId(WorldSessionService.ActiveSession.WorldId));
+                    if (!gameplayRead.Success ||
+                        gameplayRead.Payload?["snapshotType"]?.Value<string>() !=
+                        WorldGameplayPersistenceService.SnapshotType ||
+                        gameplayRead.Payload?["currentSlice"]?["snapshotType"]?.Value<string>() !=
+                        "current_slice_v1")
+                    {
+                        FailPlay("World gameplay sibling was not persisted through the M37 envelope/store.", root);
+                        return;
+                    }
+
                     runtime.ContinueGame();
                     if (runtime.IsMenuOpen)
                     {
@@ -648,22 +776,228 @@ namespace OldScars.EditorTools
                         FailPlay("Loaded World Runtime terrain materialization failed: " + materializationFailure, root);
                         return;
                     }
+                    if (!ValidateRestoredPlayer(runtime, out string playerFailure))
+                    {
+                        FailPlay("Current Slice did not restore saved player evidence: " + playerFailure, root);
+                        return;
+                    }
                     if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
                         PlayLogCount(PlayLoadOkLogCountKey) != 1 ||
                         PlayLogCount(PlaySessionReadyLogCountKey) != 2 ||
                         PlayLogCount(PlayMaterializationReadyLogCountKey) != 2 ||
-                        PlayLogCount(PlaySaveOkLogCountKey) != 1)
+                        PlayLogCount(PlaySaveOkLogCountKey) != 1 ||
+                        PlayLogCount(PlayGameplayLoadOkLogCountKey) != 1 ||
+                        PlayLogCount(PlayPlayerBoundLogCountKey) != 2 ||
+                        runtime.PlayerBindSource != WorldRuntimePlayerBindSource.SaveRestore ||
+                        !runtime.GameplayRestoreAttempted || !runtime.CompositionReadyBeforeRestore)
                     {
-                        FailPlay("Load flow must add exactly one LOAD_OK and one SESSION_READY without repeating create/save evidence.", root);
+                        FailPlay("Load flow did not restore gameplay after materialization/composition and before camera binding.", root);
                         return;
                     }
 
+                    runtime.OpenMenu();
+                    if (!runtime.SaveGame(store) ||
+                        PlayLogCount(PlaySaveOkLogCountKey) != 2 ||
+                        PlayLogCount(PlayGameplaySaveOkLogCountKey) != 2 ||
+                        PlayLogCount(PlayWriteCommitLogCountKey) != 5)
+                    {
+                        FailPlay("Repeated Save failed to preserve coherent world/gameplay commit evidence.", root);
+                        return;
+                    }
+                    if (!RecordExpectedPlayerState(runtime.PlayerComposition, out string recordFailure))
+                    {
+                        FailPlay("Repeated Save evidence could not be recorded: " + recordFailure, root);
+                        return;
+                    }
                     runtime.ReturnToMainMenu();
                     SessionState.SetInt(PlayPhaseKey, 4);
                     return;
                 }
 
                 if (phase == 4)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.MainMenuSceneName)
+                        return;
+                    if (WorldSessionService.HasActiveSession)
+                    {
+                        FailPlay("Second Return to Main Menu left a stale WorldSession.", root);
+                        return;
+                    }
+
+                    MainMenuSceneController menu =
+                        UnityEngine.Object.FindAnyObjectByType<MainMenuSceneController>();
+                    string worldId = SessionState.GetString(PlayWorldIdKey, string.Empty);
+                    if (menu == null || !menu.TryLoadWorld(worldId, store))
+                    {
+                        FailPlay("Repeated Main Menu Load could not reopen world A.", root);
+                        return;
+                    }
+                    SessionState.SetInt(PlayPhaseKey, 5);
+                    return;
+                }
+
+                if (phase == 5)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.WorldRuntimeSceneName)
+                        return;
+                    WorldRuntimeSceneController runtime =
+                        UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    bool materializationValid =
+                        ValidateRuntimeMaterialization(runtime, out string materializationFailure);
+                    bool playerValid = ValidateRestoredPlayer(runtime, out string playerFailure);
+                    if (!materializationValid || !playerValid ||
+                        UnityEngine.Object.FindObjectsByType<PlayerGameplayComposition>(
+                            FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
+                        UnityEngine.Object.FindObjectsByType<CameraRigController>(
+                            FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
+                    {
+                        FailPlay("Repeated Save->Menu->Load duplicated or changed the shared player: " +
+                                 (materializationFailure ?? playerFailure), root);
+                        return;
+                    }
+
+                    runtime.ReturnToMainMenu();
+                    SessionState.SetInt(PlayPhaseKey, 6);
+                    return;
+                }
+
+                if (phase == 6)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.MainMenuSceneName)
+                        return;
+                    MainMenuSceneController menu =
+                        UnityEngine.Object.FindAnyObjectByType<MainMenuSceneController>();
+                    if (menu == null || !menu.TryCreateWorld(
+                            "Legacy Gameplay State World", (ExplicitSeed + 1L).ToString(),
+                            WorldSizePreset.Small, LandCoveragePreset.Medium, store))
+                    {
+                        FailPlay("World B fixture could not be created without a gameplay sibling.", root);
+                        return;
+                    }
+                    SessionState.SetString(
+                        PlayWorldBIdKey,
+                        WorldSessionService.ActiveSession.WorldId.Canonical);
+                    SessionState.SetInt(PlayPhaseKey, 7);
+                    return;
+                }
+
+                if (phase == 7)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.WorldRuntimeSceneName)
+                        return;
+                    WorldRuntimeSceneController runtime =
+                        UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    WorldSession worldB = WorldSessionService.ActiveSession;
+                    if (!ValidateRuntimeMaterialization(runtime, out string materializationFailure) ||
+                        runtime.PlayerBindSource != WorldRuntimePlayerBindSource.NewGameSafeSpawn ||
+                        store.Read(WorldGameplayPersistenceService.GetSlotId(worldB.WorldId)).Success)
+                    {
+                        FailPlay("New world B did not begin from one unsaved safe-spawn gameplay composition: " +
+                                 materializationFailure, root);
+                        return;
+                    }
+                    runtime.ReturnToMainMenu();
+                    SessionState.SetInt(PlayPhaseKey, 8);
+                    return;
+                }
+
+                if (phase == 8)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.MainMenuSceneName)
+                        return;
+                    MainMenuSceneController menu =
+                        UnityEngine.Object.FindAnyObjectByType<MainMenuSceneController>();
+                    string worldB = SessionState.GetString(PlayWorldBIdKey, string.Empty);
+                    if (menu == null || !menu.TryLoadWorld(worldB, store))
+                    {
+                        FailPlay("Legacy world B could not be loaded without a gameplay sibling.", root);
+                        return;
+                    }
+                    SessionState.SetInt(PlayPhaseKey, 9);
+                    return;
+                }
+
+                if (phase == 9)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.WorldRuntimeSceneName)
+                        return;
+                    WorldRuntimeSceneController runtime =
+                        UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    if (!ValidateRuntimeMaterialization(runtime, out string materializationFailure) ||
+                        runtime.PlayerBindSource != WorldRuntimePlayerBindSource.LegacySafeSpawn ||
+                        runtime.GameplayLoadResult?.Disposition != WorldGameplayLoadDisposition.AbsentLegacy ||
+                        PlayLogCount(PlayGameplayAbsentLogCountKey) != 1)
+                    {
+                        FailPlay("Missing schema-5 gameplay sibling did not use explicit legacy safe bootstrap: " +
+                                 materializationFailure, root);
+                        return;
+                    }
+
+                    if (!WorldId.TryParse(
+                            SessionState.GetString(PlayWorldIdKey, string.Empty),
+                            out WorldId worldA,
+                            out _) ||
+                        !WorldId.TryParse(
+                            SessionState.GetString(PlayWorldBIdKey, string.Empty),
+                            out WorldId worldB,
+                            out _))
+                    {
+                        FailPlay("World A/B diagnostic identities are invalid.", root);
+                        return;
+                    }
+                    PersistenceLoadResult source = store.Read(
+                        WorldGameplayPersistenceService.GetSlotId(worldA));
+                    PersistenceWriteResult contamination = source.Success
+                        ? store.Write(WorldGameplayPersistenceService.GetSlotId(worldB), source.Payload)
+                        : null;
+                    if (!source.Success || contamination == null || !contamination.Success)
+                    {
+                        FailPlay("Could not establish the intentional world A->B contamination fixture.", root);
+                        return;
+                    }
+                    runtime.ReturnToMainMenu();
+                    SessionState.SetInt(PlayPhaseKey, 10);
+                    return;
+                }
+
+                if (phase == 10)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.MainMenuSceneName)
+                        return;
+                    MainMenuSceneController menu =
+                        UnityEngine.Object.FindAnyObjectByType<MainMenuSceneController>();
+                    string worldB = SessionState.GetString(PlayWorldBIdKey, string.Empty);
+                    if (menu == null || !menu.TryLoadWorld(worldB, store))
+                    {
+                        FailPlay("Contamination rejection fixture could not enter world B runtime.", root);
+                        return;
+                    }
+                    SessionState.SetInt(PlayPhaseKey, 11);
+                    return;
+                }
+
+                if (phase == 11)
+                {
+                    if (SceneManager.GetActiveScene().name != WorldApplicationScenes.WorldRuntimeSceneName)
+                        return;
+                    WorldRuntimeSceneController runtime =
+                        UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    if (runtime == null || runtime.GameplayStateReady ||
+                        runtime.GameplayLoadResult?.Disposition != WorldGameplayLoadDisposition.Failed ||
+                        runtime.GameplayLoadResult.Phase != "SemanticPreflight" ||
+                        PlayLogCount(PlayGameplayLoadFailLogCountKey) != 1 ||
+                        PlayLogCount(PlayPlayerBoundLogCountKey) != 5)
+                    {
+                        FailPlay("World A gameplay payload was not rejected before publication in world B.", root);
+                        return;
+                    }
+
+                    runtime.ReturnToMainMenu();
+                    SessionState.SetInt(PlayPhaseKey, 12);
+                    return;
+                }
+
+                if (phase == 12)
                 {
                     if (SceneManager.GetActiveScene().name != WorldApplicationScenes.MainMenuSceneName)
                         return;
@@ -676,12 +1010,12 @@ namespace OldScars.EditorTools
                     CleanupPlayState(root);
                     Debug.Log(
                         "World Session Application Play Flow: PASS\n" +
-                        "- Main Menu Create -> persisted session -> World Runtime\n" +
-                        "- in-game menu open/continue/save\n" +
-                        "- Return to Main Menu clears session without implicit save\n" +
-                        "- Main Menu Load restores same world and re-enters runtime\n" +
-                        "- generated Terrain/Collider/player/local NavMesh materialized on create and load\n" +
-                        "- logs: WORLD_CREATED=1, LOAD_OK=1, SESSION_READY=2, MATERIALIZATION_READY=2, SAVE_OK=1, WRITE_COMMIT=2\n" +
+                        "- shared player movement/camera/full gameplay composition validated\n" +
+                        "- moved local pose, authored identity and health restored through Current Slice\n" +
+                        "- repeated Save->Menu->Load retained exactly one player/camera composition\n" +
+                        "- missing gameplay sibling used explicit legacy bootstrap\n" +
+                        "- world A gameplay payload was rejected in world B before apply\n" +
+                        "- gameplay capture failure emitted no overall Save OK/write\n" +
                         "- temporary persistence root removed");
                     EditorApplication.Exit(0);
                 }
@@ -713,12 +1047,27 @@ namespace OldScars.EditorTools
             SessionState.EraseString(PlayWaterHashKey);
             SessionState.EraseString(PlayHumanHashKey);
             SessionState.EraseString(PlayTopologyHashKey);
+            SessionState.EraseString(PlayPlayerActorIdKey);
+            SessionState.EraseString(PlayPlayerPersistentIdKey);
+            SessionState.EraseFloat(PlayPlayerPositionXKey);
+            SessionState.EraseFloat(PlayPlayerPositionYKey);
+            SessionState.EraseFloat(PlayPlayerPositionZKey);
+            SessionState.EraseFloat(PlayPlayerHealthKey);
+            SessionState.EraseFloat(PlayMovementOriginXKey);
+            SessionState.EraseFloat(PlayMovementOriginYKey);
+            SessionState.EraseFloat(PlayMovementOriginZKey);
+            SessionState.EraseString(PlayWorldBIdKey);
             SessionState.EraseInt(PlayWorldCreatedLogCountKey);
             SessionState.EraseInt(PlayLoadOkLogCountKey);
             SessionState.EraseInt(PlaySessionReadyLogCountKey);
             SessionState.EraseInt(PlayMaterializationReadyLogCountKey);
             SessionState.EraseInt(PlaySaveOkLogCountKey);
             SessionState.EraseInt(PlayWriteCommitLogCountKey);
+            SessionState.EraseInt(PlayGameplaySaveOkLogCountKey);
+            SessionState.EraseInt(PlayGameplayLoadOkLogCountKey);
+            SessionState.EraseInt(PlayGameplayAbsentLogCountKey);
+            SessionState.EraseInt(PlayGameplayLoadFailLogCountKey);
+            SessionState.EraseInt(PlayPlayerBoundLogCountKey);
             if (!string.IsNullOrEmpty(root) && Directory.Exists(root))
                 Directory.Delete(root, true);
         }
@@ -969,6 +1318,99 @@ namespace OldScars.EditorTools
                 failures.Add(failure);
         }
 
+        private static bool ValidateRestoredPlayer(
+            WorldRuntimeSceneController runtime,
+            out string failure)
+        {
+            failure = null;
+            PlayerGameplayComposition player = runtime?.PlayerComposition;
+            if (runtime == null || player == null || !runtime.GameplayStateReady ||
+                runtime.PlayerBindSource != WorldRuntimePlayerBindSource.SaveRestore ||
+                runtime.GameplayLoadResult?.Disposition != WorldGameplayLoadDisposition.Restored ||
+                runtime.GameplayLoadResult.CurrentSliceResult?.Success != true)
+            {
+                failure = "runtime did not publish a transactionally restored Current Slice";
+                return false;
+            }
+            if (!player.TryValidateRuntime(out failure))
+                return false;
+
+            Vector3 expectedPosition = new Vector3(
+                SessionState.GetFloat(PlayPlayerPositionXKey, float.NaN),
+                SessionState.GetFloat(PlayPlayerPositionYKey, float.NaN),
+                SessionState.GetFloat(PlayPlayerPositionZKey, float.NaN));
+            float expectedHealth = SessionState.GetFloat(PlayPlayerHealthKey, float.NaN);
+            ActorHealthComponent health = player.PlayerContext.GetComponent<ActorHealthComponent>();
+            if (!float.IsFinite(expectedPosition.x) || !float.IsFinite(expectedPosition.y) ||
+                !float.IsFinite(expectedPosition.z) || !float.IsFinite(expectedHealth) ||
+                Vector3.Distance(player.PlayerTransform.position, expectedPosition) > 0.05f)
+            {
+                failure = "saved local pose differs from restored pose; saved=" + expectedPosition +
+                          ", restored=" + player.PlayerTransform.position;
+                return false;
+            }
+            if (health == null || Mathf.Abs(health.CurrentHealth - expectedHealth) > 0.001f)
+            {
+                failure = "saved health differs from restored health; saved=" + expectedHealth +
+                          ", restored=" + (health == null ? "<NONE>" : health.CurrentHealth.ToString("R"));
+                return false;
+            }
+            if (player.PlayerIdentity.ActorInstanceId !=
+                    SessionState.GetString(PlayPlayerActorIdKey, string.Empty) ||
+                player.PersistentIdentity.PersistentId !=
+                    SessionState.GetString(PlayPlayerPersistentIdKey, string.Empty))
+            {
+                failure = "authored player ActorInstanceId/PersistentSceneObjectId changed across load";
+                return false;
+            }
+
+            int playerRoles = 0;
+            foreach (ActorInteractionContext context in UnityEngine.Object.FindObjectsByType<ActorInteractionContext>(
+                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (context != null && Array.IndexOf(context.ActorTags, "player") >= 0)
+                    playerRoles++;
+            }
+            if (playerRoles != 1 || ActorRuntimeRegistry.ActiveCount != 1 ||
+                UnityEngine.Object.FindObjectsByType<PlayerGameplayComposition>(
+                    FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
+                UnityEngine.Object.FindObjectsByType<PlayerMovementController>(
+                    FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
+                UnityEngine.Object.FindObjectsByType<PlayerMovementInputController>(
+                    FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
+                UnityEngine.Object.FindObjectsByType<CameraRigController>(
+                    FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
+                UnityEngine.Object.FindObjectsByType<Camera>(
+                    FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
+            {
+                failure = "loaded runtime contains duplicate/missing player, movement, identity or camera authorities";
+                return false;
+            }
+            return true;
+        }
+
+        private static bool RecordExpectedPlayerState(
+            PlayerGameplayComposition player,
+            out string failure)
+        {
+            failure = null;
+            ActorHealthComponent health = player?.PlayerContext?.GetComponent<ActorHealthComponent>();
+            if (player == null || player.PlayerTransform == null || player.PlayerIdentity == null ||
+                player.PersistentIdentity == null || health == null)
+            {
+                failure = "shared player identity/pose/health authority is incomplete";
+                return false;
+            }
+            Vector3 position = player.PlayerTransform.position;
+            SessionState.SetString(PlayPlayerActorIdKey, player.PlayerIdentity.ActorInstanceId);
+            SessionState.SetString(PlayPlayerPersistentIdKey, player.PersistentIdentity.PersistentId);
+            SessionState.SetFloat(PlayPlayerPositionXKey, position.x);
+            SessionState.SetFloat(PlayPlayerPositionYKey, position.y);
+            SessionState.SetFloat(PlayPlayerPositionZKey, position.z);
+            SessionState.SetFloat(PlayPlayerHealthKey, health.CurrentHealth);
+            return true;
+        }
+
         private static bool ValidateRuntimeMaterialization(
             WorldRuntimeSceneController runtime,
             out string failure)
@@ -981,14 +1423,18 @@ namespace OldScars.EditorTools
                 failure = materialization?.Failure ?? "materialization controller/result is absent";
                 return false;
             }
+            PlayerGameplayComposition player = runtime.PlayerComposition;
+            string playerFailure = null;
             if (result.Terrain == null || result.TerrainCollider == null ||
-                result.Player == null || result.Player.GetComponent<PlayerMovementController>() == null ||
-                result.Player.GetComponent<PlayerMovementInputController>() == null ||
-                result.Player.GetComponent<UnityEngine.AI.NavMeshAgent>() != null ||
+                player == null || !player.TryValidateRuntime(out playerFailure) ||
+                player.PlayerContext.GetComponent<UnityEngine.AI.NavMeshAgent>() != null ||
+                materialization.GeneratedRoot.GetComponentInChildren<PlayerGameplayComposition>(true) != null ||
+                materialization.GeneratedRoot.GetComponentInChildren<Camera>(true) != null ||
                 result.NavMeshSurface == null || result.NavMeshSurface.navMeshData == null ||
                 result.NavMeshVertexCount < 1 || result.PathCorners.Count < 2)
             {
-                failure = "Terrain/Collider/player movement/local NavMesh/path contract is incomplete";
+                failure = "Terrain/player-composition/local NavMesh/path contract is incomplete" +
+                          (string.IsNullOrWhiteSpace(playerFailure) ? string.Empty : ": " + playerFailure);
                 return false;
             }
             return ValidateActorNavigationOnMaterializedTerrain(result, out failure);
@@ -1050,6 +1496,11 @@ namespace OldScars.EditorTools
         private const string MaterializationReadyPrefix = "[WorldMaterialization][READY]";
         private const string SaveOkPrefix = "[WorldSession][SAVE_OK]";
         private const string WriteCommitPrefix = "[Persistence][WRITE_COMMIT]";
+        private const string GameplaySaveOkPrefix = "[WorldSave][GAMEPLAY_SAVE_OK]";
+        private const string GameplayLoadOkPrefix = "[WorldSave][GAMEPLAY_LOAD_OK]";
+        private const string GameplayAbsentPrefix = "[WorldSave][GAMEPLAY_STATE_ABSENT_LEGACY]";
+        private const string GameplayLoadFailPrefix = "[WorldSave][GAMEPLAY_LOAD_FAIL]";
+        private const string PlayerBoundPrefix = "[WorldRuntime][PLAYER_BOUND]";
 
         private static void CapturePlayLifecycleLog(string message, string stackTrace, LogType type)
         {
@@ -1067,6 +1518,16 @@ namespace OldScars.EditorTools
                 IncrementPlayLog(PlaySaveOkLogCountKey);
             else if (message.StartsWith(WriteCommitPrefix, StringComparison.Ordinal))
                 IncrementPlayLog(PlayWriteCommitLogCountKey);
+            else if (message.StartsWith(GameplaySaveOkPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayGameplaySaveOkLogCountKey);
+            else if (message.StartsWith(GameplayLoadOkPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayGameplayLoadOkLogCountKey);
+            else if (message.StartsWith(GameplayAbsentPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayGameplayAbsentLogCountKey);
+            else if (message.StartsWith(GameplayLoadFailPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayGameplayLoadFailLogCountKey);
+            else if (message.StartsWith(PlayerBoundPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayPlayerBoundLogCountKey);
         }
 
         private static void IncrementPlayLog(string key) =>

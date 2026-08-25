@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using OldScars.Core;
 using OldScars.Core.Actors;
+using OldScars.Core.ApplicationShell;
 using OldScars.Core.Data.Loading;
 using OldScars.Core.Data.Validation;
 using OldScars.Core.Interactions;
@@ -294,12 +295,11 @@ namespace OldScars.EditorTools
             Check(result.TerrainCollider.Raycast(ray, out RaycastHit hit, 1600f) &&
                   Mathf.Abs(hit.point.y - terrain.SampleHeight(hit.point)) < 0.25f,
                 label + " TerrainCollider did not resolve the safe player spawn surface", failures);
-            Check(result.Player != null && result.Player.GetComponent<CharacterController>() != null &&
-                  result.Player.GetComponent<PlayerMovementController>() != null &&
-                  result.Player.GetComponent<PlayerMovementInputController>() != null &&
-                  result.Player.GetComponent<NavMeshAgent>() == null &&
-                  result.Player.GetComponent<ActorNavigationController>() == null,
-                label + " player fixture did not reuse the existing player movement boundary", failures);
+            Check(controller.GeneratedRoot.GetComponentInChildren<PlayerGameplayComposition>(true) == null &&
+                  controller.GeneratedRoot.GetComponentInChildren<ActorInteractionContext>(true) == null &&
+                  controller.GeneratedRoot.GetComponentInChildren<CameraRigController>(true) == null &&
+                  controller.GeneratedRoot.GetComponentInChildren<Camera>(true) == null,
+                label + " terrain materialization incorrectly acquired player/camera composition authority", failures);
             ValidateSafeSpawn(plan, terrain, result.SpawnPosition, label, failures);
             Check(result.NavMeshSurface != null && result.NavMeshSurface.navMeshData != null &&
                   result.NavMeshVertexCount > 0 && result.PathCorners.Count >= 2,

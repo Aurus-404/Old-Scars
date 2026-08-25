@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using OldScars.Core.Interactions;
 using Unity.AI.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
@@ -16,7 +15,6 @@ namespace OldScars.Core.World
             TerrainMaterializationPlan plan,
             Terrain terrain,
             TerrainCollider terrainCollider,
-            GameObject player,
             NavMeshSurface navMeshSurface,
             Vector3 spawnPosition,
             Vector3 pathDestination,
@@ -33,7 +31,6 @@ namespace OldScars.Core.World
             Plan = plan;
             Terrain = terrain;
             TerrainCollider = terrainCollider;
-            Player = player;
             NavMeshSurface = navMeshSurface;
             SpawnPosition = spawnPosition;
             PathDestination = pathDestination;
@@ -51,7 +48,6 @@ namespace OldScars.Core.World
         public TerrainMaterializationPlan Plan { get; }
         public Terrain Terrain { get; }
         public TerrainCollider TerrainCollider { get; }
-        public GameObject Player { get; }
         public NavMeshSurface NavMeshSurface { get; }
         public Vector3 SpawnPosition { get; }
         public Vector3 PathDestination { get; }
@@ -79,32 +75,19 @@ namespace OldScars.Core.World
         private const int WaterLayer = 4;
         private const int NavigationSourceLayer = 0;
         private const int SpawnSearchResolution = 21;
-        private const float PlayerGroundClearance = 1.05f;
 
         [SerializeField] private TerrainMaterializationConfiguration configuration =
             TerrainMaterializationConfiguration.CreateProvisionalBaseline();
 
         private readonly List<UnityEngine.Object> ownedAssets = new List<UnityEngine.Object>();
         private GameObject generatedRoot;
-        private GameObject fixtureRoot;
         private NavMeshSurface navMeshSurface;
-        private Camera configuredCamera;
-        private Transform originalCameraParent;
-        private Vector3 originalCameraLocalPosition;
-        private Quaternion originalCameraLocalRotation;
-        private bool originalCameraOrthographic;
-        private float originalCameraFieldOfView;
-        private float originalCameraNearClip;
-        private float originalCameraFarClip;
-        private Light configuredLight;
-        private Light originalSun;
 
         public TerrainMaterializationConfiguration Configuration => configuration;
         public TerrainMaterializationResult Result { get; private set; }
         public string Failure { get; private set; }
         public bool IsReady => Result != null && string.IsNullOrEmpty(Failure);
         public GameObject GeneratedRoot => generatedRoot;
-        public GameObject FixtureRoot => fixtureRoot;
 
         public bool TryMaterializeActiveSession(WorldSession session)
         {
@@ -159,15 +142,8 @@ namespace OldScars.Core.World
                 navMeshSurface.RemoveData();
                 navMeshSurface = null;
             }
-            RestoreCamera();
-            if (configuredLight != null && RenderSettings.sun == configuredLight)
-                RenderSettings.sun = originalSun;
-            configuredLight = null;
-            originalSun = null;
             DestroyOwnedObject(generatedRoot);
-            DestroyOwnedObject(fixtureRoot);
             generatedRoot = null;
-            fixtureRoot = null;
             for (int index = ownedAssets.Count - 1; index >= 0; index--)
                 DestroyOwnedObject(ownedAssets[index]);
             ownedAssets.Clear();
@@ -188,8 +164,6 @@ namespace OldScars.Core.World
             {
                 generatedRoot = new GameObject("Generated Active Region [Terrain Spike]");
                 generatedRoot.transform.SetParent(transform, false);
-                fixtureRoot = new GameObject("Playable Fixture [Terrain Spike]");
-                fixtureRoot.transform.SetParent(transform, false);
 
                 Stopwatch terrainWatch = Stopwatch.StartNew();
                 Terrain terrain = CreateTerrain(plan, out TerrainCollider terrainCollider);
@@ -211,18 +185,15 @@ namespace OldScars.Core.World
                 }
                 navWatch.Stop();
 
-                GameObject player = CreateTechnicalPlayer(spawn);
-                ConfigureCameraAndLighting(player.transform, plan);
                 Physics.SyncTransforms();
                 total.Stop();
 
-                int objectCount = generatedRoot.GetComponentsInChildren<Transform>(true).Length +
-                                  fixtureRoot.GetComponentsInChildren<Transform>(true).Length;
+                int objectCount = generatedRoot.GetComponentsInChildren<Transform>(true).Length;
                 long approximateBytes = Profiler.GetRuntimeMemorySizeLong(terrain.terrainData);
                 for (int index = 0; index < ownedAssets.Count; index++)
                     approximateBytes += Profiler.GetRuntimeMemorySizeLong(ownedAssets[index]);
                 Result = new TerrainMaterializationResult(
-                    plan, terrain, terrainCollider, player, navMeshSurface,
+                    plan, terrain, terrainCollider, navMeshSurface,
                     spawn, destination, pathCorners, triangulation.vertices.Length,
                     oceanCells, objectCount, approximateBytes,
                     projectionElapsedMilliseconds, terrainWatch.ElapsedMilliseconds,
@@ -534,103 +505,12 @@ namespace OldScars.Core.World
             return true;
         }
 
-        private GameObject CreateTechnicalPlayer(Vector3 navMeshSpawn)
-        {
-            GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            player.name = "Technical Player Fixture (existing movement authority)";
-            player.transform.SetParent(fixtureRoot.transform, false);
-            player.transform.position = navMeshSpawn + Vector3.up * PlayerGroundClearance;
-            player.transform.localScale = new Vector3(0.72f, 0.92f, 0.72f);
-            CapsuleCollider primitiveCollider = player.GetComponent<CapsuleCollider>();
-            DestroyOwnedObject(primitiveCollider);
-            CharacterController character = player.AddComponent<CharacterController>();
-            character.height = 1.84f;
-            character.radius = 0.34f;
-            character.slopeLimit = 45f;
-            character.stepOffset = 0.3f;
-            player.AddComponent<PlayerMovementController>();
-            player.AddComponent<PlayerMovementInputController>();
-            MeshRenderer renderer = player.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = CreateLitMaterial(
-                "Technical Player", new Color(0.78f, 0.34f, 0.16f, 1f));
-            return player;
-        }
-
-        private void ConfigureCameraAndLighting(
-            Transform player,
-            TerrainMaterializationPlan plan)
-        {
-            configuredCamera = Camera.main;
-            if (configuredCamera == null)
-            {
-                var cameraObject = new GameObject("World Runtime Camera [Terrain Spike]");
-                cameraObject.tag = "MainCamera";
-                cameraObject.transform.SetParent(transform, false);
-                configuredCamera = cameraObject.AddComponent<Camera>();
-            }
-            originalCameraParent = configuredCamera.transform.parent;
-            originalCameraLocalPosition = configuredCamera.transform.localPosition;
-            originalCameraLocalRotation = configuredCamera.transform.localRotation;
-            originalCameraOrthographic = configuredCamera.orthographic;
-            originalCameraFieldOfView = configuredCamera.fieldOfView;
-            originalCameraNearClip = configuredCamera.nearClipPlane;
-            originalCameraFarClip = configuredCamera.farClipPlane;
-
-            var rigObject = new GameObject("Player Camera Rig [Terrain Spike]");
-            rigObject.transform.SetParent(fixtureRoot.transform, false);
-            configuredCamera.transform.SetParent(rigObject.transform, false);
-            configuredCamera.transform.localPosition = new Vector3(0f, 22f, -27f);
-            configuredCamera.transform.localRotation = Quaternion.Euler(38f, 0f, 0f);
-            configuredCamera.orthographic = false;
-            configuredCamera.fieldOfView = 58f;
-            configuredCamera.nearClipPlane = 0.2f;
-            configuredCamera.farClipPlane = Math.Max(1200f, plan.Configuration.PhysicalWidth * 2f);
-            CameraRigController rig = rigObject.AddComponent<CameraRigController>();
-            rig.SetFollowTarget(player);
-
-            var lightObject = new GameObject("Directional Light [Terrain Spike]");
-            lightObject.transform.SetParent(fixtureRoot.transform, false);
-            lightObject.transform.rotation = Quaternion.Euler(48f, -32f, 0f);
-            originalSun = RenderSettings.sun;
-            configuredLight = lightObject.AddComponent<Light>();
-            configuredLight.type = LightType.Directional;
-            configuredLight.intensity = 1.25f;
-            configuredLight.color = new Color(1f, 0.96f, 0.88f, 1f);
-            RenderSettings.sun = configuredLight;
-        }
-
-        private void RestoreCamera()
-        {
-            if (configuredCamera == null)
-                return;
-            configuredCamera.transform.SetParent(originalCameraParent, false);
-            configuredCamera.transform.localPosition = originalCameraLocalPosition;
-            configuredCamera.transform.localRotation = originalCameraLocalRotation;
-            configuredCamera.orthographic = originalCameraOrthographic;
-            configuredCamera.fieldOfView = originalCameraFieldOfView;
-            configuredCamera.nearClipPlane = originalCameraNearClip;
-            configuredCamera.farClipPlane = originalCameraFarClip;
-            configuredCamera = null;
-            originalCameraParent = null;
-        }
-
         private Material CreateUnlitMaterial(string materialName, Color color)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ??
                             Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
             if (shader == null)
                 throw new InvalidOperationException("No supported unlit shader is available for terrain-spike visualization");
-            var material = new Material(shader) { name = materialName };
-            SetMaterialColor(material, color);
-            ownedAssets.Add(material);
-            return material;
-        }
-
-        private Material CreateLitMaterial(string materialName, Color color)
-        {
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (shader == null)
-                return CreateUnlitMaterial(materialName, color);
             var material = new Material(shader) { name = materialName };
             SetMaterialColor(material, color);
             ownedAssets.Add(material);
