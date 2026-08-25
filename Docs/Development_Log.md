@@ -3226,3 +3226,35 @@ Validación autónoma en Unity `6000.4.6f1`, worktree y persistence roots aislad
 La revisión scoped confirmó que los logs consumen truth ya calculada, no alteran seed/contracts/hashes, no fabrican evidence legacy, no duplican filesystem/session authorities y no agregan schema, GameObjects, runtime simulation ni scope creep. Corrigió un detalle antes del cierre: una muestra starter inesperadamente no disponible ahora declara `<UNAVAILABLE>` en lugar de mostrar el valor default de la estructura. `codex review --uncommitted` continuó bloqueado por `codex.exe: Acceso denegado`, por lo que se completó revisión manual del diff. El Play Mode aislado produjo de nuevo una excepción interna de `UnityEditor.Search.SearchDatabase.IndexationOnStartup`; el stack permaneció fuera de Old Scars y el flujo terminó `PASS`. El drift automático `ProjectSettings.runInBackground` fue revertido y no forma parte del cambio.
 
 Unity MCP se conserva como vía preferida de inspección del Editor normal cuando está disponible y es seguro; los procesos aislados quedan para imports/fresh-process/diagnostics que lo necesitan. Ninguna validación cerró o perturbó el Editor de Mauro. No se implementaron Climate, roads, settlements, worldgen adicional ni cambios de persistencia. El siguiente candidato queda `ID TBD — Macro Human Geography / Road Network V1`, `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — Macro Human Geography / Road Network V1
+
+Fecha: 2026-08-24.
+
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+Se agregó `MacroHumanGeographyPlan` como primera truth humana mundial committed, separada de `WorldTopology`, sectores y GameObjects. El pass `macro_human_roads_v1` selecciona hubs `RegionalHub`/`LocalHub` sobre tierra usando site/traversal potential, relief, spacing, coast útil y acceso del starter. Los IDs `human_site_<32 hex>` y `macro_road_<32 hex>` derivan sólo de `WorldSeed` + contrato/settings del pass; `WorldId`, versión global, insertion order, paths y random global no participan.
+
+La red crea un backbone Primary espacial conectado por landmass, agrega enlaces no-tree para ciclos/redundancia y une cada LocalHub mediante una rama Secondary. No reutiliza el MST de `WorldTopology`. Un A* entero con tie-break canónico consume un cost field global donde low relief es barato, highlands/rugged caro, extreme terrain fuertemente penalizado y ocean impassable; diagonal corner-cutting oceánico se rechaza. Las rutas se simplifican a polylines macro colineales sin seams sectoriales ni routing runtime.
+
+`WorldSessionBootstrap` usa metadata global `world_pipeline_v3` y ejecuta Plan → Geography → Water → quality/starter → Human Geography → session. `world_session_v1` evoluciona a schema `5` sobre M37 y persiste settings resueltos, sites, road class/endpoints, polylines, cost metadata y un único Human Geography canonical hash. Schemas `1`–`4` cargan y vuelven a guardar sólo su truth legacy, sin fabricar infraestructura ni silent upgrade; `current_slice_v1` permanece intacto.
+
+La observabilidad `[Worldgen][WORLD_CREATED]` agrega contrato/hash, hubs, road counts, geometry points y starter-to-network; `[WorldSession][LOAD_OK]` reporta el hash o `<ABSENT>` en schemas legacy. El Worldgen Inspector/preview conserva seis paneles y reemplaza el panel de MST por Human Infrastructure sobre Water/coast, con roads Primary/Secondary, hubs y sector markers opcionales. No existe logging por road/cell/frame.
+
+Validación autónoma en Unity `6000.4.6f1`, worktree y persistence roots aislados:
+
+- Runtime/Editor compile: `PASS`; Tundra compiló Assembly-CSharp y Assembly-CSharp-Editor sin errores, con sólo warnings preexistentes de proyecto/paquetes;
+- `Macro Human Geography / Road Network V1 Diagnostics`: `PASS`; golden `a786f018ce3bdea44aeb066c80e38cb1f5dc8e114c65bd7eb352489628245ba6`, determinism/WorldId/pass isolation/order independence, land/endpoints/ocean, branches/cycles, terrain-cost preference, starter access, corruption preflight y schema `5` round-trip;
+- goldens upstream intactos: Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`, Water `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`;
+- routine corpus `36/36` y stress `144/144` (`12 seeds × 4 sizes × 3 coverages`): `0` rechazos duros; `126` worlds con findings blandos de cobertura/gap, conservados como tuning y no rechazo;
+- tiempos/payload aproximados: Small `28 ms/52,442 B`, Medium `79 ms/98,139 B`, Large `295 ms/160,050 B`, Huge `1,203 ms/288,407 B`; no son budgets productivos;
+- preview PNG temporal exportada e inspeccionada: backbone, branches y links redundantes visibles sobre tierra, sin ocean crossing ni spaghetti; el artefacto no se incluyó;
+- fresh Process A/B: `PASS`; ambos observaron Human Geography hash `7099469990ae9cfd21e4c5b27a233f5aff5a46f4f908b2ef62b5be0556260d18` junto con WorldId/seed/size/Water/topology/active sector iguales;
+- World Session edit-mode, Play Mode Main Menu→Create→Runtime→Save→Return→Load, M37 Persistence Core, World Identity/Topology/Determinism, Macro Plan, Macro Geography, Water/Quality, Pass Isolation, Content Source Provenance, Global Content Namespace y M41 Navigation/Perception: `PASS`;
+- Play flow observability: `WORLD_CREATED=1`, `LOAD_OK=1`, `SESSION_READY=2`, `SAVE_OK=1`, `WRITE_COMMIT=2`.
+
+La revisión scoped detectó y corrigió un finding material: el generador producía backbones conectados, pero el semantic validator no demostraba explícitamente esa propiedad frente a un payload manipulado. El preflight ahora exige Primary conectado por landmass, semántica Regional↔Regional para Primary, Local↔Regional para Secondary y al menos una rama Secondary por LocalHub; una prueba negativa desconecta un hub y confirma failure accionable antes de publicación. La revisión también confirmó ausencia de sector-local roads, ocean crossings, topology-as-roads, random/hash inestable, SHA inner-loop, runtime routing, legacy upgrade y scope creep.
+
+`codex review --uncommitted` no pudo iniciarse por el issue conocido de Windows `codex.exe: Acceso denegado`; se completó revisión manual scoped y se reejecutó el diagnóstico posterior al fix. Los mensajes de licensing/duplicate package assemblies y failures intencionales de fixtures quedaron separados de errores del producto. El drift automático `ProjectSettings.runInBackground` del Editor aislado fue revertido y no forma parte del diff; el cambio local preexistente de Mauro en el checkout principal permaneció intacto.
+
+No se implementaron settlements detallados, bridges, streets, rail, terrain/road materialization, climate, final rivers, history, sector transitions, whole-world NavMesh ni simulación vial runtime. El siguiente candidato queda `ID TBD — Terrain Materialization Technical Spike`, `PLANNED — NOT AUTHORIZED`.

@@ -61,9 +61,9 @@ namespace OldScars.EditorTools
                 "- suitable deterministic starter selected after Water; WorldId independent\n" +
                 "- golden Water hash: " + GoldenWaterHash + "\n" +
                 "- routine fuzz: " + RoutineSeedsPerPreset + " seeds x 4 sizes x 3 coverages\n" +
-                "- schema 4 round-trip; schemas 1/2/3 remain explicit legacy without fabricated later truth\n" +
+                "- schema 5 round-trip; schemas 1/2/3/4 remain explicit legacy without fabricated later truth\n" +
                 "- six-panel Worldgen Inspector PNG export succeeded\n" +
-                "- approximate generation timings and serialized schema-4 sizes: " + string.Join("; ", timings));
+                "- approximate generation timings and serialized schema-5 sizes: " + string.Join("; ", timings));
         }
 
         private static void ValidateDeterminismAndSettingIsolation(
@@ -215,14 +215,15 @@ namespace OldScars.EditorTools
                 "Water Round Trip", new WorldSeed(20260824),
                 WorldGenerationSettings.ResolvePreset(WorldSizePreset.Medium),
                 LandCoveragePreset.Medium, content, store);
-            Check(create.Success, "Schema-4 creation failed: " + Safe(create.Failure), failures);
+            Check(create.Success, "Schema-5 creation failed: " + Safe(create.Failure), failures);
             if (!create.Success) return;
             WorldSession expected = create.Session;
             JToken payload = WorldSessionPersistenceService.ToPayload(expected);
             Check((int)payload["schemaVersion"] == WorldSessionPersistenceService.CurrentSchemaVersion &&
                   payload["macroWater"]?["oceanMaskBase64"]?.Type == JTokenType.String &&
-                  payload["macroWater"]?["drainageDirectionsBase64"]?.Type == JTokenType.String,
-                "Schema 4 must persist committed Macro Water truth.", failures);
+                  payload["macroWater"]?["drainageDirectionsBase64"]?.Type == JTokenType.String &&
+                  payload["macroHumanGeography"]?["roads"] is JArray,
+                "Schema 5 must persist committed Water and Human Geography truth.", failures);
             WorldSessionService.Close();
             WorldSessionPersistenceResult read =
                 WorldSessionPersistenceService.Read(expected.WorldId.Canonical, store);
@@ -231,7 +232,7 @@ namespace OldScars.EditorTools
                   read.Session.MacroGeography.CanonicalHash == expected.MacroGeography.CanonicalHash &&
                   read.Session.MacroWater.CanonicalHash == expected.MacroWater.CanonicalHash &&
                   read.Session.ActiveSectorId == expected.ActiveSectorId,
-                "Schema-4 save/read must reconstruct exact committed Water and starter. " + Safe(read.Failure),
+                "Schema-5 save/read must reconstruct exact committed Water and starter. " + Safe(read.Failure),
                 failures);
 
             JObject corrupt = (JObject)payload.DeepClone();
@@ -251,7 +252,19 @@ namespace OldScars.EditorTools
                   corruptOceanResult.Failure.Contains("sea level"),
                 "Ocean mask corruption must fail sea-level/boundary semantic preflight.", failures);
 
-            JObject schemaThree = (JObject)payload.DeepClone();
+            JObject schemaFour = (JObject)payload.DeepClone();
+            schemaFour["schemaVersion"] = WorldSessionPersistenceService.MacroWaterSchemaVersion;
+            schemaFour.Remove("macroHumanGeography");
+            WorldSessionPersistenceResult legacyFour =
+                WorldSessionPersistenceService.FromPayload(schemaFour);
+            Check(legacyFour.Success && legacyFour.Session.IsLegacySchemaV4 &&
+                  legacyFour.Session.HasMacroWater && !legacyFour.Session.HasMacroHumanGeography &&
+                  (int)WorldSessionPersistenceService.ToPayload(legacyFour.Session)["schemaVersion"] ==
+                  WorldSessionPersistenceService.MacroWaterSchemaVersion,
+                "Schema 4 must load/re-save without fabricated Human Geography. " + Safe(legacyFour.Failure),
+                failures);
+
+            JObject schemaThree = (JObject)schemaFour.DeepClone();
             schemaThree["schemaVersion"] = WorldSessionPersistenceService.MacroGeographySchemaVersion;
             schemaThree.Remove("macroWater");
             WorldSessionPersistenceResult legacyThree =
@@ -326,9 +339,18 @@ namespace OldScars.EditorTools
                 out MacroWaterPlan water, out WorldGameplayQualityAnalysis quality,
                 out SectorId starter, failures, "inspector preview");
             if (plan == null || geography == null || water == null || quality == null) return;
+            var context = new WorldGenerationContext(
+                new WorldSeed(GoldenSeed), GeneratorVersion.Parse(WorldSessionBootstrap.CurrentGeneratorVersion));
+            if (!MacroHumanGeographyGenerator.TryGenerate(
+                    context, plan, geography, water, quality, starter,
+                    out MacroHumanGeographyPlan human, out string humanError))
+            {
+                failures.Add("inspector human geography failed: " + humanError);
+                return;
+            }
             string path = Path.Combine(root, "worldgen-inspector.png");
             MacroGeographyPreviewExporter.Export(
-                plan, geography, water, quality, starter, path, 192, 192, true);
+                plan, geography, water, quality, human, starter, path, 192, 192, true);
             Check(File.Exists(path) && new FileInfo(path).Length > 12000,
                 "Worldgen Inspector must export a non-empty six-panel PNG.", failures);
         }

@@ -20,7 +20,7 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1 y Gameplay Quality/Macro Water V1, más la shell acotada de World Session/New Game/Save/Load, están implementadas y validadas; climate/moisture, rivers, geology/biomes, otros features, gameplay world persistence, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1, más la shell acotada de World Session/New Game/Save/Load, están implementadas y validadas; climate/moisture, final rivers, geology/biomes, settlement detail, gameplay world persistence, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
 
 ### ID TBD — Minimum Content Source Identity & Provenance Foundation
 
@@ -76,7 +76,7 @@ Estado final:
 
 `VALIDATED — SYSTEMIC CORRECTION COMPLETE`
 
-`WorldDeterminism.DerivePassDomainKey` separa `WorldSeed + pass generation contract + scope + pass` de la versión global del pipeline. Plan conserva `macro_plan_v1`, Geography `macro_geography_v1`, Water `macro_water_v1`, y New Game registra `world_pipeline_v2` sólo como metadata global. Cambiar una versión downstream ya no re-seedea Plan/Geography/Water sin una dependencia real; los saves schemas `1`–`4` continúan rehidratando truth committed sin regeneración ni upgrade silencioso.
+`WorldDeterminism.DerivePassDomainKey` separa `WorldSeed + pass generation contract + scope + pass` de la versión global del pipeline. Plan conserva `macro_plan_v1`, Geography `macro_geography_v1`, Water `macro_water_v1`, Human Geography `macro_human_roads_v1`, y New Game registra `world_pipeline_v3` sólo como metadata global. Cambiar una versión downstream ya no re-seedea truth upstream sin una dependencia real; los saves schemas `1`–`5` rehidratan únicamente su truth committed sin regeneración ni upgrade silencioso.
 
 ### ID TBD — Worldgen / World Session Observability Correction
 
@@ -85,6 +85,14 @@ Estado final:
 `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`
 
 Create/Load/Runtime Ready y Save manual poseen eventos estructurados únicos y filtrables en sus límites reales. `WORLD_CREATED` resume identity/settings/contracts/hashes/starter, `LOAD_OK` declara schema y truth presente o ausente, `SESSION_READY` confirma la session publicada, y `SAVE_OK` aporta contexto semántico sin reemplazar `[Persistence][WRITE_COMMIT]`. No se modificaron generación, goldens, schemas, scenes ni runtime world simulation.
+
+### ID TBD — Macro Human Geography / Road Network V1
+
+Estado final:
+
+`VALIDATED — FOUNDATION COMPLETE`
+
+New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial bajo `macro_human_roads_v1`: hubs Regional/Local en tierra, backbone Primary conectado por landmass, enlaces alternativos/ciclos y branches Secondary, todos con IDs estables y polylines globales routeadas sobre un cost field entero de relief/traversal. No usa el MST de `WorldTopology` como road graph, no cruza océano y no materializa settlements, roads, bridges, terrain ni navegación física. `world_session_v1` schema `5` persiste esa truth; schemas `1`–`4` permanecen legacy exactos y no fabrican infraestructura.
 
 ## Evidencia De Cierre
 
@@ -108,6 +116,10 @@ Create/Load/Runtime Ready y Save manual poseen eventos estructurados únicos y f
 - Timings diagnósticos finales plan+geography+Water+quality aproximados: Small `16 ms`, Medium `53 ms`, Large `209 ms`, Huge `907 ms`; payload schema `4` serializado `45.0/83.6/134.1/250.6 KB` y raw Water estimado `16.9/29.8/46.3/90.0 KB`. No son budgets de producción. La preview inspeccionada mostró plains/hills/highlands/mountains, land/ocean/coastline significativa, suitability/corridors y drainage/basins sin seams sectoriales.
 - Schema `4` edit/Play flow y fresh Process A/B: `PASS`; el segundo proceso reconstruyó mismo WorldId, seed `-3141592653589793`, size `Huge`, coverage `High`, Water hash, topology y active sector y limpió su root temporal. M37.0, M37.1 snapshot/round-trip, Macro World/Geography, World Foundation, Content Provenance/Namespaces y M41 Navigation/Perception permanecen `PASS`.
 - Observability correction: Runtime/Editor compile, World Session edit-mode y Play Mode flow, Pass Isolation, Macro Plan, Macro Geography, Water/Quality y M37 Persistence Core: `PASS`. El flow confirmó exactamente `WORLD_CREATED=1`, `LOAD_OK=1`, `SESSION_READY=2`, `SAVE_OK=1` y `WRITE_COMMIT=2`; los schemas legacy declararon truth ausente sin hashes fabricados y los goldens Plan/Geography/Water permanecieron intactos.
+- `Macro Human Geography / Road Network V1 Diagnostics`: `PASS`; golden hash `a786f018ce3bdea44aeb066c80e38cb1f5dc8e114c65bd7eb352489628245ba6`, routing determinista/WorldId-independent, hubs/endpoints terrestres, backbone + secondary branches + ciclos, preferencia de terrain cost, starter access, order/pass isolation y schema `5` exacto. Los goldens Plan/Geography/Water permanecieron intactos.
+- Corpus rutinario `36/36` y stress `144/144` (`12 seeds × 4 sizes × 3 coverages`) generaron sin rechazos duros; `126` mundos emitieron findings blandos de cobertura/gap para tuning futuro. Timings/payload aproximados: Small `28 ms / 52,442 B`, Medium `79 ms / 98,139 B`, Large `295 ms / 160,050 B`, Huge `1,203 ms / 288,407 B`; no son budgets productivos.
+- Preview golden de seis paneles inspeccionada: backbone/branches/ciclos visibles sobre tierra y coast background, sin ocean crossing ni spaghetti. Fresh Process A/B reconstruyó el mismo Human Geography hash `7099469990ae9cfd21e4c5b27a233f5aff5a46f4f908b2ef62b5be0556260d18`; Play Mode confirmó Main Menu→Create→Runtime→Save→Return→Load y cardinalidad `WORLD_CREATED=1`, `LOAD_OK=1`, `SESSION_READY=2`, `SAVE_OK=1`, `WRITE_COMMIT=2`.
+- Runtime/Editor compile, World Foundation, Macro Plan, Macro Geography, Water/Quality, Pass Isolation, World Session, M37 Persistence Core, Content Source Provenance, Global Content Namespace y M41 Navigation/Perception: `PASS` en procesos aislados. Los mensajes de licensing/package assembly del Editor se conservaron separados de errores del producto.
 
 ## Contratos Cerrados
 
@@ -118,6 +130,6 @@ Create/Load/Runtime Ready y Save manual poseen eventos estructurados únicos y f
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Human Geography / Road Network V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la verdad global de MacroWorldPlan + MacroGeography + MacroWater sin reinterpretar topology MST como physical adjacency/travel graph ni implementar terrain/materialization, climate, final rivers, settlements, history o sector transitions fuera de su alcance autorizado.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Terrain Materialization Technical Spike`, `PLANNED — NOT AUTHORIZED`. Debe medir el consumo local de la truth global ya committed sin convertir el spike en materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente no autorizada. Macro Climate/Moisture y los demás passes continúan pendientes.
 
 M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.

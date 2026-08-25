@@ -50,8 +50,12 @@ namespace OldScars.EditorTools
             if (!WorldStarterSectorSelector.TrySelect(
                     quality, out SectorId starter, out string starterError))
                 throw new InvalidOperationException("Preview starter selection failed: " + starterError);
+            if (!MacroHumanGeographyGenerator.TryGenerate(
+                    context, plan, geography, water, quality, starter,
+                    out MacroHumanGeographyPlan human, out string humanError))
+                throw new InvalidOperationException("Preview Macro Human Geography generation failed: " + humanError);
 
-            Export(plan, geography, water, quality, starter, outputPath, 320, 320, true);
+            Export(plan, geography, water, quality, human, starter, outputPath, 320, 320, true);
             Debug.Log(
                 "Macro Geography Preview Export: PASS\n" +
                 "Path: " + outputPath + "\n" +
@@ -60,6 +64,7 @@ namespace OldScars.EditorTools
                 "Coverage: High\n" +
                 "GeographyHash: " + geography.CanonicalHash + "\n" +
                 "WaterHash: " + water.CanonicalHash + "\n" +
+                "HumanGeographyHash: " + human.CanonicalHash + "\n" +
                 "Starter: " + starter.Canonical);
         }
 
@@ -68,13 +73,14 @@ namespace OldScars.EditorTools
             MacroGeographyPlan geography,
             MacroWaterPlan water,
             WorldGameplayQualityAnalysis quality,
+            MacroHumanGeographyPlan human,
             SectorId starterSector,
             string outputPath,
             int panelWidth,
             int panelHeight,
             bool overlaySectors)
         {
-            if (plan == null || geography == null || water == null || quality == null)
+            if (plan == null || geography == null || water == null || quality == null || human == null)
                 throw new ArgumentNullException("Worldgen Inspector inputs are required.");
             if (plan.WorldBounds != geography.WorldBounds ||
                 geography.WorldBounds != water.WorldBounds)
@@ -113,11 +119,11 @@ namespace OldScars.EditorTools
                     texture.SetPixel(panelWidth + x, panelHeight + y,
                         DrainageColor(geographySample, waterSample));
                     texture.SetPixel(panelWidth * 2 + x, panelHeight + y,
-                        new Color(0.08f, 0.09f, 0.10f));
+                        WaterColor(waterSample));
                 }
 
                 DrawBasinOverlay(texture, water, panelWidth, panelHeight);
-                DrawTopologyPanel(texture, plan, starterSector, panelWidth, panelHeight);
+                DrawHumanInfrastructurePanel(texture, plan, human, panelWidth, panelHeight);
                 if (overlaySectors)
                     DrawInspectorSectorOverlays(
                         texture, plan, starterSector, panelWidth, panelHeight);
@@ -272,37 +278,49 @@ namespace OldScars.EditorTools
             }
         }
 
-        private static void DrawTopologyPanel(
+        private static void DrawHumanInfrastructurePanel(
             Texture2D texture,
             MacroWorldPlan plan,
-            SectorId starter,
+            MacroHumanGeographyPlan human,
             int panelWidth,
             int panelHeight)
         {
             int offsetX = panelWidth * 2;
             int offsetY = panelHeight;
-            for (int index = 0; index < plan.Topology.Connections.Count; index++)
+            for (int index = 0; index < human.Roads.Count; index++)
             {
-                SectorConnection connection = plan.Topology.Connections[index];
-                if (!plan.TryGetSectorPlacement(connection.FirstEndpoint, out MacroSectorPlacement first) ||
-                    !plan.TryGetSectorPlacement(connection.SecondEndpoint, out MacroSectorPlacement second))
-                    continue;
-                ToPixel(plan.WorldBounds, first.Position, panelWidth, panelHeight,
-                    out int firstX, out int firstY);
-                ToPixel(plan.WorldBounds, second.Position, panelWidth, panelHeight,
-                    out int secondX, out int secondY);
-                DrawLine(texture, offsetX + firstX, offsetY + firstY,
-                    offsetX + secondX, offsetY + secondY,
-                    new Color(0.35f, 0.40f, 0.44f), panelWidth * 3, panelHeight * 2);
+                MacroRoad road = human.Roads[index];
+                Color color = road.RoadClass == MacroRoadClass.Primary
+                    ? new Color(0.95f, 0.55f, 0.08f)
+                    : new Color(0.90f, 0.82f, 0.48f);
+                for (int point = 1; point < road.Polyline.Count; point++)
+                {
+                    ToPixel(plan.WorldBounds, road.Polyline[point - 1], panelWidth, panelHeight,
+                        out int firstX, out int firstY);
+                    ToPixel(plan.WorldBounds, road.Polyline[point], panelWidth, panelHeight,
+                        out int secondX, out int secondY);
+                    DrawLine(texture, offsetX + firstX, offsetY + firstY,
+                        offsetX + secondX, offsetY + secondY,
+                        color, panelWidth * 3, panelHeight * 2);
+                    if (road.RoadClass == MacroRoadClass.Primary)
+                        DrawLine(texture, offsetX + firstX, offsetY + firstY + 1,
+                            offsetX + secondX, offsetY + secondY + 1,
+                            color, panelWidth * 3, panelHeight * 2);
+                }
             }
-            for (int index = 0; index < plan.SectorPlacements.Count; index++)
+            for (int index = 0; index < human.Sites.Count; index++)
             {
-                MacroSectorPlacement placement = plan.SectorPlacements[index];
-                ToPixel(plan.WorldBounds, placement.Position, panelWidth, panelHeight,
+                MacroHumanSite site = human.Sites[index];
+                ToPixel(plan.WorldBounds, site.Position, panelWidth, panelHeight,
                     out int x, out int y);
                 DrawMarker(texture, offsetX + x, offsetY + y,
-                    placement.SectorId == starter ? Color.yellow : Color.white,
+                    site.Kind == MacroHumanHubKind.RegionalHub ? Color.red : Color.white,
                     panelWidth * 3, panelHeight * 2);
+                if (site.Kind == MacroHumanHubKind.RegionalHub)
+                {
+                    DrawMarker(texture, offsetX + x + 1, offsetY + y,
+                        Color.red, panelWidth * 3, panelHeight * 2);
+                }
             }
         }
 

@@ -39,7 +39,7 @@ namespace OldScars.Core.Persistence
 
     /// <summary>
     /// Sibling world_session_v1 payload adapter over M37's existing envelope and
-    /// file store. Schema 4 persists Macro Water V1. Schemas 1-3 remain
+    /// file store. Schema 5 persists Macro Human Geography V1. Schemas 1-4 remain
     /// explicit legacy shapes and never receive fabricated later-pass truth.
     /// </summary>
     public static class WorldSessionPersistenceService
@@ -48,7 +48,8 @@ namespace OldScars.Core.Persistence
         public const int LegacySchemaVersion = 1;
         public const int MacroPlanSchemaVersion = 2;
         public const int MacroGeographySchemaVersion = 3;
-        public const int CurrentSchemaVersion = 4;
+        public const int MacroWaterSchemaVersion = 4;
+        public const int CurrentSchemaVersion = 5;
 
         private static readonly JsonSerializer PayloadSerializer = JsonSerializer.Create(
             new JsonSerializerSettings
@@ -72,6 +73,8 @@ namespace OldScars.Core.Persistence
                 return JToken.FromObject(BuildMacroPlanSaveData(session), PayloadSerializer);
             if (session.IsLegacySchemaV3)
                 return JToken.FromObject(BuildMacroGeographySaveData(session), PayloadSerializer);
+            if (session.IsLegacySchemaV4)
+                return JToken.FromObject(BuildMacroWaterSaveData(session), PayloadSerializer);
             return JToken.FromObject(BuildCurrentSaveData(session), PayloadSerializer);
         }
 
@@ -111,8 +114,10 @@ namespace OldScars.Core.Persistence
                     return PreflightMacroPlan(payload.ToObject<WorldSessionV2SaveData>(PayloadSerializer));
                 if (schemaVersion == MacroGeographySchemaVersion)
                     return PreflightMacroGeography(payload.ToObject<WorldSessionV3SaveData>(PayloadSerializer));
+                if (schemaVersion == MacroWaterSchemaVersion)
+                    return PreflightMacroWater(payload.ToObject<WorldSessionV4SaveData>(PayloadSerializer));
                 if (schemaVersion == CurrentSchemaVersion)
-                    return PreflightCurrent(payload.ToObject<WorldSessionV4SaveData>(PayloadSerializer));
+                    return PreflightCurrent(payload.ToObject<WorldSessionV5SaveData>(PayloadSerializer));
                 return SemanticFailure(
                     $"Unsupported World Session contract '{snapshotType}' schema {schemaVersion}.");
             }
@@ -257,11 +262,11 @@ namespace OldScars.Core.Persistence
             return Success("SemanticPreflightLegacyV3", session);
         }
 
-        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV4SaveData data)
+        private static WorldSessionPersistenceResult PreflightMacroWater(WorldSessionV4SaveData data)
         {
             if (data == null)
-                return SemanticFailure("World Session payload deserialized to null.");
-            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("Legacy schema-4 World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != MacroWaterSchemaVersion)
                 return SemanticFailure("World Session schema-4 header is inconsistent.");
             if (!TryReadCommon(
                     data.worldId, data.displayName, data.generationContext, data.activeSectorId,
@@ -288,13 +293,54 @@ namespace OldScars.Core.Persistence
             if (!quality.MeetsHardRequirements)
                 return SemanticFailure("persisted world fails hard gameplay-quality preflight: " +
                                        string.Join(" | ", quality.HardFailures) + ".");
-            if (!WorldSession.TryCreate(
+            if (!WorldSession.TryCreateLegacySchemaV4(
                     worldId, displayName, context, plan, geography, water, quality,
                     activeSectorId, contentEvidence,
                     out WorldSession session, out string sessionError))
             {
                 return SemanticFailure(sessionError + ".");
             }
+            return Success("SemanticPreflightLegacyV4", session);
+        }
+
+        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV5SaveData data)
+        {
+            if (data == null)
+                return SemanticFailure("World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("World Session schema-5 header is inconsistent.");
+            if (!TryReadCommon(
+                    data.worldId, data.displayName, data.generationContext, data.activeSectorId,
+                    data.creationContentProvenance,
+                    out WorldId worldId, out string displayName, out WorldGenerationContext context,
+                    out SectorId activeSectorId, out WorldCreationContentEvidence contentEvidence,
+                    out string commonError))
+                return SemanticFailure(commonError);
+            if (!TryReadMacroWorldPlan(data.macroWorldPlan, out MacroWorldPlan plan, out string planError))
+                return SemanticFailure(planError);
+            if (!TryReadMacroGeography(
+                    data.macroGeography, plan.WorldBounds,
+                    out MacroGeographyPlan geography, out string geographyError))
+                return SemanticFailure(geographyError);
+            if (!TryReadMacroWater(
+                    data.macroWater, geography, out MacroWaterPlan water, out string waterError))
+                return SemanticFailure(waterError);
+            if (!WorldGameplayQualityAnalyzer.TryAnalyze(
+                    plan, geography, water,
+                    out WorldGameplayQualityAnalysis quality, out string qualityError))
+                return SemanticFailure("gameplay-quality analysis failed: " + qualityError + ".");
+            if (!quality.MeetsHardRequirements)
+                return SemanticFailure("persisted world fails hard gameplay-quality preflight: " +
+                                       string.Join(" | ", quality.HardFailures) + ".");
+            if (!TryReadMacroHumanGeography(
+                    data.macroHumanGeography, plan, geography, water, quality,
+                    out MacroHumanGeographyPlan human, out string humanError))
+                return SemanticFailure(humanError);
+            if (!WorldSession.TryCreate(
+                    worldId, displayName, context, plan, geography, water, quality, human,
+                    activeSectorId, contentEvidence,
+                    out WorldSession session, out string sessionError))
+                return SemanticFailure(sessionError + ".");
             return Success("SemanticPreflight", session);
         }
 
@@ -581,6 +627,192 @@ namespace OldScars.Core.Persistence
             return true;
         }
 
+        private static bool TryReadMacroHumanGeography(
+            MacroHumanGeographySaveData data,
+            MacroWorldPlan worldPlan,
+            MacroGeographyPlan geography,
+            MacroWaterPlan water,
+            WorldGameplayQualityAnalysis worldQuality,
+            out MacroHumanGeographyPlan human,
+            out string error)
+        {
+            human = null;
+            error = null;
+            if (data == null || data.generationSettings == null)
+            {
+                error = "macroHumanGeography and its generationSettings are required";
+                return false;
+            }
+            MacroHumanGeographyGenerationSettingsSaveData settingsData = data.generationSettings;
+            if (!MacroHumanGeographyGenerationSettings.TryCreateResolved(
+                    settingsData.generationContract,
+                    settingsData.sampleColumns,
+                    settingsData.sampleRows,
+                    settingsData.regionalHubTarget,
+                    settingsData.localHubTarget,
+                    settingsData.minimumRegionalSpacingCells,
+                    settingsData.minimumLocalSpacingCells,
+                    settingsData.extraPrimaryLinkTarget,
+                    out MacroHumanGeographyGenerationSettings settings,
+                    out string settingsError))
+            {
+                error = "macroHumanGeography.generationSettings is invalid: " + settingsError + ".";
+                return false;
+            }
+            if (!SectorId.TryParse(
+                    data.starterAccessSectorId, out SectorId starterAccessSectorId,
+                    out string starterError))
+            {
+                error = "macroHumanGeography.starterAccessSectorId is invalid: " + starterError + ".";
+                return false;
+            }
+            if (data.sites == null || data.roads == null)
+            {
+                error = "macroHumanGeography.sites and roads must be present arrays";
+                return false;
+            }
+
+            var sites = new List<MacroHumanSite>(data.sites.Length);
+            for (int index = 0; index < data.sites.Length; index++)
+            {
+                MacroHumanSiteSaveData site = data.sites[index];
+                if (site == null)
+                {
+                    error = "macroHumanGeography.sites[" + index + "] is null.";
+                    return false;
+                }
+                if (!MacroHumanSiteId.TryParse(
+                        site.siteId, out MacroHumanSiteId siteId, out string siteIdError))
+                {
+                    error = "macroHumanGeography.sites[" + index + "].siteId is invalid: " +
+                            siteIdError + ".";
+                    return false;
+                }
+                if (!TryParseHubKind(site.kind, out MacroHumanHubKind kind))
+                {
+                    error = "macroHumanGeography.sites[" + index + "].kind is invalid.";
+                    return false;
+                }
+                if (site.landComponentId < 1)
+                {
+                    error = "macroHumanGeography.sites[" + index + "].landComponentId must be positive.";
+                    return false;
+                }
+                sites.Add(new MacroHumanSite(
+                    siteId, kind, new MacroPoint2D(site.x, site.y), site.landComponentId));
+            }
+
+            var roads = new List<MacroRoad>(data.roads.Length);
+            for (int index = 0; index < data.roads.Length; index++)
+            {
+                MacroRoadSaveData road = data.roads[index];
+                if (road == null)
+                {
+                    error = "macroHumanGeography.roads[" + index + "] is null.";
+                    return false;
+                }
+                if (!MacroRoadId.TryParse(
+                        road.roadId, out MacroRoadId roadId, out string roadIdError))
+                {
+                    error = "macroHumanGeography.roads[" + index + "].roadId is invalid: " +
+                            roadIdError + ".";
+                    return false;
+                }
+                if (!TryParseRoadClass(road.roadClass, out MacroRoadClass roadClass))
+                {
+                    error = "macroHumanGeography.roads[" + index + "].roadClass is invalid.";
+                    return false;
+                }
+                if (!MacroHumanSiteId.TryParse(
+                        road.firstEndpoint, out MacroHumanSiteId first, out string firstError))
+                {
+                    error = "macroHumanGeography.roads[" + index + "].firstEndpoint is invalid: " +
+                            firstError + ".";
+                    return false;
+                }
+                if (!MacroHumanSiteId.TryParse(
+                        road.secondEndpoint, out MacroHumanSiteId second, out string secondError))
+                {
+                    error = "macroHumanGeography.roads[" + index + "].secondEndpoint is invalid: " +
+                            secondError + ".";
+                    return false;
+                }
+                if (first == second)
+                {
+                    error = "macroHumanGeography.roads[" + index + "] endpoints must be distinct.";
+                    return false;
+                }
+                if (road.polyline == null || road.polyline.Length < 2 ||
+                    road.routedCellCount < 2 || road.totalTraversalCost < 1)
+                {
+                    error = "macroHumanGeography.roads[" + index + "] has invalid geometry/cost metadata.";
+                    return false;
+                }
+                var points = new List<MacroPoint2D>(road.polyline.Length);
+                for (int point = 0; point < road.polyline.Length; point++)
+                {
+                    MacroPoint2DSaveData value = road.polyline[point];
+                    if (value == null)
+                    {
+                        error = "macroHumanGeography.roads[" + index + "].polyline[" + point + "] is null.";
+                        return false;
+                    }
+                    points.Add(new MacroPoint2D(value.x, value.y));
+                }
+                roads.Add(new MacroRoad(
+                    roadId, roadClass, first, second, points,
+                    road.routedCellCount, road.totalTraversalCost));
+            }
+
+            if (!MacroHumanGeographyPlan.TryCreate(
+                    settings, worldPlan, geography, water, worldQuality,
+                    starterAccessSectorId, sites, roads, out human, out string validationError))
+            {
+                error = "macroHumanGeography failed validation: " + validationError;
+                return false;
+            }
+            if (!string.Equals(data.canonicalHash, human.CanonicalHash, StringComparison.Ordinal))
+            {
+                error = "macroHumanGeography.canonicalHash mismatch; persisted '" +
+                        Safe(data.canonicalHash) + "', reconstructed '" + human.CanonicalHash + "'.";
+                human = null;
+                return false;
+            }
+            return true;
+        }
+
+        private static bool TryParseHubKind(string value, out MacroHumanHubKind kind)
+        {
+            if (string.Equals(value, "regional_hub", StringComparison.Ordinal))
+            {
+                kind = MacroHumanHubKind.RegionalHub;
+                return true;
+            }
+            if (string.Equals(value, "local_hub", StringComparison.Ordinal))
+            {
+                kind = MacroHumanHubKind.LocalHub;
+                return true;
+            }
+            kind = default;
+            return false;
+        }
+
+        private static bool TryParseRoadClass(string value, out MacroRoadClass roadClass)
+        {
+            if (string.Equals(value, "primary", StringComparison.Ordinal))
+            {
+                roadClass = MacroRoadClass.Primary;
+                return true;
+            }
+            if (string.Equals(value, "secondary", StringComparison.Ordinal))
+            {
+                roadClass = MacroRoadClass.Secondary;
+                return true;
+            }
+            roadClass = default;
+            return false;
+        }
+
         private static bool TryDecodeBase64(
             string raw,
             string field,
@@ -810,9 +1042,26 @@ namespace OldScars.Core.Persistence
             };
         }
 
-        private static WorldSessionV4SaveData BuildCurrentSaveData(WorldSession session)
+        private static WorldSessionV4SaveData BuildMacroWaterSaveData(WorldSession session)
         {
             return new WorldSessionV4SaveData
+            {
+                snapshotType = SnapshotType,
+                schemaVersion = MacroWaterSchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
+                macroGeography = BuildMacroGeography(session.MacroGeography),
+                macroWater = BuildMacroWater(session.MacroWater),
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static WorldSessionV5SaveData BuildCurrentSaveData(WorldSession session)
+        {
+            return new WorldSessionV5SaveData
             {
                 snapshotType = SnapshotType,
                 schemaVersion = CurrentSchemaVersion,
@@ -822,8 +1071,69 @@ namespace OldScars.Core.Persistence
                 macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
                 macroGeography = BuildMacroGeography(session.MacroGeography),
                 macroWater = BuildMacroWater(session.MacroWater),
+                macroHumanGeography = BuildMacroHumanGeography(session.MacroHumanGeography),
                 activeSectorId = session.ActiveSectorId.Canonical,
                 creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static MacroHumanGeographySaveData BuildMacroHumanGeography(MacroHumanGeographyPlan human)
+        {
+            MacroHumanGeographyGenerationSettings settings = human.GenerationSettings;
+            var sites = new MacroHumanSiteSaveData[human.Sites.Count];
+            for (int index = 0; index < sites.Length; index++)
+            {
+                MacroHumanSite site = human.Sites[index];
+                sites[index] = new MacroHumanSiteSaveData
+                {
+                    siteId = site.SiteId.Canonical,
+                    kind = site.Kind == MacroHumanHubKind.RegionalHub ? "regional_hub" : "local_hub",
+                    x = site.Position.X,
+                    y = site.Position.Y,
+                    landComponentId = site.LandComponentId
+                };
+            }
+            var roads = new MacroRoadSaveData[human.Roads.Count];
+            for (int index = 0; index < roads.Length; index++)
+            {
+                MacroRoad road = human.Roads[index];
+                var points = new MacroPoint2DSaveData[road.Polyline.Count];
+                for (int point = 0; point < points.Length; point++)
+                {
+                    points[point] = new MacroPoint2DSaveData
+                    {
+                        x = road.Polyline[point].X,
+                        y = road.Polyline[point].Y
+                    };
+                }
+                roads[index] = new MacroRoadSaveData
+                {
+                    roadId = road.RoadId.Canonical,
+                    roadClass = road.RoadClass == MacroRoadClass.Primary ? "primary" : "secondary",
+                    firstEndpoint = road.FirstEndpoint.Canonical,
+                    secondEndpoint = road.SecondEndpoint.Canonical,
+                    polyline = points,
+                    routedCellCount = road.RoutedCellCount,
+                    totalTraversalCost = road.TotalTraversalCost
+                };
+            }
+            return new MacroHumanGeographySaveData
+            {
+                generationSettings = new MacroHumanGeographyGenerationSettingsSaveData
+                {
+                    generationContract = settings.GenerationContract,
+                    sampleColumns = settings.SampleColumns,
+                    sampleRows = settings.SampleRows,
+                    regionalHubTarget = settings.RegionalHubTarget,
+                    localHubTarget = settings.LocalHubTarget,
+                    minimumRegionalSpacingCells = settings.MinimumRegionalSpacingCells,
+                    minimumLocalSpacingCells = settings.MinimumLocalSpacingCells,
+                    extraPrimaryLinkTarget = settings.ExtraPrimaryLinkTarget
+                },
+                starterAccessSectorId = human.StarterAccessSectorId.Canonical,
+                sites = sites,
+                roads = roads,
+                canonicalHash = human.CanonicalHash
             };
         }
 
@@ -1085,6 +1395,22 @@ namespace OldScars.Core.Persistence
         }
 
         [Serializable]
+        private sealed class WorldSessionV5SaveData
+        {
+            public string snapshotType;
+            public int schemaVersion;
+            public string worldId;
+            public string displayName;
+            public WorldGenerationContextSaveData generationContext;
+            public MacroWorldPlanSaveData macroWorldPlan;
+            public MacroGeographySaveData macroGeography;
+            public MacroWaterSaveData macroWater;
+            public MacroHumanGeographySaveData macroHumanGeography;
+            public string activeSectorId;
+            public WorldContentEvidenceSaveData creationContentProvenance;
+        }
+
+        [Serializable]
         private sealed class WorldGenerationContextSaveData
         {
             public string worldSeed;
@@ -1155,6 +1481,58 @@ namespace OldScars.Core.Persistence
             public int sampleCount;
             public int spillElevation;
             public int maximumFillDepth;
+        }
+
+        [Serializable]
+        private sealed class MacroHumanGeographySaveData
+        {
+            public MacroHumanGeographyGenerationSettingsSaveData generationSettings;
+            public string starterAccessSectorId;
+            public MacroHumanSiteSaveData[] sites;
+            public MacroRoadSaveData[] roads;
+            public string canonicalHash;
+        }
+
+        [Serializable]
+        private sealed class MacroHumanGeographyGenerationSettingsSaveData
+        {
+            public string generationContract;
+            public int sampleColumns;
+            public int sampleRows;
+            public int regionalHubTarget;
+            public int localHubTarget;
+            public int minimumRegionalSpacingCells;
+            public int minimumLocalSpacingCells;
+            public int extraPrimaryLinkTarget;
+        }
+
+        [Serializable]
+        private sealed class MacroHumanSiteSaveData
+        {
+            public string siteId;
+            public string kind;
+            public long x;
+            public long y;
+            public int landComponentId;
+        }
+
+        [Serializable]
+        private sealed class MacroRoadSaveData
+        {
+            public string roadId;
+            public string roadClass;
+            public string firstEndpoint;
+            public string secondEndpoint;
+            public MacroPoint2DSaveData[] polyline;
+            public int routedCellCount;
+            public long totalTraversalCost;
+        }
+
+        [Serializable]
+        private sealed class MacroPoint2DSaveData
+        {
+            public long x;
+            public long y;
         }
 
         [Serializable]

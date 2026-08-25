@@ -189,6 +189,15 @@ namespace OldScars.Core.World
                 .Append("MacroWaterContract: ").Append(session.MacroWater.GenerationSettings.GenerationContract).Append('\n')
                 .Append("MacroWaterHash: ").Append(session.MacroWater.CanonicalHash).Append('\n')
                 .Append("SeaLevel: ").Append(session.MacroWater.SeaLevel.ToString(CultureInfo.InvariantCulture)).Append("/65535\n")
+                .Append("MacroHumanGeographyContract: ").Append(session.MacroHumanGeography.GenerationSettings.GenerationContract).Append('\n')
+                .Append("MacroHumanGeographyHash: ").Append(session.MacroHumanGeography.CanonicalHash).Append('\n')
+                .Append("RegionalHubs: ").Append(session.MacroHumanGeography.RegionalHubCount.ToString(CultureInfo.InvariantCulture)).Append('\n')
+                .Append("LocalHubs: ").Append(session.MacroHumanGeography.LocalHubCount.ToString(CultureInfo.InvariantCulture)).Append('\n')
+                .Append("PrimaryRoads: ").Append(session.MacroHumanGeography.PrimaryRoadCount.ToString(CultureInfo.InvariantCulture)).Append('\n')
+                .Append("SecondaryRoads: ").Append(session.MacroHumanGeography.SecondaryRoadCount.ToString(CultureInfo.InvariantCulture)).Append('\n')
+                .Append("RoadGeometryPoints: ").Append(session.MacroHumanGeography.GeometryPointCount.ToString(CultureInfo.InvariantCulture)).Append('\n')
+                .Append("StarterDistanceToNetworkCells: ")
+                .Append(session.MacroHumanGeography.Quality.StarterDistanceToNetworkCells.ToString(CultureInfo.InvariantCulture)).Append('\n')
                 .Append("ActiveSector: ").Append(session.ActiveSectorId.Canonical).Append('\n')
                 .Append("StarterLandform: ").Append(hasGeography ? geography.Landform.ToString() : "<UNAVAILABLE>").Append('\n')
                 .Append("StarterElevation: ").Append(hasGeography
@@ -218,6 +227,7 @@ namespace OldScars.Core.World
                 "MacroWorldPlanHash: " + HashOrAbsent(session.MacroWorldPlan?.CanonicalHash) + "\n" +
                 "MacroGeographyHash: " + HashOrAbsent(session.MacroGeography?.CanonicalHash) + "\n" +
                 "MacroWaterHash: " + HashOrAbsent(session.MacroWater?.CanonicalHash) + "\n" +
+                "MacroHumanGeographyHash: " + HashOrAbsent(session.MacroHumanGeography?.CanonicalHash) + "\n" +
                 "ActiveSector: " + session.ActiveSectorId.Canonical + "\n" +
                 "LegacyState: " + DescribeLegacyState(session));
         }
@@ -291,17 +301,21 @@ namespace OldScars.Core.World
                 return WorldSessionPersistenceService.MacroPlanSchemaVersion;
             if (session.IsLegacySchemaV3)
                 return WorldSessionPersistenceService.MacroGeographySchemaVersion;
+            if (session.IsLegacySchemaV4)
+                return WorldSessionPersistenceService.MacroWaterSchemaVersion;
             return WorldSessionPersistenceService.CurrentSchemaVersion;
         }
 
         private static string DescribeLegacyState(WorldSession session)
         {
             if (session.IsLegacySchemaV1)
-                return "schema 1; MacroWorldPlan/Geography/Water absent by contract";
+                return "schema 1; MacroWorldPlan/Geography/Water/HumanGeography absent by contract";
             if (session.IsLegacySchemaV2)
-                return "schema 2; MacroGeography/Water absent by contract";
+                return "schema 2; MacroGeography/Water/HumanGeography absent by contract";
             if (session.IsLegacySchemaV3)
-                return "schema 3; MacroWater absent by contract";
+                return "schema 3; MacroWater/HumanGeography absent by contract";
+            if (session.IsLegacySchemaV4)
+                return "schema 4; MacroHumanGeography absent by contract";
             return "none (current schema)";
         }
 

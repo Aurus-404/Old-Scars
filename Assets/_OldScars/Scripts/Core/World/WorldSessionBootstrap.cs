@@ -10,7 +10,7 @@ namespace OldScars.Core.World
     /// </summary>
     public static class WorldSessionBootstrap
     {
-        public const string CurrentGeneratorVersion = "world_pipeline_v2";
+        public const string CurrentGeneratorVersion = "world_pipeline_v3";
         public const string LegacyMacroGeographyGeneratorVersion = "macro_geography_v1";
         public const string LegacyGeneratorVersion = "bootstrap_v1";
         public const string LegacyMacroPlanGeneratorVersion = "macro_plan_v1";
@@ -90,6 +90,13 @@ namespace OldScars.Core.World
                     error = starterError;
                     return false;
                 }
+                if (!MacroHumanGeographyGenerator.TryGenerate(
+                        context, macroWorldPlan, macroGeography, macroWater, quality, starterSector,
+                        out MacroHumanGeographyPlan macroHumanGeography, out string humanError))
+                {
+                    error = humanError;
+                    return false;
+                }
 
                 WorldCreationContentEvidence evidence = WorldCreationContentEvidence.Capture(loadedContentSet);
                 return WorldSession.TryCreate(
@@ -100,6 +107,7 @@ namespace OldScars.Core.World
                     macroGeography,
                     macroWater,
                     quality,
+                    macroHumanGeography,
                     starterSector,
                     evidence,
                     out session,

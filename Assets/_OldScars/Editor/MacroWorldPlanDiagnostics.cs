@@ -205,6 +205,7 @@ namespace OldScars.EditorTools
             schemaTwoPayload["schemaVersion"] = WorldSessionPersistenceService.MacroPlanSchemaVersion;
             schemaTwoPayload.Remove("macroGeography");
             schemaTwoPayload.Remove("macroWater");
+            schemaTwoPayload.Remove("macroHumanGeography");
             WorldSessionPersistenceResult schemaTwoRead =
                 WorldSessionPersistenceService.FromPayload(schemaTwoPayload);
             Check(schemaTwoRead.Success && schemaTwoRead.Session.IsLegacySchemaV2 &&

@@ -6,7 +6,7 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `WORLDGEN / WORLD SESSION OBSERVABILITY CORRECTION CLOSED`.
+Estado: `MACRO HUMAN GEOGRAPHY / ROAD NETWORK V1 CLOSED`.
 
 M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
@@ -44,15 +44,19 @@ Estado: `VALIDATED — SYSTEMIC CORRECTION COMPLETE`.
 
 Estado: `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`.
 
-La shell implementada posee session lifecycle único, save catalog, Main Menu, World Runtime placeholder e in-game Save/Return. New Game genera plan finito → elevation/landforms → Macro Water → quality analysis/starter. Land Coverage es un setting separado del pass Water y no cambia MacroWorldPlan ni MacroGeography. La versión global `world_pipeline_v2` queda separada de los contratos deterministas `macro_plan_v1`, `macro_geography_v1` y `macro_water_v1`; evolución downstream no re-seedea upstream truth. `world_session_v1` schema `4` persiste plan + geography + Water committed sobre M37 y mantiene compatibilidad explícita con schemas `1`/`2`/`3` sin fabricar truth posterior. `current_slice_v1` permanece intacto y provenance se guarda sólo como evidencia.
+`ID TBD — Macro Human Geography / Road Network V1`
 
-El próximo coding unit candidato es `ID TBD — Macro Human Geography / Road Network V1`, con estado `PLANNED — NOT AUTHORIZED`. Debe consumir MacroWorldPlan + MacroGeography + MacroWater como truth global, mantener el MST existente como scaffold lógico y definir su propia future network truth sin reinterpretar worlds committed. No autoriza terrain, materialización, climate, final rivers, settlements, history, sector transitions, generation compatibility ni gameplay world simulation.
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+La shell implementada posee session lifecycle único, save catalog, Main Menu, World Runtime placeholder e in-game Save/Return. New Game genera plan finito → elevation/landforms → Macro Water → quality/starter → Macro Human Geography. `macro_human_roads_v1` produce hubs Regional/Local y redes Primary/Secondary globales por landmass mediante routing de coste entero; no usa topology MST como roads, no cruza océano y no ejecuta routing runtime. La versión global `world_pipeline_v3` queda separada de los contratos por pass. `world_session_v1` schema `5` persiste la truth completa sobre M37 y mantiene schemas `1`–`4` legacy sin fabricar infraestructura posterior. `current_slice_v1` permanece intacto y provenance se guarda sólo como evidencia.
+
+El próximo coding unit candidato es `ID TBD — Terrain Materialization Technical Spike`, con estado `PLANNED — NOT AUTHORIZED`. Debe ser una prueba técnica medida del consumo local de fields/roads committed y conservar `World != GameObjects`, `Sector != technical chunk` y el rechazo de whole-world NavMesh. No autoriza materialización productiva, sector streaming/transitions, climate, final rivers, settlements, history, generation compatibility ni gameplay world simulation.
 
 Fuera de alcance mientras no exista autorización específica:
 
-- cualquier implementación open-world posterior a Gameplay Quality + Macro Water V1 sin autorización del siguiente unit;
+- cualquier implementación open-world posterior a Macro Human Geography / Road Network V1 sin autorización del siguiente unit;
 - M42.0 u otro milestone jugable;
-- cambios de gameplay, content contracts o persistencia fuera del payload schema `4` acotado ya cerrado;
+- cambios de gameplay, content contracts o persistencia fuera del payload schema `5` acotado ya cerrado;
 - reabrir la arquitectura M41.1 validada.
 
 M42.0 permanece planificado, pero su secuencia requiere rebaseline y ya no constituye el siguiente trabajo automático. Todo trabajo nuevo requiere autorización explícita.
@@ -71,7 +75,7 @@ Dependencies, overrides/patches y compatibilidad de producción permanecen en al
 
 ## No Iniciar Todavía
 
-- Macro Human Geography / Road Network V1, Macro Climate / Moisture V1, otros coding units open-world o M42.0 sin autorización específica;
+- Terrain Materialization Technical Spike, Macro Climate / Moisture V1, otros coding units open-world o M42.0 sin autorización específica;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;

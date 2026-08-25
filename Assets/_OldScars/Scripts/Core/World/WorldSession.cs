@@ -18,6 +18,7 @@ namespace OldScars.Core.World
             MacroGeographyPlan macroGeography,
             MacroWaterPlan macroWater,
             WorldGameplayQualityAnalysis gameplayQuality,
+            MacroHumanGeographyPlan macroHumanGeography,
             WorldTopology legacyTopology,
             SectorId activeSectorId,
             WorldCreationContentEvidence creationContentEvidence)
@@ -29,6 +30,7 @@ namespace OldScars.Core.World
             MacroGeography = macroGeography;
             MacroWater = macroWater;
             GameplayQuality = gameplayQuality;
+            MacroHumanGeography = macroHumanGeography;
             this.legacyTopology = legacyTopology;
             ActiveSectorId = activeSectorId;
             CreationContentEvidence = creationContentEvidence;
@@ -41,13 +43,16 @@ namespace OldScars.Core.World
         public MacroGeographyPlan MacroGeography { get; }
         public MacroWaterPlan MacroWater { get; }
         public WorldGameplayQualityAnalysis GameplayQuality { get; }
+        public MacroHumanGeographyPlan MacroHumanGeography { get; }
         public bool HasMacroWorldPlan => MacroWorldPlan != null;
         public bool IsLegacySchemaV1 => MacroWorldPlan == null;
         public bool HasMacroGeography => MacroGeography != null;
         public bool HasMacroWater => MacroWater != null;
         public bool HasGameplayQuality => GameplayQuality != null;
+        public bool HasMacroHumanGeography => MacroHumanGeography != null;
         public bool IsLegacySchemaV2 => MacroWorldPlan != null && MacroGeography == null;
         public bool IsLegacySchemaV3 => MacroGeography != null && MacroWater == null;
+        public bool IsLegacySchemaV4 => MacroWater != null && MacroHumanGeography == null;
         public WorldTopology Topology => MacroWorldPlan != null ? MacroWorldPlan.Topology : legacyTopology;
         public SectorId ActiveSectorId { get; }
         public WorldCreationContentEvidence CreationContentEvidence { get; }
@@ -62,6 +67,7 @@ namespace OldScars.Core.World
             MacroGeographyPlan macroGeography,
             MacroWaterPlan macroWater,
             WorldGameplayQualityAnalysis gameplayQuality,
+            MacroHumanGeographyPlan macroHumanGeography,
             SectorId activeSectorId,
             WorldCreationContentEvidence creationContentEvidence,
             out WorldSession session,
@@ -106,6 +112,13 @@ namespace OldScars.Core.World
                 error = "New WorldSession requires gameplay-quality analysis with no hard failures";
                 return false;
             }
+            if (macroHumanGeography == null ||
+                macroHumanGeography.WorldBounds != macroWorldPlan.WorldBounds ||
+                !macroHumanGeography.Quality.MeetsHardRequirements)
+            {
+                error = "New WorldSession requires validated Macro Human Geography matching MacroWorldPlan bounds";
+                return false;
+            }
             if (!activeSectorId.IsValid)
             {
                 error = "WorldSession requires a valid active SectorId";
@@ -139,9 +152,48 @@ namespace OldScars.Core.World
                 macroGeography,
                 macroWater,
                 gameplayQuality,
+                macroHumanGeography,
                 null,
                 activeSectorId,
                 creationContentEvidence);
+            return true;
+        }
+
+        /// <summary>
+        /// Explicit schema-4 compatibility path. It preserves committed Water
+        /// and gameplay-quality truth but never fabricates human infrastructure.
+        /// </summary>
+        internal static bool TryCreateLegacySchemaV4(
+            WorldId worldId,
+            string displayName,
+            WorldGenerationContext generationContext,
+            MacroWorldPlan macroWorldPlan,
+            MacroGeographyPlan macroGeography,
+            MacroWaterPlan macroWater,
+            WorldGameplayQualityAnalysis gameplayQuality,
+            SectorId activeSectorId,
+            WorldCreationContentEvidence creationContentEvidence,
+            out WorldSession session,
+            out string error)
+        {
+            session = null;
+            error = null;
+            if (!worldId.IsValid || !TryValidateDisplayName(displayName, out error) ||
+                generationContext == null || !generationContext.GeneratorVersion.IsValid ||
+                macroWorldPlan == null || macroGeography == null || macroWater == null ||
+                macroWorldPlan.WorldBounds != macroGeography.WorldBounds ||
+                macroWorldPlan.WorldBounds != macroWater.WorldBounds ||
+                gameplayQuality == null || !gameplayQuality.MeetsHardRequirements ||
+                !ContainsSector(macroWorldPlan.Topology, activeSectorId) ||
+                creationContentEvidence == null)
+            {
+                if (string.IsNullOrEmpty(error))
+                    error = "Legacy schema-4 WorldSession contains invalid plan, geography, water, quality, active sector, or provenance";
+                return false;
+            }
+            session = new WorldSession(
+                worldId, displayName, generationContext, macroWorldPlan, macroGeography,
+                macroWater, gameplayQuality, null, null, activeSectorId, creationContentEvidence);
             return true;
         }
 
@@ -175,7 +227,7 @@ namespace OldScars.Core.World
             }
             session = new WorldSession(
                 worldId, displayName, generationContext, macroWorldPlan, macroGeography,
-                null, null, null, activeSectorId, creationContentEvidence);
+                null, null, null, null, activeSectorId, creationContentEvidence);
             return true;
         }
 
@@ -228,6 +280,7 @@ namespace OldScars.Core.World
                 displayName,
                 generationContext,
                 macroWorldPlan,
+                null,
                 null,
                 null,
                 null,
@@ -294,6 +347,7 @@ namespace OldScars.Core.World
                 worldId,
                 displayName,
                 generationContext,
+                null,
                 null,
                 null,
                 null,
