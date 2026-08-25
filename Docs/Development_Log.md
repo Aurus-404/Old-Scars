@@ -3258,3 +3258,40 @@ La revisión scoped detectó y corrigió un finding material: el generador produ
 `codex review --uncommitted` no pudo iniciarse por el issue conocido de Windows `codex.exe: Acceso denegado`; se completó revisión manual scoped y se reejecutó el diagnóstico posterior al fix. Los mensajes de licensing/duplicate package assemblies y failures intencionales de fixtures quedaron separados de errores del producto. El drift automático `ProjectSettings.runInBackground` del Editor aislado fue revertido y no forma parte del diff; el cambio local preexistente de Mauro en el checkout principal permaneció intacto.
 
 No se implementaron settlements detallados, bridges, streets, rail, terrain/road materialization, climate, final rivers, history, sector transitions, whole-world NavMesh ni simulación vial runtime. El siguiente candidato queda `ID TBD — Terrain Materialization Technical Spike`, `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — Terrain Materialization Technical Spike
+
+Fecha: 2026-08-25.
+
+Estado: `VALIDATED — TECHNICAL SPIKE COMPLETE`.
+
+Se implementó el primer consumer físico de `WorldSession` schema `5` sin modificar worldgen ni persistencia. `TerrainMaterializationPlanner` toma active `SectorId`, su placement committed, MacroGeography, Macro Water y polylines de Macro Human Geography; recorta una ventana lógica boundary-safe y proyecta height/landform/ocean/roads a un frame Unity local cerca del origen. `TerrainMaterializationPlan` es derivado, inmutable y transient; no posee hash propio ni usa `WorldId`, paths, random o GameObjects como authority. Schemas `1`–`4` sin truth suficiente fallan explícitamente y no fabrican terrain.
+
+`WorldTerrainMaterializationController` crea una sola representación local: Unity Terrain/TerrainCollider, tints diagnósticos de landform, ocean mesh mask-clipped al sea level committed, `LineRenderer` para fragments de roads persisted, player técnico con `PlayerMovementController`/`PlayerMovementInputController` y una NavMesh terrestre local. La surface usa un proxy interno derivado del ocean mask para excluir seabed; un actor Core se genera mediante `ActorSpawnService` y navega a través del `ActorNavigationController` existente. Product sector no equivale a Terrain GameObject/NavMesh partition, no hay world-scale/inactive NavMesh y nada se materializa en `Update`.
+
+La configuración Inspector/diagnóstico separa escala física de unidades macro. Se midieron:
+
+- `512×512` Unity units, relief `180`, logical `1400×1400`, heightmap `129`: projection `4 ms`, Terrain `59 ms`, NavMesh `425 ms`, total `500 ms`, memoria estimada `164,192 B`, `11` objetos;
+- baseline provisional `768×768`, relief `240`, logical `1800×1800`, heightmap `257`: projection `13 ms`, Terrain `12 ms`, NavMesh `796 ms`, total `823 ms`, memoria estimada `463,392 B`, `11` objetos;
+- `1024×1024`, relief `320`, logical `2400×2400`, heightmap `257`: projection `14 ms`, Terrain `15 ms`, NavMesh `1,264 ms`, total `1,295 ms`, memoria estimada `724,608 B`, `11` objetos;
+- probe rugged `512×512`, relief `1200`, logical `1800×1800`, heightmap `257`: NavMesh `634 ms`, total `660 ms`; pendiente máxima observada `51.52°` frente al contract de agente `45°`, con `142/142` samples steep rechazados por la NavMesh.
+
+Estos números son mediciones del hardware/Editor actual, no budgets ni equivalencia macro-units→metros. La baseline `768/240/1800/h257` queda recomendada sólo como punto de comparación porque conserva detalle suficiente con coste total sub-segundo aproximado en el diagnostic; NavMesh domina el tiempo y requiere particionado/rebuild profiling antes de producción. La escala física final, tamaño de ventana, vertical exaggeration, tile/surface counts, mutation resolution y travel pacing permanecen `UNFROZEN`.
+
+Validación autónoma en Unity `6000.4.6f1`, worktree, scenes y persistence roots aislados:
+
+- Runtime compile y Editor compile: `PASS`;
+- `Terrain Materialization Technical Spike Diagnostics`: `PASS`; comprobó equivalencia determinista, scale isolation, Terrain/TerrainCollider, samples físicos contra MacroGeography, sea/coast, roads en el mismo frame, safe land spawn, un solo Terrain/NavMesh local, paths completos, slope exclusion, schema `5` round-trip y goldens intactos. La reejecución posterior al hardening del tooling midió totals `481/895/1,317 ms` para los tres candidates y volvió a terminar `PASS`;
+- Play Mode Main Menu→Create→WorldRuntime→Save→Return→Load: `PASS`; cardinalidad `WORLD_CREATED=1`, `LOAD_OK=1`, `SESSION_READY=2`, `MATERIALIZATION_READY=2`, `SAVE_OK=1`, `WRITE_COMMIT=2`, con materialización y navegación actor real repetidas al crear/cargar;
+- fresh Process A/B: `PASS`; reconstruyó mismo `WorldId`, seed, size, active sector, topology y hashes de Plan/Geography/Water/Human Geography desde disco;
+- World Session edit-mode schemas `1`–`5`, M37 Persistence Core, World Identity/Topology/Determinism, Content Source Provenance, Macro Human Geography y M41 Navigation/Perception: `PASS`;
+- goldens sin drift: Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`, Water `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`, Human Geography `a786f018ce3bdea44aeb066c80e38cb1f5dc8e114c65bd7eb352489628245ba6`;
+- `git diff --check`: `PASS` antes del cierre Git; el diff final no incluye ProjectSettings.
+
+Tres PNG temporales fueron exportadas e inspeccionadas fuera del repo: inland/plain mostró relief bajo, costa y roads globales continuas; rugged mostró highlands/mountains coherentes; coastal mostró ocean mask/sea level alineados con la costa. Los tints blocky y lines doradas son visualización técnica, no biome, texturing o road surface final. Unity MCP confirmó en preflight que el Editor normal estaba ready, sin compile/Play ni Console entries; la validación reproducible posterior usó procesos aislados. Cuando el GUI normal dejó de estar disponible no se intentó controlarlo o cerrarlo.
+
+La revisión scoped detectó y corrigió antes del cierre: alias mutable de configuración dentro del plan; TerrainCollider/seabed incluido como source NavMesh; restauración incompleta de `RenderSettings.sun`; y el diagnostic permanente que no restauraba el scene setup previo. También confirmó ausencia de sector=Terrain, coordenadas Unity gigantes, segundo movement/navigation authority, roads regeneradas localmente, terrain noise paralelo, TerrainData durable, schema nuevo, per-frame materialization, voxel/deformation prematura y streaming scope creep. `codex review --uncommitted` volvió a no iniciar por `codex.exe: Acceso denegado`; se completó revisión manual del diff y las suites finales posteriores a los fixes. El Play Mode aislado conservó una excepción interna conocida de `UnityEditor.Search.SearchDatabase.IndexationOnStartup`; quedó fuera de Old Scars y el flujo terminó `PASS` sin errores/exceptions relevantes del producto.
+
+Unity Terrain continúa recomendado como backend provisional después del spike: heightmap/TerrainCollider/local NavMesh funcionan con la truth actual y dejan un seam natural para futura mutación local. No prueba todavía final tiling/streaming, road/water surfaces, interiors/links, rendering/vegetation, persistence de mutations, caves/overhangs ni production performance. La composición futura queda `committed base terrain truth + durable local terrain mutations → materialized physical terrain`, sin implicar voxels.
+
+No se implementaron Biomes/Environment, settlements/streets, final sector streaming, terrain mutations, vegetation, final roads/water, climate, rivers ni gameplay world persistence. El siguiente candidato queda `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`; un Terrain Materialization V1 estrecho sólo deberá adelantarse si evidencia futura descubre un blocker fundacional real.

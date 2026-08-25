@@ -7,22 +7,39 @@ using UnityEngine.SceneManagement;
 namespace OldScars.Core.ApplicationShell
 {
     /// <summary>
-    /// Minimal runtime placeholder proving that a validated WorldSession is open.
-    /// It intentionally contains no world materialization or gameplay simulation.
+    /// Product runtime shell for one validated WorldSession. The terrain spike
+    /// is an explicit derived consumer at this scene boundary; session and
+    /// logical world authorities remain outside the scene.
     /// </summary>
     public sealed class WorldRuntimeSceneController : MonoBehaviour
     {
+        [SerializeField] private TerrainMaterializationConfiguration terrainMaterialization =
+            TerrainMaterializationConfiguration.CreateProvisionalBaseline();
+
         private bool menuOpen;
         private string statusMessage;
+        private WorldTerrainMaterializationController materializationController;
 
         public bool IsMenuOpen => menuOpen;
         public string StatusMessage => statusMessage;
+        public WorldTerrainMaterializationController MaterializationController => materializationController;
 
         private void Start()
         {
             if (WorldSessionService.HasActiveSession)
             {
-                WorldSessionObservability.LogRuntimeReady(WorldSessionService.ActiveSession);
+                WorldSession session = WorldSessionService.ActiveSession;
+                WorldSessionObservability.LogRuntimeReady(session);
+                if (terrainMaterialization == null)
+                    terrainMaterialization = TerrainMaterializationConfiguration.CreateProvisionalBaseline();
+                materializationController = GetComponent<WorldTerrainMaterializationController>();
+                if (materializationController == null)
+                    materializationController = gameObject.AddComponent<WorldTerrainMaterializationController>();
+                if (!materializationController.TryMaterializeActiveSession(
+                        session, terrainMaterialization))
+                {
+                    statusMessage = "Terrain materialization failed: " + materializationController.Failure;
+                }
                 return;
             }
 
@@ -50,7 +67,7 @@ namespace OldScars.Core.ApplicationShell
             if (session == null)
                 return;
 
-            GUILayout.BeginArea(new Rect(18f, 18f, Mathf.Min(620f, Screen.width - 36f), 210f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(18f, 18f, Mathf.Min(720f, Screen.width - 36f), 250f), GUI.skin.box);
             GUILayout.Label(session.DisplayName, HeadingStyle());
             GUILayout.Label("World: " + session.WorldId.Canonical);
             GUILayout.Label("Seed: " + session.GenerationContext.WorldSeed.Canonical);
@@ -59,6 +76,18 @@ namespace OldScars.Core.ApplicationShell
                   "  |  sectors: " + session.MacroWorldPlan.SectorPlacements.Count
                 : "World size: legacy schema 1 (no macro plan)");
             GUILayout.Label("Active sector: " + session.ActiveSectorId.Canonical);
+            if (materializationController != null && materializationController.IsReady)
+            {
+                TerrainMaterializationResult result = materializationController.Result;
+                GUILayout.Label("Terrain spike: " + result.Plan.Configuration.PhysicalWidth + "x" +
+                                result.Plan.Configuration.PhysicalLength +
+                                "  |  NavMesh vertices " + result.NavMeshVertexCount +
+                                "  |  roads " + result.Plan.IntersectingRoadCount);
+            }
+            else if (materializationController != null && !string.IsNullOrEmpty(materializationController.Failure))
+            {
+                GUILayout.Label("Terrain spike: FAILED — " + materializationController.Failure);
+            }
             if (TryGetActiveSectorMacroSample(out MacroGeographySample geographySample))
             {
                 GUILayout.Label("Macro geography: " + geographySample.Landform +

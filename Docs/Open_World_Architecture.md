@@ -2,7 +2,7 @@
 
 - Estado: `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 - Alcance: arquitectura futura del mundo abierto, generación, sectores, materialización y persistencia mundial
-- Implementación actual: las foundations y seams señaladas explícitamente están implementadas; geography, sector detail/materialization y world gameplay continúan futuros
+- Implementación actual: las foundations y seams señaladas explícitamente están implementadas; existe un Terrain Materialization Technical Spike local, pero sector detail/materialization de producción y world gameplay continúan futuros
 
 ## Autoridad Del Documento
 
@@ -23,7 +23,7 @@ Los nombres conceptuales utilizados aquí no congelan nombres públicos de clase
 La dirección de diseño está aprobada. No están implementados:
 
 - world generation más allá de Macro World Plan + Macro Elevation/Landforms + Gameplay Quality/Macro Water + Macro Human Geography/Road Network V1;
-- world sectors como regiones jugables/materializadas;
+- world sectors como regiones jugables/materializadas de producción; el spike sólo proyecta una ventana local transient alrededor de un anchor;
 - sector loading o transición;
 - climate/moisture, rivers, geology, biomes u otros cross-sector features posteriores a la infraestructura vial macro V1;
 - world persistence de geography posterior, sector blueprints, gameplay mutations y estado activo/inactivo más allá de la shell mínima;
@@ -34,7 +34,7 @@ La dirección de diseño está aprobada. No están implementados:
 
 No se autoriza implementación por la existencia de este documento. Cada unidad requiere alcance, dependencia, validación y autorización propios bajo el Roadmap.
 
-Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existen una application shell acotada, `MacroWorldPlan V1`, `Macro Elevation / Landforms V1`, `Gameplay Quality + Macro Water V1` y `Macro Human Geography / Road Network V1`: `WorldSession`, mundo finito con bounds/placements/topology, campos mundiales fixed-point de elevation/landforms/Water, quality analysis/starter y una red global committed de hubs y roads lógicas. `world_session_v1` schema `5` persiste esa truth sobre M37. No existen todavía terrain/road materialization, climate/moisture, final rivers, geology/biomes, settlements detallados, gameplay world state ni compatibility policy.
+Las foundations mínimas de content source identity/provenance y world identity/topology/determinism sí están implementadas. También existen una application shell acotada, `MacroWorldPlan V1`, `Macro Elevation / Landforms V1`, `Gameplay Quality + Macro Water V1` y `Macro Human Geography / Road Network V1`: `WorldSession`, mundo finito con bounds/placements/topology, campos mundiales fixed-point de elevation/landforms/Water, quality analysis/starter y una red global committed de hubs y roads lógicas. `world_session_v1` schema `5` persiste esa truth sobre M37. Un technical spike consume esa truth para crear una ventana Unity Terrain local, water/road overlays diagnósticos, player y NavMesh local; no implementa materialización sectorial/roads de producción, climate/moisture, final rivers, geology/biomes, settlements detallados, gameplay world state ni compatibility policy.
 
 ## Decisión Arquitectónica Central
 
@@ -242,7 +242,7 @@ El orden arquitectónico aprobado es:
 
 Se congelan el orden de autoridad y la separación logical/runtime, no nombres de clases ni un número fijo de pases.
 
-La implementación actual cubre generation context, settings resueltos, bounds finitos y placements/topology dentro de `MacroWorldPlan V1`; un campo mundial committed de elevation normalizada y landforms (`Plains`, `RollingHills`, `Highlands`, `Mountains`); Macro Water committed con sea/ocean/coastline/conditioned drainage/basin candidates; quality/starter; y `MacroHumanGeographyPlan` con hubs y polylines viales mundiales. Esa verdad se consulta por coordenadas macro y precede todo detalle sectorial. No simula ni infiere climate/moisture, final rivers, geology, vegetation/biomes, settlement detail, history o road/terrain materialization.
+La implementación actual cubre generation context, settings resueltos, bounds finitos y placements/topology dentro de `MacroWorldPlan V1`; un campo mundial committed de elevation normalizada y landforms (`Plains`, `RollingHills`, `Highlands`, `Mountains`); Macro Water committed con sea/ocean/coastline/conditioned drainage/basin candidates; quality/starter; y `MacroHumanGeographyPlan` con hubs y polylines viales mundiales. Esa verdad se consulta por coordenadas macro y precede todo detalle sectorial. El technical spike materializa una ventana local derivada para evaluación física, sin simular ni inferir climate/moisture, final rivers, geology, vegetation/biomes, settlement detail, history o materialización de producción.
 
 Principio preferido:
 
@@ -529,6 +529,18 @@ Old Scars prioriza geografía comprimida creíble sobre distancias 1:1. El world
 
 Whole-world NavMesh queda rechazado. La realización futura del sector activo y sus partitions internas producirán las surfaces/links locales que consume el `ActorNavigationController` existente; worldgen no crea un navigator paralelo. Terrain deformation queda como seam futuro de mutación local durable: esta arquitectura no autoriza ni implica voxels o una simulación global de suelo.
 
+## Terrain Materialization Technical Spike — Evidencia Implementada
+
+El spike valida el primer consumo físico local de la truth committed sin convertir su representación en arquitectura final. `TerrainMaterializationPlanner` recorta una ventana lógica alrededor del placement del `ActiveSectorId`, consulta los fields globales y transforma roads globales al mismo frame Unity local. Un `SectorId` no equivale a un Terrain GameObject: el sector sigue siendo identidad/estado de gameplay y Terrain/NavMesh/render tiles continúan partitions técnicas futuras.
+
+La baseline provisional medida crea un Terrain `768×768` Unity units con escala vertical `240`, muestrea `1800×1800` unidades macro en heightmap `257`, agrega `TerrainCollider`, ocean mesh mask-clipped, roads diagnósticas, player con las autoridades de movimiento existentes y una sola NavMesh local terrestre. La escala macro→física, tamaño de ventana, resolución, particionado y budgets productivos permanecen `UNFROZEN`; el spike sólo aporta comparación y timing reproducibles.
+
+La NavMesh usa un proxy terrestre interno derivado de Macro Water para excluir océano/seabed y demostró paths completos mediante el `ActorNavigationController` existente. No se construye nada para el mundo completo o sectores inactivos. La representación tampoco entra en schema `5`: `TerrainData`, meshes y GameObjects se reconstruyen desde truth committed. Una futura mutación local deberá componerse como:
+
+`committed base terrain truth + durable local terrain mutations → materialized physical terrain`
+
+No se implementan mutations, voxels, caves/overhangs, final water/roads, streaming, transitions ni materialización sectorial de producción.
+
 ## Observabilidad En Límites Del Pipeline
 
 Cada pass mantiene su truth/hashing determinista y los lifecycle boundaries publican resúmenes estructurados, no dumps del campo mundial. Create debe hacer observables la identidad del mundo, settings, contratos y evidencia canónica ya producida; Load debe distinguir truth presente de schemas legacy ausente; Runtime Ready debe confirmar la session publicada. La persistencia física conserva su propio commit observable y no se confunde con el éxito semántico de session.
@@ -539,15 +551,15 @@ La observabilidad no puede convertirse en simulación, profiler continuo, loggin
 
 | Consumidor futuro | Truth macro que puede consumir | Sigue pendiente / no inferir ahora |
 | --- | --- | --- |
-| Player/AI navigation | relief/Water, corridors y Macro Road polylines como hints de blueprint | Walkable/NavMesh/path final; usar partitions activas y `ActorNavigationController` |
+| Player/AI navigation | relief/Water, corridors y Macro Road polylines como hints de blueprint; el spike demuestra una NavMesh local terrestre | Walkable/NavMesh/path productivo, links/partitions/streaming; conservar `ActorNavigationController` |
 | Vehicles/machines | relief, Water y Macro Road Network para route feasibility | vehicle physics, grades físicas, lanes/surfaces y performance runtime |
 | Boats | ocean bodies/coastline y futura hydrology | navigable depth, rivers, ports y boat simulation |
-| Roads/rail | hubs y polylines Primary/Secondary de `MacroHumanGeographyPlan`, corridors/relief/Water | materialización, bridges, grade/curvature física, calles y rail network |
+| Roads/rail | hubs y polylines Primary/Secondary de `MacroHumanGeographyPlan`, corridors/relief/Water; el spike las proyecta como líneas diagnósticas | surfaces productivas, bridges, grade/curvature física, calles y rail network |
 | Buildings/construction | site-placement potential y future local blueprint | Buildable final, metros, foundations y terrain mutation |
 | POIs | anchor suitability y relación con geography/networks | authored selection/composition y condición histórica |
 | Factions/history | bounds, regions y future sites/networks | strategic simulation y event-sourced persistence |
 | Underground | world bounds y future geology | caves, strata, entrances y relación con surface terrain |
-| Terrain mutation | committed local baseline futura | voxel implementation o edición de macro truth global |
+| Terrain mutation | base macro committed ya consumida por el spike; baseline local durable futura | mutation payload/apply; no voxel implementation ni edición de macro truth global |
 
 ## System Harmony — M32 A M41.1
 
@@ -567,7 +579,7 @@ La observabilidad no puede convertirse en simulación, profiler continuo, loggin
 
 ## Large-Sector Navigation And Performance Gate
 
-Antes de una realización sectorial de producción se requiere un spike técnico acotado. Debe medir, sin reemplazar `ActorNavigationController`:
+El Terrain Materialization Technical Spike ya aporta una primera medición de Terrain/Collider y una NavMesh local. Antes de una realización sectorial de producción, este gate continúa requiriendo un escenario más representativo que mida, sin reemplazar `ActorNavigationController`:
 
 - múltiples NavMesh surfaces/partitions o estrategia equivalente;
 - continuidad de paths y links autorizados;
@@ -578,7 +590,7 @@ Antes de una realización sectorial de producción se requiere un spike técnico
 - memoria máxima y residual;
 - fallos en borders/partitions.
 
-No congela todavía tamaño de tiles, cantidad de surfaces, terrain technology, streaming solution ni budgets numéricos. Esos valores requieren escenario, hardware y mediciones representativas.
+El spike mantiene Unity Terrain como backend provisional recomendado y no congela tamaño de tiles, cantidad de surfaces, scale, terrain technology final, streaming solution ni budgets numéricos. Esos valores requieren escenario, hardware y mediciones representativas.
 
 ## Connected First Playable
 
@@ -610,7 +622,7 @@ Los IDs, estados y dependencias autorizadas viven exclusivamente en [Project_Roa
 14. Playtest / Rebaseline;
 15. sistemas posteriores según dependencias y evidencia reales.
 
-Los pasos 2–6 están `VALIDATED`; la primera slice de infraestructura humana global del paso 7 también quedó validada mediante `MacroHumanGeographyPlan`, sin completar climate/rivers ni otros cross-sector networks. La shell operacional de World Session/New Game/Save/Load sobre M37 persiste identity, MacroWorldPlan/topology, Macro Elevation/Landforms, Macro Water, Human Geography y provenance evidence, pero no completa World Persistence: mantiene vacíos climate/moisture, rivers/geology, history, local detail y gameplay world state. El próximo candidato operativo es `Terrain Materialization Technical Spike`, según alcance y autorización del Roadmap; no implica iniciar materialización productiva.
+Los pasos 2–6 están `VALIDATED`; la primera slice de infraestructura humana global del paso 7 también quedó validada mediante `MacroHumanGeographyPlan`, sin completar climate/rivers ni otros cross-sector networks. La shell operacional de World Session/New Game/Save/Load sobre M37 persiste identity, MacroWorldPlan/topology, Macro Elevation/Landforms, Macro Water, Human Geography y provenance evidence. El Terrain Materialization Technical Spike ya demuestra una representación física local derivada, pero no completa World Persistence, local baseline durable ni materialización productiva: mantiene vacíos climate/moisture, rivers/geology, biomes, history, sector detail y gameplay world state. El próximo candidato operativo es `Macro Environment / Biome Regions V1`, sujeto al alcance y autorización del Roadmap.
 
 Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y producción no se eliminan. Su orden final posterior no queda permanentemente congelado aquí.
 

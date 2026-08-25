@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
 using OldScars.Core;
+using OldScars.Core.Actors;
 using OldScars.Core.ApplicationShell;
 using OldScars.Core.Data.Loading;
 using OldScars.Core.Data.Validation;
+using OldScars.Core.Interactions;
 using OldScars.Core.Persistence;
 using OldScars.Core.World;
 using UnityEditor;
@@ -30,6 +32,7 @@ namespace OldScars.EditorTools
         private const string PlayWorldCreatedLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.WorldCreatedLogs";
         private const string PlayLoadOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.LoadOkLogs";
         private const string PlaySessionReadyLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.SessionReadyLogs";
+        private const string PlayMaterializationReadyLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.MaterializationReadyLogs";
         private const string PlaySaveOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.SaveOkLogs";
         private const string PlayWriteCommitLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.WriteCommitLogs";
         private const string FreshRootEnvironment = "OLD_SCARS_WORLD_SESSION_DIAGNOSTIC_ROOT";
@@ -96,6 +99,7 @@ namespace OldScars.EditorTools
             SessionState.SetInt(PlayWorldCreatedLogCountKey, 0);
             SessionState.SetInt(PlayLoadOkLogCountKey, 0);
             SessionState.SetInt(PlaySessionReadyLogCountKey, 0);
+            SessionState.SetInt(PlayMaterializationReadyLogCountKey, 0);
             SessionState.SetInt(PlaySaveOkLogCountKey, 0);
             SessionState.SetInt(PlayWriteCommitLogCountKey, 0);
             SessionState.SetBool(PlayPendingKey, true);
@@ -551,8 +555,14 @@ namespace OldScars.EditorTools
                         FailPlay("World Runtime is missing its authority or retained a Main Menu controller.", root);
                         return;
                     }
+                    if (!ValidateRuntimeMaterialization(runtime, out string materializationFailure))
+                    {
+                        FailPlay("World Runtime terrain materialization failed: " + materializationFailure, root);
+                        return;
+                    }
                     if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
                         PlayLogCount(PlaySessionReadyLogCountKey) != 1 ||
+                        PlayLogCount(PlayMaterializationReadyLogCountKey) != 1 ||
                         PlayLogCount(PlayLoadOkLogCountKey) != 0)
                     {
                         FailPlay("New Game must emit one WORLD_CREATED and one SESSION_READY before any LOAD_OK.", root);
@@ -633,9 +643,15 @@ namespace OldScars.EditorTools
                         FailPlay("Load action did not restore the recorded world/topology in World Runtime.", root);
                         return;
                     }
+                    if (!ValidateRuntimeMaterialization(runtime, out string materializationFailure))
+                    {
+                        FailPlay("Loaded World Runtime terrain materialization failed: " + materializationFailure, root);
+                        return;
+                    }
                     if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
                         PlayLogCount(PlayLoadOkLogCountKey) != 1 ||
                         PlayLogCount(PlaySessionReadyLogCountKey) != 2 ||
+                        PlayLogCount(PlayMaterializationReadyLogCountKey) != 2 ||
                         PlayLogCount(PlaySaveOkLogCountKey) != 1)
                     {
                         FailPlay("Load flow must add exactly one LOAD_OK and one SESSION_READY without repeating create/save evidence.", root);
@@ -664,7 +680,8 @@ namespace OldScars.EditorTools
                         "- in-game menu open/continue/save\n" +
                         "- Return to Main Menu clears session without implicit save\n" +
                         "- Main Menu Load restores same world and re-enters runtime\n" +
-                        "- logs: WORLD_CREATED=1, LOAD_OK=1, SESSION_READY=2, SAVE_OK=1, WRITE_COMMIT=2\n" +
+                        "- generated Terrain/Collider/player/local NavMesh materialized on create and load\n" +
+                        "- logs: WORLD_CREATED=1, LOAD_OK=1, SESSION_READY=2, MATERIALIZATION_READY=2, SAVE_OK=1, WRITE_COMMIT=2\n" +
                         "- temporary persistence root removed");
                     EditorApplication.Exit(0);
                 }
@@ -699,6 +716,7 @@ namespace OldScars.EditorTools
             SessionState.EraseInt(PlayWorldCreatedLogCountKey);
             SessionState.EraseInt(PlayLoadOkLogCountKey);
             SessionState.EraseInt(PlaySessionReadyLogCountKey);
+            SessionState.EraseInt(PlayMaterializationReadyLogCountKey);
             SessionState.EraseInt(PlaySaveOkLogCountKey);
             SessionState.EraseInt(PlayWriteCommitLogCountKey);
             if (!string.IsNullOrEmpty(root) && Directory.Exists(root))
@@ -951,9 +969,85 @@ namespace OldScars.EditorTools
                 failures.Add(failure);
         }
 
+        private static bool ValidateRuntimeMaterialization(
+            WorldRuntimeSceneController runtime,
+            out string failure)
+        {
+            failure = null;
+            WorldTerrainMaterializationController materialization = runtime?.MaterializationController;
+            TerrainMaterializationResult result = materialization?.Result;
+            if (materialization == null || !materialization.IsReady || result == null)
+            {
+                failure = materialization?.Failure ?? "materialization controller/result is absent";
+                return false;
+            }
+            if (result.Terrain == null || result.TerrainCollider == null ||
+                result.Player == null || result.Player.GetComponent<PlayerMovementController>() == null ||
+                result.Player.GetComponent<PlayerMovementInputController>() == null ||
+                result.Player.GetComponent<UnityEngine.AI.NavMeshAgent>() != null ||
+                result.NavMeshSurface == null || result.NavMeshSurface.navMeshData == null ||
+                result.NavMeshVertexCount < 1 || result.PathCorners.Count < 2)
+            {
+                failure = "Terrain/Collider/player movement/local NavMesh/path contract is incomplete";
+                return false;
+            }
+            return ValidateActorNavigationOnMaterializedTerrain(result, out failure);
+        }
+
+        private static bool ValidateActorNavigationOnMaterializedTerrain(
+            TerrainMaterializationResult result,
+            out string failure)
+        {
+            const string profileId = "core:debug_navigation_npc_01";
+            failure = null;
+            ActorRuntimeIdentity identity = null;
+            bool valid = false;
+            try
+            {
+                Vector3 start = result.PathCorners[0];
+                Vector3 destination = result.PathCorners[result.PathCorners.Count - 1];
+                if (!ActorSpawnService.TrySpawn(
+                        profileId, start, Quaternion.identity, out identity, out string spawnError))
+                {
+                    failure = "ActorNavigationController fixture could not spawn: " + spawnError;
+                }
+                else
+                {
+                    ActorNavigationController navigation = identity.GetComponent<ActorNavigationController>();
+                    UnityEngine.AI.NavMeshAgent agent = identity.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                    if (navigation == null || agent == null || !agent.isOnNavMesh)
+                    {
+                        failure = "generated-terrain actor is missing its configured navigation authority or NavMesh binding";
+                    }
+                    else if (!navigation.TryNavigate(destination, out ActorNavigationResult order) ||
+                             !order.Accepted || order.Failure != ActorNavigationFailure.None)
+                    {
+                        failure = "ActorNavigationController rejected the generated-terrain path: " +
+                                  order.Failure + " / " + order.Detail;
+                    }
+                    else
+                    {
+                        valid = true;
+                    }
+                }
+            }
+            finally
+            {
+                if (identity != null && identity.IsRegistered &&
+                    !ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(
+                        identity.ActorInstanceId, out string cleanupError))
+                {
+                    valid = false;
+                    failure = "ActorNavigationController fixture cleanup failed: " + cleanupError;
+                }
+            }
+            return valid;
+        }
+
         private const string WorldCreatedPrefix = "[Worldgen][WORLD_CREATED]";
         private const string LoadOkPrefix = "[WorldSession][LOAD_OK]";
         private const string SessionReadyPrefix = "[WorldRuntime][SESSION_READY]";
+        private const string MaterializationReadyPrefix = "[WorldMaterialization][READY]";
         private const string SaveOkPrefix = "[WorldSession][SAVE_OK]";
         private const string WriteCommitPrefix = "[Persistence][WRITE_COMMIT]";
 
@@ -967,6 +1061,8 @@ namespace OldScars.EditorTools
                 IncrementPlayLog(PlayLoadOkLogCountKey);
             else if (message.StartsWith(SessionReadyPrefix, StringComparison.Ordinal))
                 IncrementPlayLog(PlaySessionReadyLogCountKey);
+            else if (message.StartsWith(MaterializationReadyPrefix, StringComparison.Ordinal))
+                IncrementPlayLog(PlayMaterializationReadyLogCountKey);
             else if (message.StartsWith(SaveOkPrefix, StringComparison.Ordinal))
                 IncrementPlayLog(PlaySaveOkLogCountKey);
             else if (message.StartsWith(WriteCommitPrefix, StringComparison.Ordinal))

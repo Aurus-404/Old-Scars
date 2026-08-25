@@ -20,7 +20,7 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1, más la shell acotada de World Session/New Game/Save/Load, están implementadas y validadas; climate/moisture, final rivers, geology/biomes, settlement detail, gameplay world persistence, sector gameplay/materialization, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1, más la shell acotada de World Session/New Game/Save/Load y el Terrain Materialization Technical Spike local, están implementadas y validadas; climate/moisture, final rivers, geology/biomes, settlement detail, gameplay world persistence, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
 
 ### ID TBD — Minimum Content Source Identity & Provenance Foundation
 
@@ -44,7 +44,7 @@ Estado final:
 
 `VALIDATED — APPLICATION SHELL COMPLETE`
 
-`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. Main Menu es el startup de producto, `WorldRuntime` es un placeholder separado y `SampleScene` permanece laboratorio. Macro World Plan V1 extendió después esa misma session/persistencia sin implementar geography, history, terrain, gameplay world state, streaming ni sector transitions.
+`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. Main Menu es el startup de producto, `WorldRuntime` permanece separado y para schemas `5` ejecuta ahora el Terrain Materialization Technical Spike. `SampleScene` continúa laboratorio. La representación terrain se deriva y no cambia schema, gameplay world state, streaming ni sector transitions.
 
 ### ID TBD — Macro World Plan V1
 
@@ -60,7 +60,7 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` conserva ese formato legacy sin Water fabricada. No existen todavía terrain, climate, geology, vegetation/biomes ni materialización.
+New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` conserva ese formato legacy sin Water fabricada. El spike consume esta truth en una ventana física; climate, geology, vegetation/biomes y materialización terrain de producción continúan pendientes.
 
 ### ID TBD — Worldgen Gameplay Quality + Macro Water V1
 
@@ -94,6 +94,14 @@ Estado final:
 
 New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial bajo `macro_human_roads_v1`: hubs Regional/Local en tierra, backbone Primary conectado por landmass, enlaces alternativos/ciclos y branches Secondary, todos con IDs estables y polylines globales routeadas sobre un cost field entero de relief/traversal. No usa el MST de `WorldTopology` como road graph, no cruza océano y no materializa settlements, roads, bridges, terrain ni navegación física. `world_session_v1` schema `5` persiste esa truth; schemas `1`–`4` permanecen legacy exactos y no fabrican infraestructura.
 
+### ID TBD — Terrain Materialization Technical Spike
+
+Estado final:
+
+`VALIDATED — TECHNICAL SPIKE COMPLETE`
+
+Una session schema `5` puede proyectar la truth committed alrededor del active-sector anchor a una ventana Unity local con Terrain/TerrainCollider, ocean mask, roads diagnósticas, player sobre tierra y una NavMesh terrestre local consumida por `ActorNavigationController`. La baseline provisional es `768×768` Unity units, relief `240`, ventana lógica `1800×1800` y heightmap `257`. Product sector no equivale a Terrain tile, la escala final permanece unfrozen, schema `5`/M37 no cambian y no existen streaming, transitions, mutations, voxels ni materialización productiva.
+
 ## Evidencia De Cierre
 
 - Runtime/Editor compile y `M41.1 Human Encounter AI Diagnostics`: `PASS`.
@@ -120,6 +128,10 @@ New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial
 - Corpus rutinario `36/36` y stress `144/144` (`12 seeds × 4 sizes × 3 coverages`) generaron sin rechazos duros; `126` mundos emitieron findings blandos de cobertura/gap para tuning futuro. Timings/payload aproximados: Small `28 ms / 52,442 B`, Medium `79 ms / 98,139 B`, Large `295 ms / 160,050 B`, Huge `1,203 ms / 288,407 B`; no son budgets productivos.
 - Preview golden de seis paneles inspeccionada: backbone/branches/ciclos visibles sobre tierra y coast background, sin ocean crossing ni spaghetti. Fresh Process A/B reconstruyó el mismo Human Geography hash `7099469990ae9cfd21e4c5b27a233f5aff5a46f4f908b2ef62b5be0556260d18`; Play Mode confirmó Main Menu→Create→Runtime→Save→Return→Load y cardinalidad `WORLD_CREATED=1`, `LOAD_OK=1`, `SESSION_READY=2`, `SAVE_OK=1`, `WRITE_COMMIT=2`.
 - Runtime/Editor compile, World Foundation, Macro Plan, Macro Geography, Water/Quality, Pass Isolation, World Session, M37 Persistence Core, Content Source Provenance, Global Content Namespace y M41 Navigation/Perception: `PASS` en procesos aislados. Los mensajes de licensing/package assembly del Editor se conservaron separados de errores del producto.
+- `Terrain Materialization Technical Spike Diagnostics`: `PASS`; un Terrain + TerrainCollider local consumió samples de MacroGeography, coast/sea committed y roads persisted sin seams de SectorId, con equivalencia determinista y aislamiento de escala respecto de los hashes Plan/Geography/Water/Human Geography.
+- Baseline `768×768 / relief 240 / logical 1800×1800 / heightmap 257`: projection `13 ms`, Terrain `12 ms`, NavMesh `796 ms`, total `823 ms`, memoria estimada `463,392 B` y `11` objetos. Candidatos `512×512/h129` y `1024×1024/h257` midieron total `500 ms` y `1,295 ms`; son evidencia técnica, no budgets productivos.
+- Play Mode Main Menu→Create→WorldRuntime→Save→Return→Load: `PASS`; emitió exactamente dos `[WorldMaterialization][READY]` y un actor Core real aceptó un path mediante `ActorSpawnService` + `ActorNavigationController`. Fresh Process A/B, schemas `1`–`5`, M37, M41 y goldens de Plan/Geography/Water/Human Geography permanecieron `PASS`.
+- Previews temporales inland/plain, rugged y coastal fueron inspeccionadas: relief regional coherente, costa/océano alineados y polylines viales globales continuas. El probe rugged usó pendiente física máxima `51.52°`; los `142/142` samples por encima del contrato NavMesh `45°` quedaron excluidos. Los colores/lines son diagnóstico, no arte o surfaces finales.
 
 ## Contratos Cerrados
 
@@ -130,6 +142,6 @@ New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Terrain Materialization Technical Spike`, `PLANNED — NOT AUTHORIZED`. Debe medir el consumo local de la truth global ya committed sin convertir el spike en materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente no autorizada. Macro Climate/Moisture y los demás passes continúan pendientes.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`. El Terrain Materialization Technical Spike no autoriza vegetation, arte/materiales finales, materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente. Macro Climate/Moisture y los demás passes continúan pendientes salvo alcance futuro expresamente reconciliado.
 
 M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
