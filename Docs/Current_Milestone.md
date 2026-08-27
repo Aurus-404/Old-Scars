@@ -20,7 +20,19 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1, más la shell acotada de World Session/New Game/Save/Load y el Terrain Materialization Technical Spike local, están implementadas y validadas; climate/moisture, final rivers, geology/biomes, settlement detail, gameplay world persistence, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local y la convergencia del gameplay compartido en WorldRuntime, están implementadas y validadas. Climate baseline, final rivers, geology/biomes, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+
+### ID TBD — Integrated Gameplay Runtime / SampleScene Convergence
+
+Estado final:
+
+`VALIDATED — RUNTIME CONVERGENCE COMPLETE`
+
+Commit validado: `8c485c78b4ab294de9d983f70ebadfba634ab3e1`.
+
+WorldRuntime es el runtime canónico de gameplay. SampleScene conserva el rol de laboratorio/regresión. Ambos reutilizan una composición gameplay compartida y las autoridades existentes de player, Inventory, Health, Needs, Interaction, Combat y Persistence; worldgen aporta terreno/world truth y representación derivada sin reemplazar esas autoridades. La fixture M32 integrada existe únicamente en Editor/development builds y no constituye aceptación audiovisual ni contrato de compatibilidad de saves para futuros release builds.
+
+La convergencia preservó la identidad durable M36 y la separación entre representación mundial y gameplay. MainMenu → New Game → WorldRuntime integrado, interacción, Inventory/Health/Needs, combate, save → menu → load, rechazo de contaminación entre mundos y fresh-process A/B quedaron validados sin introducir autoridades paralelas.
 
 ### ID TBD — Minimum Content Source Identity & Provenance Foundation
 
@@ -44,7 +56,7 @@ Estado final:
 
 `VALIDATED — APPLICATION SHELL COMPLETE`
 
-`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. Main Menu es el startup de producto, `WorldRuntime` permanece separado y para schemas `5` ejecuta ahora el Terrain Materialization Technical Spike. `SampleScene` continúa laboratorio. La representación terrain se deriva y no cambia schema, gameplay world state, streaming ni sector transitions.
+`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. Main Menu es el startup de producto y WorldRuntime es ahora el runtime canónico integrado: para schemas `5` materializa la ventana terrain técnica y ejecuta sobre ella el gameplay compartido. SampleScene continúa laboratorio. La representación terrain se deriva y no cambia schema, streaming ni sector transitions; la persistencia gameplay validada sigue siendo la del Current Slice soportado, no una implementación general de futuras mutaciones/blueprints sectoriales.
 
 ### ID TBD — Macro World Plan V1
 
@@ -132,6 +144,8 @@ Una session schema `5` puede proyectar la truth committed alrededor del active-s
 - Baseline `768×768 / relief 240 / logical 1800×1800 / heightmap 257`: projection `13 ms`, Terrain `12 ms`, NavMesh `796 ms`, total `823 ms`, memoria estimada `463,392 B` y `11` objetos. Candidatos `512×512/h129` y `1024×1024/h257` midieron total `500 ms` y `1,295 ms`; son evidencia técnica, no budgets productivos.
 - Play Mode Main Menu→Create→WorldRuntime→Save→Return→Load: `PASS`; emitió exactamente dos `[WorldMaterialization][READY]` y un actor Core real aceptó un path mediante `ActorSpawnService` + `ActorNavigationController`. Fresh Process A/B, schemas `1`–`5`, M37, M41 y goldens de Plan/Geography/Water/Human Geography permanecieron `PASS`.
 - Previews temporales inland/plain, rugged y coastal fueron inspeccionadas: relief regional coherente, costa/océano alineados y polylines viales globales continuas. El probe rugged usó pendiente física máxima `51.52°`; los `142/142` samples por encima del contrato NavMesh `45°` quedaron excluidos. Los colores/lines son diagnóstico, no arte o surfaces finales.
+- Integrated Gameplay Runtime / SampleScene Convergence: Runtime/Editor compile, WorldSessionApplicationDiagnostics, MainMenu→New Game→WorldRuntime integrado, cardinalidad de player/camera/WorldClock/Inventory/interacción/Needs/Health, container transfer, crowbar pickup/equip, door contextual action, save→menu→load repetido, contaminación World A→B rechazada y Fresh Process A/B: `PASS`.
+- M36.1 Foundation Identity Validation permaneció `PASS` con 14 `PersistentSceneObjectId`, 2 `ItemInstanceId`, 3 actores, 3 puertas, 8 contenedores y cero IDs duplicados o inválidos. La captura D3D11 mostró player y fixture de integración sobre terreno generado; `git diff --check` pasó. El commit publicado de cierre es `8c485c78b4ab294de9d983f70ebadfba634ab3e1`.
 
 ## Contratos Cerrados
 
@@ -142,6 +156,6 @@ Una session schema `5` puede proyectar la truth committed alrededor del active-s
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`. El Terrain Materialization Technical Spike no autoriza vegetation, arte/materiales finales, materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente. Macro Climate/Moisture y los demás passes continúan pendientes salvo alcance futuro expresamente reconciliado.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Climate Baseline V1`, `PLANNED — NOT AUTHORIZED`. Su propósito futuro es producir truth mundial determinista de baseline térmica y humedad climática de largo plazo; no implementa weather runtime. Después de cerrarlo, `ID TBD — Macro Environment / Biome Regions V1` queda como siguiente candidato previsto, también `PLANNED — NOT AUTHORIZED`, consumiendo Climate sin confundir landforms con biomas.
 
-M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+El Terrain Materialization Technical Spike y la convergencia runtime no autorizan vegetation, arte/materiales finales, materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.

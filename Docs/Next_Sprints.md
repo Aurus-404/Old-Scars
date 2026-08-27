@@ -6,7 +6,7 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `TERRAIN MATERIALIZATION TECHNICAL SPIKE CLOSED`.
+Estado: `INTEGRATED GAMEPLAY RUNTIME / SAMPLESCENE CONVERGENCE CLOSED`.
 
 M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
@@ -52,22 +52,31 @@ Estado: `VALIDATED — FOUNDATION COMPLETE`.
 
 Estado: `VALIDATED — TECHNICAL SPIKE COMPLETE`.
 
-La shell implementada posee session lifecycle único, save catalog, Main Menu, World Runtime e in-game Save/Return. New Game genera plan finito → elevation/landforms → Macro Water → quality/starter → Macro Human Geography. Para schemas `5`, World Runtime proyecta ahora una ventana local transient a Unity Terrain/Collider, ocean mask, roads diagnósticas, player existente y NavMesh terrestre local. Esa representación consume truth persisted y no cambia `world_session_v1`, M37, `current_slice_v1`, hashes lógicos ni schemas `1`–`4` legacy.
+`ID TBD — Integrated Gameplay Runtime / SampleScene Convergence`
 
-El próximo coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, con estado `PLANNED — NOT AUTHORIZED`. Debe reconciliar su dependencia real con climate/moisture/geology antes de fijar contrato y conservar los fields mundiales antes del detalle local. El spike no autoriza por sí mismo vegetation, arte/materiales finales, materialización productiva, sector streaming/transitions, final rivers, settlements, history, generation compatibility ni gameplay world simulation.
+Estado: `VALIDATED — RUNTIME CONVERGENCE COMPLETE`.
+
+Commit de cierre: `8c485c78b4ab294de9d983f70ebadfba634ab3e1`.
+
+WorldRuntime es ahora el runtime canónico de gameplay. SampleScene conserva el rol de laboratorio/regresión. Ambos reutilizan la misma composición y autoridades existentes de player, Inventory, Health, Needs, Interaction, Combat y Persistence; worldgen aporta terreno/world truth y representación derivada sin convertirse en una segunda autoridad gameplay. La fixture M32 integrada en WorldRuntime existe sólo en Editor/development builds.
+
+La shell implementada posee session lifecycle único, save catalog, Main Menu, WorldRuntime e in-game Save/Return. New Game genera plan finito → elevation/landforms → Macro Water → quality/starter → Macro Human Geography. Para schemas `5`, WorldRuntime proyecta una ventana local transient a Unity Terrain/Collider, ocean mask, roads diagnósticas y NavMesh terrestre local, y sobre esa representación ejecuta el gameplay compartido. Esa integración consume truth persisted y no cambia `world_session_v1`, M37, `current_slice_v1`, hashes lógicos ni schemas `1`–`4` legacy.
+
+El próximo coding unit candidato es `ID TBD — Macro Climate Baseline V1`, con estado `PLANNED — NOT AUTHORIZED`. Su propósito futuro es aportar truth mundial determinista de baseline térmica y humedad climática de largo plazo para consumidores posteriores; no equivale a weather runtime. Una vez cerrado Climate, el siguiente candidato previsto es `ID TBD — Macro Environment / Biome Regions V1`, también `PLANNED — NOT AUTHORIZED`, consumiendo esa truth sin confundir landform con biome ni iniciar vegetation/materiales finales.
 
 Fuera de alcance mientras no exista autorización específica:
 
-- cualquier implementación open-world posterior al Terrain Materialization Technical Spike sin autorización del siguiente unit;
+- implementar `Macro Climate Baseline V1` o cualquier unit open-world posterior;
+- implementar `Macro Environment / Biome Regions V1` antes de cerrar su dependencia climática;
 - M42.0 u otro milestone jugable;
-- cambios de gameplay, content contracts o persistencia fuera del payload schema `5` acotado ya cerrado;
-- reabrir la arquitectura M41.1 validada.
+- cambios de gameplay, content contracts o persistencia fuera del payload schema `5` ya cerrado;
+- reabrir la convergencia runtime o la arquitectura M41.1 validada.
 
 M42.0 permanece planificado, pero su secuencia requiere rebaseline y ya no constituye el siguiente trabajo automático. Todo trabajo nuevo requiere autorización explícita.
 
 ## Connected First Playable
 
-El Connected First Playable es la prueba integrada objetivo después de las foundations open-world. Debe demostrar A→B→A, continuidad cross-sector, mutaciones persistentes, save, full process exit y fresh load usando M32–M41.1. No está iniciado, no es la vertical slice audiovisual final y no adelanta M45.1.
+El Connected First Playable es la prueba integrada objetivo después de las foundations open-world. Debe demostrar A→B→A, continuidad cross-sector, mutaciones persistentes, save, full process exit y fresh load usando M32–M41.1 dentro del runtime canónico. No está iniciado, no es la vertical slice audiovisual final y no adelanta M45.1.
 
 ## Modding Y Provenance
 
@@ -79,11 +88,11 @@ Dependencies, overrides/patches y compatibilidad de producción permanecen en al
 
 ## No Iniciar Todavía
 
-- Macro Environment / Biome Regions V1, Macro Climate / Moisture V1, Terrain Materialization V1 productiva, otros coding units open-world o M42.0 sin autorización específica;
+- Macro Climate Baseline V1, Macro Environment / Biome Regions V1, Terrain Materialization V1 productiva, otros coding units open-world o M42.0 sin autorización específica;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;
 - actores o mundo a escala fuera de las foundations implementadas;
 - facciones amplias;
-- climate/moisture, final rivers, geology, vegetation/biomes, sectors jugables, transición, world history o gameplay world persistence antes de sus units autorizadas;
+- weather runtime, final rivers, geology, vegetation/biomes, sectors jugables, transición, world history o gameplay world persistence general antes de sus units autorizadas;
 - producción masiva de contenido.
