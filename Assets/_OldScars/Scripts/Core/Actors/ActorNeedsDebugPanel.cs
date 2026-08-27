@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using OldScars.Core.Feedback;
+using OldScars.Core.Interactions;
 using OldScars.Core.Items;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -8,15 +9,27 @@ namespace OldScars.Core.Actors
 {
     public sealed class ActorNeedsDebugPanel : MonoBehaviour
     {
-        private const float PanelWidth = 220f;
-        private const float PanelHeight = 170f;
+        private const float PanelWidth = 340f;
+        private const float PanelHeight = 500f;
+        private static readonly float[] TimeMultipliers = { 1f, 2f, 3f, 5f, 10f, 20f, 50f, 100f };
 
         [SerializeField] private ActorNeedsComponent actorNeeds;
         [SerializeField] private WorldClock worldClock;
         [SerializeField] private InventoryUISessionController inventorySessionController;
-        [SerializeField] private bool visible = true;
+        [SerializeField] private bool visible;
 
-        public bool IsVisible => visible && (inventorySessionController == null || !inventorySessionController.IsOpen);
+        private PlayerMovementController movementController;
+        private ActorStaminaComponent stamina;
+        private CameraRigController cameraRig;
+        private Camera gameplayCamera;
+        private DebugWorldUiInputBlocker inputBlocker;
+        private Vector2 scrollPosition;
+        private bool teleportArmed;
+        private string teleportFeedback;
+
+        public bool IsVisible => IsDevelopmentBuild && visible &&
+                                 (inventorySessionController == null || !inventorySessionController.IsOpen);
+        public bool IsTeleportArmed => teleportArmed;
 
         private void Awake()
         {
@@ -34,7 +47,29 @@ namespace OldScars.Core.Actors
 
         private void Start()
         {
-            ResolveInventorySessionController();
+            ResolveReferences();
+        }
+
+        private void Update()
+        {
+            if (!IsDevelopmentBuild)
+                return;
+
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.f3Key.wasPressedThisFrame)
+            {
+                visible = !visible;
+                if (!visible)
+                    DisarmTeleport();
+            }
+
+            if (teleportArmed && keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            {
+                DisarmTeleport();
+                teleportFeedback = "Teleport cancelled.";
+            }
+
+            HandleTeleportInput();
         }
 
         private void OnGUI()
@@ -44,55 +79,16 @@ namespace OldScars.Core.Actors
                 return;
             }
 
-            if (actorNeeds == null)
-            {
-                ResolveActorNeeds();
-            }
-
-            if (worldClock == null)
-                ResolveWorldClock();
-
+            ResolveReferences();
             GUILayout.BeginArea(GetPanelRect(), GUI.skin.box);
-            GUILayout.Label("Needs (Debug)");
-
-            GUILayout.Label(worldClock != null ? worldClock.DisplayTime : "World Clock: <NONE>");
-
-            if (actorNeeds == null)
-            {
-                GUILayout.Label("No ActorNeeds component.");
-                GUILayout.EndArea();
-                return;
-            }
-
-            if (actorNeeds != null)
-            {
-                IReadOnlyList<ActorNeedState> states = actorNeeds.RuntimeStates;
-                if (states == null || states.Count == 0)
-                {
-                    GUILayout.Label("No runtime needs.");
-                }
-                else
-                {
-                    for (int index = 0; index < states.Count; index++)
-                    {
-                        ActorNeedState state = states[index];
-                        if (state == null || string.IsNullOrWhiteSpace(state.needId))
-                        {
-                            continue;
-                        }
-
-                        DrawNeed(state.needId, state.currentValue);
-                    }
-                }
-            }
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Rest 1h", GUILayout.Height(24f)))
-                ApplyDebugRest(WorldClock.SecondsPerHour);
-            if (GUILayout.Button("Sleep 8h", GUILayout.Height(24f)))
-                ApplyDebugRest(WorldClock.SecondsPerHour * 8d);
-            GUILayout.EndHorizontal();
-
+            GUILayout.Label("RUNTIME DEBUG TOOLS");
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(PanelHeight - 34f));
+            DrawPlayerControls();
+            DrawNeedsControls();
+            DrawWorldTimeControls();
+            DrawCameraControls();
+            DrawWorldControls();
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
 
@@ -107,22 +103,162 @@ namespace OldScars.Core.Actors
             return GetPanelRect().Contains(guiPoint);
         }
 
+        public void ToggleVisibility()
+        {
+            if (!IsDevelopmentBuild)
+                return;
+
+            visible = !visible;
+            if (!visible)
+                DisarmTeleport();
+        }
+
         public void BindRuntime(
             ActorNeedsComponent needs,
             WorldClock clock,
-            InventoryUISessionController inventorySession)
+            InventoryUISessionController inventorySession,
+            PlayerMovementController movement,
+            CameraRigController camera,
+            Camera playerCamera,
+            DebugWorldUiInputBlocker blocker)
         {
             actorNeeds = needs;
             worldClock = clock;
             inventorySessionController = inventorySession;
+            movementController = movement;
+            stamina = movement != null ? movement.Stamina : null;
+            cameraRig = camera;
+            gameplayCamera = playerCamera;
+            inputBlocker = blocker;
         }
 
-        private void DrawNeed(string needId, float currentValue)
+        private void DrawPlayerControls()
         {
-            string displayName = actorNeeds.GetNeedDisplayName(needId);
-            float maxValue = actorNeeds.GetNeedMaxValue(needId);
-            float percent = maxValue > 0f ? Mathf.Clamp01(currentValue / maxValue) * 100f : 0f;
-            GUILayout.Label($"{displayName}: {currentValue:0.#}/{maxValue:0.#} ({percent:0}%)");
+            GUILayout.Space(4f);
+            GUILayout.Label("PLAYER");
+            if (movementController == null)
+            {
+                GUILayout.Label("Movement authority: <NONE>");
+                return;
+            }
+
+            GUILayout.Label($"Movement multiplier: {movementController.DebugMovementMultiplier:0.##}x");
+            float movementMultiplier = GUILayout.HorizontalSlider(movementController.DebugMovementMultiplier, 0.25f, 8f);
+            if (!Mathf.Approximately(movementMultiplier, movementController.DebugMovementMultiplier))
+                movementController.SetDebugMovementMultiplier(movementMultiplier);
+            if (GUILayout.Button("Reset movement multiplier", GUILayout.Height(22f)))
+                movementController.ResetDebugMovementMultiplier();
+
+            if (stamina == null)
+            {
+                GUILayout.Label("Stamina authority: <NONE>");
+                return;
+            }
+
+            GUILayout.Label($"Stamina: {stamina.CurrentStamina:0.#}/{stamina.MaximumStamina:0.#}" +
+                            (stamina.IsExhausted ? " (exhausted)" : string.Empty));
+            float staminaValue = GUILayout.HorizontalSlider(stamina.CurrentStamina, 0f, stamina.MaximumStamina);
+            if (!Mathf.Approximately(staminaValue, stamina.CurrentStamina))
+                stamina.TrySetCurrentStamina(staminaValue);
+            if (GUILayout.Button("Full stamina", GUILayout.Height(22f)))
+                stamina.TrySetCurrentStamina(stamina.MaximumStamina);
+        }
+
+        private void DrawNeedsControls()
+        {
+            GUILayout.Space(4f);
+            GUILayout.Label("NEEDS");
+            if (actorNeeds == null)
+            {
+                GUILayout.Label("ActorNeeds authority: <NONE>");
+                return;
+            }
+
+            DrawNeedControl("hunger");
+            DrawNeedControl("thirst");
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Rest 1h", GUILayout.Height(22f)))
+                ApplyDebugRest(WorldClock.SecondsPerHour);
+            if (GUILayout.Button("Sleep 8h", GUILayout.Height(22f)))
+                ApplyDebugRest(WorldClock.SecondsPerHour * 8d);
+            GUILayout.EndHorizontal();
+        }
+
+        private void DrawNeedControl(string needId)
+        {
+            if (!actorNeeds.HasNeed(needId))
+                return;
+
+            float currentValue = actorNeeds.GetNeedValue(needId);
+            float maximum = actorNeeds.GetNeedMaxValue(needId);
+            string name = actorNeeds.GetNeedDisplayName(needId);
+            GUILayout.Label($"{name}: {currentValue:0.#}/{maximum:0.#}");
+            float nextValue = GUILayout.HorizontalSlider(currentValue, 0f, maximum);
+            if (!Mathf.Approximately(currentValue, nextValue))
+                actorNeeds.TrySetNeedValue(needId, nextValue);
+        }
+
+        private void DrawWorldTimeControls()
+        {
+            GUILayout.Space(4f);
+            GUILayout.Label("WORLD TIME");
+            if (worldClock == null)
+            {
+                GUILayout.Label("WorldClock authority: <NONE>");
+                return;
+            }
+
+            GUILayout.Label($"{worldClock.DisplayTime}  ·  {worldClock.DebugTimeMultiplier:0}x");
+            for (int index = 0; index < TimeMultipliers.Length; index += 4)
+            {
+                GUILayout.BeginHorizontal();
+                for (int button = index; button < Mathf.Min(index + 4, TimeMultipliers.Length); button++)
+                {
+                    float multiplier = TimeMultipliers[button];
+                    if (GUILayout.Button($"{multiplier:0}x", GUILayout.Height(22f)))
+                        worldClock.TrySetDebugTimeMultiplier(multiplier, out _);
+                }
+                GUILayout.EndHorizontal();
+            }
+        }
+
+        private void DrawCameraControls()
+        {
+            GUILayout.Space(4f);
+            GUILayout.Label("CAMERA");
+            if (cameraRig == null)
+            {
+                GUILayout.Label("CameraRig authority: <NONE>");
+                return;
+            }
+
+            GUILayout.Label($"Pitch: {cameraRig.PitchDegrees:0.#}° · Zoom: {cameraRig.ActualZoomDistance:0.#}/{cameraRig.DesiredZoomDistance:0.#}");
+            if (GUILayout.Button("Reset Camera", GUILayout.Height(22f)))
+                cameraRig.ResetCamera();
+        }
+
+        private void DrawWorldControls()
+        {
+            GUILayout.Space(4f);
+            GUILayout.Label("WORLD");
+            if (GUILayout.Button(teleportArmed ? "Cancel Teleport" : "Teleport", GUILayout.Height(24f)))
+            {
+                if (teleportArmed)
+                {
+                    DisarmTeleport();
+                    teleportFeedback = "Teleport cancelled.";
+                }
+                else
+                {
+                    teleportArmed = true;
+                    teleportFeedback = "TELEPORT: ARMED — click a valid ground position.";
+                }
+            }
+
+            if (teleportArmed)
+                GUILayout.Label("TELEPORT: ARMED\nClick a valid world position");
+            if (!string.IsNullOrWhiteSpace(teleportFeedback))
+                GUILayout.Label(teleportFeedback);
         }
 
         private void ApplyDebugRest(double durationGameSeconds)
@@ -166,6 +302,106 @@ namespace OldScars.Core.Actors
             if (inventorySessionController == null)
                 inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
         }
+
+        private void ResolveReferences()
+        {
+            ResolveActorNeeds();
+            ResolveWorldClock();
+            ResolveInventorySessionController();
+            if (movementController == null && actorNeeds != null)
+                movementController = actorNeeds.GetComponent<PlayerMovementController>();
+            if (stamina == null && movementController != null)
+                stamina = movementController.Stamina;
+            if (gameplayCamera == null)
+                gameplayCamera = Camera.main;
+            if (cameraRig == null && gameplayCamera != null)
+                cameraRig = gameplayCamera.GetComponentInParent<CameraRigController>();
+            if (inputBlocker == null)
+                inputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
+        }
+
+        private void HandleTeleportInput()
+        {
+            if (!teleportArmed || !IsVisible || Mouse.current == null ||
+                !Mouse.current.leftButton.wasPressedThisFrame || gameplayCamera == null || movementController == null)
+            {
+                return;
+            }
+
+            Vector2 screenPosition = Mouse.current.position.ReadValue();
+            if (GetPanelRect().Contains(ToGuiPosition(screenPosition)) ||
+                inputBlocker != null && inputBlocker.IsPointerOverBlockingPanel(screenPosition))
+            {
+                return;
+            }
+
+            Ray ray = gameplayCamera.ScreenPointToRay(screenPosition);
+            if (!TryResolveTeleportGround(ray, out RaycastHit groundHit))
+            {
+                teleportFeedback = "Teleport rejected: select valid ground in the materialized world.";
+                return;
+            }
+
+            CharacterController controller = movementController.GetComponent<CharacterController>();
+            if (controller == null)
+            {
+                teleportFeedback = "Teleport rejected: player CharacterController is missing.";
+                return;
+            }
+
+            float clearance = Mathf.Max(0f, controller.height * 0.5f - controller.center.y + controller.skinWidth);
+            Vector3 destination = groundHit.point + Vector3.up * clearance;
+            if (!movementController.TryTeleportTo(destination, groundHit.collider, out string failure))
+            {
+                teleportFeedback = "Teleport rejected: " + failure;
+                return;
+            }
+
+            DisarmTeleport();
+            teleportFeedback = "Teleport complete.";
+        }
+
+        private bool TryResolveTeleportGround(Ray ray, out RaycastHit resolved)
+        {
+            resolved = default;
+            RaycastHit[] hits = Physics.RaycastAll(ray, 500f, Physics.AllLayers, QueryTriggerInteraction.Ignore);
+            float nearestDistance = float.PositiveInfinity;
+            Transform player = movementController != null ? movementController.transform : null;
+            for (int index = 0; index < hits.Length; index++)
+            {
+                RaycastHit hit = hits[index];
+                Collider collider = hit.collider;
+                if (collider == null || hit.normal.y < 0.65f || hit.distance >= nearestDistance ||
+                    player != null && collider.transform.IsChildOf(player) ||
+                    collider.GetComponentInParent<CharacterController>() != null ||
+                    collider.GetComponentInParent<WorldObjectTags>() != null ||
+                    !IsMaterializedGround(collider))
+                {
+                    continue;
+                }
+
+                resolved = hit;
+                nearestDistance = hit.distance;
+            }
+
+            return resolved.collider != null;
+        }
+
+        private static bool IsMaterializedGround(Collider collider)
+        {
+            if (collider is TerrainCollider)
+                return true;
+
+            int groundLayer = LayerMask.NameToLayer("Ground");
+            return groundLayer >= 0 && collider.gameObject.layer == groundLayer;
+        }
+
+        private void DisarmTeleport()
+        {
+            teleportArmed = false;
+        }
+
+        private static bool IsDevelopmentBuild => Application.isEditor || Debug.isDebugBuild;
 
         private static Rect GetPanelRect()
         {

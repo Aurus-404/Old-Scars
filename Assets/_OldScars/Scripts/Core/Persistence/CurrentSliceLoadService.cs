@@ -628,6 +628,8 @@ namespace OldScars.Core.Persistence
             var needs = Items(snapshot.player.needs).ToDictionary(value => value.needId, value => value.currentValue, StringComparer.Ordinal);
             if (!player.Needs.TryApplyPersistenceState(needs, out string needsError))
                 throw new InvalidOperationException($"Player needs restore failed: {needsError}");
+            if (!player.Stamina.TryApplyPersistenceState(snapshot.player.stamina, out string staminaError))
+                throw new InvalidOperationException($"Player stamina restore failed: {staminaError}");
 
             foreach (ActorState state in Items(snapshot.actors))
             {
@@ -824,6 +826,7 @@ namespace OldScars.Core.Persistence
             internal ActorHealthComponent Health;
             internal ActorMedicalStateComponent Medical;
             internal ActorNeedsComponent Needs;
+            internal ActorStaminaComponent Stamina;
             internal LootableActorInventoryComponent Lootable;
             internal ActorNavigationController Navigation;
         }
@@ -855,6 +858,8 @@ namespace OldScars.Core.Persistence
                 scene.Player = player.Identity.GetComponent<ActorInteractionContext>();
                 if (scene.Player == null || !Items(scene.Player.ActorTags).Contains("player"))
                     return Fail(out scene, out error, $"Player '{snapshot.player.persistentId}' does not resolve the current player role.");
+                if (player.Stamina == null)
+                    return Fail(out scene, out error, $"Player '{snapshot.player.persistentId}' lacks ActorStaminaComponent.");
 
                 foreach (ActorState state in Items(snapshot.actors))
                 {
@@ -940,6 +945,7 @@ namespace OldScars.Core.Persistence
                     Health = identity.GetComponent<ActorHealthComponent>(),
                     Medical = identity.GetComponent<ActorMedicalStateComponent>(),
                     Needs = identity.GetComponent<ActorNeedsComponent>(),
+                    Stamina = identity.GetComponent<ActorStaminaComponent>(),
                     Lootable = identity.GetComponent<LootableActorInventoryComponent>(),
                     Navigation = identity.GetComponent<ActorNavigationController>()
                 };
@@ -976,6 +982,7 @@ namespace OldScars.Core.Persistence
                     Health = identity.GetComponent<ActorHealthComponent>(),
                     Medical = identity.GetComponent<ActorMedicalStateComponent>(),
                     Needs = identity.GetComponent<ActorNeedsComponent>(),
+                    Stamina = identity.GetComponent<ActorStaminaComponent>(),
                     Lootable = identity.GetComponent<LootableActorInventoryComponent>(),
                     Navigation = identity.GetComponent<ActorNavigationController>()
                 };

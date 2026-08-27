@@ -60,6 +60,7 @@ namespace OldScars.Core.Persistence
         public float currentHealth;
         public ActorMedicalStateData medicalState;
         public NeedState[] needs = Array.Empty<NeedState>();
+        public ActorStaminaState stamina;
         public string inventoryStorageId;
         public string equipmentStorageId;
     }
@@ -337,8 +338,11 @@ namespace OldScars.Core.Persistence
                 JObject payloadObject = payload as JObject;
                 bool legacyWorldClockMissing = payloadObject != null &&
                     !HasProperty(payloadObject, "worldClock");
-                bool legacyPlayerMedicalMissing = payloadObject?["player"] is JObject playerObject &&
+                JObject playerObject = payloadObject?["player"] as JObject;
+                bool legacyPlayerMedicalMissing = playerObject != null &&
                     !HasProperty(playerObject, "medicalState");
+                bool legacyPlayerStaminaMissing = playerObject != null &&
+                    !HasProperty(playerObject, "stamina");
                 var legacyActorMedicalMissing = new HashSet<int>();
                 var legacyFirearmStateMissing = new HashSet<int>();
                 if (payloadObject?["actors"] is JArray actorArray)
@@ -370,6 +374,14 @@ namespace OldScars.Core.Persistence
                 }
                 if (legacyPlayerMedicalMissing && snapshot?.player != null)
                     snapshot.player.medicalState = ActorMedicalStateComponent.HealthyBaseline();
+                if (legacyPlayerStaminaMissing && snapshot?.player != null)
+                {
+                    ActorStaminaComponent stamina = UnityEngine.Object.FindObjectsByType<PersistentSceneObjectId>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                        .FirstOrDefault(identity => identity != null && identity.PersistentId == snapshot.player.persistentId)
+                        ?.GetComponent<ActorStaminaComponent>();
+                    if (stamina != null)
+                        snapshot.player.stamina = stamina.CreateDefaultPersistenceState();
+                }
                 ActorState[] actors = snapshot?.actors ?? Array.Empty<ActorState>();
                 foreach (int index in legacyActorMedicalMissing)
                 {
@@ -550,8 +562,9 @@ namespace OldScars.Core.Persistence
                 ActorHealthComponent playerHealth = player.GetComponent<ActorHealthComponent>();
                 ActorMedicalStateComponent playerMedical = player.GetComponent<ActorMedicalStateComponent>();
                 ActorNeedsComponent playerNeeds = player.GetComponent<ActorNeedsComponent>();
-                if (playerInventory == null || playerHealth == null || playerMedical == null || playerNeeds == null)
-                    return Fail($"Player '{playerId}' is missing Inventory, Health, Medical or Needs runtime state.");
+                ActorStaminaComponent playerStamina = player.GetComponent<ActorStaminaComponent>();
+                if (playerInventory == null || playerHealth == null || playerMedical == null || playerNeeds == null || playerStamina == null)
+                    return Fail($"Player '{playerId}' is missing Inventory, Health, Medical, Needs or Stamina runtime state.");
 
                 var snapshot = new CurrentSliceSaveData
                 {
@@ -575,6 +588,7 @@ namespace OldScars.Core.Persistence
                     needs = playerNeeds.RuntimeStates.Where(state => state != null)
                         .Select(state => new NeedState { needId = state.needId, currentValue = state.currentValue })
                         .OrderBy(state => state.needId, StringComparer.Ordinal).ToArray(),
+                    stamina = playerStamina.CapturePersistenceState(),
                     inventoryStorageId = playerInventoryId,
                     equipmentStorageId = playerEquipmentId
                 };
@@ -1063,6 +1077,20 @@ namespace OldScars.Core.Persistence
                     string[] runtimeNeedIds = needs == null ? Array.Empty<string>() : Items(needs.RuntimeStates?.ToArray())
                         .Where(state => state != null).Select(state => state.needId).ToArray();
                     if (!needIds.SetEquals(runtimeNeedIds)) errors.Add($"Player '{snapshot.player.persistentId}' needs do not match current runtime state.");
+
+                    ActorStaminaComponent stamina = SceneComponent<ActorStaminaComponent>(snapshot.player.persistentId);
+                    if (stamina == null)
+                    {
+                        errors.Add($"Player '{snapshot.player.persistentId}' has no ActorStaminaComponent.");
+                    }
+                    else if (snapshot.player.stamina == null ||
+                             !Finite(snapshot.player.stamina.currentStamina) ||
+                             snapshot.player.stamina.currentStamina < 0f ||
+                             snapshot.player.stamina.currentStamina > stamina.MaximumStamina ||
+                             snapshot.player.stamina.currentStamina <= 0f && !snapshot.player.stamina.exhaustedLockout)
+                    {
+                        errors.Add($"Player '{snapshot.player.persistentId}' has missing or invalid stamina persistence state.");
+                    }
 
                     bool hasPlayerActorId = !string.IsNullOrWhiteSpace(snapshot.player.actorInstanceId);
                     bool hasPlayerProfileId = !string.IsNullOrWhiteSpace(snapshot.player.actorProfileId);

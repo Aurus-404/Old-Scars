@@ -38,10 +38,20 @@ namespace OldScars.Core.Interactions
                 return;
             }
 
+            bool pointerOverDebugUi = Mouse.current != null && uiInputBlocker != null &&
+                                      uiInputBlocker.IsPointerOverBlockingPanel(Mouse.current.position.ReadValue());
+            if (pointerOverDebugUi)
+            {
+                movementController.ClearMovement();
+                wasMoving = false;
+                return;
+            }
+
             Vector2 input = ReadMovementInput();
             Vector3 direction = CalculateCameraRelativeDirection(input, inputCamera != null ? inputCamera.transform : null);
             bool hasValidMovement = direction.sqrMagnitude > 0f;
             movementController.SetMovementDirection(direction);
+            movementController.SetSprintRequested(hasValidMovement && IsSprintRequested());
 
             if (hasValidMovement && !wasMoving)
                 CancelActiveActionForMovement();
@@ -88,6 +98,12 @@ namespace OldScars.Core.Interactions
             float horizontal = (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f);
             float vertical = (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f);
             return Vector2.ClampMagnitude(new Vector2(horizontal, vertical), 1f);
+        }
+
+        private static bool IsSprintRequested()
+        {
+            Keyboard keyboard = Keyboard.current;
+            return keyboard != null && keyboard.leftShiftKey.isPressed;
         }
 
         private void CancelActiveActionForMovement()

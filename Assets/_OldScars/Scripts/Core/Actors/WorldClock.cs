@@ -19,10 +19,12 @@ namespace OldScars.Core.Actors
 
         private double elapsedGameSeconds = DefaultElapsedGameSeconds;
         private bool limitFailureLogged;
+        private float debugTimeMultiplier = 1f;
 
         public static WorldClock Current { get; private set; }
         public double ElapsedGameSeconds => elapsedGameSeconds;
-        public double GameSecondsPerRealSecond => gameSecondsPerRealSecond;
+        public double GameSecondsPerRealSecond => gameSecondsPerRealSecond * debugTimeMultiplier;
+        public float DebugTimeMultiplier => debugTimeMultiplier;
         public bool AdvanceDuringGameplay
         {
             get => advanceDuringGameplay;
@@ -72,6 +74,7 @@ namespace OldScars.Core.Actors
 
             Current = this;
             gameSecondsPerRealSecond = Mathf.Max(0.001f, gameSecondsPerRealSecond);
+            debugTimeMultiplier = 1f;
             DontDestroyOnLoad(gameObject);
             BindExistingNeeds();
         }
@@ -124,6 +127,29 @@ namespace OldScars.Core.Actors
             return true;
         }
 
+        /// <summary>
+        /// Development-only callers use these discrete rates relative to the
+        /// authored baseline. Elapsed world time is never edited directly.
+        /// </summary>
+        public bool TrySetDebugTimeMultiplier(float multiplier, out string failure)
+        {
+            failure = null;
+            if (float.IsNaN(multiplier) || float.IsInfinity(multiplier) ||
+                !IsSupportedDebugMultiplier(multiplier))
+            {
+                failure = "Debug time multiplier must be one of 1, 2, 3, 5, 10, 20, 50, or 100.";
+                return false;
+            }
+
+            debugTimeMultiplier = multiplier;
+            return true;
+        }
+
+        public void ResetDebugTimeMultiplier()
+        {
+            debugTimeMultiplier = 1f;
+        }
+
         public bool TryRestoreElapsedGameSeconds(double value, out string failure)
         {
             failure = null;
@@ -159,6 +185,14 @@ namespace OldScars.Core.Actors
         private static bool IsFinite(double value)
         {
             return !double.IsNaN(value) && !double.IsInfinity(value);
+        }
+
+        private static bool IsSupportedDebugMultiplier(float multiplier)
+        {
+            return Mathf.Approximately(multiplier, 1f) || Mathf.Approximately(multiplier, 2f) ||
+                   Mathf.Approximately(multiplier, 3f) || Mathf.Approximately(multiplier, 5f) ||
+                   Mathf.Approximately(multiplier, 10f) || Mathf.Approximately(multiplier, 20f) ||
+                   Mathf.Approximately(multiplier, 50f) || Mathf.Approximately(multiplier, 100f);
         }
     }
 }

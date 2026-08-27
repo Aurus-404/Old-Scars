@@ -28,7 +28,9 @@ namespace OldScars.Editor
         private const string InitialSlot = "m38_1_initial";
         private const string TargetSlot = "m38_1_known_clock_needs";
         private const string LegacySlot = "m38_1_legacy_without_clock";
+        private const string LegacyStaminaSlot = "m38_1_legacy_without_stamina";
         private const string InvalidSlot = "m38_1_invalid_clock";
+        private const string InvalidStaminaSlot = "m38_1_invalid_stamina";
         private const double KnownElapsedGameSeconds =
             WorldClock.SecondsPerDay * 2d + WorldClock.SecondsPerHour * 18d + WorldClock.SecondsPerMinute * 42d;
 
@@ -113,6 +115,7 @@ namespace OldScars.Editor
         {
             WorldClock clock = Clock();
             ActorNeedsComponent needs = PlayerNeeds();
+            ActorStaminaComponent stamina = PlayerStamina(needs);
             ActorHealthComponent health = needs.GetComponent<ActorHealthComponent>();
             Require(health != null && !health.IsDead, "Player must be Alive for M38.1 diagnostics.");
 
@@ -122,14 +125,20 @@ namespace OldScars.Editor
             RunClockAndNeedProgression(clock, needs);
             RunConsumableRegression(needs, health);
             RunRestAndDeadActorRegression(clock, needs, health);
+            RunStaminaRegression(needs, stamina);
+            Require(clock.TrySetDebugTimeMultiplier(100f, out _) &&
+                    Near((float)clock.GameSecondsPerRealSecond, (float)(WorldClock.DefaultGameSecondsPerRealSecond * 100d)),
+                "WorldClock did not apply the 100x debug multiplier relative to its authored baseline.");
 
             RestoreClock(clock, KnownElapsedGameSeconds);
             SetNeed(needs, "hunger", 61f);
             SetNeed(needs, "thirst", 47f);
+            SetStamina(stamina, 37.5f);
             CurrentSliceSaveData target = Capture("known Day 3 clock and needs");
             Require(target.worldClock != null && Near(target.worldClock.elapsedGameSeconds, KnownElapsedGameSeconds) &&
-                    target.player.needs.Length == 2,
-                "Known World Clock/needs were not captured into the Current Slice DTO.");
+                    target.player.needs.Length == 2 && target.player.stamina != null &&
+                    Near(target.player.stamina.currentStamina, 37.5f),
+                "Known World Clock/needs/stamina were not captured into the Current Slice DTO.");
             Write(Store(), TargetSlot, target);
 
             JObject legacyPayload = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
@@ -137,18 +146,31 @@ namespace OldScars.Editor
             PersistenceWriteResult legacyWrite = Store().Write(LegacySlot, legacyPayload);
             Require(legacyWrite.Success, "Legacy-compatible payload write failed: " + legacyWrite.Failure);
 
+            JObject legacyStaminaPayload = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
+            Require(legacyStaminaPayload["player"] is JObject legacyPlayer && legacyPlayer.Remove("stamina"),
+                "Could not construct legacy schema-v1 payload without stamina.");
+            PersistenceWriteResult legacyStaminaWrite = Store().Write(LegacyStaminaSlot, legacyStaminaPayload);
+            Require(legacyStaminaWrite.Success, "Legacy-stamina fixture write failed: " + legacyStaminaWrite.Failure);
+
             JObject invalidPayload = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
             invalidPayload["worldClock"]["elapsedGameSeconds"] = -1d;
             PersistenceWriteResult invalidWrite = Store().Write(InvalidSlot, invalidPayload);
             Require(invalidWrite.Success, "Invalid-clock fixture write failed: " + invalidWrite.Failure);
+
+            JObject invalidStaminaPayload = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
+            invalidStaminaPayload["player"]["stamina"]["currentStamina"] = -1f;
+            PersistenceWriteResult invalidStaminaWrite = Store().Write(InvalidStaminaSlot, invalidStaminaPayload);
+            Require(invalidStaminaWrite.Success, "Invalid-stamina fixture write failed: " + invalidStaminaWrite.Failure);
         }
 
         private static void RunSessionB()
         {
             WorldClock clock = Clock();
             ActorNeedsComponent needs = PlayerNeeds();
+            ActorStaminaComponent stamina = PlayerStamina(needs);
             Require(clock.Day == 1 && clock.ElapsedGameSeconds < WorldClock.SecondsPerHour,
                 $"Fresh-session World Clock did not bootstrap on Day 1; elapsed={clock.ElapsedGameSeconds:R}.");
+            Require(Near(clock.DebugTimeMultiplier, 1f), "Debug WorldClock multiplier leaked into a fresh runtime session.");
 
             CurrentSliceSaveData target = Read(TargetSlot);
             CurrentSliceLoadResult targetLoad = CurrentSliceLoadService.Load(TargetSlot, Store());
@@ -157,6 +179,7 @@ namespace OldScars.Editor
                 $"Fresh-session load did not restore Day 3 18:42 exactly; got {clock.DisplayTime} ({clock.ElapsedGameSeconds:R}).");
             Require(Near(needs.GetNeedValue("hunger"), 61f) && Near(needs.GetNeedValue("thirst"), 47f),
                 "Fresh-session load did not restore Hunger/Thirst exactly.");
+            Require(Near(stamina.CurrentStamina, 37.5f), "Fresh-session load did not restore stamina exactly.");
             AssertEquivalent(target, Capture("post fresh-session target load"), "fresh-session World Clock/needs round-trip");
             AssertActorLifecycle(target, "fresh-session M38 actor lifecycle regression");
 
@@ -168,6 +191,15 @@ namespace OldScars.Editor
                 "Legacy schema-v1 load did not apply the documented default World Clock: " + legacyLoad.Failure);
             Require(Near(needs.GetNeedValue("hunger"), 61f) && Near(needs.GetNeedValue("thirst"), 47f),
                 "Legacy schema-v1 load did not preserve its represented needs.");
+            Require(Near(stamina.CurrentStamina, 37.5f),
+                "Legacy World Clock omission did not alter represented stamina.");
+
+            CurrentSliceSaveData legacyStamina = Read(LegacyStaminaSlot);
+            Require(legacyStamina.player.stamina != null && Near(legacyStamina.player.stamina.currentStamina, stamina.MaximumStamina),
+                "Legacy schema-v1 stamina omission did not normalize to initial maximum stamina.");
+            CurrentSliceLoadResult legacyStaminaLoad = CurrentSliceLoadService.Load(LegacyStaminaSlot, Store());
+            Require(legacyStaminaLoad.Success && Near(stamina.CurrentStamina, stamina.MaximumStamina),
+                "Legacy schema-v1 stamina load did not apply the documented full-reserve default: " + legacyStaminaLoad.Failure);
 
             CurrentSliceSaveData beforeInvalid = Capture("pre invalid-clock preflight");
             CurrentSliceLoadResult invalidLoad = CurrentSliceLoadService.Load(InvalidSlot, Store());
@@ -175,9 +207,17 @@ namespace OldScars.Editor
                 "Invalid World Clock was not rejected before mutation.");
             AssertEquivalent(beforeInvalid, Capture("post invalid-clock preflight"), "invalid World Clock no-mutation preflight");
 
+            CurrentSliceSaveData beforeInvalidStamina = Capture("pre invalid-stamina preflight");
+            CurrentSliceLoadResult invalidStaminaLoad = CurrentSliceLoadService.Load(InvalidStaminaSlot, Store());
+            Require(invalidStaminaLoad.FailureCode == CurrentSliceLoadFailureCode.SemanticPreflightFailed &&
+                    !invalidStaminaLoad.MutationStarted,
+                "Invalid stamina was not rejected before mutation.");
+            AssertEquivalent(beforeInvalidStamina, Capture("post invalid-stamina preflight"), "invalid stamina no-mutation preflight");
+
             RestoreClock(clock, WorldClock.SecondsPerDay * 5d + 321d);
             SetNeed(needs, "hunger", 72f);
             SetNeed(needs, "thirst", 55f);
+            SetStamina(stamina, 41f);
             CurrentSliceSaveData beforeFault = Capture("pre post-runtime-state fault");
             CurrentSliceLoadService.DiagnosticInjectFailureAfterRuntimeStateRestore = true;
             CurrentSliceLoadResult fault = CurrentSliceLoadService.Load(TargetSlot, Store());
@@ -188,8 +228,9 @@ namespace OldScars.Editor
             AssertEquivalent(beforeFault, afterFault, "World Clock/needs rollback");
             Require(Near(clock.ElapsedGameSeconds, beforeFault.worldClock.elapsedGameSeconds) &&
                     Near(needs.GetNeedValue("hunger"), Need(beforeFault, "hunger")) &&
-                    Near(needs.GetNeedValue("thirst"), Need(beforeFault, "thirst")),
-                "Rollback did not restore World Clock and needs exactly.");
+                    Near(needs.GetNeedValue("thirst"), Need(beforeFault, "thirst")) &&
+                    Near(stamina.CurrentStamina, beforeFault.player.stamina.currentStamina),
+                "Rollback did not restore World Clock, needs and stamina exactly.");
 
             CurrentSliceSaveData initial = Read(InitialSlot);
             CurrentSliceLoadResult cleanup = CurrentSliceLoadService.Load(InitialSlot, Store());
@@ -311,6 +352,64 @@ namespace OldScars.Editor
             }
         }
 
+        private static void RunStaminaRegression(ActorNeedsComponent needs, ActorStaminaComponent stamina)
+        {
+            SetNeed(needs, "hunger", 100f);
+            SetNeed(needs, "thirst", 100f);
+            SetStamina(stamina, stamina.MaximumStamina);
+            float hungerBeforeSprint = needs.GetNeedValue("hunger");
+            float thirstBeforeSprint = needs.GetNeedValue("thirst");
+            Require(stamina.Advance(1f, true) && stamina.CurrentStamina < stamina.MaximumStamina &&
+                    needs.GetNeedValue("hunger") < hungerBeforeSprint && needs.GetNeedValue("thirst") < thirstBeforeSprint,
+                "Active sprint did not drain real stamina and extra Hunger/Thirst reserves.");
+
+            SetNeed(needs, "hunger", 100f);
+            SetNeed(needs, "thirst", 100f);
+            SetStamina(stamina, stamina.MaximumStamina);
+            float hungerBeforeHighStaminaSprint = needs.GetNeedValue("hunger");
+            Require(stamina.Advance(0.25f, true), "High-stamina sprint setup did not advance.");
+            float highStaminaHungerCost = hungerBeforeHighStaminaSprint - needs.GetNeedValue("hunger");
+
+            SetNeed(needs, "hunger", 100f);
+            SetNeed(needs, "thirst", 100f);
+            SetStamina(stamina, Mathf.Min(stamina.MaximumStamina, stamina.SprintRecoveryThreshold + 1f));
+            float hungerBeforeLowStaminaSprint = needs.GetNeedValue("hunger");
+            Require(stamina.Advance(0.25f, true), "Low-stamina sprint setup did not advance.");
+            float lowStaminaHungerCost = hungerBeforeLowStaminaSprint - needs.GetNeedValue("hunger");
+            Require(lowStaminaHungerCost > highStaminaHungerCost,
+                "Low stamina did not increase continued sprint Hunger cost.");
+
+            float hungerBeforeRest = needs.GetNeedValue("hunger");
+            float thirstBeforeRest = needs.GetNeedValue("thirst");
+            Require(stamina.Advance(0.5f, false) &&
+                    Near(needs.GetNeedValue("hunger"), hungerBeforeRest) && Near(needs.GetNeedValue("thirst"), thirstBeforeRest),
+                "Resting stamina recovery incorrectly applied extra exertion Need cost.");
+
+            SetStamina(stamina, 0f);
+            Require(!stamina.CanSprint && stamina.IsExhausted, "Zero stamina did not enforce sprint lockout.");
+            stamina.Advance(0.5f, false);
+            Require(!stamina.CanSprint, "Sprint lockout cleared before the configured recovery threshold.");
+            stamina.Advance(0.5f, false);
+            Require(stamina.CanSprint, "Sprint lockout did not clear at the recovery threshold.");
+
+            SetNeed(needs, "hunger", 0f);
+            SetNeed(needs, "thirst", 0f);
+            SetStamina(stamina, 0f);
+            stamina.Advance(0.5f, false);
+            float severeReserveRecovery = stamina.CurrentStamina;
+            SetNeed(needs, "hunger", 100f);
+            SetNeed(needs, "thirst", 100f);
+            SetStamina(stamina, 0f);
+            stamina.Advance(0.5f, false);
+            Require(stamina.CurrentStamina > severeReserveRecovery,
+                "High Hunger/Thirst reserves did not improve stamina recovery over severe low reserves.");
+
+            float beforeInvalidConsume = needs.GetNeedValue("hunger");
+            Require(!needs.TryConsumeNeed("unknown", 1f) && !needs.TryConsumeNeed("hunger", -1f) &&
+                    Near(needs.GetNeedValue("hunger"), beforeInvalidConsume),
+                "Needs consumption API accepted invalid requests or mutated a reserve.");
+        }
+
         private static WorldClock Clock()
         {
             WorldClock clock = WorldClock.Current;
@@ -328,6 +427,13 @@ namespace OldScars.Editor
             return needs;
         }
 
+        private static ActorStaminaComponent PlayerStamina(ActorNeedsComponent needs)
+        {
+            ActorStaminaComponent stamina = needs != null ? needs.GetComponent<ActorStaminaComponent>() : null;
+            Require(stamina != null, "Player ActorStaminaComponent is unavailable.");
+            return stamina;
+        }
+
         private static void RestoreClock(WorldClock clock, double elapsed)
         {
             Require(clock.TryRestoreElapsedGameSeconds(elapsed, out string failure), "World Clock setup failed: " + failure);
@@ -335,9 +441,16 @@ namespace OldScars.Editor
 
         private static void SetNeed(ActorNeedsComponent needs, string needId, float value)
         {
-            ActorNeedState state = needs.RuntimeStates.SingleOrDefault(candidate => candidate != null && candidate.needId == needId);
-            Require(state != null, $"Actor does not expose need '{needId}'.");
-            state.currentValue = value;
+            Require(needs != null && needs.HasNeed(needId), $"Actor does not expose need '{needId}'.");
+            if (!Near(needs.GetNeedValue(needId), value))
+                Require(needs.TrySetNeedValue(needId, value), $"Could not set need '{needId}' to {value:R}.");
+        }
+
+        private static void SetStamina(ActorStaminaComponent stamina, float value)
+        {
+            Require(stamina != null, "Player ActorStaminaComponent is unavailable.");
+            if (!Near(stamina.CurrentStamina, value))
+                Require(stamina.TrySetCurrentStamina(value), $"Could not set stamina to {value:R}.");
         }
 
         private static int Quantity(InventoryComponent inventory, string instanceId)

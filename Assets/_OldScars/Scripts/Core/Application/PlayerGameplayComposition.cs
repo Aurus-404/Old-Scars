@@ -34,6 +34,7 @@ namespace OldScars.Core.ApplicationShell
         public ActorProfileComponent PlayerProfile => playerProfile;
         public ActorRuntimeIdentity PlayerIdentity => playerIdentity;
         public PlayerMovementController MovementController => movementController;
+        public ActorStaminaComponent Stamina => playerContext != null ? playerContext.GetComponent<ActorStaminaComponent>() : null;
         public PlayerMovementInputController MovementInput => movementInput;
         public CameraRigController CameraRig => cameraRig;
         public Camera GameplayCamera => gameplayCamera;
@@ -127,8 +128,9 @@ namespace OldScars.Core.ApplicationShell
                 playerContext.GetComponent<ActorCarryWeightComponent>() == null ||
                 playerContext.GetComponent<ActorHealthComponent>() == null ||
                 playerContext.GetComponent<ActorMedicalStateComponent>() == null ||
-                playerContext.GetComponent<ActorNeedsComponent>() == null)
-                return Fail("Player inventory/equipment/ownership/health/medical/needs composition is incomplete.", out failure);
+                playerContext.GetComponent<ActorNeedsComponent>() == null ||
+                playerContext.GetComponent<ActorStaminaComponent>() == null)
+                return Fail("Player inventory/equipment/ownership/health/medical/needs/stamina composition is incomplete.", out failure);
             if (playerContext.GetComponentInChildren<EntityVisualRigRuntime>(true) == null ||
                 playerContext.GetComponentInChildren<EntityEquipmentVisualSynchronizer>(true) == null ||
                 playerContext.GetComponent<ActorVisualAnimatorDriver>() == null)

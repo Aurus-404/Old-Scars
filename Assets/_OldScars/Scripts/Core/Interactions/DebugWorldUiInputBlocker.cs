@@ -72,6 +72,9 @@ namespace OldScars.Core.Interactions
             if (inventorySessionController != null && inventorySessionController.BlocksWorldInput)
                 return true;
 
+            if (actorNeedsPanel != null && actorNeedsPanel.IsTeleportArmed)
+                return true;
+
             if (actorNeedsPanel != null && actorNeedsPanel.ContainsScreenPosition(screenPosition))
                 return true;
 

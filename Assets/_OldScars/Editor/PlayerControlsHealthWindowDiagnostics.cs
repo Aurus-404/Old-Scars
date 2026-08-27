@@ -23,6 +23,8 @@ namespace OldScars.Editor
             GameObject inventoryObject = new GameObject("Player Controls Diagnostic Inventory");
             GameObject inventoryPanelObject = new GameObject("Player Controls Diagnostic Inventory Panel");
             GameObject blockerObject = new GameObject("Player Controls Diagnostic UI Blocker");
+            GameObject debugPanelObject = new GameObject("Player Controls Diagnostic Runtime Debug Tools");
+            GameObject obstructionObject = null;
             try
             {
                 Camera camera = cameraObject.AddComponent<Camera>();
@@ -39,11 +41,34 @@ namespace OldScars.Editor
                 Quaternion rotationBeforeOrbit = rig.transform.rotation;
                 rig.OrbitAroundTarget(30f);
                 Require(rig.transform.rotation != rotationBeforeOrbit, "RMB orbit contract is unavailable.");
+                rig.PitchAroundTarget(999f);
+                Require(rig.PitchDegrees <= 35f, "Camera pitch did not respect its configured upper clamp.");
+                rig.PitchAroundTarget(-1998f);
+                Require(rig.PitchDegrees >= -35f, "Camera pitch did not respect its configured lower clamp.");
                 float zoomBefore = camera.transform.localPosition.magnitude;
                 rig.ApplyZoom(1f);
                 Require(!Mathf.Approximately(camera.transform.localPosition.magnitude, zoomBefore), "Mouse-wheel zoom did not change camera distance.");
                 rig.RecenterOnTarget();
                 Require(Near(rig.transform.position, targetObject.transform.position), "Recenter did not preserve follow target alignment.");
+
+                targetObject.AddComponent<SphereCollider>().radius = 1f;
+                rig.ResolveCameraCollisionNow();
+                Require(Mathf.Abs(rig.ActualZoomDistance - rig.DesiredZoomDistance) <= 0.0001f,
+                    "Player self collider incorrectly blocked camera collision.");
+                obstructionObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                obstructionObject.name = "Player Controls Diagnostic Camera Obstruction";
+                obstructionObject.transform.position = rig.transform.TransformPoint(camera.transform.localPosition.normalized * 4f);
+                obstructionObject.transform.localScale = Vector3.one * 2f;
+                Physics.SyncTransforms();
+                rig.ResolveCameraCollisionNow();
+                Require(rig.ActualZoomDistance < rig.DesiredZoomDistance,
+                    "Camera collision did not shorten the actual camera distance.");
+                UnityEngine.Object.DestroyImmediate(obstructionObject);
+                obstructionObject = null;
+                Physics.SyncTransforms();
+                rig.ResolveCameraCollisionNow();
+                Require(Mathf.Abs(rig.ActualZoomDistance - rig.DesiredZoomDistance) <= 0.0001f,
+                    "Camera desired zoom did not survive a removed obstruction.");
 
                 rig.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
                 Vector3 forward = PlayerMovementInputController.CalculateCameraRelativeDirection(Vector2.up, camera.transform);
@@ -65,6 +90,13 @@ namespace OldScars.Editor
                 InventoryUISessionController inventorySession = inventoryObject.AddComponent<InventoryUISessionController>();
                 inventoryPanelObject.AddComponent<InventoryDebugPanel>();
                 DebugWorldUiInputBlocker blocker = blockerObject.AddComponent<DebugWorldUiInputBlocker>();
+                ActorNeedsDebugPanel debugPanel = debugPanelObject.AddComponent<ActorNeedsDebugPanel>();
+                Require(!debugPanel.IsVisible, "Runtime Debug Tools did not bootstrap hidden.");
+                debugPanel.ToggleVisibility();
+                Require(debugPanel.IsVisible && debugPanel.ContainsScreenPosition(new Vector2(20f, Screen.height - 20f)),
+                    "Runtime Debug Tools did not expose a blocking development panel when toggled.");
+                debugPanel.ToggleVisibility();
+                Require(!debugPanel.IsVisible, "Runtime Debug Tools did not close when toggled.");
 
                 Require(!window.IsOpen, "Health Window did not bootstrap closed.");
                 window.Open();
@@ -86,6 +118,9 @@ namespace OldScars.Editor
             }
             finally
             {
+                if (obstructionObject != null)
+                    UnityEngine.Object.DestroyImmediate(obstructionObject);
+                UnityEngine.Object.DestroyImmediate(debugPanelObject);
                 UnityEngine.Object.DestroyImmediate(blockerObject);
                 UnityEngine.Object.DestroyImmediate(inventoryPanelObject);
                 UnityEngine.Object.DestroyImmediate(inventoryObject);

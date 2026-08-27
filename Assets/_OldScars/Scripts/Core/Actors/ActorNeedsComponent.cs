@@ -70,7 +70,7 @@ namespace OldScars.Core.Actors
         {
             ActorNeedState state = FindState(needId);
             ActorNeedConfig config = profile?.GetNeed(needId);
-            if (state == null || config == null || amount <= 0f)
+            if (state == null || config == null || !IsFinite(amount) || amount <= 0f)
             {
                 return false;
             }
@@ -84,6 +84,43 @@ namespace OldScars.Core.Actors
             float previousValue = state.currentValue;
             state.currentValue = Mathf.Clamp(state.currentValue + amount, 0f, maxValue);
             return state.currentValue > previousValue;
+        }
+
+        /// <summary>
+        /// Consumes an existing reserve through the same bounded runtime state
+        /// used by baseline WorldClock decay and restoration.
+        /// </summary>
+        public bool TryConsumeNeed(string needId, float amount)
+        {
+            ActorNeedState state = FindState(needId);
+            ActorNeedConfig config = profile?.GetNeed(needId);
+            if (state == null || config == null || !IsFinite(amount) || amount <= 0f || IsDead())
+                return false;
+
+            float previousValue = state.currentValue;
+            state.currentValue = Mathf.Clamp(state.currentValue - amount, 0f, Mathf.Max(0f, config.maxValue));
+            return state.currentValue < previousValue;
+        }
+
+        /// <summary>
+        /// Narrow bounded mutation for development tooling. Gameplay callers
+        /// should use their semantic consume/restore paths instead.
+        /// </summary>
+        public bool TrySetNeedValue(string needId, float value)
+        {
+            ActorNeedState state = FindState(needId);
+            ActorNeedConfig config = profile?.GetNeed(needId);
+            if (state == null || config == null || !IsFinite(value) ||
+                value < 0f || value > Mathf.Max(0f, config.maxValue))
+            {
+                return false;
+            }
+
+            if (Mathf.Approximately(state.currentValue, value))
+                return false;
+
+            state.currentValue = value;
+            return true;
         }
 
         public float GetNeedValue(string needId)
@@ -254,6 +291,11 @@ namespace OldScars.Core.Actors
             }
 
             return null;
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
     }
 }

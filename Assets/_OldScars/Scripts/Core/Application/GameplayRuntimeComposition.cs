@@ -106,7 +106,14 @@ namespace OldScars.Core.ApplicationShell
             healthWindow.BindRuntime(health, inventorySession);
             inventorySession.BindRuntime(
                 inventoryPanel, storagePanel, inventory, player.MovementController, healthWindow);
-            needsPanel.BindRuntime(needs, WorldClock.Current, inventorySession);
+            needsPanel.BindRuntime(
+                needs,
+                WorldClock.Current,
+                inventorySession,
+                player.MovementController,
+                player.CameraRig,
+                player.GameplayCamera,
+                inputBlocker);
             inputBlocker.BindRuntime(
                 actionPanel, actionResultPanel, inventoryPanel, storagePanel,
                 needsPanel, healthWindow, inventorySession);
@@ -135,6 +142,8 @@ namespace OldScars.Core.ApplicationShell
                 return Fail("Interaction runtime surfaces are incomplete.", out failure);
             if (firearmController == null)
                 return Fail("Existing firearm/combat input surface is missing.", out failure);
+            if (player.Stamina == null)
+                return Fail("Player stamina authority is missing.", out failure);
 
             if (FindObjectsByType<PlayerGameplayComposition>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
                 return Fail("Integrated runtime must contain exactly one player composition.", out failure);
@@ -143,6 +152,8 @@ namespace OldScars.Core.ApplicationShell
             if (FindObjectsByType<ActorNeedsDebugPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
                 FindObjectsByType<ActorHealthDebugWindow>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
                 return Fail("Integrated runtime must contain one needs and one health integration surface.", out failure);
+            if (FindObjectsByType<ActorStaminaComponent>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
+                return Fail("Integrated runtime must contain exactly one player stamina authority.", out failure);
             if (FindObjectsByType<WorldInteractionDebugTester>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
                 return Fail("Integrated runtime must contain exactly one world interaction surface.", out failure);
             if (FindObjectsByType<WorldClock>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1)
