@@ -6,11 +6,11 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `INTEGRATED GAMEPLAY RUNTIME / SAMPLESCENE CONVERGENCE CLOSED`.
+Estado: `MACRO CLIMATE BASELINE V1 CLOSED`.
 
 M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
-La dirección [Open World Architecture](Open_World_Architecture.md) está `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` para sus capacidades futuras restantes. Sus primeras foundations y application shell quedaron:
+La dirección [Open World Architecture](Open_World_Architecture.md) está `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` para sus capacidades futuras restantes. Sus foundations y application shell cerradas incluyen:
 
 `ID TBD — Minimum Content Source Identity & Provenance Foundation`
 
@@ -58,18 +58,24 @@ Estado: `VALIDATED — RUNTIME CONVERGENCE COMPLETE`.
 
 Commit de cierre: `8c485c78b4ab294de9d983f70ebadfba634ab3e1`.
 
-WorldRuntime es ahora el runtime canónico de gameplay. SampleScene conserva el rol de laboratorio/regresión. Ambos reutilizan la misma composición y autoridades existentes de player, Inventory, Health, Needs, Interaction, Combat y Persistence; worldgen aporta terreno/world truth y representación derivada sin convertirse en una segunda autoridad gameplay. La fixture M32 integrada en WorldRuntime existe sólo en Editor/development builds.
+`ID TBD — Macro Climate Baseline V1`
 
-La shell implementada posee session lifecycle único, save catalog, Main Menu, WorldRuntime e in-game Save/Return. New Game genera plan finito → elevation/landforms → Macro Water → quality/starter → Macro Human Geography. Para schemas `5`, WorldRuntime proyecta una ventana local transient a Unity Terrain/Collider, ocean mask, roads diagnósticas y NavMesh terrestre local, y sobre esa representación ejecuta el gameplay compartido. Esa integración consume truth persisted y no cambia `world_session_v1`, M37, `current_slice_v1`, hashes lógicos ni schemas `1`–`4` legacy.
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
 
-El próximo coding unit candidato es `ID TBD — Macro Climate Baseline V1`, con estado `PLANNED — NOT AUTHORIZED`. Su propósito futuro es aportar truth mundial determinista de baseline térmica y humedad climática de largo plazo para consumidores posteriores; no equivale a weather runtime. Una vez cerrado Climate, el siguiente candidato previsto es `ID TBD — Macro Environment / Biome Regions V1`, también `PLANNED — NOT AUTHORIZED`, consumiendo esa truth sin confundir landform con biome ni iniciar vegetation/materiales finales.
+Commit de cierre: `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
+
+Climate aporta `ThermalIndex` y `MoistureIndex` mundiales bajo `macro_climate_v1`, con norte-frío/sur-cálido, anomalía regional, enfriamiento por elevación, influencia oceánica gradual, orografía acotada y una dirección dominante persistida entre ocho direcciones canónicas. Small→Huge aumenta resolución/frecuencia regional. `world_session_v1` schema `6` persiste esa truth; schemas `1`–`5` siguen siendo legacy exactos sin Climate fabricado.
+
+WorldRuntime sigue siendo el runtime canónico de gameplay y SampleScene el laboratorio/regresión. Climate no crea una segunda autoridad gameplay ni un GameObject/runtime simulation paralelo. La shell implementada posee session lifecycle único, save catalog, Main Menu, WorldRuntime e in-game Save/Return. New Game actual genera plan finito → elevation/landforms → Macro Water → Macro Climate → quality/starter → Macro Human Geography; Climate todavía no es input de Gameplay Quality, Starter ni Human Geography V1. La materialización local consume la truth persistida que necesita y no convierte Climate en terrain materials, weather o biomes.
+
+El próximo coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, con estado `PLANNED — NOT AUTHORIZED`. Debe consumir landform/Water/Climate ya validados para resolver regiones environment/biome globales antes del detalle local, sin confundir landform con biome ni iniciar vegetation/materiales finales.
 
 Fuera de alcance mientras no exista autorización específica:
 
-- implementar `Macro Climate Baseline V1` o cualquier unit open-world posterior;
-- implementar `Macro Environment / Biome Regions V1` antes de cerrar su dependencia climática;
+- implementar `Macro Environment / Biome Regions V1` o cualquier unit open-world posterior;
+- retunear/reabrir `Macro Climate Baseline V1` sin una corrección o unit expresamente autorizada;
 - M42.0 u otro milestone jugable;
-- cambios de gameplay, content contracts o persistencia fuera del payload schema `5` ya cerrado;
+- cambios de gameplay, content contracts o persistencia fuera de los schemas ya cerrados;
 - reabrir la convergencia runtime o la arquitectura M41.1 validada.
 
 M42.0 permanece planificado, pero su secuencia requiere rebaseline y ya no constituye el siguiente trabajo automático. Todo trabajo nuevo requiere autorización explícita.
@@ -88,11 +94,12 @@ Dependencies, overrides/patches y compatibilidad de producción permanecen en al
 
 ## No Iniciar Todavía
 
-- Macro Climate Baseline V1, Macro Environment / Biome Regions V1, Terrain Materialization V1 productiva, otros coding units open-world o M42.0 sin autorización específica;
+- Macro Environment / Biome Regions V1, Terrain Materialization V1 productiva, otros coding units open-world o M42.0 sin autorización específica;
+- weather runtime, seasons, final rivers, geology o cualquier ampliación/retuning de Climate fuera de un unit autorizado;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;
 - actores o mundo a escala fuera de las foundations implementadas;
 - facciones amplias;
-- weather runtime, final rivers, geology, vegetation/biomes, sectors jugables, transición, world history o gameplay world persistence general antes de sus units autorizadas;
+- vegetation/biomes locales, sectors jugables, transición, world history o gameplay world persistence general antes de sus units autorizadas;
 - producción masiva de contenido.

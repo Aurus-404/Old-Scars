@@ -18,14 +18,15 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone/coding unit cerrado mas reciente | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence |
+| Milestone/coding unit cerrado mas reciente | ID TBD — Macro Climate Baseline V1 |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
-| Ultimo milestone/coding unit funcional cerrado | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence |
+| Ultimo milestone/coding unit funcional cerrado | ID TBD — Macro Climate Baseline V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
 | Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
 | Commit funcional validado de M41.1 | `1c843961ed72b554f485b86105c443669337e8c0` |
 | Commit documental de validacion de M41.1 | `2956bcae19719a5f9073e24d58da4705742732fa` |
 | Commit validado de Integrated Gameplay Runtime / SampleScene Convergence | `8c485c78b4ab294de9d983f70ebadfba634ab3e1` |
+| Commit validado de Macro Climate Baseline V1 | `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108` |
 | Milestone activo | Ninguno |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` |
@@ -39,17 +40,18 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Estado ID TBD — Macro Human Geography / Road Network V1 | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — Terrain Materialization Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` |
 | Estado ID TBD — Integrated Gameplay Runtime / SampleScene Convergence | `VALIDATED — RUNTIME CONVERGENCE COMPLETE` |
+| Estado ID TBD — Macro Climate Baseline V1 | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado M37.1 | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` |
 | Persistence Ready | `APPROVED` |
 | Estado M40.1 | `DONE — ARMOR / PENETRATION V1 VALIDATED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` |
-| Siguientes | ID TBD — Macro Climate Baseline V1 (`PLANNED — NOT AUTHORIZED`) → ID TBD — Macro Environment / Biome Regions V1 (`PLANNED — NOT AUTHORIZED`) |
+| Siguientes | ID TBD — Macro Environment / Biome Regions V1 (`PLANNED — NOT AUTHORIZED`) |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance, World Identity/Topology/Determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Worldgen Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1 quedan `VALIDATED — FOUNDATION COMPLETE`; Worldgen Pass Isolation queda `VALIDATED — SYSTEMIC CORRECTION COMPLETE`; Worldgen/World Session Observability queda `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`; Terrain Materialization Technical Spike queda `VALIDATED — TECHNICAL SPIKE COMPLETE`; Integrated Gameplay Runtime / SampleScene Convergence queda `VALIDATED — RUNTIME CONVERGENCE COMPLETE` en `8c485c78b4ab294de9d983f70ebadfba634ab3e1`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance, World Identity/Topology/Determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Worldgen Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1 y Macro Climate Baseline V1 quedan `VALIDATED — FOUNDATION COMPLETE`; Worldgen Pass Isolation queda `VALIDATED — SYSTEMIC CORRECTION COMPLETE`; Worldgen/World Session Observability queda `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`; Terrain Materialization Technical Spike queda `VALIDATED — TECHNICAL SPIKE COMPLETE`; Integrated Gameplay Runtime / SampleScene Convergence queda `VALIDATED — RUNTIME CONVERGENCE COMPLETE` en `8c485c78b4ab294de9d983f70ebadfba634ab3e1`; Macro Climate Baseline V1 queda validado y publicado en `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
 
-No hay milestone de implementación activo. Las foundations open-world de source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1, más la application shell, observabilidad acotada, Terrain Materialization Technical Spike y la convergencia del gameplay compartido en WorldRuntime, quedaron validadas. `Macro Climate Baseline V1`, `Macro Environment / Biome Regions V1` y las unidades posteriores no quedan autorizadas por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+No hay milestone de implementación activo. Las foundations open-world de source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1 y Macro Climate Baseline V1, más la application shell, observabilidad acotada, Terrain Materialization Technical Spike y la convergencia del gameplay compartido en WorldRuntime, quedaron validadas. `Macro Environment / Biome Regions V1` y las unidades posteriores no quedan autorizadas por este documento. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
 
 ## Estados Canonicos
 
@@ -143,6 +145,7 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | ID TBD — Macro Human Geography / Road Network V1 | `VALIDATED — FOUNDATION COMPLETE` | Hubs Regional/Local y roads Primary/Secondary globales, routeadas por coste entero y separadas del MST/topology, committed en `world_session_v1` schema 5. Excluye settlements detallados, bridges, terrain/road materialization, navigation física, climate/history y runtime routing. |
 | ID TBD — Terrain Materialization Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Proyección local transient de schema 5 a Unity Terrain/Collider, water/road diagnostics, player existente y NavMesh terrestre local. Preserva sector≠tile, M37/schema 5/hashes y escala unfrozen; excluye streaming, transitions, mutations, voxels y materialización productiva. |
 | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence | `VALIDATED — RUNTIME CONVERGENCE COMPLETE` | Commit `8c485c78b4ab294de9d983f70ebadfba634ab3e1`: WorldRuntime canónico y SampleScene laboratorio reutilizan la misma composición gameplay; worldgen aporta terrain/world truth sin reemplazar Inventory, Health, Needs, Interaction, Combat ni Persistence. Fixture M32 sólo development; identidad/persistencia/current-slice y regresiones M37–M41/worldgen validadas. |
+| ID TBD — Macro Climate Baseline V1 | `VALIDATED — FOUNDATION COMPLETE` | Commit `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`: truth mundial `ThermalIndex`/`MoistureIndex` bajo `macro_climate_v1`, dirección dominante persistida, schema 6 exacto y schemas 1–5 legacy sin Climate fabricado. Excluye weather runtime, biomes, vegetation, geology, final rivers y materialización local. |
 
 ## Open World Rebaseline — Dirección Futura Aprobada
 
@@ -163,7 +166,7 @@ Camino conceptual propuesto:
 | Infrastructure | ID TBD — Macro Human Geography / Road Network V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidades 3–5 | Red mundial lógica committed que consume truth macro sin convertir el MST scaffold en physical adjacency/travel graph ni materializar roads. |
 | Spike | ID TBD — Terrain Materialization Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro Geography/Water/Human Geography validadas | Conversión local medida a Unity Terrain/Collider, water/roads diagnósticos y NavMesh local sin sector=tile, persistence nueva, whole-world Terrain/NavMesh, streaming ni transición. |
 | Integration | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence | `VALIDATED — RUNTIME CONVERGENCE COMPLETE` | Terrain spike; M32–M41.1; World Session/Current Slice | WorldRuntime canónico ejecuta el gameplay compartido sobre worldgen; SampleScene queda laboratorio y no existe una autoridad gameplay paralela. |
-| 6 | ID TBD — Macro Climate Baseline V1 | `PLANNED — NOT AUTHORIZED` | Unidades 4–5; Pass Isolation; integración runtime cerrada | Truth mundial determinista de baseline térmica y humedad climática de largo plazo para consumidores posteriores; no weather runtime, biomes, vegetation ni materialización local. |
+| 6 | ID TBD — Macro Climate Baseline V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidades 4–5; Pass Isolation; integración runtime cerrada | Truth mundial determinista de baseline térmica y humedad climática de largo plazo, persistida en schema 6; no weather runtime, biomes, vegetation ni materialización local. |
 | 6b | ID TBD — Macro Environment / Biome Regions V1 | `PLANNED — NOT AUTHORIZED` | Unidad 6; macro truth validada | Regiones environment/biome globales derivadas de landform/water/climate antes del detalle local; no confundir landform con biome ni iniciar vegetation/materiales finales. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | Unidad 6 y geography/features requeridos | Historia estructurada acotada que produce/explica estado presente real sin event-sourced persistence. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | Unidades 1–7; M37 validado | Persistencia de geography, history, sector blueprints y gameplay world state general que reutiliza garantías M37 y deja `current_slice_v1` intacto. |
@@ -175,7 +178,7 @@ Camino conceptual propuesto:
 
 Esta tabla no asigna milestone numbers ni autoriza su implementación. Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y production permanecen en el producto; su orden final se revisará con evidencia del Connected First Playable.
 
-El próximo candidato operativo es `ID TBD — Macro Climate Baseline V1`, `PLANNED — NOT AUTHORIZED`. Una vez cerrado, `ID TBD — Macro Environment / Biome Regions V1`, también `PLANNED — NOT AUTHORIZED`, queda como siguiente candidato previsto. La application shell, los planes committed, el Terrain Materialization Technical Spike y la convergencia runtime no adelantan World Persistence general ni autorizan weather runtime, vegetation, arte/materiales finales o materialización productiva.
+El próximo candidato operativo es `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la truth ya validada de landform/Water/Climate antes del detalle local. La application shell, los planes committed, el Terrain Materialization Technical Spike, la convergencia runtime y Macro Climate Baseline V1 no adelantan World Persistence general ni autorizan weather runtime, vegetation, arte/materiales finales o materialización productiva.
 
 ## Roadmap Estrategico Desde M36
 
@@ -206,8 +209,8 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | ID TBD — Macro Human Geography / Road Network V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro Geography; Macro Water/quality; Pass Isolation | Hubs y red vial macro committed/global, multi-landmass, routeada por coste, persistida schema 5 y observable; sin settlements, roads físicas, terrain ni routing runtime. |
 | CERRADO | ID TBD — Terrain Materialization Technical Spike | Arquitectura/worldgen | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro Geography/Water/Human Geography | Ventana local Unity Terrain/Collider + NavMesh y overlays diagnósticos sobre truth persisted; escala provisional, sin streaming/transitions/materialización productiva. |
 | CERRADO | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence | Arquitectura/jugable | `VALIDATED — RUNTIME CONVERGENCE COMPLETE` | Terrain spike; M32–M41.1; World Session/Current Slice | WorldRuntime canónico y SampleScene laboratorio comparten gameplay real sobre worldgen; commit `8c485c78b4ab294de9d983f70ebadfba634ab3e1`. |
-| SIGUIENTE CANDIDATO | ID TBD — Macro Climate Baseline V1 | Arquitectura/worldgen | `PLANNED — NOT AUTHORIZED` | Macro Geography/Water; Pass Isolation; runtime convergence | Baseline térmica y humedad climática de largo plazo como truth mundial determinista; no weather runtime. |
-| DESPUES DE CLIMATE | ID TBD — Macro Environment / Biome Regions V1 | Arquitectura/worldgen | `PLANNED — NOT AUTHORIZED` | Macro Climate Baseline V1; macro truth validada | Regiones environment/biome globales antes del detalle local; no vegetation/materiales finales. |
+| CERRADO | ID TBD — Macro Climate Baseline V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro Geography/Water; Pass Isolation; runtime convergence | Baseline térmica/humedad climática committed bajo `macro_climate_v1`, schema 6 y legacy 1–5 exactos; commit `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`. |
+| SIGUIENTE CANDIDATO | ID TBD — Macro Environment / Biome Regions V1 | Arquitectura/worldgen | `PLANNED — NOT AUTHORIZED` | Macro Climate Baseline V1; macro truth validada | Regiones environment/biome globales antes del detalle local; no vegetation/materiales finales. |
 | RESECUENCIAR | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1; futura world/sector foundation aplicable | Clima dinámico, forecast, exposicion y proteccion permanecen planificados; no equivalen al Macro Climate Baseline y ya no son el siguiente trabajo automático. |
 | RESECUENCIAR | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M42.0; M41.0 para animales moviles; world/sector context aplicable | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready` pendiente de reubicación revisada. |
 | RESECUENCIAR | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad; prioridad final posterior al playtest open-world. |
@@ -258,11 +261,11 @@ Los gates ya aprobados no se reabren. Las ubicaciones M42.1 en adelante conserva
 
 Camino cerrado vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 DONE → M41.1 DONE → AI Ready APPROVED → open-world foundations validadas → Terrain Materialization Technical Spike VALIDATED → Integrated Gameplay Runtime / SampleScene Convergence VALIDATED`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 DONE → M41.1 DONE → AI Ready APPROVED → open-world foundations validadas → Terrain Materialization Technical Spike VALIDATED → Integrated Gameplay Runtime / SampleScene Convergence VALIDATED → Macro Climate Baseline V1 VALIDATED`
 
 Camino crítico conceptual siguiente, todavía sin autorización de implementación:
 
-`Macro Climate Baseline V1 → Macro Environment / Biome Regions V1 → Bounded History / Present-Day Resolution → World Persistence general → Sector Blueprint / Authored Composition → Large-Sector Navigation / Performance Gate → Sector Materialization / Transition → Connected First Playable → Playtest / Rebaseline`
+`Macro Environment / Biome Regions V1 → Bounded History / Present-Day Resolution → World Persistence general → Sector Blueprint / Authored Composition → Large-Sector Navigation / Performance Gate → Sector Materialization / Transition → Connected First Playable → Playtest / Rebaseline`
 
 M42.0–M47.1 y los sistemas posteriores se reinsertarán de acuerdo con dependencias y evidencia reales. No se eliminan ni se consideran iniciados.
 

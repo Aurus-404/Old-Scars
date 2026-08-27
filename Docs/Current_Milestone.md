@@ -20,7 +20,19 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1 y Macro Human Geography/Road Network V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local y la convergencia del gameplay compartido en WorldRuntime, están implementadas y validadas. Climate baseline, final rivers, geology/biomes, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1 y Macro Climate Baseline V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local y la convergencia del gameplay compartido en WorldRuntime, están implementadas y validadas. Final rivers, geology/biomes, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+
+### ID TBD — Macro Climate Baseline V1
+
+Estado final:
+
+`VALIDATED — FOUNDATION COMPLETE`
+
+Commit validado: `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
+
+`MacroClimatePlan` aporta truth climática mundial inmutable bajo `macro_climate_v1`: `ThermalIndex` y `MoistureIndex` fixed-point, gradiente térmico norte-frío/sur-cálido con anomalía regional y enfriamiento por elevación, humedad regional con influencia oceánica gradual y respuesta orográfica acotada, y una dirección dominante persistida entre ocho direcciones canónicas. El escalado Small→Huge aumenta resolución/frecuencia regional en lugar de estirar un único patrón.
+
+`world_session_v1` schema `6` persiste Climate committed con validación estricta; schemas `1`–`5` conservan su truth legacy exacta y no fabrican Climate, incluido schema `5` con Human Geography y `HasMacroClimate=false`. Fresh Process A/B, Main Menu→WorldRuntime→Save→Return→Load, pass isolation, goldens upstream y regresores de worldgen/persistence pasaron. Climate no entra todavía en Gameplay Quality, Starter ni Human Geography V1 y no implementa weather runtime, biomes, vegetation ni materialización local.
 
 ### ID TBD — Integrated Gameplay Runtime / SampleScene Convergence
 
@@ -56,7 +68,7 @@ Estado final:
 
 `VALIDATED — APPLICATION SHELL COMPLETE`
 
-`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. Main Menu es el startup de producto y WorldRuntime es ahora el runtime canónico integrado: para schemas `5` materializa la ventana terrain técnica y ejecuta sobre ella el gameplay compartido. SampleScene continúa laboratorio. La representación terrain se deriva y no cambia schema, streaming ni sector transitions; la persistencia gameplay validada sigue siendo la del Current Slice soportado, no una implementación general de futuras mutaciones/blueprints sectoriales.
+`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. New Game actual escribe schema `6` con Climate committed; schema `5` continúa siendo legacy válido con Human Geography y Climate ausente. Main Menu es el startup de producto y WorldRuntime es el runtime canónico integrado: materializa la ventana terrain técnica desde la truth disponible y ejecuta sobre ella el gameplay compartido. SampleScene continúa laboratorio. La persistencia gameplay validada sigue siendo la del Current Slice soportado, no una implementación general de futuras mutaciones/blueprints sectoriales.
 
 ### ID TBD — Macro World Plan V1
 
@@ -72,7 +84,7 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` conserva ese formato legacy sin Water fabricada. El spike consume esta truth en una ventana física; climate, geology, vegetation/biomes y materialización terrain de producción continúan pendientes.
+New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` conserva ese formato legacy sin Water fabricada. El spike consume esta truth en una ventana física; geology, vegetation/biomes y materialización terrain de producción continúan pendientes.
 
 ### ID TBD — Worldgen Gameplay Quality + Macro Water V1
 
@@ -88,7 +100,7 @@ Estado final:
 
 `VALIDATED — SYSTEMIC CORRECTION COMPLETE`
 
-`WorldDeterminism.DerivePassDomainKey` separa `WorldSeed + pass generation contract + scope + pass` de la versión global del pipeline. Plan conserva `macro_plan_v1`, Geography `macro_geography_v1`, Water `macro_water_v1`, Human Geography `macro_human_roads_v1`, y New Game registra `world_pipeline_v3` sólo como metadata global. Cambiar una versión downstream ya no re-seedea truth upstream sin una dependencia real; los saves schemas `1`–`5` rehidratan únicamente su truth committed sin regeneración ni upgrade silencioso.
+`WorldDeterminism.DerivePassDomainKey` separa `WorldSeed + pass generation contract + scope + pass` de la versión global del pipeline. Plan conserva `macro_plan_v1`, Geography `macro_geography_v1`, Water `macro_water_v1`, Climate `macro_climate_v1`, Human Geography `macro_human_roads_v1`, y New Game registra `world_pipeline_v4` sólo como metadata global. Cambiar una versión downstream ya no re-seedea truth upstream sin una dependencia real; los saves schemas `1`–`6` rehidratan únicamente su truth committed sin regeneración ni upgrade silencioso.
 
 ### ID TBD — Worldgen / World Session Observability Correction
 
@@ -96,7 +108,7 @@ Estado final:
 
 `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`
 
-Create/Load/Runtime Ready y Save manual poseen eventos estructurados únicos y filtrables en sus límites reales. `WORLD_CREATED` resume identity/settings/contracts/hashes/starter, `LOAD_OK` declara schema y truth presente o ausente, `SESSION_READY` confirma la session publicada, y `SAVE_OK` aporta contexto semántico sin reemplazar `[Persistence][WRITE_COMMIT]`. No se modificaron generación, goldens, schemas, scenes ni runtime world simulation.
+Create/Load/Runtime Ready y Save manual poseen eventos estructurados únicos y filtrables en sus límites reales. `WORLD_CREATED` resume identity/settings/contracts/hashes/starter, `LOAD_OK` declara schema y truth presente o ausente, `SESSION_READY` confirma la session publicada, y `SAVE_OK` aporta contexto semántico sin reemplazar `[Persistence][WRITE_COMMIT]`. Climate schema `6` extiende esa observabilidad con presencia/ausencia y evidencia climática sin duplicar lifecycle logs.
 
 ### ID TBD — Macro Human Geography / Road Network V1
 
@@ -104,7 +116,7 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial bajo `macro_human_roads_v1`: hubs Regional/Local en tierra, backbone Primary conectado por landmass, enlaces alternativos/ciclos y branches Secondary, todos con IDs estables y polylines globales routeadas sobre un cost field entero de relief/traversal. No usa el MST de `WorldTopology` como road graph, no cruza océano y no materializa settlements, roads, bridges, terrain ni navegación física. `world_session_v1` schema `5` persiste esa truth; schemas `1`–`4` permanecen legacy exactos y no fabrican infraestructura.
+New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial bajo `macro_human_roads_v1`: hubs Regional/Local en tierra, backbone Primary conectado por landmass, enlaces alternativos/ciclos y branches Secondary, todos con IDs estables y polylines globales routeadas sobre un cost field entero de relief/traversal. No usa el MST de `WorldTopology` como road graph, no cruza océano y no materializa settlements, roads, bridges, terrain ni navegación física. Su truth nació en `world_session_v1` schema `5`; schema `6` la preserva sin hacer de Climate un input de Human Geography V1. Schemas `1`–`4` permanecen legacy exactos y no fabrican infraestructura.
 
 ### ID TBD — Terrain Materialization Technical Spike
 
@@ -112,7 +124,7 @@ Estado final:
 
 `VALIDATED — TECHNICAL SPIKE COMPLETE`
 
-Una session schema `5` puede proyectar la truth committed alrededor del active-sector anchor a una ventana Unity local con Terrain/TerrainCollider, ocean mask, roads diagnósticas, player sobre tierra y una NavMesh terrestre local consumida por `ActorNavigationController`. La baseline provisional es `768×768` Unity units, relief `240`, ventana lógica `1800×1800` y heightmap `257`. Product sector no equivale a Terrain tile, la escala final permanece unfrozen, schema `5`/M37 no cambian y no existen streaming, transitions, mutations, voxels ni materialización productiva.
+Una session con la macro truth requerida puede proyectar alrededor del active-sector anchor una ventana Unity local con Terrain/TerrainCollider, ocean mask, roads diagnósticas, player sobre tierra y una NavMesh terrestre local consumida por `ActorNavigationController`. La baseline provisional es `768×768` Unity units, relief `240`, ventana lógica `1800×1800` y heightmap `257`. Product sector no equivale a Terrain tile, la escala final permanece unfrozen y no existen streaming, transitions, mutations, voxels ni materialización productiva. Climate schema `6` no cambia este contrato ni colorea/materializa el clima.
 
 ## Evidencia De Cierre
 
@@ -146,6 +158,8 @@ Una session schema `5` puede proyectar la truth committed alrededor del active-s
 - Previews temporales inland/plain, rugged y coastal fueron inspeccionadas: relief regional coherente, costa/océano alineados y polylines viales globales continuas. El probe rugged usó pendiente física máxima `51.52°`; los `142/142` samples por encima del contrato NavMesh `45°` quedaron excluidos. Los colores/lines son diagnóstico, no arte o surfaces finales.
 - Integrated Gameplay Runtime / SampleScene Convergence: Runtime/Editor compile, WorldSessionApplicationDiagnostics, MainMenu→New Game→WorldRuntime integrado, cardinalidad de player/camera/WorldClock/Inventory/interacción/Needs/Health, container transfer, crowbar pickup/equip, door contextual action, save→menu→load repetido, contaminación World A→B rechazada y Fresh Process A/B: `PASS`.
 - M36.1 Foundation Identity Validation permaneció `PASS` con 14 `PersistentSceneObjectId`, 2 `ItemInstanceId`, 3 actores, 3 puertas, 8 contenedores y cero IDs duplicados o inválidos. La captura D3D11 mostró player y fixture de integración sobre terreno generado; `git diff --check` pasó. El commit publicado de cierre es `8c485c78b4ab294de9d983f70ebadfba634ab3e1`.
+- `Macro Climate Baseline V1 Diagnostics`: `PASS`; goldens upstream preservados — Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`, Water `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`, Human `a786f018ce3bdea44aeb066c80e38cb1f5dc8e114c65bd7eb352489628245ba6`— y Climate golden `a4b7869a7d8deab093eb9b9c5f7a2da118156f22c61ac466fbd0a9e64958eec1`.
+- Climate schema `6` round-trip exacto, schemas `1`–`5` legacy sin Climate fabricado, Fresh Process A/B, Main Menu→WorldRuntime→Save→Return→Load, Pass Isolation, Water/Quality, Human Geography, Terrain Materialization D3D11, M37 y Content Provenance: `PASS`. Las previews Small→Huge fueron inspeccionadas y mostraron mayor frecuencia/provincias con el preset, tendencia térmica norte-frío/sur-cálido, humedad costa/interior gradual y ausencia de seams/ruido estático evidente. Hubo `13` findings blandos de distribución y cero fallo contractual reportado. El commit publicado es `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
 
 ## Contratos Cerrados
 
@@ -153,9 +167,11 @@ Una session schema `5` puede proyectar la truth committed alrededor del active-s
 - Perception conserva LOS; Navigation conserva path; `WeaponCombatService` conserva ammo, reload, impacto y consecuencias. Player y NPC comparten `PhysicalShotPathResolver`.
 - `LostContact` usa sólo last-known de percepción positiva, cancela acción y exige reacquisition explícita tras timeout; `Dead` deja IA y Navigation inactivas.
 - Encounter state, target, timers, órdenes y resultados de percepción siguen efímeros; M41.1 no cambia schema/envelope.
+- `MacroClimatePlan` es la única truth climática committed de esta foundation; no existe GameObject o simulación runtime Climate paralela.
+- `MoistureIndex` expresa tendencia climática de largo plazo, no humedad del aire/suelo ni lluvia actual. Weather y Biome Regions permanecen consumidores futuros separados.
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Climate Baseline V1`, `PLANNED — NOT AUTHORIZED`. Su propósito futuro es producir truth mundial determinista de baseline térmica y humedad climática de largo plazo; no implementa weather runtime. Después de cerrarlo, `ID TBD — Macro Environment / Biome Regions V1` queda como siguiente candidato previsto, también `PLANNED — NOT AUTHORIZED`, consumiendo Climate sin confundir landforms con biomas.
+No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la truth ya validada de landform/Water/Climate para resolver regiones environment/biome globales sin confundir landform con biome ni iniciar vegetation/materiales finales.
 
-El Terrain Materialization Technical Spike y la convergencia runtime no autorizan vegetation, arte/materiales finales, materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+Macro Climate Baseline V1 queda cerrado y no autoriza weather runtime, seasons, vegetation, final rivers, geology, terrain materials ni retuning climático sin un alcance posterior explícito. El Terrain Materialization Technical Spike y la convergencia runtime tampoco autorizan materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
