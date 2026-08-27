@@ -92,7 +92,9 @@ namespace OldScars.Core.Actors
                 currentStamina = Mathf.Min(
                     MaximumStamina,
                     currentStamina + Mathf.Max(0f, recoveryPerRealSecond) * LastRecoveryFactor * elapsedRealSeconds);
-                if (exhaustedLockout && currentStamina >= SprintRecoveryThreshold)
+                if (exhaustedLockout &&
+                    (currentStamina >= SprintRecoveryThreshold ||
+                     Mathf.Approximately(currentStamina, SprintRecoveryThreshold)))
                     exhaustedLockout = false;
             }
 

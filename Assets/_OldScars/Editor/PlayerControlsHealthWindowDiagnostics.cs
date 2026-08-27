@@ -25,6 +25,9 @@ namespace OldScars.Editor
             GameObject blockerObject = new GameObject("Player Controls Diagnostic UI Blocker");
             GameObject debugPanelObject = new GameObject("Player Controls Diagnostic Runtime Debug Tools");
             GameObject obstructionObject = null;
+            GameObject teleportPlayerObject = null;
+            GameObject teleportGroundObject = null;
+            GameObject teleportObstacleObject = null;
             try
             {
                 Camera camera = cameraObject.AddComponent<Camera>();
@@ -83,6 +86,36 @@ namespace OldScars.Editor
                         typeof(PlayerMovementController).Assembly.GetType("OldScars.Core.Interactions.PointClickMovementInputController") == null,
                     "A legacy PointClick movement type is still compiled.");
 
+                teleportPlayerObject = new GameObject("Player Controls Diagnostic Teleport Player");
+                teleportPlayerObject.transform.position = new Vector3(-4f, 1f, 0f);
+                teleportPlayerObject.AddComponent<ActorStaminaComponent>();
+                teleportPlayerObject.AddComponent<CharacterController>();
+                PlayerMovementController teleportMovement = teleportPlayerObject.AddComponent<PlayerMovementController>();
+                teleportGroundObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                teleportGroundObject.name = "Player Controls Diagnostic Teleport Ground";
+                teleportGroundObject.transform.position = new Vector3(0f, -0.5f, 0f);
+                teleportGroundObject.transform.localScale = new Vector3(20f, 1f, 20f);
+                Physics.SyncTransforms();
+                Vector3 safeTeleportDestination = new Vector3(2f, 1f, 0f);
+                Require(teleportMovement.TryTeleportTo(
+                            safeTeleportDestination,
+                            teleportGroundObject.GetComponent<Collider>(),
+                            out string teleportFailure) &&
+                        Near(teleportPlayerObject.transform.position, safeTeleportDestination),
+                    "Teleport command did not move the player to a valid materialized ground position: " + teleportFailure);
+                teleportObstacleObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                teleportObstacleObject.name = "Player Controls Diagnostic Teleport Obstruction";
+                teleportObstacleObject.transform.position = new Vector3(5f, 1f, 0f);
+                teleportObstacleObject.transform.localScale = new Vector3(1f, 2f, 1f);
+                Physics.SyncTransforms();
+                Vector3 positionBeforeRejectedTeleport = teleportPlayerObject.transform.position;
+                Require(!teleportMovement.TryTeleportTo(
+                            teleportObstacleObject.transform.position,
+                            teleportGroundObject.GetComponent<Collider>(),
+                            out _) &&
+                        Near(teleportPlayerObject.transform.position, positionBeforeRejectedTeleport),
+                    "Teleport command accepted a destination overlapping blocking geometry.");
+
                 ActorHealthComponent health = healthObject.AddComponent<ActorHealthComponent>();
                 health.ApplyInitialHealth(100f, 100f);
                 ActorHealthDebugWindow window = healthObject.AddComponent<ActorHealthDebugWindow>();
@@ -120,6 +153,12 @@ namespace OldScars.Editor
             {
                 if (obstructionObject != null)
                     UnityEngine.Object.DestroyImmediate(obstructionObject);
+                if (teleportObstacleObject != null)
+                    UnityEngine.Object.DestroyImmediate(teleportObstacleObject);
+                if (teleportGroundObject != null)
+                    UnityEngine.Object.DestroyImmediate(teleportGroundObject);
+                if (teleportPlayerObject != null)
+                    UnityEngine.Object.DestroyImmediate(teleportPlayerObject);
                 UnityEngine.Object.DestroyImmediate(debugPanelObject);
                 UnityEngine.Object.DestroyImmediate(blockerObject);
                 UnityEngine.Object.DestroyImmediate(inventoryPanelObject);

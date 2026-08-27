@@ -126,9 +126,15 @@ namespace OldScars.Editor
             RunConsumableRegression(needs, health);
             RunRestAndDeadActorRegression(clock, needs, health);
             RunStaminaRegression(needs, stamina);
-            Require(clock.TrySetDebugTimeMultiplier(100f, out _) &&
-                    Near((float)clock.GameSecondsPerRealSecond, (float)(WorldClock.DefaultGameSecondsPerRealSecond * 100d)),
-                "WorldClock did not apply the 100x debug multiplier relative to its authored baseline.");
+            float[] expectedDebugMultipliers = { 1f, 2f, 3f, 5f, 10f, 20f, 50f, 100f };
+            for (int index = 0; index < expectedDebugMultipliers.Length; index++)
+            {
+                float multiplier = expectedDebugMultipliers[index];
+                Require(clock.TrySetDebugTimeMultiplier(multiplier, out _) &&
+                        Near((float)clock.GameSecondsPerRealSecond,
+                            (float)(WorldClock.DefaultGameSecondsPerRealSecond * multiplier)),
+                    $"WorldClock did not apply the {multiplier:0}x debug multiplier relative to its authored baseline.");
+            }
 
             RestoreClock(clock, KnownElapsedGameSeconds);
             SetNeed(needs, "hunger", 61f);
@@ -385,6 +391,8 @@ namespace OldScars.Editor
                     Near(needs.GetNeedValue("hunger"), hungerBeforeRest) && Near(needs.GetNeedValue("thirst"), thirstBeforeRest),
                 "Resting stamina recovery incorrectly applied extra exertion Need cost.");
 
+            SetNeed(needs, "hunger", 100f);
+            SetNeed(needs, "thirst", 100f);
             SetStamina(stamina, 0f);
             Require(!stamina.CanSprint && stamina.IsExhausted, "Zero stamina did not enforce sprint lockout.");
             stamina.Advance(0.5f, false);

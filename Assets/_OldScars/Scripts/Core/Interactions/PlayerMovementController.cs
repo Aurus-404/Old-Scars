@@ -73,6 +73,8 @@ namespace OldScars.Core.Interactions
         {
             failure = null;
             if (characterController == null)
+                characterController = GetComponent<CharacterController>();
+            if (characterController == null)
             {
                 failure = "Player CharacterController is missing.";
                 return false;

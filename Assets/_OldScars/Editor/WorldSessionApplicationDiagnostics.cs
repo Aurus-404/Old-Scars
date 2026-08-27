@@ -1543,7 +1543,7 @@ namespace OldScars.EditorTools
                 return false;
             }
             if (composition.Player != runtime.PlayerComposition ||
-                composition.NeedsPanel == null || !composition.NeedsPanel.IsVisible ||
+                composition.NeedsPanel == null ||
                 composition.HealthWindow == null || composition.InventorySession == null ||
                 composition.InventoryPanel == null || composition.StoragePanel == null ||
                 composition.WorldInteraction == null || composition.FirearmController == null)
