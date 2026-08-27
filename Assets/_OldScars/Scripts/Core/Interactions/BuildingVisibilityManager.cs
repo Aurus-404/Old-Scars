@@ -73,6 +73,17 @@ namespace OldScars.Core.Interactions
             SetCurrentVolume(volume);
         }
 
+        public void BindRuntime(Camera camera, ActorInteractionContext actor)
+        {
+            mainCamera = camera;
+            playerContext = actor;
+            playerTransform = actor != null ? actor.transform : null;
+            if (interiorVolumes == null || interiorVolumes.Length == 0)
+                interiorVolumes = GetComponentsInChildren<BuildingInteriorVolume>(true);
+            if (occluderTargets == null || occluderTargets.Length == 0)
+                occluderTargets = GetComponentsInChildren<BuildingOccluderTarget>(true);
+        }
+
         public void NotifyPlayerExited(BuildingInteriorVolume volume, ActorInteractionContext actor)
         {
             if (volume == null || actor == null || actor != playerContext || volume != currentVolume)

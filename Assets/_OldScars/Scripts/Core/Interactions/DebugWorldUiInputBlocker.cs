@@ -47,6 +47,24 @@ namespace OldScars.Core.Interactions
                 inventorySessionController = FindAnyObjectByType<InventoryUISessionController>();
         }
 
+        public void BindRuntime(
+            ContextualActionDebugPanel contextualActions,
+            ContextualActionDebugResultPanel actionResults,
+            InventoryDebugPanel personalInventory,
+            ItemStorageDebugPanel externalStorage,
+            ActorNeedsDebugPanel needs,
+            ActorHealthDebugWindow health,
+            InventoryUISessionController inventorySession)
+        {
+            actionPanel = contextualActions;
+            resultPanel = actionResults;
+            inventoryPanel = personalInventory;
+            storagePanel = externalStorage;
+            actorNeedsPanel = needs;
+            actorHealthWindow = health;
+            inventorySessionController = inventorySession;
+        }
+
         public bool ConsumeLeftClickIfNeeded(Vector2 screenPosition)
         {
             EnsureReferences();

@@ -501,6 +501,22 @@ namespace OldScars.Core.Items
             panel.BindSessionController(this);
         }
 
+        public void BindRuntime(
+            InventoryDebugPanel personalPanel,
+            ItemStorageDebugPanel externalPanel,
+            InventoryComponent inventory,
+            PlayerMovementController movement,
+            ActorHealthDebugWindow healthWindow)
+        {
+            inventoryPanel = personalPanel;
+            storagePanel = externalPanel;
+            playerInventory = inventory;
+            movementController = movement;
+            actorHealthWindow = healthWindow;
+            inventoryPanel?.BindSessionController(this);
+            storagePanel?.BindSessionController(this);
+        }
+
         internal void ConsumeCurrentOnGUIEvent()
         {
             if (!BlocksWorldInput || Event.current == null)

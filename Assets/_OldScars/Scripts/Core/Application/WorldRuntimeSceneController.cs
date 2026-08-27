@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Globalization;
 using OldScars.Core.Actors;
 using OldScars.Core.Persistence;
@@ -30,6 +31,8 @@ namespace OldScars.Core.ApplicationShell
         private string statusMessage;
         private WorldTerrainMaterializationController materializationController;
         private PlayerGameplayComposition playerComposition;
+        private GameplayRuntimeComposition gameplayRuntimeComposition;
+        private DevelopmentGameplayIntegrationFixture developmentFixture;
         private GameObject lightingRoot;
         private bool gameplayRestoreAttempted;
         private bool compositionReadyBeforeRestore;
@@ -41,13 +44,15 @@ namespace OldScars.Core.ApplicationShell
         public string StatusMessage => statusMessage;
         public WorldTerrainMaterializationController MaterializationController => materializationController;
         public PlayerGameplayComposition PlayerComposition => playerComposition;
+        public GameplayRuntimeComposition GameplayRuntimeComposition => gameplayRuntimeComposition;
+        public DevelopmentGameplayIntegrationFixture DevelopmentFixture => developmentFixture;
         public bool GameplayRestoreAttempted => gameplayRestoreAttempted;
         public bool CompositionReadyBeforeRestore => compositionReadyBeforeRestore;
         public bool GameplayStateReady => gameplayStateReady;
         public WorldGameplayLoadResult GameplayLoadResult => gameplayLoadResult;
         public WorldRuntimePlayerBindSource PlayerBindSource => playerBindSource;
 
-        private void Start()
+        private IEnumerator Start()
         {
             if (WorldSessionService.HasActiveSession)
             {
@@ -62,7 +67,7 @@ namespace OldScars.Core.ApplicationShell
                         session, terrainMaterialization))
                 {
                     statusMessage = "Terrain materialization failed: " + materializationController.Failure;
-                    return;
+                    yield break;
                 }
 
                 EnsureWorldLighting();
@@ -75,8 +80,31 @@ namespace OldScars.Core.ApplicationShell
                     statusMessage = "Player gameplay composition failed: " + playerFailure;
                     Debug.LogError("[WorldRuntime][PLAYER_BIND_FAIL]\nWorldId: " +
                                    session.WorldId.Canonical + "\nFailure: " + playerFailure);
-                    return;
+                    yield break;
                 }
+
+                playerComposition.SetGameplayInputEnabled(false);
+                if (!GameplayRuntimeComposition.TryCreateAndBind(
+                        transform, playerComposition, out gameplayRuntimeComposition,
+                        out string runtimeFailure))
+                {
+                    FailGameplayInitialization("Shared gameplay runtime failed: " + runtimeFailure);
+                    yield break;
+                }
+
+                bool fixtureExpected = Application.isEditor || Debug.isDebugBuild;
+                if (fixtureExpected && !DevelopmentGameplayIntegrationFixture.TryInstantiateOnMaterializedLand(
+                        materializationController.Result, transform, playerComposition,
+                        out developmentFixture, out string fixtureFailure))
+                {
+                    FailGameplayInitialization("Development gameplay fixture failed: " + fixtureFailure);
+                    yield break;
+                }
+
+                // Existing authored profile/container components initialize in Start.
+                // Keep input disabled and let those persistence representations finish
+                // before Current Slice semantic preflight/application begins.
+                yield return null;
 
                 if (WorldSessionService.ActiveSessionSource == WorldSessionActivationSource.Loaded)
                 {
@@ -87,7 +115,7 @@ namespace OldScars.Core.ApplicationShell
                     {
                         FailGameplayInitialization(
                             "Gameplay restore was rejected because terrain/player composition was not ready.");
-                        return;
+                        yield break;
                     }
 
                     gameplayLoadResult = WorldGameplayPersistenceService.LoadAndApply(
@@ -98,7 +126,7 @@ namespace OldScars.Core.ApplicationShell
                         FailGameplayInitialization(
                             "Gameplay load failed during " + gameplayLoadResult.Phase + ": " +
                             gameplayLoadResult.Failure);
-                        return;
+                        yield break;
                     }
 
                     playerBindSource = gameplayLoadResult.Disposition == WorldGameplayLoadDisposition.Restored
@@ -114,15 +142,36 @@ namespace OldScars.Core.ApplicationShell
                 if (playerBindSource == WorldRuntimePlayerBindSource.LegacySafeSpawn)
                     ResetGameplayClockForBootstrap();
 
+                if (!gameplayRuntimeComposition.TryValidate(out string readinessFailure))
+                {
+                    FailGameplayInitialization("Integrated gameplay runtime validation failed: " + readinessFailure);
+                    yield break;
+                }
+
                 playerComposition.BindCameraToPlayer();
+                playerComposition.SetGameplayInputEnabled(true);
                 gameplayStateReady = true;
                 LogPlayerBound(session, playerComposition, playerBindSource);
-                return;
+                LogGameplayRuntimeReady(session, fixtureExpected);
+                yield break;
             }
 
             Debug.LogError("[WorldApplication] World Runtime opened without an active WorldSession; returning to Main Menu.");
             WorldSessionService.Close();
             SceneManager.LoadScene(WorldApplicationScenes.MainMenuSceneName, LoadSceneMode.Single);
+        }
+
+        private void LogGameplayRuntimeReady(WorldSession session, bool fixtureExpected)
+        {
+            bool fixtureReady = developmentFixture != null && developmentFixture.TryValidate(out _);
+            Debug.Log("[WorldRuntime][GAMEPLAY_RUNTIME_READY]\n" +
+                      "WorldId: " + session.WorldId.Canonical + "\n" +
+                      gameplayRuntimeComposition.DescribeReadiness(fixtureReady) + "\n" +
+                      "DevelopmentFixtureExpected: " + fixtureExpected +
+                      (fixtureReady
+                          ? "\nFixturePosition: " + developmentFixture.PlacementPosition.ToString("F2") +
+                            "\nFixtureHeightRange: " + developmentFixture.PlacementHeightRange.ToString("F2", CultureInfo.InvariantCulture)
+                          : string.Empty));
         }
 
         private void Update()

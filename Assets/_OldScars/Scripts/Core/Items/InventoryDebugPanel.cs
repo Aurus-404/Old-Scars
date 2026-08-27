@@ -81,6 +81,20 @@ namespace OldScars.Core.Items
             sessionController = controller;
         }
 
+        public void BindPlayer(
+            InventoryComponent playerInventory,
+            ActorNeedsComponent needs,
+            ActorHealthComponent health,
+            FirearmDebugController firearm,
+            ActorEquipmentComponent equipment)
+        {
+            inventory = playerInventory;
+            actorNeeds = needs;
+            actorHealth = health;
+            firearmController = firearm;
+            actorEquipment = equipment;
+        }
+
         internal void ShowFromSession()
         {
             scrollPosition = Vector2.zero;

@@ -3324,3 +3324,33 @@ La revisión System Harmony confirmó que no existe segundo persistence engine, 
 Regla permanente: reutilizar la misma clase no constituye integración suficiente si ya existe una composición/autoridad gameplay. Product runtime debe consumir las autoridades establecidas de player, camera, identity, persistence y gameplay en vez de construir fixtures técnicos paralelos.
 
 No se implementaron Biomes, terrain scale tuning, streaming, settlements ni optimización de NavMesh. El siguiente candidato permanece `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`.
+
+### ID TBD — Integrated Gameplay Runtime / SampleScene Convergence
+
+Fecha: 2026-08-26.
+
+Estado: `VALIDATED — CONVERGENCE COMPLETE`.
+
+`WorldRuntime` ahora consume una única composición gameplay compartida en vez de ser un terrain viewer con componentes seleccionados. `GameplayRuntimeComposition` enlaza el `PFB_PlayerGameplayComposition` real con las superficies ya existentes de Inventory/Storage, Needs/Health, interacción contextual, progress/result, feedback e input blocking; `SampleScene` consume exactamente el mismo wiring mediante un bootstrap delgado y conserva únicamente sus fixtures diagnósticas estrechas como laboratorio.
+
+La fixture authored de integración se extrajo a `Resources/Development/PFB_IntegratedGameplayFixture`: casa M32, dos puertas, cinco contenedores, un actor y los world items authored crowbar/rifle. `DevelopmentGameplayIntegrationFixture` la coloca sólo en Editor/development builds sobre tierra generated con slope/height/spacing/NavMesh preflight, falla explícitamente si no encuentra placement válido y no participa de worldgen truth. La extracción preservó exactamente `14` `PersistentSceneObjectId` authored y `2` `ItemInstanceId` authored, sin regeneraciones, duplicados ni una segunda autoridad durable de player.
+
+El orden de producto queda `WorldSession → terrain materialization → shared gameplay runtime → development fixture → shared player/profile → world_gameplay_v1/CurrentSlice transactional apply → camera/input → gameplay ready`. La espera controlada de un frame ocurre con input deshabilitado para permitir que representaciones authored existentes inicialicen sus profiles/storages antes del semantic preflight. `[WorldRuntime][GAMEPLAY_RUNTIME_READY]` registra una sola vez cardinalidad de player, camera, WorldClock, Inventory session, interacción, Needs/Health y fixture.
+
+Validación autónoma en Unity `6000.4.6f1`, Library aislada y roots temporales:
+
+- Runtime compile y Editor compile posteriores a retirar authoring/capture temporal: `PASS`;
+- M36 authored identity: `14` scene roots + `2` world item IDs, `0` missing/duplicate/invalid: `PASS`;
+- Play Mode MainMenu → New Game → generated WorldRuntime: cardinalidad exacta `1` para player, Main Camera, WorldClock, Inventory session, interacción, Needs y Health; fixture validada sobre land: `PASS`;
+- Inventory open/close, Health arbitration, Needs visible/ticking, container search/transfer, authored crowbar pickup/equip y contextual `core:force_door` mediante authorities existentes: `PASS`;
+- Save → Menu → Load repetido restauró pose, `ActorInstanceId`, `PersistentSceneObjectId`, health, container quantity, equipped crowbar/world-item absence y door tags: `PASS`;
+- world legacy sin sidecar conservó safe bootstrap explícito; sidecar World A aplicado a World B fue rechazado en semantic preflight sin publicar gameplay ready: `PASS`;
+- fresh Process A/B en dos Unity separados preservó WorldId, SectorId, topology, seed, actor identity, pose y health: `PASS`;
+- M37 CurrentSlice/Persistence, M38 actor lifecycle/Needs/WorldClock, M39 Health, Inventory/Storage, Player Controls/Camera, M40 Combat/Armor, M41 Navigation/Perception/Encounter AI, Terrain Materialization, WorldSession, Content Provenance/Namespaces y worldgen pass isolation/Human Geography: `PASS`;
+- goldens sin drift: Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`, Water `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0` y Human Geography upstream unchanged: `PASS`.
+
+La revisión System Harmony confirmó ausencia de player/camera/session/WorldClock duplicados, segundo Inventory/Health/Interaction/Persistence, bootstrap tardío dependiente del scene-load order, fixture filtrada a worldgen, identidad inestable o manager agregado. El visual capture temporal confirmó el gameplay camera con player/fixture sobre terrain generated; sigue siendo presentación gris diagnóstica y no aceptación audiovisual final. Los scripts temporales fueron retirados. El runner Terrain `-nographics` no dispone de graphics device para RenderTexture/URP; la repetición aislada D3D11 pasó. Ningún proceso o configuración del Editor de Mauro fue modificado.
+
+Regla permanente: `WorldRuntime` es el runtime gameplay integrado canónico; `SampleScene` es un laboratorio. Una feature sólo cuenta como integrada cuando sus autoridades, UI/input, consumers del mundo e interacciones de persistencia coexisten y pueden probarse en ese runtime.
+
+No se implementaron Biomes, climate, settlements, terrain-scale tuning, final roads, streaming ni optimización de NavMesh. El siguiente candidato no se inicia en esta tarea.

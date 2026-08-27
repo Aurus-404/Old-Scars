@@ -18,26 +18,6 @@ namespace OldScars.Core.Actors
 
         public bool IsVisible => visible && (inventorySessionController == null || !inventorySessionController.IsOpen);
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void EnsureRuntimePanel()
-        {
-            if (FindAnyObjectByType<ActorNeedsDebugPanel>() != null)
-            {
-                return;
-            }
-
-            ActorNeedsComponent actorNeeds = FindAnyObjectByType<ActorNeedsComponent>();
-            if (actorNeeds == null)
-            {
-                return;
-            }
-
-            var panelObject = new GameObject("ActorNeedsDebugPanel_Runtime");
-            ActorNeedsDebugPanel panel = panelObject.AddComponent<ActorNeedsDebugPanel>();
-            panel.actorNeeds = actorNeeds;
-            panel.visible = true;
-        }
-
         private void Awake()
         {
             ResolveActorNeeds();
@@ -127,6 +107,16 @@ namespace OldScars.Core.Actors
             return GetPanelRect().Contains(guiPoint);
         }
 
+        public void BindRuntime(
+            ActorNeedsComponent needs,
+            WorldClock clock,
+            InventoryUISessionController inventorySession)
+        {
+            actorNeeds = needs;
+            worldClock = clock;
+            inventorySessionController = inventorySession;
+        }
+
         private void DrawNeed(string needId, float currentValue)
         {
             string displayName = actorNeeds.GetNeedDisplayName(needId);
@@ -209,24 +199,6 @@ namespace OldScars.Core.Actors
 
         public bool IsOpen => isOpen;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void EnsureRuntimeWindow()
-        {
-            if (FindAnyObjectByType<ActorHealthDebugWindow>() != null)
-                return;
-
-            ActorNeedsComponent playerNeeds = FindAnyObjectByType<ActorNeedsComponent>();
-            ActorHealthComponent health = playerNeeds != null
-                ? playerNeeds.GetComponent<ActorHealthComponent>()
-                : FindAnyObjectByType<ActorHealthComponent>();
-            if (health == null)
-                return;
-
-            var windowObject = new GameObject("ActorHealthDebugWindow_Runtime");
-            ActorHealthDebugWindow window = windowObject.AddComponent<ActorHealthDebugWindow>();
-            window.actorHealth = health;
-        }
-
         private void Awake()
         {
             ResolveReferences();
@@ -289,6 +261,14 @@ namespace OldScars.Core.Actors
             medicalState = actorHealth != null ? actorHealth.GetComponent<ActorMedicalStateComponent>() : null;
             itemOwnership = actorHealth != null ? actorHealth.GetComponent<ActorItemOwnershipComponent>() : null;
             selectedWoundId = null;
+        }
+
+        public void BindRuntime(
+            ActorHealthComponent health,
+            InventoryUISessionController inventorySession)
+        {
+            inventorySessionController = inventorySession;
+            SetActorHealth(health);
         }
 
         public bool ContainsScreenPosition(Vector2 screenPosition)

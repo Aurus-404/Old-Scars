@@ -81,6 +81,17 @@ namespace OldScars.Core.Interactions
             FollowTargetNow();
         }
 
+        public void BindRuntime(
+            Transform target,
+            InventoryUISessionController inventorySession,
+            DebugWorldUiInputBlocker inputBlocker)
+        {
+            recenterTarget = target;
+            inventorySessionController = inventorySession;
+            uiInputBlocker = inputBlocker;
+            FollowTargetNow();
+        }
+
         public void RecenterOnTarget()
         {
             FollowTargetNow();

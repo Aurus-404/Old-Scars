@@ -65,6 +65,20 @@ namespace OldScars.Core.Interactions
             return direction.sqrMagnitude > 0f ? direction.normalized : Vector3.zero;
         }
 
+        public void BindRuntime(
+            Camera camera,
+            PlayerMovementController movement,
+            DebugWorldUiInputBlocker inputBlocker,
+            DebugActionProgressController progress,
+            InventoryUISessionController inventorySession)
+        {
+            inputCamera = camera;
+            movementController = movement;
+            uiInputBlocker = inputBlocker;
+            progressController = progress;
+            inventorySessionController = inventorySession;
+        }
+
         private static Vector2 ReadMovementInput()
         {
             Keyboard keyboard = Keyboard.current;

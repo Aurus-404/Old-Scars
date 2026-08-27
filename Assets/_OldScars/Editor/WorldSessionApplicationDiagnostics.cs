@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using OldScars.Core;
 using OldScars.Core.Actors;
@@ -8,6 +9,8 @@ using OldScars.Core.ApplicationShell;
 using OldScars.Core.Data.Loading;
 using OldScars.Core.Data.Validation;
 using OldScars.Core.Interactions;
+using OldScars.Core.Identity;
+using OldScars.Core.Items;
 using OldScars.Core.Persistence;
 using OldScars.Core.World;
 using UnityEditor;
@@ -38,6 +41,10 @@ namespace OldScars.EditorTools
         private const string PlayMovementOriginXKey = "OldScars.WorldSessionApplicationDiagnostics.MovementOriginX";
         private const string PlayMovementOriginYKey = "OldScars.WorldSessionApplicationDiagnostics.MovementOriginY";
         private const string PlayMovementOriginZKey = "OldScars.WorldSessionApplicationDiagnostics.MovementOriginZ";
+        private const string PlayFixtureContainerQuantityKey = "OldScars.WorldSessionApplicationDiagnostics.FixtureContainerQuantity";
+        private const string PlayFixtureContainerIdKey = "OldScars.WorldSessionApplicationDiagnostics.FixtureContainerId";
+        private const string PlayFixtureDoorIdKey = "OldScars.WorldSessionApplicationDiagnostics.FixtureDoorId";
+        private const string PlayFixturePickedItemIdKey = "OldScars.WorldSessionApplicationDiagnostics.FixturePickedItemId";
         private const string PlayWorldBIdKey = "OldScars.WorldSessionApplicationDiagnostics.WorldBId";
         private const string PlayWorldCreatedLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.WorldCreatedLogs";
         private const string PlayLoadOkLogCountKey = "OldScars.WorldSessionApplicationDiagnostics.LoadOkLogs";
@@ -530,13 +537,27 @@ namespace OldScars.EditorTools
                 WorldApplicationScenes.SampleScenePath, OpenSceneMode.Single);
             List<PlayerGameplayComposition> sampleCompositions =
                 FindSceneComponents<PlayerGameplayComposition>(sample);
+            List<SampleSceneGameplayRuntimeBootstrap> sampleBootstraps =
+                FindSceneComponents<SampleSceneGameplayRuntimeBootstrap>(sample);
+            List<DevelopmentGameplayIntegrationFixture> sampleFixtures =
+                FindSceneComponents<DevelopmentGameplayIntegrationFixture>(sample);
             Check(sampleCompositions.Count == 1 &&
                   PrefabUtility.GetCorrespondingObjectFromSource(sampleCompositions[0]) == sharedPrefab &&
                   FindSceneComponents<ActorInteractionContext>(sample)
                       .FindAll(context => Array.IndexOf(context.ActorTags, "player") >= 0).Count == 1 &&
-                  FindSceneComponents<CameraRigController>(sample).Count == 1 &&
-                  FindSceneComponents<Camera>(sample).Count == 1,
+                   FindSceneComponents<CameraRigController>(sample).Count == 1 &&
+                   FindSceneComponents<Camera>(sample).Count == 1 &&
+                   sampleBootstraps.Count == 1 && sampleFixtures.Count == 1 &&
+                   PrefabUtility.GetCorrespondingObjectFromSource(sampleFixtures[0]) != null &&
+                   FindSceneComponents<InventoryUISessionController>(sample).Count == 0 &&
+                   FindSceneComponents<WorldInteractionDebugTester>(sample).Count == 0,
                 "SampleScene must consume exactly one instance of the same authored player/camera composition.",
+                failures);
+            Check(sharedPrefab.PersistentIdentity != null &&
+                  sharedPrefab.PersistentIdentity.PersistentId == "scene_sample_scene_actor_player_primary" &&
+                  sampleCompositions[0].PersistentIdentity.PersistentId ==
+                  sharedPrefab.PersistentIdentity.PersistentId,
+                "Shared authored player identity must remain prefab-owned and identical in mutually exclusive runtimes.",
                 failures);
             Check(File.Exists(WorldApplicationScenes.SampleScenePath),
                 "SampleScene must remain available as the regression laboratory.", failures);
@@ -600,9 +621,16 @@ namespace OldScars.EditorTools
                         FailPlay("World Runtime is missing its authority or retained a Main Menu controller.", root);
                         return;
                     }
+                    if (!runtime.GameplayStateReady)
+                        return;
                     if (!ValidateRuntimeMaterialization(runtime, out string materializationFailure))
                     {
                         FailPlay("World Runtime terrain materialization failed: " + materializationFailure, root);
+                        return;
+                    }
+                    if (!ValidateIntegratedGameplayRuntime(runtime, exerciseUi: true, out string integrationFailure))
+                    {
+                        FailPlay("Shared gameplay runtime/fixture integration failed: " + integrationFailure, root);
                         return;
                     }
                     if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
@@ -622,6 +650,10 @@ namespace OldScars.EditorTools
                     SessionState.SetFloat(PlayMovementOriginXKey, movementOrigin.x);
                     SessionState.SetFloat(PlayMovementOriginYKey, movementOrigin.y);
                     SessionState.SetFloat(PlayMovementOriginZKey, movementOrigin.z);
+                    // Batchmode has no physical keyboard. Suspend the input reader while
+                    // injecting directly into the existing movement authority; otherwise
+                    // its normal zero-input frame would immediately clear this request.
+                    player.MovementInput.enabled = false;
                     player.MovementController.SetMovementDirection(Vector3.right);
                     SessionState.SetInt(PlayPhaseKey, 101);
                     return;
@@ -645,6 +677,7 @@ namespace OldScars.EditorTools
                     if (Vector3.Distance(player.PlayerTransform.position, movementOrigin) < 0.08f)
                         return;
                     player.MovementController.ClearMovement();
+                    player.MovementInput.enabled = true;
 
                     if (!player.CameraRig.HasContinuousFollow || player.CameraRig.AllowsIndependentPan ||
                         player.GameplayCamera != Camera.main)
@@ -664,6 +697,15 @@ namespace OldScars.EditorTools
                         FailPlay("Health mutation fixture could not establish non-pose Current Slice evidence.", root);
                         return;
                     }
+                    if (!MutateIntegratedFixture(
+                            runtime, out int fixtureContainerQuantity,
+                            out string pickedItemId, out string fixtureMutationFailure))
+                    {
+                        FailPlay("Integrated fixture mutation failed: " + fixtureMutationFailure, root);
+                        return;
+                    }
+                    SessionState.SetInt(PlayFixtureContainerQuantityKey, fixtureContainerQuantity);
+                    SessionState.SetString(PlayFixturePickedItemIdKey, pickedItemId);
 
                     Vector3 savedPosition = player.PlayerTransform.position;
                     SessionState.SetString(PlayPlayerActorIdKey, player.PlayerIdentity.ActorInstanceId);
@@ -761,6 +803,8 @@ namespace OldScars.EditorTools
                     string topologyHash = SessionState.GetString(PlayTopologyHashKey, string.Empty);
                     WorldRuntimeSceneController runtime =
                         UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    if (runtime == null || !runtime.GameplayStateReady)
+                        return;
                     if (loaded == null || runtime == null || loaded.WorldId.Canonical != worldId ||
                         !loaded.HasMacroWorldPlan || loaded.MacroWorldPlan.CanonicalHash != planHash ||
                         !loaded.HasMacroGeography || loaded.MacroGeography.CanonicalHash != geographyHash ||
@@ -779,6 +823,15 @@ namespace OldScars.EditorTools
                     if (!ValidateRestoredPlayer(runtime, out string playerFailure))
                     {
                         FailPlay("Current Slice did not restore saved player evidence: " + playerFailure, root);
+                        return;
+                    }
+                    bool integratedRuntimeValid = ValidateIntegratedGameplayRuntime(
+                        runtime, exerciseUi: false, out string integrationFailure);
+                    bool fixtureRestored = ValidateRestoredFixture(runtime, out string fixtureFailure);
+                    if (!integratedRuntimeValid || !fixtureRestored)
+                    {
+                        FailPlay("Integrated gameplay/fixture state did not restore: " +
+                                 (integrationFailure ?? fixtureFailure), root);
                         return;
                     }
                     if (PlayLogCount(PlayWorldCreatedLogCountKey) != 1 ||
@@ -842,6 +895,8 @@ namespace OldScars.EditorTools
                         return;
                     WorldRuntimeSceneController runtime =
                         UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    if (runtime == null || !runtime.GameplayStateReady)
+                        return;
                     bool materializationValid =
                         ValidateRuntimeMaterialization(runtime, out string materializationFailure);
                     bool playerValid = ValidateRestoredPlayer(runtime, out string playerFailure);
@@ -888,6 +943,8 @@ namespace OldScars.EditorTools
                     WorldRuntimeSceneController runtime =
                         UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
                     WorldSession worldB = WorldSessionService.ActiveSession;
+                    if (runtime == null || !runtime.GameplayStateReady)
+                        return;
                     if (!ValidateRuntimeMaterialization(runtime, out string materializationFailure) ||
                         runtime.PlayerBindSource != WorldRuntimePlayerBindSource.NewGameSafeSpawn ||
                         store.Read(WorldGameplayPersistenceService.GetSlotId(worldB.WorldId)).Success)
@@ -923,6 +980,8 @@ namespace OldScars.EditorTools
                         return;
                     WorldRuntimeSceneController runtime =
                         UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    if (runtime == null || !runtime.GameplayStateReady)
+                        return;
                     if (!ValidateRuntimeMaterialization(runtime, out string materializationFailure) ||
                         runtime.PlayerBindSource != WorldRuntimePlayerBindSource.LegacySafeSpawn ||
                         runtime.GameplayLoadResult?.Disposition != WorldGameplayLoadDisposition.AbsentLegacy ||
@@ -982,6 +1041,8 @@ namespace OldScars.EditorTools
                         return;
                     WorldRuntimeSceneController runtime =
                         UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                    if (runtime != null && runtime.GameplayLoadResult == null)
+                        return;
                     if (runtime == null || runtime.GameplayStateReady ||
                         runtime.GameplayLoadResult?.Disposition != WorldGameplayLoadDisposition.Failed ||
                         runtime.GameplayLoadResult.Phase != "SemanticPreflight" ||
@@ -1011,6 +1072,8 @@ namespace OldScars.EditorTools
                     Debug.Log(
                         "World Session Application Play Flow: PASS\n" +
                         "- shared player movement/camera/full gameplay composition validated\n" +
+                        "- shared inventory/health/needs/interaction runtime exercised in WorldRuntime\n" +
+                        "- container transfer, authored pickup and door action restored through Current Slice\n" +
                         "- moved local pose, authored identity and health restored through Current Slice\n" +
                         "- repeated Save->Menu->Load retained exactly one player/camera composition\n" +
                         "- missing gameplay sibling used explicit legacy bootstrap\n" +
@@ -1056,6 +1119,10 @@ namespace OldScars.EditorTools
             SessionState.EraseFloat(PlayMovementOriginXKey);
             SessionState.EraseFloat(PlayMovementOriginYKey);
             SessionState.EraseFloat(PlayMovementOriginZKey);
+            SessionState.EraseInt(PlayFixtureContainerQuantityKey);
+            SessionState.EraseString(PlayFixtureContainerIdKey);
+            SessionState.EraseString(PlayFixtureDoorIdKey);
+            SessionState.EraseString(PlayFixturePickedItemIdKey);
             SessionState.EraseString(PlayWorldBIdKey);
             SessionState.EraseInt(PlayWorldCreatedLogCountKey);
             SessionState.EraseInt(PlayLoadOkLogCountKey);
@@ -1371,7 +1438,16 @@ namespace OldScars.EditorTools
                 if (context != null && Array.IndexOf(context.ActorTags, "player") >= 0)
                     playerRoles++;
             }
-            if (playerRoles != 1 || ActorRuntimeRegistry.ActiveCount != 1 ||
+            ActorRuntimeIdentity[] registeredIdentities =
+                UnityEngine.Object.FindObjectsByType<ActorRuntimeIdentity>(
+                        FindObjectsInactive.Include, FindObjectsSortMode.None)
+                    .Where(identity => identity != null && identity.IsRegistered)
+                    .ToArray();
+            bool playerRegistrationValid = ActorRuntimeRegistry.TryGet(
+                player.PlayerIdentity.ActorInstanceId, out ActorRuntimeIdentity registeredPlayer) &&
+                registeredPlayer == player.PlayerIdentity;
+            if (playerRoles != 1 || !playerRegistrationValid ||
+                ActorRuntimeRegistry.ActiveCount != registeredIdentities.Length ||
                 UnityEngine.Object.FindObjectsByType<PlayerGameplayComposition>(
                     FindObjectsInactive.Include, FindObjectsSortMode.None).Length != 1 ||
                 UnityEngine.Object.FindObjectsByType<PlayerMovementController>(
@@ -1408,6 +1484,250 @@ namespace OldScars.EditorTools
             SessionState.SetFloat(PlayPlayerPositionYKey, position.y);
             SessionState.SetFloat(PlayPlayerPositionZKey, position.z);
             SessionState.SetFloat(PlayPlayerHealthKey, health.CurrentHealth);
+            return true;
+        }
+
+        private static bool ValidateIntegratedGameplayRuntime(
+            WorldRuntimeSceneController runtime,
+            bool exerciseUi,
+            out string failure)
+        {
+            failure = null;
+            GameplayRuntimeComposition composition = runtime?.GameplayRuntimeComposition;
+            DevelopmentGameplayIntegrationFixture fixture = runtime?.DevelopmentFixture;
+            if (composition == null || !composition.TryValidate(out failure))
+                return false;
+            if (fixture == null || !fixture.TryValidate(out failure) || fixture.PlacementHeightRange > 3.001f)
+            {
+                failure = failure ?? "development fixture is absent or was not placed on a safe low-relief footprint";
+                return false;
+            }
+            if (composition.Player != runtime.PlayerComposition ||
+                composition.NeedsPanel == null || !composition.NeedsPanel.IsVisible ||
+                composition.HealthWindow == null || composition.InventorySession == null ||
+                composition.InventoryPanel == null || composition.StoragePanel == null ||
+                composition.WorldInteraction == null || composition.FirearmController == null)
+            {
+                failure = "shared runtime surfaces are not bound to the actual product player";
+                return false;
+            }
+
+            if (exerciseUi)
+            {
+                composition.InventorySession.OpenPersonal();
+                if (!composition.InventorySession.IsOpen || !composition.InventoryPanel.IsVisible ||
+                    !composition.InputBlocker.BlocksWorldInput)
+                {
+                    failure = "I/inventory session did not open the existing panel and block world input";
+                    return false;
+                }
+                composition.HealthWindow.Open();
+                if (!composition.HealthWindow.IsOpen || composition.InventorySession.IsOpen)
+                {
+                    failure = "H/health window did not arbitrate against the inventory session";
+                    return false;
+                }
+                composition.InventorySession.OpenPersonal();
+                if (composition.HealthWindow.IsOpen || !composition.InventorySession.IsOpen)
+                {
+                    failure = "inventory session did not close the health window on reopen";
+                    return false;
+                }
+                composition.InventorySession.CloseSession();
+            }
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            PersistentSceneObjectId[] identities = UnityEngine.Object.FindObjectsByType<PersistentSceneObjectId>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int index = 0; index < identities.Length; index++)
+            {
+                string id = identities[index].PersistentId;
+                if (!PersistentSceneObjectId.IsValidFormat(id) || !ids.Add(id))
+                {
+                    failure = "loaded runtime contains an invalid or duplicate durable authored object identity";
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool MutateIntegratedFixture(
+            WorldRuntimeSceneController runtime,
+            out int remainingContainerQuantity,
+            out string pickedItemId,
+            out string failure)
+        {
+            remainingContainerQuantity = -1;
+            pickedItemId = null;
+            failure = null;
+            DevelopmentGameplayIntegrationFixture fixture = runtime?.DevelopmentFixture;
+            PlayerGameplayComposition player = runtime?.PlayerComposition;
+            if (fixture == null || player == null)
+            {
+                failure = "fixture/player is unavailable";
+                return false;
+            }
+
+            ActorInteractionContext actor = player.PlayerContext;
+            InventoryComponent inventory = actor.GetInventoryComponent();
+            ContainerLootComponent selectedContainer = null;
+            PersistentSceneObjectId selectedContainerIdentity = null;
+            ContainerLootComponent[] containers = fixture.GetComponentsInChildren<ContainerLootComponent>(true);
+            Array.Sort(containers, (left, right) => string.CompareOrdinal(left.name, right.name));
+            for (int index = 0; index < containers.Length; index++)
+            {
+                ContainerLootComponent container = containers[index];
+                WorldObjectTags tags = container.GetComponent<WorldObjectTags>();
+                var context = new DebugActionExecutionContext(actor, tags, actor.GetEquippedItemDefinitionId());
+                container.Search(context);
+                if (!container.HasStoredItems) continue;
+                int moved = container.TakeItem(0, 1, inventory, context, null, out _);
+                if (moved != 1) continue;
+                selectedContainer = container;
+                selectedContainerIdentity = container.GetComponent<PersistentSceneObjectId>();
+                remainingContainerQuantity = container.StoredItemQuantity;
+                break;
+            }
+            if (selectedContainer == null || selectedContainerIdentity == null)
+            {
+                failure = "no authored fixture container completed search + transfer to player";
+                return false;
+            }
+            SessionState.SetString(PlayFixtureContainerIdKey, selectedContainerIdentity.PersistentId);
+
+            WorldItemPickup[] pickups = fixture.GetComponentsInChildren<WorldItemPickup>(true);
+            Array.Sort(pickups, (left, right) => string.CompareOrdinal(
+                left.AuthoredItemInstanceId, right.AuthoredItemInstanceId));
+            WorldItemPickup pickup = null;
+            for (int index = 0; index < pickups.Length; index++)
+            {
+                if (pickups[index].ItemDefinitionId == "core:rusted_crowbar_01" ||
+                    pickups[index].ItemDefinitionId == "rusted_crowbar_01")
+                {
+                    pickup = pickups[index];
+                    break;
+                }
+            }
+            if (pickup == null || string.IsNullOrWhiteSpace(pickup.AuthoredItemInstanceId))
+            {
+                failure = "authored crowbar pickup fixture is missing";
+                return false;
+            }
+            pickedItemId = pickup.AuthoredItemInstanceId;
+            DebugActionExecutionResult pickupResult = pickup.PickUp(
+                actor, pickup.GetComponent<WorldObjectTags>());
+            if (!pickupResult.hasResult || pickup.Quantity != 0 ||
+                !pickup.GetComponent<WorldObjectTags>().HasTag("picked_up"))
+            {
+                failure = "authored world item pickup did not commit through the existing transfer authority";
+                return false;
+            }
+            if (!inventory.TryGetEntryByInstanceId(pickedItemId, out int pickedIndex, out _) ||
+                !inventory.TryEquipIndexToRightHand(pickedIndex) ||
+                actor.GetEquippedItemDefinitionId() != "core:rusted_crowbar_01")
+            {
+                failure = "picked authored crowbar did not equip through the existing inventory/equipment authority";
+                return false;
+            }
+
+            DoorSwingController[] doors = fixture.GetComponentsInChildren<DoorSwingController>(true);
+            Array.Sort(doors, (left, right) => string.CompareOrdinal(left.name, right.name));
+            DoorSwingController door = null;
+            for (int index = 0; index < doors.Length; index++)
+            {
+                WorldObjectTags tags = doors[index].GetComponent<WorldObjectTags>();
+                if (tags != null && tags.HasTag("locked_door"))
+                {
+                    door = doors[index];
+                    break;
+                }
+            }
+            PersistentSceneObjectId doorIdentity = door?.GetComponent<PersistentSceneObjectId>();
+            if (door == null || doorIdentity == null)
+            {
+                failure = "locked authored door fixture is missing";
+                return false;
+            }
+            WorldObjectTags doorTags = door.GetComponent<WorldObjectTags>();
+            var query = new InteractionQuery
+            {
+                Database = GameDataManager.Instance.Database,
+                ActorTags = actor.ActorTags,
+                ActorStats = actor.BuildActorStatsDictionary(),
+                EquippedItemId = actor.GetEquippedItemDefinitionId(),
+                Target = doorTags,
+                RequiredContext = "world_interaction"
+            };
+            bool forceAvailable = false;
+            foreach (var action in new InteractionSystem().GetAvailableActions(query))
+                if (action.id == "core:force_door") forceAvailable = true;
+            if (!forceAvailable)
+            {
+                failure = "contextual resolver did not expose the existing force-door action";
+                return false;
+            }
+            DebugActionExecutor.Execute(
+                GameDataManager.Instance.Database.GetAction("core:force_door"),
+                new DebugActionExecutionContext(actor, doorTags, actor.GetEquippedItemDefinitionId()));
+            if (!doorTags.HasTag("opened_door") || doorTags.HasTag("locked_door"))
+            {
+                failure = "existing force-door action did not mutate the authored fixture door";
+                return false;
+            }
+            SessionState.SetString(PlayFixtureDoorIdKey, doorIdentity.PersistentId);
+            return true;
+        }
+
+        private static bool ValidateRestoredFixture(
+            WorldRuntimeSceneController runtime,
+            out string failure)
+        {
+            failure = null;
+            DevelopmentGameplayIntegrationFixture fixture = runtime?.DevelopmentFixture;
+            if (fixture == null)
+            {
+                failure = "development fixture was not re-established before Current Slice apply";
+                return false;
+            }
+
+            string containerId = SessionState.GetString(PlayFixtureContainerIdKey, string.Empty);
+            string doorId = SessionState.GetString(PlayFixtureDoorIdKey, string.Empty);
+            string pickedId = SessionState.GetString(PlayFixturePickedItemIdKey, string.Empty);
+            int expectedQuantity = SessionState.GetInt(PlayFixtureContainerQuantityKey, -1);
+            ContainerLootComponent restoredContainer = null;
+            DoorSwingController restoredDoor = null;
+            PersistentSceneObjectId[] identities = fixture.GetComponentsInChildren<PersistentSceneObjectId>(true);
+            for (int index = 0; index < identities.Length; index++)
+            {
+                if (identities[index].PersistentId == containerId)
+                    restoredContainer = identities[index].GetComponent<ContainerLootComponent>();
+                if (identities[index].PersistentId == doorId)
+                    restoredDoor = identities[index].GetComponent<DoorSwingController>();
+            }
+            if (restoredContainer == null || restoredContainer.StoredItemQuantity != expectedQuantity)
+            {
+                failure = "container contents did not round-trip through Current Slice";
+                return false;
+            }
+            WorldObjectTags doorTags = restoredDoor != null ? restoredDoor.GetComponent<WorldObjectTags>() : null;
+            if (doorTags == null || !doorTags.HasTag("opened_door") || doorTags.HasTag("locked_door"))
+            {
+                failure = "door state did not round-trip through Current Slice";
+                return false;
+            }
+            WorldItemPickup[] pickups = fixture.GetComponentsInChildren<WorldItemPickup>(true);
+            WorldItemPickup restoredPickup = null;
+            for (int index = 0; index < pickups.Length; index++)
+                if (pickups[index].AuthoredItemInstanceId == pickedId) restoredPickup = pickups[index];
+            WorldObjectTags pickupTags = restoredPickup != null
+                ? restoredPickup.GetComponent<WorldObjectTags>()
+                : null;
+            if (restoredPickup == null || restoredPickup.Quantity != 0 ||
+                pickupTags == null || !pickupTags.HasTag("picked_up"))
+            {
+                failure = "authored pickup absence did not round-trip through Current Slice";
+                return false;
+            }
             return true;
         }
 

@@ -112,6 +112,23 @@ namespace OldScars.Core.Combat
         public bool EnableAim() => SetCombatMode(true, true);
         public void DisableAim() => SetCombatMode(false, true);
 
+        public void BindRuntime(
+            InventoryComponent playerInventory,
+            Camera camera,
+            DebugWorldUiInputBlocker inputBlocker,
+            PlayerMovementInputController playerMovementInput,
+            DebugActionProgressController progress)
+        {
+            inventory = playerInventory;
+            ownership = playerInventory != null
+                ? playerInventory.GetComponent<ActorItemOwnershipComponent>()
+                : null;
+            inputCamera = camera;
+            uiInputBlocker = inputBlocker;
+            movementInput = playerMovementInput;
+            progressController = progress;
+        }
+
         public bool SetCombatMode(bool enabled, bool feedback = true)
         {
             ResolveReferences();

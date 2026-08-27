@@ -52,6 +52,22 @@ namespace OldScars.Core.Interactions
                 interactableLayerMask = LayerMask.GetMask("Interactable");
         }
 
+        public void BindRuntime(
+            ActorInteractionContext actor,
+            ContextualActionDebugPanel contextualActions,
+            DebugActionProgressController progress,
+            DebugActionAvailabilityPanel availability,
+            DebugWorldUiInputBlocker inputBlocker)
+        {
+            actorInteractionContext = actor;
+            debugPanel = contextualActions;
+            progressController = progress;
+            availabilityPanel = availability;
+            uiInputBlocker = inputBlocker;
+            if (interactableLayerMask.value == 0)
+                interactableLayerMask = LayerMask.GetMask("Interactable");
+        }
+
         private void Update()
         {
             if (Mouse.current == null)

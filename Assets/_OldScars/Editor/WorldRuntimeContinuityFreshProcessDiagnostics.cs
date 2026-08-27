@@ -108,7 +108,7 @@ namespace OldScars.EditorTools
                 WorldRuntimeSceneController runtime =
                     UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
                 if (runtime == null || runtime.MaterializationController?.IsReady != true ||
-                    runtime.PlayerComposition == null)
+                    runtime.PlayerComposition == null || !runtime.GameplayStateReady)
                     return;
 
                 if (mode == "create")
