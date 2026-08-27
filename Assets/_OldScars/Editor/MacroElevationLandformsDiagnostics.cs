@@ -278,6 +278,7 @@ namespace OldScars.EditorTools
             schemaTwo["schemaVersion"] = WorldSessionPersistenceService.MacroPlanSchemaVersion;
             schemaTwo.Remove("macroGeography");
             schemaTwo.Remove("macroWater");
+            schemaTwo.Remove("macroClimate");
             schemaTwo.Remove("macroHumanGeography");
             WorldSessionPersistenceResult legacyTwo =
                 WorldSessionPersistenceService.FromPayload(schemaTwo);

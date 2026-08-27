@@ -99,7 +99,7 @@ namespace OldScars.EditorTools
                 failures,
                 "- explicit/random seed Macro World Plan V1 and immediate M37 write",
                 "- same-seed WorldId independence and deterministic macro plan",
-                "- world_session_v1 schema 5 semantic preflight and exact committed geography/water/human-geography round-trip",
+                "- world_session_v1 schema 6 semantic preflight and exact committed geography/water/climate/human-geography round-trip",
                 "- duplicate display names with distinct WorldId slots",
                 "- safe catalog filtering plus corrupt-save isolation",
                 "- create/close/load lifecycle without partial publication",
@@ -172,7 +172,8 @@ namespace OldScars.EditorTools
             Check(first.WorldId.IsValid && first.GenerationContext.WorldSeed == seed &&
                   first.HasMacroWorldPlan &&
                   first.HasMacroGeography &&
-                  first.HasMacroWater && first.HasGameplayQuality && first.HasMacroHumanGeography &&
+                  first.HasMacroWater && first.HasMacroClimate && first.HasGameplayQuality &&
+                  first.HasMacroHumanGeography &&
                   first.MacroWater.GenerationSettings.LandCoverage == LandCoveragePreset.Medium &&
                   first.MacroWorldPlan.GenerationSettings.WorldSizePreset == WorldSizePreset.Large &&
                   first.Topology.Sectors.Count == 128 && first.Topology.Connections.Count == 127,
@@ -191,10 +192,12 @@ namespace OldScars.EditorTools
                   firstPayload["macroGeography"]?["landformSamplesBase64"]?.Type == JTokenType.String &&
                   firstPayload["macroWater"]?["oceanMaskBase64"]?.Type == JTokenType.String &&
                   firstPayload["macroWater"]?["drainageDirectionsBase64"]?.Type == JTokenType.String &&
+                  firstPayload["macroClimate"]?["thermalSamplesBase64"]?.Type == JTokenType.String &&
+                  firstPayload["macroClimate"]?["moistureSamplesBase64"]?.Type == JTokenType.String &&
                   firstPayload["macroHumanGeography"]?["sites"] is JArray &&
                   firstPayload["macroHumanGeography"]?["roads"] is JArray &&
                   firstPayload["creationContentProvenance"]?["sources"] is JArray,
-                "world_session_v1 schema 5 must expose identity/context/plan/geography/water/human/topology/provenance.",
+                "world_session_v1 schema 6 must expose identity/context/plan/geography/water/climate/human/topology/provenance.",
                 failures);
 
             WorldSessionOperationResult overwrite = WorldSessionService.Save(store);
@@ -300,6 +303,9 @@ namespace OldScars.EditorTools
                           "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
                           "MacroWaterContract: " + currentSession.MacroWater.GenerationSettings.GenerationContract,
                           "MacroWaterHash: " + currentSession.MacroWater.CanonicalHash,
+                          "MacroClimateContract: " + currentSession.MacroClimate.GenerationSettings.GenerationContract,
+                          "MacroClimateHash: " + currentSession.MacroClimate.CanonicalHash,
+                          "PrevailingMoistureDirection: " + currentSession.MacroClimate.PrevailingMoistureDirection,
                           "MacroHumanGeographyContract: " + currentSession.MacroHumanGeography.GenerationSettings.GenerationContract,
                           "MacroHumanGeographyHash: " + currentSession.MacroHumanGeography.CanonicalHash,
                           "RegionalHubs:", "LocalHubs:", "PrimaryRoads:", "SecondaryRoads:",
@@ -329,28 +335,44 @@ namespace OldScars.EditorTools
                           "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
                           "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
                           "MacroWaterHash: " + currentSession.MacroWater.CanonicalHash,
+                          "MacroClimateHash: " + currentSession.MacroClimate.CanonicalHash,
+                          "PrevailingMoistureDirection: " + currentSession.MacroClimate.PrevailingMoistureDirection,
                           "MacroHumanGeographyHash: " + currentSession.MacroHumanGeography.CanonicalHash,
                           "LegacyState: none (current schema)"),
                     "Current world Load must emit exactly one complete LOAD_OK record.", failures);
 
                 ValidateLegacyLoadObservability(
-                    store, currentPayload, WorldSessionPersistenceService.MacroWaterSchemaVersion,
-                    "schema 4; MacroHumanGeography absent by contract",
+                    store, currentPayload,
+                    WorldSessionPersistenceService.MacroHumanGeographySchemaVersion,
+                    "schema 5; MacroClimate absent by contract",
                     new[] { "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
                             "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
                             "MacroWaterHash: " + currentSession.MacroWater.CanonicalHash,
+                            "MacroClimateHash: <ABSENT>",
+                            "PrevailingMoistureDirection: <ABSENT>",
+                            "MacroHumanGeographyHash: " + currentSession.MacroHumanGeography.CanonicalHash },
+                    logs, failures);
+                ValidateLegacyLoadObservability(
+                    store, currentPayload, WorldSessionPersistenceService.MacroWaterSchemaVersion,
+                    "schema 4; MacroHumanGeography/Climate absent by contract",
+                    new[] { "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
+                            "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
+                            "MacroWaterHash: " + currentSession.MacroWater.CanonicalHash,
+                            "MacroClimateHash: <ABSENT>",
                             "MacroHumanGeographyHash: <ABSENT>" }, logs, failures);
                 ValidateLegacyLoadObservability(
                     store, currentPayload, WorldSessionPersistenceService.MacroGeographySchemaVersion,
-                    "schema 3; MacroWater/HumanGeography absent by contract",
+                    "schema 3; MacroWater/Climate/HumanGeography absent by contract",
                     new[] { "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
                             "MacroGeographyHash: " + currentSession.MacroGeography.CanonicalHash,
-                            "MacroWaterHash: <ABSENT>", "MacroHumanGeographyHash: <ABSENT>" }, logs, failures);
+                            "MacroWaterHash: <ABSENT>", "MacroClimateHash: <ABSENT>",
+                            "MacroHumanGeographyHash: <ABSENT>" }, logs, failures);
                 ValidateLegacyLoadObservability(
                     store, currentPayload, WorldSessionPersistenceService.MacroPlanSchemaVersion,
-                    "schema 2; MacroGeography/Water/HumanGeography absent by contract",
+                    "schema 2; MacroGeography/Water/Climate/HumanGeography absent by contract",
                     new[] { "MacroWorldPlanHash: " + currentSession.MacroWorldPlan.CanonicalHash,
                             "MacroGeographyHash: <ABSENT>", "MacroWaterHash: <ABSENT>",
+                            "MacroClimateHash: <ABSENT>",
                             "MacroHumanGeographyHash: <ABSENT>" },
                     logs, failures);
                 ValidateLegacySchemaOneObservability(
@@ -378,7 +400,9 @@ namespace OldScars.EditorTools
             payload["worldId"] = worldId.Canonical;
             payload["displayName"] = "Legacy Observability " + schemaVersion;
             payload["schemaVersion"] = schemaVersion;
-            payload.Remove("macroHumanGeography");
+            payload.Remove("macroClimate");
+            if (schemaVersion < WorldSessionPersistenceService.MacroHumanGeographySchemaVersion)
+                payload.Remove("macroHumanGeography");
             if (schemaVersion <= WorldSessionPersistenceService.MacroGeographySchemaVersion)
                 payload.Remove("macroWater");
             if (schemaVersion == WorldSessionPersistenceService.MacroPlanSchemaVersion)
@@ -430,8 +454,9 @@ namespace OldScars.EditorTools
                       "MacroWorldPlanHash: <ABSENT>",
                       "MacroGeographyHash: <ABSENT>",
                       "MacroWaterHash: <ABSENT>",
+                      "MacroClimateHash: <ABSENT>",
                       "MacroHumanGeographyHash: <ABSENT>",
-                      "LegacyState: schema 1; MacroWorldPlan/Geography/Water/HumanGeography absent by contract"),
+                      "LegacyState: schema 1; MacroWorldPlan/Geography/Water/Climate/HumanGeography absent by contract"),
                 "Legacy schema 1 Load must explicitly report all absent macro truth exactly once.", failures);
         }
 
@@ -1187,6 +1212,9 @@ namespace OldScars.EditorTools
                         MacroWaterGenerationSettings.ToCanonical(
                             session.MacroWater.GenerationSettings.LandCoverage),
                         session.MacroWater.CanonicalHash,
+                        session.MacroClimate.CanonicalHash,
+                        MacroClimateGenerationSettings.ToCanonical(
+                            session.MacroClimate.PrevailingMoistureDirection),
                         session.MacroHumanGeography.CanonicalHash,
                         session.Topology.CanonicalHash,
                         session.ActiveSectorId.Canonical
@@ -1200,6 +1228,9 @@ namespace OldScars.EditorTools
                         "MacroGeographyHash: " + session.MacroGeography.CanonicalHash + "\n" +
                         "LandCoverage: " + session.MacroWater.GenerationSettings.LandCoverage + "\n" +
                         "MacroWaterHash: " + session.MacroWater.CanonicalHash + "\n" +
+                        "MacroClimateHash: " + session.MacroClimate.CanonicalHash + "\n" +
+                        "PrevailingMoistureDirection: " +
+                        session.MacroClimate.PrevailingMoistureDirection + "\n" +
                         "MacroHumanGeographyHash: " + session.MacroHumanGeography.CanonicalHash + "\n" +
                         "TopologyHash: " + session.Topology.CanonicalHash + "\n" +
                         "ActiveSectorId: " + session.ActiveSectorId.Canonical);
@@ -1207,7 +1238,7 @@ namespace OldScars.EditorTools
                 else
                 {
                     string[] record = File.ReadAllLines(recordPath);
-                    if (record.Length != 10)
+                    if (record.Length != 12)
                         throw new InvalidOperationException("Fresh-process record is missing or malformed.");
 
                     WorldSaveCatalogResult catalog = WorldSaveCatalog.Discover(store);
@@ -1230,10 +1261,14 @@ namespace OldScars.EditorTools
                         MacroWaterGenerationSettings.ToCanonical(
                             session.MacroWater.GenerationSettings.LandCoverage) != record[5] ||
                         session.MacroWater.CanonicalHash != record[6] ||
+                        !session.HasMacroClimate ||
+                        session.MacroClimate.CanonicalHash != record[7] ||
+                        MacroClimateGenerationSettings.ToCanonical(
+                            session.MacroClimate.PrevailingMoistureDirection) != record[8] ||
                         !session.HasMacroHumanGeography ||
-                        session.MacroHumanGeography.CanonicalHash != record[7] ||
-                        session.Topology.CanonicalHash != record[8] ||
-                        session.ActiveSectorId.Canonical != record[9])
+                        session.MacroHumanGeography.CanonicalHash != record[9] ||
+                        session.Topology.CanonicalHash != record[10] ||
+                        session.ActiveSectorId.Canonical != record[11])
                     {
                         throw new InvalidOperationException("Fresh-process loaded evidence differs from Process A.");
                     }
@@ -1247,6 +1282,9 @@ namespace OldScars.EditorTools
                         "MacroGeographyHash: " + session.MacroGeography.CanonicalHash + "\n" +
                         "LandCoverage: " + session.MacroWater.GenerationSettings.LandCoverage + "\n" +
                         "MacroWaterHash: " + session.MacroWater.CanonicalHash + "\n" +
+                        "MacroClimateHash: " + session.MacroClimate.CanonicalHash + "\n" +
+                        "PrevailingMoistureDirection: " +
+                        session.MacroClimate.PrevailingMoistureDirection + "\n" +
                         "MacroHumanGeographyHash: " + session.MacroHumanGeography.CanonicalHash + "\n" +
                         "TopologyHash: " + session.Topology.CanonicalHash + "\n" +
                         "ActiveSectorId: " + session.ActiveSectorId.Canonical);
@@ -1294,6 +1332,8 @@ namespace OldScars.EditorTools
                  expected.HasMacroGeography && expected.MacroGeography.CanonicalHash != actual.MacroGeography.CanonicalHash ||
                  expected.HasMacroWater != actual.HasMacroWater ||
                  expected.HasMacroWater && expected.MacroWater.CanonicalHash != actual.MacroWater.CanonicalHash ||
+                 expected.HasMacroClimate != actual.HasMacroClimate ||
+                 expected.HasMacroClimate && expected.MacroClimate.CanonicalHash != actual.MacroClimate.CanonicalHash ||
                  expected.HasMacroHumanGeography != actual.HasMacroHumanGeography ||
                  expected.HasMacroHumanGeography && expected.MacroHumanGeography.CanonicalHash != actual.MacroHumanGeography.CanonicalHash ||
                  expected.Topology.CanonicalHash != actual.Topology.CanonicalHash ||

@@ -210,6 +210,10 @@ namespace OldScars.Core.World
                 .Append("MacroWaterContract: ").Append(session.MacroWater.GenerationSettings.GenerationContract).Append('\n')
                 .Append("MacroWaterHash: ").Append(session.MacroWater.CanonicalHash).Append('\n')
                 .Append("SeaLevel: ").Append(session.MacroWater.SeaLevel.ToString(CultureInfo.InvariantCulture)).Append("/65535\n")
+                .Append("MacroClimateContract: ").Append(session.MacroClimate.GenerationSettings.GenerationContract).Append('\n')
+                .Append("MacroClimateHash: ").Append(session.MacroClimate.CanonicalHash).Append('\n')
+                .Append("PrevailingMoistureDirection: ")
+                .Append(session.MacroClimate.PrevailingMoistureDirection).Append('\n')
                 .Append("MacroHumanGeographyContract: ").Append(session.MacroHumanGeography.GenerationSettings.GenerationContract).Append('\n')
                 .Append("MacroHumanGeographyHash: ").Append(session.MacroHumanGeography.CanonicalHash).Append('\n')
                 .Append("RegionalHubs: ").Append(session.MacroHumanGeography.RegionalHubCount.ToString(CultureInfo.InvariantCulture)).Append('\n')
@@ -248,6 +252,10 @@ namespace OldScars.Core.World
                 "MacroWorldPlanHash: " + HashOrAbsent(session.MacroWorldPlan?.CanonicalHash) + "\n" +
                 "MacroGeographyHash: " + HashOrAbsent(session.MacroGeography?.CanonicalHash) + "\n" +
                 "MacroWaterHash: " + HashOrAbsent(session.MacroWater?.CanonicalHash) + "\n" +
+                "MacroClimateHash: " + HashOrAbsent(session.MacroClimate?.CanonicalHash) + "\n" +
+                "PrevailingMoistureDirection: " + (session.HasMacroClimate
+                    ? session.MacroClimate.PrevailingMoistureDirection.ToString()
+                    : "<ABSENT>") + "\n" +
                 "MacroHumanGeographyHash: " + HashOrAbsent(session.MacroHumanGeography?.CanonicalHash) + "\n" +
                 "ActiveSector: " + session.ActiveSectorId.Canonical + "\n" +
                 "LegacyState: " + DescribeLegacyState(session));
@@ -324,19 +332,23 @@ namespace OldScars.Core.World
                 return WorldSessionPersistenceService.MacroGeographySchemaVersion;
             if (session.IsLegacySchemaV4)
                 return WorldSessionPersistenceService.MacroWaterSchemaVersion;
+            if (session.IsLegacySchemaV5)
+                return WorldSessionPersistenceService.MacroHumanGeographySchemaVersion;
             return WorldSessionPersistenceService.CurrentSchemaVersion;
         }
 
         private static string DescribeLegacyState(WorldSession session)
         {
             if (session.IsLegacySchemaV1)
-                return "schema 1; MacroWorldPlan/Geography/Water/HumanGeography absent by contract";
+                return "schema 1; MacroWorldPlan/Geography/Water/Climate/HumanGeography absent by contract";
             if (session.IsLegacySchemaV2)
-                return "schema 2; MacroGeography/Water/HumanGeography absent by contract";
+                return "schema 2; MacroGeography/Water/Climate/HumanGeography absent by contract";
             if (session.IsLegacySchemaV3)
-                return "schema 3; MacroWater/HumanGeography absent by contract";
+                return "schema 3; MacroWater/Climate/HumanGeography absent by contract";
             if (session.IsLegacySchemaV4)
-                return "schema 4; MacroHumanGeography absent by contract";
+                return "schema 4; MacroHumanGeography/Climate absent by contract";
+            if (session.IsLegacySchemaV5)
+                return "schema 5; MacroClimate absent by contract";
             return "none (current schema)";
         }
 

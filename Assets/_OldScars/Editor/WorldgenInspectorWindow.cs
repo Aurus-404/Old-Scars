@@ -39,8 +39,8 @@ namespace OldScars.EditorTools
         {
             EditorGUILayout.LabelField("OLD SCARS — WORLDGEN INSPECTOR", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Diagnostic preview only. Panels: Elevation | Landforms | Gradient/Suitability; " +
-                "Water/Coast | Drainage/Basins | Human Infrastructure. " +
+                "Diagnostic preview only. Panels: Elevation | Landforms | Thermal | Moisture; " +
+                "Gradient/Suitability | Water/Coast | Drainage/Basins | Human Infrastructure. " +
                 "Human roads are global macro truth; optional sector markers are not road endpoints.",
                 MessageType.Info);
             seedText = EditorGUILayout.TextField("Signed 64-bit Seed", seedText);
@@ -80,6 +80,7 @@ namespace OldScars.EditorTools
             {
                 Generate(seed, temporary, out MacroWorldPlan plan,
                     out MacroGeographyPlan geography, out MacroWaterPlan water,
+                    out MacroClimatePlan climate,
                     out WorldGameplayQualityAnalysis quality, out SectorId starter,
                     out MacroHumanGeographyPlan human);
                 byte[] bytes = File.ReadAllBytes(temporary);
@@ -94,6 +95,8 @@ namespace OldScars.EditorTools
                          " | plan " + plan.CanonicalHash.Substring(0, 12) +
                          " | geography " + geography.CanonicalHash.Substring(0, 12) +
                          " | water " + water.CanonicalHash.Substring(0, 12) +
+                         " | climate " + climate.CanonicalHash.Substring(0, 12) +
+                         " | moisture " + climate.PrevailingMoistureDirection +
                          " | human " + human.CanonicalHash.Substring(0, 12) +
                          " | hubs " + human.RegionalHubCount + "/" + human.LocalHubCount +
                          " | roads " + human.PrimaryRoadCount + "/" + human.SecondaryRoadCount +
@@ -123,7 +126,7 @@ namespace OldScars.EditorTools
             if (string.IsNullOrEmpty(path)) return;
             try
             {
-                Generate(seed, path, out _, out _, out _, out _, out _, out _);
+                Generate(seed, path, out _, out _, out _, out _, out _, out _, out _);
                 status = "Exported preview: " + path;
             }
             catch (Exception exception)
@@ -138,6 +141,7 @@ namespace OldScars.EditorTools
             out MacroWorldPlan plan,
             out MacroGeographyPlan geography,
             out MacroWaterPlan water,
+            out MacroClimatePlan climate,
             out WorldGameplayQualityAnalysis quality,
             out SectorId starter,
             out MacroHumanGeographyPlan human)
@@ -153,6 +157,10 @@ namespace OldScars.EditorTools
             if (!MacroWaterGenerator.TryGenerate(
                     plan, geography, coverage, out water, out string waterError))
                 throw new InvalidOperationException(waterError);
+            if (!MacroClimateGenerator.TryGenerate(
+                    context, plan, geography, water,
+                    out climate, out string climateError))
+                throw new InvalidOperationException(climateError);
             if (!WorldGameplayQualityAnalyzer.TryAnalyze(
                     plan, geography, water, out quality, out string qualityError))
                 throw new InvalidOperationException(qualityError);
@@ -163,7 +171,7 @@ namespace OldScars.EditorTools
                     out human, out string humanError))
                 throw new InvalidOperationException(humanError);
             MacroGeographyPreviewExporter.Export(
-                plan, geography, water, quality, human, starter,
+                plan, geography, water, climate, quality, human, starter,
                 outputPath, PanelSize, PanelSize, true);
         }
     }

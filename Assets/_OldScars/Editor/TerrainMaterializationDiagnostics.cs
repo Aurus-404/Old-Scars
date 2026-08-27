@@ -55,7 +55,7 @@ namespace OldScars.EditorTools
                 Directory.CreateDirectory(captureRoot);
                 LoadedContentSet content = LoadValidatedCore(failures);
                 if (content == null)
-                    throw new InvalidOperationException("real Core content could not create a schema-5 world fixture");
+                    throw new InvalidOperationException("real Core content could not create a current-schema world fixture");
 
                 var store = new PersistenceFileStore(persistenceRoot);
                 WorldSession golden = CreatePersistedFixture(
@@ -135,7 +135,7 @@ namespace OldScars.EditorTools
                 failures,
                 "- physical scale candidates: " + string.Join("; ", measurements),
                 "- visual captures: " + string.Join("; ", captures),
-                "- schema 5 committed truth consumed without persistence or logical-hash changes",
+                "- committed Plan/Geography/Water/Human truth consumed without Climate coupling or logical-hash changes",
                 "- local Unity Terrain/TerrainCollider, masked ocean, projected roads, technical player, and one local NavMesh",
                 "- no sector-to-terrain identity mapping and no whole-world/inactive-world materialization");
         }
@@ -156,11 +156,11 @@ namespace OldScars.EditorTools
 
         private static void ValidateLogicalAuthority(WorldSession session, ICollection<string> failures)
         {
-            Check(WorldSessionPersistenceService.CurrentSchemaVersion == 5,
-                "terrain spike must not require a persistence schema beyond schema 5", failures);
+            Check(WorldSessionPersistenceService.CurrentSchemaVersion == 6,
+                "current New Game schema must include Climate without changing terrain inputs", failures);
             Check(session.HasMacroWorldPlan && session.HasMacroGeography && session.HasMacroWater &&
                   session.HasMacroHumanGeography,
-                "persisted terrain fixture must expose all committed schema-5 truth", failures);
+                "persisted terrain fixture must expose all committed terrain-input truth", failures);
             Check(session.MacroWorldPlan.CanonicalHash == GoldenPlanHash,
                 "MacroWorldPlan golden drifted", failures);
             Check(session.MacroGeography.CanonicalHash == GoldenGeographyHash,
@@ -660,7 +660,7 @@ namespace OldScars.EditorTools
                 load.Session.MacroWater.CanonicalHash != generated.MacroWater.CanonicalHash ||
                 load.Session.MacroHumanGeography.CanonicalHash != generated.MacroHumanGeography.CanonicalHash)
             {
-                failures.Add(displayName + " committed logical evidence changed across schema-5 reload");
+                failures.Add(displayName + " committed logical evidence changed across current-schema reload");
                 return null;
             }
             return load.Session;

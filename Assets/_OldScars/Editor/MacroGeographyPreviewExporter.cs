@@ -43,6 +43,10 @@ namespace OldScars.EditorTools
                     plan, geography, LandCoveragePreset.High,
                     out MacroWaterPlan water, out string waterError))
                 throw new InvalidOperationException("Preview Macro Water generation failed: " + waterError);
+            if (!MacroClimateGenerator.TryGenerate(
+                    context, plan, geography, water,
+                    out MacroClimatePlan climate, out string climateError))
+                throw new InvalidOperationException("Preview Macro Climate generation failed: " + climateError);
             if (!WorldGameplayQualityAnalyzer.TryAnalyze(
                     plan, geography, water,
                     out WorldGameplayQualityAnalysis quality, out string qualityError))
@@ -55,7 +59,7 @@ namespace OldScars.EditorTools
                     out MacroHumanGeographyPlan human, out string humanError))
                 throw new InvalidOperationException("Preview Macro Human Geography generation failed: " + humanError);
 
-            Export(plan, geography, water, quality, human, starter, outputPath, 320, 320, true);
+            Export(plan, geography, water, climate, quality, human, starter, outputPath, 320, 320, true);
             Debug.Log(
                 "Macro Geography Preview Export: PASS\n" +
                 "Path: " + outputPath + "\n" +
@@ -64,6 +68,8 @@ namespace OldScars.EditorTools
                 "Coverage: High\n" +
                 "GeographyHash: " + geography.CanonicalHash + "\n" +
                 "WaterHash: " + water.CanonicalHash + "\n" +
+                "ClimateHash: " + climate.CanonicalHash + "\n" +
+                "PrevailingMoistureDirection: " + climate.PrevailingMoistureDirection + "\n" +
                 "HumanGeographyHash: " + human.CanonicalHash + "\n" +
                 "Starter: " + starter.Canonical);
         }
@@ -80,10 +86,47 @@ namespace OldScars.EditorTools
             int panelHeight,
             bool overlaySectors)
         {
+            ExportInternal(
+                plan, geography, water, null, quality, human, starterSector,
+                outputPath, panelWidth, panelHeight, overlaySectors);
+        }
+
+        public static void Export(
+            MacroWorldPlan plan,
+            MacroGeographyPlan geography,
+            MacroWaterPlan water,
+            MacroClimatePlan climate,
+            WorldGameplayQualityAnalysis quality,
+            MacroHumanGeographyPlan human,
+            SectorId starterSector,
+            string outputPath,
+            int panelWidth,
+            int panelHeight,
+            bool overlaySectors)
+        {
+            ExportInternal(
+                plan, geography, water, climate, quality, human, starterSector,
+                outputPath, panelWidth, panelHeight, overlaySectors);
+        }
+
+        private static void ExportInternal(
+            MacroWorldPlan plan,
+            MacroGeographyPlan geography,
+            MacroWaterPlan water,
+            MacroClimatePlan climate,
+            WorldGameplayQualityAnalysis quality,
+            MacroHumanGeographyPlan human,
+            SectorId starterSector,
+            string outputPath,
+            int panelWidth,
+            int panelHeight,
+            bool overlaySectors)
+        {
             if (plan == null || geography == null || water == null || quality == null || human == null)
                 throw new ArgumentNullException("Worldgen Inspector inputs are required.");
             if (plan.WorldBounds != geography.WorldBounds ||
-                geography.WorldBounds != water.WorldBounds)
+                geography.WorldBounds != water.WorldBounds ||
+                climate != null && geography.WorldBounds != climate.WorldBounds)
                 throw new ArgumentException("Inspector plan/geography/water bounds must match.");
             if (string.IsNullOrWhiteSpace(outputPath))
                 throw new ArgumentException("Preview output path is required.", nameof(outputPath));
@@ -91,7 +134,8 @@ namespace OldScars.EditorTools
                 throw new ArgumentOutOfRangeException(nameof(panelWidth),
                     "Preview panels must be at least 64x64.");
 
-            var texture = new Texture2D(panelWidth * 3, panelHeight * 2,
+            int panelColumns = climate == null ? 3 : 4;
+            var texture = new Texture2D(panelWidth * panelColumns, panelHeight * 2,
                 TextureFormat.RGB24, false, true);
             texture.name = "OldScarsWorldgenInspectorPreview";
             try
@@ -113,20 +157,40 @@ namespace OldScars.EditorTools
 
                     texture.SetPixel(x, y, ElevationColor(geographySample.Elevation));
                     texture.SetPixel(panelWidth + x, y, LandformColor(geographySample.Landform));
-                    texture.SetPixel(panelWidth * 2 + x, y,
-                        QualityColor(quality, sampleX, sampleY));
-                    texture.SetPixel(x, panelHeight + y, WaterColor(waterSample));
-                    texture.SetPixel(panelWidth + x, panelHeight + y,
-                        DrainageColor(geographySample, waterSample));
-                    texture.SetPixel(panelWidth * 2 + x, panelHeight + y,
-                        WaterColor(waterSample));
+                    if (climate == null)
+                    {
+                        texture.SetPixel(panelWidth * 2 + x, y,
+                            QualityColor(quality, sampleX, sampleY));
+                        texture.SetPixel(x, panelHeight + y, WaterColor(waterSample));
+                        texture.SetPixel(panelWidth + x, panelHeight + y,
+                            DrainageColor(geographySample, waterSample));
+                        texture.SetPixel(panelWidth * 2 + x, panelHeight + y,
+                            WaterColor(waterSample));
+                    }
+                    else
+                    {
+                        MacroClimateSample climateSample = climate.SampleAt(position);
+                        texture.SetPixel(panelWidth * 2 + x, y,
+                            ThermalColor(climateSample.ThermalIndex));
+                        texture.SetPixel(panelWidth * 3 + x, y,
+                            MoistureColor(climateSample.MoistureIndex));
+                        texture.SetPixel(x, panelHeight + y,
+                            QualityColor(quality, sampleX, sampleY));
+                        texture.SetPixel(panelWidth + x, panelHeight + y,
+                            WaterColor(waterSample));
+                        texture.SetPixel(panelWidth * 2 + x, panelHeight + y,
+                            DrainageColor(geographySample, waterSample));
+                        texture.SetPixel(panelWidth * 3 + x, panelHeight + y,
+                            WaterColor(waterSample));
+                    }
                 }
 
-                DrawBasinOverlay(texture, water, panelWidth, panelHeight);
-                DrawHumanInfrastructurePanel(texture, plan, human, panelWidth, panelHeight);
+                DrawBasinOverlay(texture, water, panelWidth, panelHeight, panelColumns);
+                DrawHumanInfrastructurePanel(
+                    texture, plan, human, panelWidth, panelHeight, panelColumns);
                 if (overlaySectors)
                     DrawInspectorSectorOverlays(
-                        texture, plan, starterSector, panelWidth, panelHeight);
+                        texture, plan, starterSector, panelWidth, panelHeight, panelColumns);
 
                 texture.Apply(false, false);
                 byte[] png = texture.EncodeToPNG();
@@ -248,6 +312,22 @@ namespace OldScars.EditorTools
             return new Color(0.23f, 0.40f, 0.20f);
         }
 
+        private static Color ThermalColor(ushort thermal)
+        {
+            float value = thermal / 65535f;
+            if (value < 0.5f)
+                return Color.Lerp(new Color(0.08f, 0.20f, 0.58f), Color.white, value * 2f);
+            return Color.Lerp(Color.white, new Color(0.82f, 0.12f, 0.05f), (value - 0.5f) * 2f);
+        }
+
+        private static Color MoistureColor(ushort moisture)
+        {
+            float value = moisture / 65535f;
+            if (value < 0.5f)
+                return Color.Lerp(new Color(0.48f, 0.28f, 0.10f), new Color(0.44f, 0.66f, 0.32f), value * 2f);
+            return Color.Lerp(new Color(0.44f, 0.66f, 0.32f), new Color(0.05f, 0.30f, 0.72f), (value - 0.5f) * 2f);
+        }
+
         private static Color DrainageColor(
             MacroGeographySample geography,
             MacroWaterSample water)
@@ -264,7 +344,8 @@ namespace OldScars.EditorTools
             Texture2D texture,
             MacroWaterPlan water,
             int panelWidth,
-            int panelHeight)
+            int panelHeight,
+            int panelColumns)
         {
             for (int index = 0; index < water.BasinCandidates.Count; index++)
             {
@@ -273,8 +354,9 @@ namespace OldScars.EditorTools
                 int sampleY = basin.RepresentativeSampleIndex / water.SampleColumns;
                 int x = sampleX * (panelWidth - 1) / (water.SampleColumns - 1);
                 int y = sampleY * (panelHeight - 1) / (water.SampleRows - 1);
-                DrawMarker(texture, panelWidth + x, panelHeight + y,
-                    Color.white, panelWidth * 3, panelHeight * 2);
+                int basinPanel = panelColumns == 4 ? 2 : 1;
+                DrawMarker(texture, panelWidth * basinPanel + x, panelHeight + y,
+                    Color.white, panelWidth * panelColumns, panelHeight * 2);
             }
         }
 
@@ -283,9 +365,10 @@ namespace OldScars.EditorTools
             MacroWorldPlan plan,
             MacroHumanGeographyPlan human,
             int panelWidth,
-            int panelHeight)
+            int panelHeight,
+            int panelColumns)
         {
-            int offsetX = panelWidth * 2;
+            int offsetX = panelWidth * (panelColumns - 1);
             int offsetY = panelHeight;
             for (int index = 0; index < human.Roads.Count; index++)
             {
@@ -301,11 +384,11 @@ namespace OldScars.EditorTools
                         out int secondX, out int secondY);
                     DrawLine(texture, offsetX + firstX, offsetY + firstY,
                         offsetX + secondX, offsetY + secondY,
-                        color, panelWidth * 3, panelHeight * 2);
+                        color, panelWidth * panelColumns, panelHeight * 2);
                     if (road.RoadClass == MacroRoadClass.Primary)
                         DrawLine(texture, offsetX + firstX, offsetY + firstY + 1,
                             offsetX + secondX, offsetY + secondY + 1,
-                            color, panelWidth * 3, panelHeight * 2);
+                            color, panelWidth * panelColumns, panelHeight * 2);
                 }
             }
             for (int index = 0; index < human.Sites.Count; index++)
@@ -315,11 +398,11 @@ namespace OldScars.EditorTools
                     out int x, out int y);
                 DrawMarker(texture, offsetX + x, offsetY + y,
                     site.Kind == MacroHumanHubKind.RegionalHub ? Color.red : Color.white,
-                    panelWidth * 3, panelHeight * 2);
+                    panelWidth * panelColumns, panelHeight * 2);
                 if (site.Kind == MacroHumanHubKind.RegionalHub)
                 {
                     DrawMarker(texture, offsetX + x + 1, offsetY + y,
-                        Color.red, panelWidth * 3, panelHeight * 2);
+                        Color.red, panelWidth * panelColumns, panelHeight * 2);
                 }
             }
         }
@@ -329,7 +412,8 @@ namespace OldScars.EditorTools
             MacroWorldPlan plan,
             SectorId starter,
             int panelWidth,
-            int panelHeight)
+            int panelHeight,
+            int panelColumns)
         {
             for (int index = 0; index < plan.SectorPlacements.Count; index++)
             {
@@ -337,10 +421,11 @@ namespace OldScars.EditorTools
                 ToPixel(plan.WorldBounds, placement.Position, panelWidth, panelHeight,
                     out int x, out int y);
                 Color color = placement.SectorId == starter ? Color.yellow : Color.white;
-                DrawMarker(texture, panelWidth * 2 + x, y, color,
-                    panelWidth * 3, panelHeight * 2);
+                int topPanel = panelColumns == 4 ? 1 : 2;
+                DrawMarker(texture, panelWidth * topPanel + x, y, color,
+                    panelWidth * panelColumns, panelHeight * 2);
                 DrawMarker(texture, x, panelHeight + y, color,
-                    panelWidth * 3, panelHeight * 2);
+                    panelWidth * panelColumns, panelHeight * 2);
             }
         }
 

@@ -39,7 +39,7 @@ namespace OldScars.Core.Persistence
 
     /// <summary>
     /// Sibling world_session_v1 payload adapter over M37's existing envelope and
-    /// file store. Schema 5 persists Macro Human Geography V1. Schemas 1-4 remain
+    /// file store. Schema 6 persists Macro Climate V1. Schemas 1-5 remain
     /// explicit legacy shapes and never receive fabricated later-pass truth.
     /// </summary>
     public static class WorldSessionPersistenceService
@@ -49,7 +49,8 @@ namespace OldScars.Core.Persistence
         public const int MacroPlanSchemaVersion = 2;
         public const int MacroGeographySchemaVersion = 3;
         public const int MacroWaterSchemaVersion = 4;
-        public const int CurrentSchemaVersion = 5;
+        public const int MacroHumanGeographySchemaVersion = 5;
+        public const int CurrentSchemaVersion = 6;
 
         private static readonly JsonSerializer PayloadSerializer = JsonSerializer.Create(
             new JsonSerializerSettings
@@ -75,6 +76,8 @@ namespace OldScars.Core.Persistence
                 return JToken.FromObject(BuildMacroGeographySaveData(session), PayloadSerializer);
             if (session.IsLegacySchemaV4)
                 return JToken.FromObject(BuildMacroWaterSaveData(session), PayloadSerializer);
+            if (session.IsLegacySchemaV5)
+                return JToken.FromObject(BuildMacroHumanGeographySaveData(session), PayloadSerializer);
             return JToken.FromObject(BuildCurrentSaveData(session), PayloadSerializer);
         }
 
@@ -116,8 +119,11 @@ namespace OldScars.Core.Persistence
                     return PreflightMacroGeography(payload.ToObject<WorldSessionV3SaveData>(PayloadSerializer));
                 if (schemaVersion == MacroWaterSchemaVersion)
                     return PreflightMacroWater(payload.ToObject<WorldSessionV4SaveData>(PayloadSerializer));
+                if (schemaVersion == MacroHumanGeographySchemaVersion)
+                    return PreflightMacroHumanGeography(
+                        payload.ToObject<WorldSessionV5SaveData>(PayloadSerializer));
                 if (schemaVersion == CurrentSchemaVersion)
-                    return PreflightCurrent(payload.ToObject<WorldSessionV5SaveData>(PayloadSerializer));
+                    return PreflightCurrent(payload.ToObject<WorldSessionV6SaveData>(PayloadSerializer));
                 return SemanticFailure(
                     $"Unsupported World Session contract '{snapshotType}' schema {schemaVersion}.");
             }
@@ -303,11 +309,13 @@ namespace OldScars.Core.Persistence
             return Success("SemanticPreflightLegacyV4", session);
         }
 
-        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV5SaveData data)
+        private static WorldSessionPersistenceResult PreflightMacroHumanGeography(
+            WorldSessionV5SaveData data)
         {
             if (data == null)
-                return SemanticFailure("World Session payload deserialized to null.");
-            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("Legacy schema-5 World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType ||
+                data.schemaVersion != MacroHumanGeographySchemaVersion)
                 return SemanticFailure("World Session schema-5 header is inconsistent.");
             if (!TryReadCommon(
                     data.worldId, data.displayName, data.generationContext, data.activeSectorId,
@@ -336,8 +344,53 @@ namespace OldScars.Core.Persistence
                     data.macroHumanGeography, plan, geography, water, quality,
                     out MacroHumanGeographyPlan human, out string humanError))
                 return SemanticFailure(humanError);
-            if (!WorldSession.TryCreate(
+            if (!WorldSession.TryCreateLegacySchemaV5(
                     worldId, displayName, context, plan, geography, water, quality, human,
+                    activeSectorId, contentEvidence,
+                    out WorldSession session, out string sessionError))
+                return SemanticFailure(sessionError + ".");
+            return Success("SemanticPreflightLegacyV5", session);
+        }
+
+        private static WorldSessionPersistenceResult PreflightCurrent(WorldSessionV6SaveData data)
+        {
+            if (data == null)
+                return SemanticFailure("World Session payload deserialized to null.");
+            if (data.snapshotType != SnapshotType || data.schemaVersion != CurrentSchemaVersion)
+                return SemanticFailure("World Session schema-6 header is inconsistent.");
+            if (!TryReadCommon(
+                    data.worldId, data.displayName, data.generationContext, data.activeSectorId,
+                    data.creationContentProvenance,
+                    out WorldId worldId, out string displayName, out WorldGenerationContext context,
+                    out SectorId activeSectorId, out WorldCreationContentEvidence contentEvidence,
+                    out string commonError))
+                return SemanticFailure(commonError);
+            if (!TryReadMacroWorldPlan(data.macroWorldPlan, out MacroWorldPlan plan, out string planError))
+                return SemanticFailure(planError);
+            if (!TryReadMacroGeography(
+                    data.macroGeography, plan.WorldBounds,
+                    out MacroGeographyPlan geography, out string geographyError))
+                return SemanticFailure(geographyError);
+            if (!TryReadMacroWater(
+                    data.macroWater, geography, out MacroWaterPlan water, out string waterError))
+                return SemanticFailure(waterError);
+            if (!TryReadMacroClimate(
+                    data.macroClimate, geography, water,
+                    out MacroClimatePlan climate, out string climateError))
+                return SemanticFailure(climateError);
+            if (!WorldGameplayQualityAnalyzer.TryAnalyze(
+                    plan, geography, water,
+                    out WorldGameplayQualityAnalysis quality, out string qualityError))
+                return SemanticFailure("gameplay-quality analysis failed: " + qualityError + ".");
+            if (!quality.MeetsHardRequirements)
+                return SemanticFailure("persisted world fails hard gameplay-quality preflight: " +
+                                       string.Join(" | ", quality.HardFailures) + ".");
+            if (!TryReadMacroHumanGeography(
+                    data.macroHumanGeography, plan, geography, water, quality,
+                    out MacroHumanGeographyPlan human, out string humanError))
+                return SemanticFailure(humanError);
+            if (!WorldSession.TryCreate(
+                    worldId, displayName, context, plan, geography, water, climate, quality, human,
                     activeSectorId, contentEvidence,
                     out WorldSession session, out string sessionError))
                 return SemanticFailure(sessionError + ".");
@@ -781,6 +834,107 @@ namespace OldScars.Core.Persistence
             return true;
         }
 
+        private static bool TryReadMacroClimate(
+            MacroClimateSaveData data,
+            MacroGeographyPlan geography,
+            MacroWaterPlan water,
+            out MacroClimatePlan climate,
+            out string error)
+        {
+            climate = null;
+            error = null;
+            if (data == null || data.generationSettings == null)
+            {
+                error = "macroClimate and its generationSettings are required";
+                return false;
+            }
+
+            MacroClimateGenerationSettingsSaveData settingsData = data.generationSettings;
+            if (!MacroClimateGenerationSettings.TryParseDirection(
+                    settingsData.prevailingMoistureDirection,
+                    out MacroMoistureDirection direction,
+                    out string directionError))
+            {
+                error = "macroClimate.generationSettings.prevailingMoistureDirection is invalid: " +
+                        directionError + ".";
+                return false;
+            }
+            if (!MacroClimateGenerationSettings.TryCreateResolved(
+                    settingsData.generationContract,
+                    settingsData.sampleColumns,
+                    settingsData.sampleRows,
+                    settingsData.thermalRegionalFrequencyQ16,
+                    settingsData.moistureRegionalFrequencyQ16,
+                    settingsData.southThermalBaselineQ16,
+                    settingsData.northThermalBaselineQ16,
+                    settingsData.thermalRegionalAmplitudeQ16,
+                    settingsData.elevationCoolingQ16,
+                    settingsData.moistureBaselineQ16,
+                    settingsData.moistureRegionalAmplitudeQ16,
+                    settingsData.oceanInfluenceMaximumQ16,
+                    settingsData.oceanInfluenceDistanceCells,
+                    settingsData.orographicLookbackCells,
+                    settingsData.orographicRiseThresholdQ16,
+                    settingsData.windwardMaximumBoostQ16,
+                    settingsData.leewardMaximumReductionQ16,
+                    settingsData.orographicResponseDivisor,
+                    direction,
+                    out MacroClimateGenerationSettings settings,
+                    out string settingsError))
+            {
+                error = "macroClimate.generationSettings is invalid: " + settingsError + ".";
+                return false;
+            }
+
+            if (!TryDecodeBase64(
+                    data.thermalSamplesBase64,
+                    "macroClimate.thermalSamplesBase64",
+                    out byte[] thermalBytes,
+                    out error) ||
+                !TryDecodeBase64(
+                    data.moistureSamplesBase64,
+                    "macroClimate.moistureSamplesBase64",
+                    out byte[] moistureBytes,
+                    out error))
+            {
+                return false;
+            }
+
+            int sampleCount = checked(settings.SampleColumns * settings.SampleRows);
+            if (thermalBytes.Length != sampleCount * 2 ||
+                moistureBytes.Length != sampleCount * 2)
+            {
+                error = "macroClimate sample byte lengths do not match the resolved grid";
+                return false;
+            }
+            var thermal = new ushort[sampleCount];
+            var moisture = new ushort[sampleCount];
+            for (int index = 0; index < sampleCount; index++)
+            {
+                thermal[index] = (ushort)((thermalBytes[index * 2] << 8) |
+                                           thermalBytes[index * 2 + 1]);
+                moisture[index] = (ushort)((moistureBytes[index * 2] << 8) |
+                                            moistureBytes[index * 2 + 1]);
+            }
+
+            if (!MacroClimatePlan.TryCreate(
+                    settings, geography, water, thermal, moisture,
+                    out climate, out string validationError))
+            {
+                error = "macroClimate failed validation: " + validationError;
+                return false;
+            }
+            if (!string.Equals(data.canonicalHash, climate.CanonicalHash, StringComparison.Ordinal))
+            {
+                error = "macroClimate.canonicalHash mismatch; persisted '" +
+                        Safe(data.canonicalHash) + "', reconstructed '" +
+                        climate.CanonicalHash + "'.";
+                climate = null;
+                return false;
+            }
+            return true;
+        }
+
         private static bool TryParseHubKind(string value, out MacroHumanHubKind kind)
         {
             if (string.Equals(value, "regional_hub", StringComparison.Ordinal))
@@ -1059,12 +1213,12 @@ namespace OldScars.Core.Persistence
             };
         }
 
-        private static WorldSessionV5SaveData BuildCurrentSaveData(WorldSession session)
+        private static WorldSessionV5SaveData BuildMacroHumanGeographySaveData(WorldSession session)
         {
             return new WorldSessionV5SaveData
             {
                 snapshotType = SnapshotType,
-                schemaVersion = CurrentSchemaVersion,
+                schemaVersion = MacroHumanGeographySchemaVersion,
                 worldId = session.WorldId.Canonical,
                 displayName = session.DisplayName,
                 generationContext = BuildGenerationContext(session),
@@ -1074,6 +1228,71 @@ namespace OldScars.Core.Persistence
                 macroHumanGeography = BuildMacroHumanGeography(session.MacroHumanGeography),
                 activeSectorId = session.ActiveSectorId.Canonical,
                 creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static WorldSessionV6SaveData BuildCurrentSaveData(WorldSession session)
+        {
+            return new WorldSessionV6SaveData
+            {
+                snapshotType = SnapshotType,
+                schemaVersion = CurrentSchemaVersion,
+                worldId = session.WorldId.Canonical,
+                displayName = session.DisplayName,
+                generationContext = BuildGenerationContext(session),
+                macroWorldPlan = BuildMacroWorldPlan(session.MacroWorldPlan),
+                macroGeography = BuildMacroGeography(session.MacroGeography),
+                macroWater = BuildMacroWater(session.MacroWater),
+                macroClimate = BuildMacroClimate(session.MacroClimate),
+                macroHumanGeography = BuildMacroHumanGeography(session.MacroHumanGeography),
+                activeSectorId = session.ActiveSectorId.Canonical,
+                creationContentProvenance = BuildContentEvidence(session.CreationContentEvidence)
+            };
+        }
+
+        private static MacroClimateSaveData BuildMacroClimate(MacroClimatePlan climate)
+        {
+            MacroClimateGenerationSettings settings = climate.GenerationSettings;
+            ushort[] thermal = climate.CopyThermalSamples();
+            ushort[] moisture = climate.CopyMoistureSamples();
+            var thermalBytes = new byte[thermal.Length * 2];
+            var moistureBytes = new byte[moisture.Length * 2];
+            for (int index = 0; index < thermal.Length; index++)
+            {
+                thermalBytes[index * 2] = (byte)(thermal[index] >> 8);
+                thermalBytes[index * 2 + 1] = (byte)thermal[index];
+                moistureBytes[index * 2] = (byte)(moisture[index] >> 8);
+                moistureBytes[index * 2 + 1] = (byte)moisture[index];
+            }
+
+            return new MacroClimateSaveData
+            {
+                generationSettings = new MacroClimateGenerationSettingsSaveData
+                {
+                    generationContract = settings.GenerationContract,
+                    sampleColumns = settings.SampleColumns,
+                    sampleRows = settings.SampleRows,
+                    thermalRegionalFrequencyQ16 = settings.ThermalRegionalFrequencyQ16,
+                    moistureRegionalFrequencyQ16 = settings.MoistureRegionalFrequencyQ16,
+                    southThermalBaselineQ16 = settings.SouthThermalBaselineQ16,
+                    northThermalBaselineQ16 = settings.NorthThermalBaselineQ16,
+                    thermalRegionalAmplitudeQ16 = settings.ThermalRegionalAmplitudeQ16,
+                    elevationCoolingQ16 = settings.ElevationCoolingQ16,
+                    moistureBaselineQ16 = settings.MoistureBaselineQ16,
+                    moistureRegionalAmplitudeQ16 = settings.MoistureRegionalAmplitudeQ16,
+                    oceanInfluenceMaximumQ16 = settings.OceanInfluenceMaximumQ16,
+                    oceanInfluenceDistanceCells = settings.OceanInfluenceDistanceCells,
+                    orographicLookbackCells = settings.OrographicLookbackCells,
+                    orographicRiseThresholdQ16 = settings.OrographicRiseThresholdQ16,
+                    windwardMaximumBoostQ16 = settings.WindwardMaximumBoostQ16,
+                    leewardMaximumReductionQ16 = settings.LeewardMaximumReductionQ16,
+                    orographicResponseDivisor = settings.OrographicResponseDivisor,
+                    prevailingMoistureDirection = MacroClimateGenerationSettings.ToCanonical(
+                        settings.PrevailingMoistureDirection)
+                },
+                thermalSamplesBase64 = Convert.ToBase64String(thermalBytes),
+                moistureSamplesBase64 = Convert.ToBase64String(moistureBytes),
+                canonicalHash = climate.CanonicalHash
             };
         }
 
@@ -1411,6 +1630,23 @@ namespace OldScars.Core.Persistence
         }
 
         [Serializable]
+        private sealed class WorldSessionV6SaveData
+        {
+            public string snapshotType;
+            public int schemaVersion;
+            public string worldId;
+            public string displayName;
+            public WorldGenerationContextSaveData generationContext;
+            public MacroWorldPlanSaveData macroWorldPlan;
+            public MacroGeographySaveData macroGeography;
+            public MacroWaterSaveData macroWater;
+            public MacroClimateSaveData macroClimate;
+            public MacroHumanGeographySaveData macroHumanGeography;
+            public string activeSectorId;
+            public WorldContentEvidenceSaveData creationContentProvenance;
+        }
+
+        [Serializable]
         private sealed class WorldGenerationContextSaveData
         {
             public string worldSeed;
@@ -1481,6 +1717,39 @@ namespace OldScars.Core.Persistence
             public int sampleCount;
             public int spillElevation;
             public int maximumFillDepth;
+        }
+
+        [Serializable]
+        private sealed class MacroClimateSaveData
+        {
+            public MacroClimateGenerationSettingsSaveData generationSettings;
+            public string thermalSamplesBase64;
+            public string moistureSamplesBase64;
+            public string canonicalHash;
+        }
+
+        [Serializable]
+        private sealed class MacroClimateGenerationSettingsSaveData
+        {
+            public string generationContract;
+            public int sampleColumns;
+            public int sampleRows;
+            public int thermalRegionalFrequencyQ16;
+            public int moistureRegionalFrequencyQ16;
+            public int southThermalBaselineQ16;
+            public int northThermalBaselineQ16;
+            public int thermalRegionalAmplitudeQ16;
+            public int elevationCoolingQ16;
+            public int moistureBaselineQ16;
+            public int moistureRegionalAmplitudeQ16;
+            public int oceanInfluenceMaximumQ16;
+            public int oceanInfluenceDistanceCells;
+            public int orographicLookbackCells;
+            public int orographicRiseThresholdQ16;
+            public int windwardMaximumBoostQ16;
+            public int leewardMaximumReductionQ16;
+            public int orographicResponseDivisor;
+            public string prevailingMoistureDirection;
         }
 
         [Serializable]

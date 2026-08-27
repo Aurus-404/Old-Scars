@@ -353,7 +353,7 @@ namespace OldScars.Core.World
             if (!session.HasMacroWorldPlan || !session.HasMacroGeography || !session.HasMacroWater ||
                 !session.HasMacroHumanGeography)
             {
-                error = "terrain materialization requires committed schema-5 Plan, Geography, Water, and Human Geography truth; legacy truth is not fabricated";
+                error = "terrain materialization requires committed Plan, Geography, Water, and Human Geography truth; absent legacy truth is not fabricated";
                 return false;
             }
             if (configuration == null || !configuration.TryValidate(out error))

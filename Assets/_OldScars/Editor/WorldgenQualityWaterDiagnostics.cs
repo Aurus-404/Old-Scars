@@ -61,9 +61,9 @@ namespace OldScars.EditorTools
                 "- suitable deterministic starter selected after Water; WorldId independent\n" +
                 "- golden Water hash: " + GoldenWaterHash + "\n" +
                 "- routine fuzz: " + RoutineSeedsPerPreset + " seeds x 4 sizes x 3 coverages\n" +
-                "- schema 5 round-trip; schemas 1/2/3/4 remain explicit legacy without fabricated later truth\n" +
+                "- current schema round-trip; schemas 1/2/3/4 remain explicit legacy without fabricated later truth\n" +
                 "- six-panel Worldgen Inspector PNG export succeeded\n" +
-                "- approximate generation timings and serialized schema-5 sizes: " + string.Join("; ", timings));
+                "- approximate generation timings and serialized current-schema sizes: " + string.Join("; ", timings));
         }
 
         private static void ValidateDeterminismAndSettingIsolation(
@@ -254,6 +254,7 @@ namespace OldScars.EditorTools
 
             JObject schemaFour = (JObject)payload.DeepClone();
             schemaFour["schemaVersion"] = WorldSessionPersistenceService.MacroWaterSchemaVersion;
+            schemaFour.Remove("macroClimate");
             schemaFour.Remove("macroHumanGeography");
             WorldSessionPersistenceResult legacyFour =
                 WorldSessionPersistenceService.FromPayload(schemaFour);

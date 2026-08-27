@@ -60,7 +60,7 @@ namespace OldScars.EditorTools
                 "- all hubs/geometry on global land; no sector-local generation or ocean crossing",
                 "- canonical insertion-order-independent Human Geography evidence",
                 "- routine corpus: " + RoutineSeedsPerCombination + " seeds x 4 sizes x 3 coverages",
-                "- schema 5 exact round-trip and corruption preflight",
+                "- current-schema exact Human Geography round-trip and corruption preflight",
                 "- timings / serialized payload sizes: " + string.Join("; ", measurements));
         }
 
@@ -266,21 +266,21 @@ namespace OldScars.EditorTools
                 "Human Geography Round Trip", new WorldSeed(20260824),
                 WorldGenerationSettings.ResolvePreset(WorldSizePreset.Medium),
                 LandCoveragePreset.Medium, content, store);
-            Check(create.Success, "Schema-5 creation failed: " + Safe(create.Failure), failures);
+            Check(create.Success, "Current-schema creation failed: " + Safe(create.Failure), failures);
             if (!create.Success) return;
             WorldSession expected = create.Session;
             JToken payload = WorldSessionPersistenceService.ToPayload(expected);
             Check((int)payload["schemaVersion"] == WorldSessionPersistenceService.CurrentSchemaVersion &&
                   payload["macroHumanGeography"]?["sites"] is JArray &&
                   payload["macroHumanGeography"]?["roads"] is JArray,
-                "Schema 5 must persist Human Geography sites and roads.", failures);
+                "Current schema must persist Human Geography sites and roads.", failures);
             WorldSessionService.Close();
             WorldSessionPersistenceResult read =
                 WorldSessionPersistenceService.Read(expected.WorldId.Canonical, store);
             Check(read.Success && read.Session.HasMacroHumanGeography &&
                   read.Session.MacroHumanGeography.CanonicalHash == expected.MacroHumanGeography.CanonicalHash &&
                   read.Session.ActiveSectorId == expected.ActiveSectorId,
-                "Schema 5 must reconstruct exact committed Human Geography: " + Safe(read.Failure), failures);
+                "Current schema must reconstruct exact committed Human Geography: " + Safe(read.Failure), failures);
 
             JObject corrupt = (JObject)payload.DeepClone();
             corrupt["macroHumanGeography"]["canonicalHash"] = new string('0', 64);
@@ -289,6 +289,7 @@ namespace OldScars.EditorTools
 
             JObject legacyFour = (JObject)payload.DeepClone();
             legacyFour["schemaVersion"] = WorldSessionPersistenceService.MacroWaterSchemaVersion;
+            legacyFour.Remove("macroClimate");
             legacyFour.Remove("macroHumanGeography");
             WorldSessionPersistenceResult legacyRead =
                 WorldSessionPersistenceService.FromPayload(legacyFour);
