@@ -20,7 +20,23 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1 y Macro Climate Baseline V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local y la convergencia del gameplay compartido en WorldRuntime, están implementadas y validadas. Final rivers, geology/biomes, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1 y Macro Climate Baseline V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local, la convergencia del gameplay compartido en WorldRuntime y el pass de traversal/camera/debug ergonomics, están implementadas y validadas. Final rivers, geology/biomes, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+
+### ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass
+
+Estado final:
+
+`VALIDATED — RUNTIME ERGONOMICS COMPLETE`
+
+Commit final validado: `ab78da4fbb1af9189d6a5c178515fafdb56f368e`.
+
+La cámara continúa player-centric y `AllowsIndependentPan=false`: RMB controla yaw/pitch con clamp, la rueda conserva el zoom pedido y un `SphereCast` retrae sólo la distancia física actual ante geometría sólida para impedir atravesar paredes/terreno; al desaparecer la obstrucción la cámara recupera suavemente la distancia solicitada. `BuildingVisibilityManager` conserva su autoridad separada.
+
+Shift sprint reutiliza el único `PlayerMovementController`/`CharacterController`. `ActorStaminaComponent` añade stamina gameplay simple con drain/recovery en tiempo real, lockout al agotarse y threshold de recuperación; reservas Hunger/Thirst altas mejoran recovery, mientras stamina baja encarece sólo el coste adicional de seguir sprinting. Descansar con stamina baja no añade consumo metabólico extra. Stamina se captura/preflighta/restaura dentro de Current Slice y su rollback existente; `world_session_v1` no cambió.
+
+`ActorNeedsDebugPanel` quedó como Runtime Debug Tools development-only, oculto por defecto y toggleable con F3, con `ScrollView`, movement multiplier efímero, control de stamina/Hunger/Thirst, presets `1x/2x/3x/5x/10x/20x/50x/100x` sobre la autoridad `WorldClock`, reset de cámara y teleport armado de un solo click limitado a suelo materializado válido. El panel reutiliza `DebugWorldUiInputBlocker`; sus cheats/configuración debug no se persisten.
+
+Player Controls/Health bajo D3D11, M38 Needs/WorldClock/Recovery Play Mode y WorldRuntime/session Play Mode quedaron `PASS`. El cierre incluyó correcciones acotadas al threshold float de recovery, fixture M38 con reservas completas, cobertura de los ocho multiplicadores de reloj, aceptación del panel F3 oculto en validación compartida y resolución perezosa segura del `CharacterController` para teleport.
 
 ### ID TBD — Macro Climate Baseline V1
 
@@ -160,6 +176,7 @@ Una session con la macro truth requerida puede proyectar alrededor del active-se
 - M36.1 Foundation Identity Validation permaneció `PASS` con 14 `PersistentSceneObjectId`, 2 `ItemInstanceId`, 3 actores, 3 puertas, 8 contenedores y cero IDs duplicados o inválidos. La captura D3D11 mostró player y fixture de integración sobre terreno generado; `git diff --check` pasó. El commit publicado de cierre es `8c485c78b4ab294de9d983f70ebadfba634ab3e1`.
 - `Macro Climate Baseline V1 Diagnostics`: `PASS`; goldens upstream preservados — Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`, Water `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`, Human `a786f018ce3bdea44aeb066c80e38cb1f5dc8e114c65bd7eb352489628245ba6`— y Climate golden `a4b7869a7d8deab093eb9b9c5f7a2da118156f22c61ac466fbd0a9e64958eec1`.
 - Climate schema `6` round-trip exacto, schemas `1`–`5` legacy sin Climate fabricado, Fresh Process A/B, Main Menu→WorldRuntime→Save→Return→Load, Pass Isolation, Water/Quality, Human Geography, Terrain Materialization D3D11, M37 y Content Provenance: `PASS`. Las previews Small→Huge fueron inspeccionadas y mostraron mayor frecuencia/provincias con el preset, tendencia térmica norte-frío/sur-cálido, humedad costa/interior gradual y ausencia de seams/ruido estático evidente. Hubo `13` findings blandos de distribución y cero fallo contractual reportado. El commit publicado es `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
+- Player Traversal / Camera & Runtime Debug Ergonomics Pass: `PlayerControlsHealthWindowDiagnostics` bajo D3D11, `M38NeedsWorldClockRecoveryDiagnostics` Play Mode y `WorldSessionApplicationDiagnostics`/WorldRuntime Play Mode: `PASS`. La validación cubrió follow/yaw/pitch/clamp, colisión y restauración de zoom, WASD camera-relative, sprint/stamina/Needs, Current Slice rollback, ocho multiplicadores de WorldClock y teleport seguro. Commit final publicado: `ab78da4fbb1af9189d6a5c178515fafdb56f368e`.
 
 ## Contratos Cerrados
 
@@ -169,9 +186,11 @@ Una session con la macro truth requerida puede proyectar alrededor del active-se
 - Encounter state, target, timers, órdenes y resultados de percepción siguen efímeros; M41.1 no cambia schema/envelope.
 - `MacroClimatePlan` es la única truth climática committed de esta foundation; no existe GameObject o simulación runtime Climate paralela.
 - `MoistureIndex` expresa tendencia climática de largo plazo, no humedad del aire/suelo ni lluvia actual. Weather y Biome Regions permanecen consumidores futuros separados.
+- `CameraRigController` conserva follow player-centric y `AllowsIndependentPan=false`; yaw/pitch/zoom/collision son una única autoridad de cámara y el collision query no reemplaza Interior Visibility.
+- `ActorStaminaComponent` es estado gameplay del player; `PlayerMovementController` sigue siendo la única autoridad de movimiento, `ActorNeedsComponent` la autoridad de Hunger/Thirst y `WorldClock` la única autoridad temporal. Los controles F3/teleport/multiplicadores son development-only y efímeros.
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. El siguiente coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la truth ya validada de landform/Water/Climate para resolver regiones environment/biome globales sin confundir landform con biome ni iniciar vegetation/materiales finales.
+No hay milestone de implementación activo. `ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass` queda cerrado y publicado en `ab78da4fbb1af9189d6a5c178515fafdb56f368e`. El siguiente coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la truth ya validada de landform/Water/Climate para resolver regiones environment/biome globales sin confundir landform con biome ni iniciar vegetation/materiales finales.
 
-Macro Climate Baseline V1 queda cerrado y no autoriza weather runtime, seasons, vegetation, final rivers, geology, terrain materials ni retuning climático sin un alcance posterior explícito. El Terrain Materialization Technical Spike y la convergencia runtime tampoco autorizan materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+Macro Climate Baseline V1 queda cerrado y no autoriza weather runtime, seasons, vegetation, final rivers, geology, terrain materials ni retuning climático sin un alcance posterior explícito. El Terrain Materialization Technical Spike y la convergencia runtime tampoco autorizan materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. El pass de traversal/camera/debug ergonomics no autoriza look-ahead/aim-camera, free pan, UI final ni una ampliación general de stats/fitness. M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
