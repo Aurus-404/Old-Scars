@@ -6,7 +6,7 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `MACRO CLIMATE BASELINE V1 CLOSED`.
+Estado: `PLAYER TRAVERSAL / CAMERA & RUNTIME DEBUG ERGONOMICS PASS CLOSED`.
 
 M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
 
@@ -66,6 +66,14 @@ Commit de cierre: `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
 
 Climate aporta `ThermalIndex` y `MoistureIndex` mundiales bajo `macro_climate_v1`, con norte-frío/sur-cálido, anomalía regional, enfriamiento por elevación, influencia oceánica gradual, orografía acotada y una dirección dominante persistida entre ocho direcciones canónicas. Small→Huge aumenta resolución/frecuencia regional. `world_session_v1` schema `6` persiste esa truth; schemas `1`–`5` siguen siendo legacy exactos sin Climate fabricado.
 
+`ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass`
+
+Estado: `VALIDATED — RUNTIME ERGONOMICS COMPLETE`.
+
+Commit final validado: `ab78da4fbb1af9189d6a5c178515fafdb56f368e`.
+
+La cámara continúa centrada en el player y sin pan independiente; RMB aporta yaw/pitch, el zoom pedido se conserva separado de la retracción por `SphereCast` y la cámara vuelve suavemente tras una obstrucción. Shift sprint reutiliza el único `PlayerMovementController`; `ActorStaminaComponent` añade stamina real con recovery/lockout, coste adicional de Hunger/Thirst sólo durante sprint y Current Slice persistence dentro de la transacción existente. El panel F3 development-only unifica ScrollView, movement multiplier, stamina/Needs, presets de WorldClock `1x/2x/3x/5x/10x/20x/50x/100x`, reset de cámara y teleport acotado a suelo materializado. Player Controls/Health D3D11, M38 Needs/WorldClock/Recovery Play Mode y WorldRuntime/session Play Mode: `PASS`.
+
 WorldRuntime sigue siendo el runtime canónico de gameplay y SampleScene el laboratorio/regresión. Climate no crea una segunda autoridad gameplay ni un GameObject/runtime simulation paralelo. La shell implementada posee session lifecycle único, save catalog, Main Menu, WorldRuntime e in-game Save/Return. New Game actual genera plan finito → elevation/landforms → Macro Water → Macro Climate → quality/starter → Macro Human Geography; Climate todavía no es input de Gameplay Quality, Starter ni Human Geography V1. La materialización local consume la truth persistida que necesita y no convierte Climate en terrain materials, weather o biomes.
 
 El próximo coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, con estado `PLANNED — NOT AUTHORIZED`. Debe consumir landform/Water/Climate ya validados para resolver regiones environment/biome globales antes del detalle local, sin confundir landform con biome ni iniciar vegetation/materiales finales.
@@ -74,6 +82,7 @@ Fuera de alcance mientras no exista autorización específica:
 
 - implementar `Macro Environment / Biome Regions V1` o cualquier unit open-world posterior;
 - retunear/reabrir `Macro Climate Baseline V1` sin una corrección o unit expresamente autorizada;
+- ampliar nuevamente traversal/camera/debug ergonomics sin un alcance explícito;
 - M42.0 u otro milestone jugable;
 - cambios de gameplay, content contracts o persistencia fuera de los schemas ya cerrados;
 - reabrir la convergencia runtime o la arquitectura M41.1 validada.
