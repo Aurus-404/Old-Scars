@@ -6,9 +6,9 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ### 1. Sin milestone de implementación activo
 
-Estado: `PLAYER TRAVERSAL / CAMERA & RUNTIME DEBUG ERGONOMICS PASS CLOSED`.
+Estado: `MACRO ENVIRONMENT / BIOME REGIONS V1 CLOSED`.
 
-M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. El hardening posterior compactó el workflow y sus skills, y confirmó una consulta MCP real de solo lectura (`editor_status`) contra el Editor del worktree. Unity MCP queda aceptado provisionalmente para trabajo real; `com.unity.pipeline` se conserva sólo porque ese bridge técnico lo requiere. Unity CLI global es opcional y no forma parte de los requisitos de Old Scars.
+M41.1 está `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`, con validation `AUTOMATED + MANUAL UNITY PASSED`; `AI Ready` está `APPROVED`. Player Traversal / Camera & Runtime Debug Ergonomics Pass también está cerrado y validado. El workflow vigente trabaja directamente sobre el checkout original; no usa worktrees para desarrollo normal de Old Scars.
 
 La dirección [Open World Architecture](Open_World_Architecture.md) está `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` para sus capacidades futuras restantes. Sus foundations y application shell cerradas incluyen:
 
@@ -64,7 +64,7 @@ Estado: `VALIDATED — FOUNDATION COMPLETE`.
 
 Commit de cierre: `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
 
-Climate aporta `ThermalIndex` y `MoistureIndex` mundiales bajo `macro_climate_v1`, con norte-frío/sur-cálido, anomalía regional, enfriamiento por elevación, influencia oceánica gradual, orografía acotada y una dirección dominante persistida entre ocho direcciones canónicas. Small→Huge aumenta resolución/frecuencia regional. `world_session_v1` schema `6` persiste esa truth; schemas `1`–`5` siguen siendo legacy exactos sin Climate fabricado.
+Climate aporta `ThermalIndex` y `MoistureIndex` mundiales bajo `macro_climate_v1`, con norte-frío/sur-cálido, anomalía regional, enfriamiento por elevación, influencia oceánica gradual, orografía acotada y una dirección dominante persistida entre ocho direcciones canónicas. Small→Huge aumenta resolución/frecuencia regional. `world_session_v1` schema `6` conserva esa truth como legacy exacta.
 
 `ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass`
 
@@ -72,26 +72,40 @@ Estado: `VALIDATED — RUNTIME ERGONOMICS COMPLETE`.
 
 Commit final validado: `ab78da4fbb1af9189d6a5c178515fafdb56f368e`.
 
-La cámara continúa centrada en el player y sin pan independiente; RMB aporta yaw/pitch, el zoom pedido se conserva separado de la retracción por `SphereCast` y la cámara vuelve suavemente tras una obstrucción. Shift sprint reutiliza el único `PlayerMovementController`; `ActorStaminaComponent` añade stamina real con recovery/lockout, coste adicional de Hunger/Thirst sólo durante sprint y Current Slice persistence dentro de la transacción existente. El panel F3 development-only unifica ScrollView, movement multiplier, stamina/Needs, presets de WorldClock `1x/2x/3x/5x/10x/20x/50x/100x`, reset de cámara y teleport acotado a suelo materializado. Player Controls/Health D3D11, M38 Needs/WorldClock/Recovery Play Mode y WorldRuntime/session Play Mode: `PASS`.
+La cámara continúa centrada en el player y sin pan independiente; RMB aporta yaw/pitch, el zoom pedido se conserva separado de la retracción por `SphereCast` y la cámara vuelve suavemente tras una obstrucción. Shift sprint reutiliza el único `PlayerMovementController`; `ActorStaminaComponent` añade stamina real con recovery/lockout, coste adicional de Hunger/Thirst sólo durante sprint y Current Slice persistence dentro de la transacción existente. El panel F3 development-only unifica ScrollView, movement multiplier, stamina/Needs, presets de WorldClock `1x/2x/3x/5x/10x/20x/50x/100x`, reset de cámara y teleport acotado a suelo materializado.
 
-WorldRuntime sigue siendo el runtime canónico de gameplay y SampleScene el laboratorio/regresión. Climate no crea una segunda autoridad gameplay ni un GameObject/runtime simulation paralelo. La shell implementada posee session lifecycle único, save catalog, Main Menu, WorldRuntime e in-game Save/Return. New Game actual genera plan finito → elevation/landforms → Macro Water → Macro Climate → quality/starter → Macro Human Geography; Climate todavía no es input de Gameplay Quality, Starter ni Human Geography V1. La materialización local consume la truth persistida que necesita y no convierte Climate en terrain materials, weather o biomes.
+`ID TBD — Macro Environment / Biome Regions V1`
 
-El próximo coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, con estado `PLANNED — NOT AUTHORIZED`. Debe consumir landform/Water/Climate ya validados para resolver regiones environment/biome globales antes del detalle local, sin confundir landform con biome ni iniciar vegetation/materiales finales.
+Estado: `VALIDATED — FOUNDATION COMPLETE`.
+
+Commit de cierre: `55bcb0db479af43351f28908dfe05125dd9d62e1`.
+
+Environment añade `MacroEnvironmentPlan` bajo `macro_environment_v1`, con 14 familias terrestres + `None`, clasificación determinista `PrimaryBiome` / `SecondaryBiome` / `TransitionQ16`, océano `None/None/0`, sin biome noise, sin region IDs persistentes y sin GameObject/runtime authority. `world_session_v1` schema `7` persiste Environment; schemas `1`–`6` conservan su truth legacy exacta sin Environment fabricado. El golden Environment validado es `f8081c040da64ccce5e5eb5ffed941c2c2c44cd7ac5442582ee5d331c3abd1c5`.
+
+La suite Macro Environment, corpus `72/72`, Fresh Process A/B, pass isolation, goldens upstream, World Session, Main Menu→WorldRuntime→Save→Return→Load y Terrain Materialization D3D11 quedaron `PASS`. Las previews Small/Medium/Large/Huge mostraron regiones amplias y coherentes sin seams ni ruido tipo checkerboard.
+
+WorldRuntime sigue siendo el runtime canónico de gameplay y SampleScene el laboratorio/regresión. New Game actual genera plan finito → elevation/landforms → Macro Water → Macro Climate → Macro Environment → quality/starter → Macro Human Geography. Environment no entra todavía en Gameplay Quality, Starter ni Human Geography V1 y no materializa vegetación, fauna, geology, ground materials o weather.
+
+### 2. Revisión de secuencia post-Environment
+
+No hay un nuevo coding unit autorizado automáticamente. Antes de mandar otra implementación a Codex, hay que decidir el siguiente paso hacia un mundo físicamente jugable usando la truth ya cerrada de Geography + Water + Climate + Environment + Human Roads.
+
+La revisión debe decidir cómo encadenar las unidades futuras ya previstas —Bounded History / Present-Day Resolution, World Persistence, Sector Blueprint / Authored Composition, Large-Sector Navigation / Performance y Sector Materialization / Transition— sin abrir otra serie larga de foundations abstractas ni saltarse dependencias reales.
 
 Fuera de alcance mientras no exista autorización específica:
 
-- implementar `Macro Environment / Biome Regions V1` o cualquier unit open-world posterior;
-- retunear/reabrir `Macro Climate Baseline V1` sin una corrección o unit expresamente autorizada;
-- ampliar nuevamente traversal/camera/debug ergonomics sin un alcance explícito;
-- M42.0 u otro milestone jugable;
-- cambios de gameplay, content contracts o persistencia fuera de los schemas ya cerrados;
-- reabrir la convergencia runtime o la arquitectura M41.1 validada.
+- reabrir o retunear Macro Environment / Macro Climate sin un defecto real o unit explícito;
+- vegetation/biomes locales, terrain materials, fauna, geology, final rivers o weather runtime;
+- Bounded History, World Persistence, Sector Blueprint o materialización productiva antes de decidir su secuencia;
+- ampliar nuevamente traversal/camera/debug ergonomics sin alcance explícito;
+- M42.0 u otro milestone jugable por inercia;
+- UI final, condition, repair, crafting, factions amplias o producción masiva de contenido.
 
-M42.0 permanece planificado, pero su secuencia requiere rebaseline y ya no constituye el siguiente trabajo automático. Todo trabajo nuevo requiere autorización explícita.
+M42.0 permanece planificado, pero su secuencia requiere rebaseline y no constituye el siguiente trabajo automático. Todo trabajo nuevo requiere autorización explícita.
 
 ## Connected First Playable
 
-El Connected First Playable es la prueba integrada objetivo después de las foundations open-world. Debe demostrar A→B→A, continuidad cross-sector, mutaciones persistentes, save, full process exit y fresh load usando M32–M41.1 dentro del runtime canónico. No está iniciado, no es la vertical slice audiovisual final y no adelanta M45.1.
+El Connected First Playable es la prueba integrada objetivo después de las foundations open-world y la materialización/continuidad necesaria. Debe demostrar A→B→A, continuidad cross-sector, mutaciones persistentes, save, full process exit y fresh load usando M32–M41.1 dentro del runtime canónico. No está iniciado, no es la vertical slice audiovisual final y no adelanta M45.1.
 
 ## Modding Y Provenance
 
@@ -99,12 +113,13 @@ La Global Content ID Foundation y la Minimum Content Source Identity & Provenanc
 
 `Provenance` prueba qué fuentes/inputs estuvieron presentes. `Generation compatibility` continúa no implementada y será responsable de decidir si inputs semánticos siguen siendo compatibles con un mundo; no se infiere desde igualdad/diferencia del fingerprint.
 
-Dependencies, overrides/patches y compatibilidad de producción permanecen en alcance posterior M50.0. La nueva foundation no sustituye M50.0 ni lo marca iniciado.
+Dependencies, overrides/patches y compatibilidad de producción permanecen en alcance posterior M50.0. Las foundations actuales no sustituyen M50.0 ni lo marcan iniciado.
 
 ## No Iniciar Todavía
 
-- Macro Environment / Biome Regions V1, Terrain Materialization V1 productiva, otros coding units open-world o M42.0 sin autorización específica;
-- weather runtime, seasons, final rivers, geology o cualquier ampliación/retuning de Climate fuera de un unit autorizado;
+- otro coding unit open-world sin la revisión de secuencia post-Environment;
+- Terrain Materialization V1 productiva sin su contrato previo;
+- weather runtime, seasons, final rivers, geology o ampliaciones de Climate/Environment fuera de un unit autorizado;
 - nuevas ampliaciones OnGUI sin milestone autorizado;
 - UI final;
 - condition, repair o crafting;
