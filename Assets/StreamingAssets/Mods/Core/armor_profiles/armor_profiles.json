@@ -10,6 +10,28 @@
       "stopped_blunt_transfer": 0.35,
       "blunt_wound_threshold": 0.2,
       "layer_priority": 30
+    },
+    {
+      "type": "armor_profile",
+      "id": "core:steel_helmet_01_profile",
+      "display_name": "Steel Helmet",
+      "covered_regions": ["Head"],
+      "penetration_profile_id": "core:steel_helmet_01_penetration",
+      "impact_resistance": 0.12,
+      "stopped_blunt_transfer": 0.4,
+      "blunt_wound_threshold": 0.2,
+      "layer_priority": 20
+    },
+    {
+      "type": "armor_profile",
+      "id": "core:protective_vest_01_profile",
+      "display_name": "Protective Vest",
+      "covered_regions": ["Torso"],
+      "penetration_profile_id": "core:protective_vest_01_penetration",
+      "impact_resistance": 0.24,
+      "stopped_blunt_transfer": 0.38,
+      "blunt_wound_threshold": 0.2,
+      "layer_priority": 35
     }
   ]
 }

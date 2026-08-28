@@ -17,6 +17,18 @@
       "id": "core:debug_resistant_cover_01",
       "display_name": "Debug Resistant Penetrable Cover",
       "resistance": 0.8
+    },
+    {
+      "type": "penetration_profile",
+      "id": "core:steel_helmet_01_penetration",
+      "display_name": "Steel Helmet Ballistic Layer",
+      "resistance": 0.2
+    },
+    {
+      "type": "penetration_profile",
+      "id": "core:protective_vest_01_penetration",
+      "display_name": "Protective Vest Ballistic Layer",
+      "resistance": 0.42
     }
   ]
 }

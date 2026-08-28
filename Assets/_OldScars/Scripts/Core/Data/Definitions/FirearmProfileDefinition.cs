@@ -10,6 +10,9 @@ namespace OldScars.Core.Data.Definitions
         public string type; // must be "firearm_profile"
         public string id;
         public string display_name;
+        // Canonical trigger/action policy consumed by player input adapters.
+        // Ammo, cycle state and physical resolution remain runtime service concerns.
+        public string fire_mode;
         public string[] accepted_ammo_profile_ids;
         public int magazine_capacity;
         public float reload_duration;

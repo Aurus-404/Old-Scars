@@ -187,6 +187,11 @@ namespace OldScars.Core.Combat
             if (!TryGetEquippedWeapon(ownership, out ItemInstance firearmItem, out _, out FirearmProfileDefinition profile, out _) ||
                 firearmItem.InstanceId != expectedFirearmInstanceId || profile == null)
                 return Fail(WeaponCombatCode.NotEquipped, "The same firearm is not equipped.");
+            if (physicalResolver == null && hitCollider != null &&
+                Vector3.Distance(ownership.transform.position, hitPoint) > profile.range + 0.05f)
+            {
+                return Fail(WeaponCombatCode.OutOfRange, "Firearm target is out of range.");
+            }
             if (firearmItem.LoadedRounds <= 0 || string.IsNullOrWhiteSpace(firearmItem.LoadedAmmoProfileId))
                 return Fail(WeaponCombatCode.Unloaded, "Firearm is unloaded. Press R to reload.");
 

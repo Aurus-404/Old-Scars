@@ -32,6 +32,7 @@ namespace OldScars.Core.Combat
         private string aimedWeaponInstanceId;
         private float nextAttackTime;
         private float tracerEndTime;
+        private bool automaticTriggerFailureLatched;
         private AimSolution currentAim;
         private LineRenderer aimLine;
         private LineRenderer tracerLine;
@@ -69,8 +70,9 @@ namespace OldScars.Core.Combat
                 if (firearm == null)
                     return $"{mode}. Melee ready.";
                 float remaining = Mathf.Max(0f, nextAttackTime - Time.time);
-                string cycle = remaining > 0f ? $" Bolt: {remaining:0.0}s." : " Ready.";
-                return $"{mode}. Loaded {item.LoadedRounds}/{firearm.magazine_capacity}.{cycle}";
+                string cycle = remaining > 0f ? $" Cycle: {remaining:0.0}s." : " Ready.";
+                return $"{mode}. {FirearmActionModes.DisplayName(firearm.fire_mode)}. " +
+                       $"Loaded {item.LoadedRounds}/{firearm.magazine_capacity}.{cycle}";
             }
         }
 
@@ -101,12 +103,31 @@ namespace OldScars.Core.Combat
                 return;
 
             Mouse mouse = Mouse.current;
-            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            if (mouse == null || !TryGetEquipped(out _, out _, out FirearmProfileDefinition firearm, out _))
                 return;
+
+            bool wasPressedThisFrame = mouse.leftButton.wasPressedThisFrame;
+            bool isHeld = mouse.leftButton.isPressed;
+            if (!isHeld)
+                automaticTriggerFailureLatched = false;
+            if (!FirearmActionModes.ShouldAttemptFire(firearm?.fire_mode, wasPressedThisFrame, isHeld) ||
+                Time.time < nextAttackTime ||
+                FirearmActionModes.UsesHeldTrigger(firearm?.fire_mode) && automaticTriggerFailureLatched)
+            {
+                return;
+            }
+
             Vector2 mousePosition = mouse.position.ReadValue();
-            if (uiInputBlocker != null && uiInputBlocker.ConsumeLeftClickIfNeeded(mousePosition))
+            if (wasPressedThisFrame && uiInputBlocker != null && uiInputBlocker.ConsumeLeftClickIfNeeded(mousePosition))
+            {
+                if (FirearmActionModes.UsesHeldTrigger(firearm.fire_mode))
+                    automaticTriggerFailureLatched = true;
                 return;
-            TryAttack();
+            }
+
+            bool consumedRound = TryAttack();
+            if (FirearmActionModes.UsesHeldTrigger(firearm.fire_mode) && !consumedRound)
+                automaticTriggerFailureLatched = true;
         }
 
         public bool EnableAim() => SetCombatMode(true, true);
@@ -192,16 +213,16 @@ namespace OldScars.Core.Combat
             return DebugActionExecutionResult.Info("Reload", result.Message);
         }
 
-        private void TryAttack()
+        private bool TryAttack()
         {
             if (Time.time < nextAttackTime)
             {
                 Record(GameplayFeedbackEntryType.Warning, "Weapon action is still cycling.");
-                return;
+                return false;
             }
             if (!TryGetEquipped(out ItemInstance item, out ItemDefinition definition,
                     out FirearmProfileDefinition firearm, out WeaponProfileDefinition melee))
-                return;
+                return false;
 
             if (firearm != null)
             {
@@ -222,11 +243,11 @@ namespace OldScars.Core.Combat
                     ShowTracer(currentAim.PhysicalOrigin, end);
                 }
                 Record(result.Success ? GameplayFeedbackEntryType.Info : GameplayFeedbackEntryType.Warning, result.Message, definition, result.Quantity);
-                return;
+                return result.Quantity == 1;
             }
 
             if (melee == null)
-                return;
+                return false;
             string expectedId = item.InstanceId;
             Vector3 origin = currentAim.VisualOrigin;
             Vector3 direction = currentAim.Direction;
@@ -237,6 +258,7 @@ namespace OldScars.Core.Combat
                 () => CompleteMelee(expectedId, definition, melee, origin, direction));
             if (started)
                 nextAttackTime = Time.time + melee.attack_duration + melee.attack_cooldown;
+            return started;
         }
 
         private DebugActionExecutionResult CompleteMelee(

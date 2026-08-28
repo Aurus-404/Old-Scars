@@ -509,7 +509,8 @@ Ejemplo de apertura posterior de storage:
 - `firearm_profiles/*.json` usa `accepted_ammo_profile_ids` como lista obligatoria de perfiles de municion compatibles.
 - Cada referencia debe ser un Global Content ID canónico, existir en `ammo_profiles/*.json` y no repetirse.
 - La cadena vigente es item con `firearm_profile_id` → firearm profile → `accepted_ammo_profile_ids` → item de municion con `ammo_profile_id`.
-- `magazine_capacity` debe ser mayor que cero; `reload_duration`, `cycle_time`, `range`, `muzzle_offset` y `debug_accuracy_spread` son valores finitos validados del profile.
+- `fire_mode` es obligatorio y usa exactamente `manual_cycle`, `semi_automatic` o `automatic`. Declara sólo la política genérica de trigger del adaptador de input; no crea clases ni branches por `Definition.id`.
+- `magazine_capacity` debe ser mayor que cero; `reload_duration`, `cycle_time`, `range`, `muzzle_offset` y `debug_accuracy_spread` son valores finitos validados del profile. En V1, `range` es el máximo físico temporal del hitscan, no el alcance del camera ray usado únicamente para escoger dirección bajo el mouse. `WeaponProfileDefinition.melee_range` cumple el mismo límite físico para melee.
 - `AmmoProfileDefinition` declara impacto médico determinista mediante `wound_type`, `wound_severity`, `bleeding_rate_per_game_hour` y `pain_contribution`, más `penetration_power` finito y estrictamente mayor que cero para el proyectil. El runtime lo traduce a M39/M40.1; no declara scripts ni daño directo a HP.
 - No existen flags `IsAP`, `CanPenetrate` ni branches por FMJ/AP/HP/tracer/anti-materiel. Toda munición usa el mismo resolver: futuras AP tenderán a mayor `penetration_power` y menor efecto blando, HP al caso inverso y FMJ a un baseline intermedio, siempre como datos y no como clases lógicas.
 - `WeaponProfileDefinition` reutiliza el mismo contrato médico para melee y agrega `melee_range`, `attack_duration` y `attack_cooldown`.

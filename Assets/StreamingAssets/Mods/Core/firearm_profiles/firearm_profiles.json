@@ -4,12 +4,39 @@
       "type": "firearm_profile",
       "id": "core:lee_enfield_rifle_01_profile",
       "display_name": "Lee-Enfield Rifle",
+      "fire_mode": "manual_cycle",
       "accepted_ammo_profile_ids": ["core:ammo_303_british_01_profile"],
       "magazine_capacity": 10,
       "reload_duration": 2.5,
       "range": 80,
       "cycle_time": 1.25,
       "muzzle_offset": 0.9,
+      "debug_accuracy_spread": 0
+    },
+    {
+      "type": "firearm_profile",
+      "id": "core:semi_automatic_rifle_01_profile",
+      "display_name": "Semi-Automatic Rifle",
+      "fire_mode": "semi_automatic",
+      "accepted_ammo_profile_ids": ["core:ammo_303_british_01_profile"],
+      "magazine_capacity": 20,
+      "reload_duration": 2.2,
+      "range": 75,
+      "cycle_time": 0.25,
+      "muzzle_offset": 0.85,
+      "debug_accuracy_spread": 0
+    },
+    {
+      "type": "firearm_profile",
+      "id": "core:automatic_rifle_01_profile",
+      "display_name": "Automatic Rifle",
+      "fire_mode": "automatic",
+      "accepted_ammo_profile_ids": ["core:ammo_303_british_01_profile"],
+      "magazine_capacity": 30,
+      "reload_duration": 2.6,
+      "range": 60,
+      "cycle_time": 0.12,
+      "muzzle_offset": 0.8,
       "debug_accuracy_spread": 0
     }
   ]

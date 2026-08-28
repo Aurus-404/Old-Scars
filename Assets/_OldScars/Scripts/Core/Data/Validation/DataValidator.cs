@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using OldScars.Core.Actions;
 using OldScars.Core.Actors;
 using OldScars.Core.Data.Definitions;
+using OldScars.Core.Combat;
 using OldScars.Core.Data.Loading;
 
 namespace OldScars.Core.Data.Validation
@@ -1497,6 +1498,13 @@ namespace OldScars.Core.Data.Validation
 
                 if (string.IsNullOrWhiteSpace(profile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
+
+                if (!FirearmActionModes.IsDefined(profile.fire_mode))
+                {
+                    report.Error($"{ctx}: 'fire_mode' must be one of " +
+                                 $"'{FirearmActionModes.ManualCycle}', '{FirearmActionModes.SemiAutomatic}' or " +
+                                 $"'{FirearmActionModes.Automatic}' (got '{SafeId(profile.fire_mode)}').");
+                }
 
                 if (profile.accepted_ammo_profile_ids == null || profile.accepted_ammo_profile_ids.Length == 0)
                 {

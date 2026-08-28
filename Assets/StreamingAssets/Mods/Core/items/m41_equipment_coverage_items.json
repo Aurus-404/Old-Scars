@@ -1,0 +1,253 @@
+{
+  "items": [
+    {
+      "type": "item", "id": "core:knit_cap_01",
+      "display": { "name": "Gorro tejido", "description": "Un gorro sencillo de trabajo." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.12, "volume_l": 0.3, "condition_max": 100 },
+      "economy": { "base_buy_value": 4, "base_sell_value": 1 },
+      "equip": { "equippable": true, "slot_sets": [["core:head"]] },
+      "inventory": { "footprint": { "width": 2, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:work_cap_01",
+      "display": { "name": "Gorra de trabajo", "description": "Una gorra gastada para uso diario." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.16, "volume_l": 0.35, "condition_max": 100 },
+      "economy": { "base_buy_value": 5, "base_sell_value": 2 },
+      "equip": { "equippable": true, "slot_sets": [["core:head"]] },
+      "inventory": { "footprint": { "width": 2, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:steel_helmet_01",
+      "display": { "name": "Casco de acero", "description": "Protección básica de cabeza para pruebas de cobertura regional." },
+      "categories": ["armor", "equipment"], "tags": ["item", "metal"], "max_stack": 1,
+      "physical": { "weight_kg": 1.35, "volume_l": 2.2, "condition_max": 100 },
+      "economy": { "base_buy_value": 38, "base_sell_value": 14 },
+      "equip": { "equippable": true, "slot_sets": [["core:head"]] },
+      "inventory": { "footprint": { "width": 3, "height": 2 }, "initial_orientation": "original" },
+      "armor_profile_id": "core:steel_helmet_01_profile"
+    },
+    {
+      "type": "item", "id": "core:safety_glasses_01",
+      "display": { "name": "Gafas de seguridad", "description": "Protección ocular simple de taller." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.08, "volume_l": 0.15, "condition_max": 100 },
+      "economy": { "base_buy_value": 6, "base_sell_value": 2 },
+      "equip": { "equippable": true, "slot_sets": [["core:eyes"]] },
+      "inventory": { "footprint": { "width": 2, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:work_goggles_01",
+      "display": { "name": "Goggles de trabajo", "description": "Goggles sencillos para tareas de polvo y escombros." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.18, "volume_l": 0.25, "condition_max": 100 },
+      "economy": { "base_buy_value": 9, "base_sell_value": 3 },
+      "equip": { "equippable": true, "slot_sets": [["core:eyes"]] },
+      "inventory": { "footprint": { "width": 2, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:wool_scarf_01",
+      "display": { "name": "Bufanda de lana", "description": "Una bufanda común, sin efectos de clima implementados." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.22, "volume_l": 0.45, "condition_max": 100 },
+      "economy": { "base_buy_value": 7, "base_sell_value": 2 },
+      "equip": { "equippable": true, "slot_sets": [["core:neck"]] },
+      "inventory": { "footprint": { "width": 2, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:thermal_shirt_01",
+      "display": { "name": "Camiseta térmica", "description": "Prenda interior sin sistema de temperatura todavía." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.24, "volume_l": 0.55, "condition_max": 100 },
+      "economy": { "base_buy_value": 8, "base_sell_value": 3 },
+      "equip": { "equippable": true, "slot_sets": [["core:torso_inner"]] },
+      "inventory": { "footprint": { "width": 2, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:work_shirt_01",
+      "display": { "name": "Camisa de trabajo", "description": "Camisa resistente para carga cotidiana." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.38, "volume_l": 0.85, "condition_max": 100 },
+      "economy": { "base_buy_value": 11, "base_sell_value": 4 },
+      "equip": { "equippable": true, "slot_sets": [["core:torso_middle"]] },
+      "inventory": { "footprint": { "width": 3, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:wool_sweater_01",
+      "display": { "name": "Suéter de lana", "description": "Capa media de ropa para loadouts de prueba." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.62, "volume_l": 1.45, "condition_max": 100 },
+      "economy": { "base_buy_value": 13, "base_sell_value": 5 },
+      "equip": { "equippable": true, "slot_sets": [["core:torso_middle"]] },
+      "inventory": { "footprint": { "width": 3, "height": 3 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:field_jacket_01",
+      "display": { "name": "Chaqueta de campo", "description": "Capa exterior sencilla para loadouts de prueba." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.95, "volume_l": 2.2, "condition_max": 100 },
+      "economy": { "base_buy_value": 20, "base_sell_value": 7 },
+      "equip": { "equippable": true, "slot_sets": [["core:torso_outer"]] },
+      "inventory": { "footprint": { "width": 3, "height": 3 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:rain_coat_01",
+      "display": { "name": "Impermeable", "description": "Capa exterior sin sistema de lluvia implementado." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.72, "volume_l": 1.8, "condition_max": 100 },
+      "economy": { "base_buy_value": 17, "base_sell_value": 6 },
+      "equip": { "equippable": true, "slot_sets": [["core:torso_outer"]] },
+      "inventory": { "footprint": { "width": 3, "height": 3 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:protective_vest_01",
+      "display": { "name": "Chaleco protector", "description": "Protección de torso para pruebas de capas de armadura existentes." },
+      "categories": ["armor", "equipment"], "tags": ["item", "metal"], "max_stack": 1,
+      "physical": { "weight_kg": 5.2, "volume_l": 4.8, "condition_max": 100 },
+      "economy": { "base_buy_value": 72, "base_sell_value": 26 },
+      "equip": { "equippable": true, "slot_sets": [["core:torso_outer"]] },
+      "inventory": { "footprint": { "width": 3, "height": 4 }, "initial_orientation": "original" },
+      "armor_profile_id": "core:protective_vest_01_profile"
+    },
+    {
+      "type": "item", "id": "core:work_gloves_01",
+      "display": { "name": "Guantes de trabajo", "description": "Guantes simples de uso industrial." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.18, "volume_l": 0.35, "condition_max": 100 },
+      "economy": { "base_buy_value": 6, "base_sell_value": 2 },
+      "equip": { "equippable": true, "slot_sets": [["core:hands_wear"]] },
+      "inventory": { "footprint": { "width": 2, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:leather_gloves_01",
+      "display": { "name": "Guantes de cuero", "description": "Alternativa de guantes para loadouts variados." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.24, "volume_l": 0.4, "condition_max": 100 },
+      "economy": { "base_buy_value": 10, "base_sell_value": 3 },
+      "equip": { "equippable": true, "slot_sets": [["core:hands_wear"]] },
+      "inventory": { "footprint": { "width": 2, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:medium_backpack_01",
+      "display": { "name": "Mochila intermedia", "description": "Capacidad intermedia mediante el storage propio del item." },
+      "categories": ["container", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 2.35, "volume_l": 22.0, "condition_max": 100 },
+      "economy": { "base_buy_value": 48, "base_sell_value": 18 },
+      "equip": { "equippable": true, "slot_sets": [["core:back"]] },
+      "inventory": { "footprint": { "width": 4, "height": 5 }, "initial_orientation": "original" },
+      "owned_storage_profile_id": "core:backpack_medium_01"
+    },
+    {
+      "type": "item", "id": "core:large_backpack_01",
+      "display": { "name": "Mochila grande", "description": "Capacidad grande mediante el storage propio del item." },
+      "categories": ["container", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 3.45, "volume_l": 34.0, "condition_max": 100 },
+      "economy": { "base_buy_value": 68, "base_sell_value": 25 },
+      "equip": { "equippable": true, "slot_sets": [["core:back"]] },
+      "inventory": { "footprint": { "width": 5, "height": 5 }, "initial_orientation": "original" },
+      "owned_storage_profile_id": "core:backpack_large_01"
+    },
+    {
+      "type": "item", "id": "core:canvas_belt_01",
+      "display": { "name": "Cinturón de lona", "description": "Equipo de cintura básico." },
+      "categories": ["equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.2, "volume_l": 0.25, "condition_max": 100 },
+      "economy": { "base_buy_value": 5, "base_sell_value": 2 },
+      "equip": { "equippable": true, "slot_sets": [["core:waist"]] },
+      "inventory": { "footprint": { "width": 2, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:utility_belt_01",
+      "display": { "name": "Cinturón utilitario", "description": "Alternativa de cintura para loadouts de prueba." },
+      "categories": ["equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.45, "volume_l": 0.7, "condition_max": 100 },
+      "economy": { "base_buy_value": 14, "base_sell_value": 5 },
+      "equip": { "equippable": true, "slot_sets": [["core:waist"]] },
+      "inventory": { "footprint": { "width": 2, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:canvas_bandolier_01",
+      "display": { "name": "Bandolera de lona", "description": "Equipo de hombro para loadouts de prueba." },
+      "categories": ["equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.38, "volume_l": 0.75, "condition_max": 100 },
+      "economy": { "base_buy_value": 12, "base_sell_value": 4 },
+      "equip": { "equippable": true, "slot_sets": [["core:sling"]] },
+      "inventory": { "footprint": { "width": 2, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:work_trousers_01",
+      "display": { "name": "Pantalón de trabajo", "description": "Pantalón resistente de capa interior." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.7, "volume_l": 1.3, "condition_max": 100 },
+      "economy": { "base_buy_value": 13, "base_sell_value": 5 },
+      "equip": { "equippable": true, "slot_sets": [["core:legs_inner"]] },
+      "inventory": { "footprint": { "width": 3, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:cargo_trousers_01",
+      "display": { "name": "Pantalón cargo", "description": "Alternativa de piernas para loadouts variados." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.82, "volume_l": 1.55, "condition_max": 100 },
+      "economy": { "base_buy_value": 17, "base_sell_value": 6 },
+      "equip": { "equippable": true, "slot_sets": [["core:legs_inner"]] },
+      "inventory": { "footprint": { "width": 3, "height": 3 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:weather_overtrousers_01",
+      "display": { "name": "Sobrepantalón", "description": "Capa exterior de piernas sin sistema de clima implementado." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.55, "volume_l": 1.15, "condition_max": 100 },
+      "economy": { "base_buy_value": 15, "base_sell_value": 5 },
+      "equip": { "equippable": true, "slot_sets": [["core:legs_outer"]] },
+      "inventory": { "footprint": { "width": 3, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:wool_socks_01",
+      "display": { "name": "Medias de lana", "description": "Capa interior de pies para loadouts de prueba." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 0.12, "volume_l": 0.2, "condition_max": 100 },
+      "economy": { "base_buy_value": 4, "base_sell_value": 1 },
+      "equip": { "equippable": true, "slot_sets": [["core:feet_inner"]] },
+      "inventory": { "footprint": { "width": 1, "height": 1 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:work_boots_01",
+      "display": { "name": "Botas de trabajo", "description": "Par de botas que ocupa ambos pies atómicamente." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 1.6, "volume_l": 2.5, "condition_max": 100 },
+      "economy": { "base_buy_value": 22, "base_sell_value": 8 },
+      "equip": { "equippable": true, "slot_sets": [["core:foot_left", "core:foot_right"]] },
+      "inventory": { "footprint": { "width": 3, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:leather_shoes_01",
+      "display": { "name": "Zapatos de cuero", "description": "Alternativa de calzado que ocupa ambos pies atómicamente." },
+      "categories": ["clothing", "equipment"], "tags": ["item"], "max_stack": 1,
+      "physical": { "weight_kg": 1.05, "volume_l": 1.9, "condition_max": 100 },
+      "economy": { "base_buy_value": 19, "base_sell_value": 7 },
+      "equip": { "equippable": true, "slot_sets": [["core:foot_left", "core:foot_right"]] },
+      "inventory": { "footprint": { "width": 3, "height": 2 }, "initial_orientation": "original" }
+    },
+    {
+      "type": "item", "id": "core:semi_automatic_rifle_01",
+      "display": { "name": "Rifle semiautomático", "description": "Rifle de prueba de un disparo por presión del gatillo." },
+      "categories": ["weapon", "firearm"], "tags": ["item", "weapon", "firearm", "rifle"], "max_stack": 1,
+      "physical": { "weight_kg": 4.0, "volume_l": 6.0, "condition_max": 100 },
+      "economy": { "base_buy_value": 145, "base_sell_value": 55 },
+      "equip": { "equippable": true, "slot_sets": [["core:hand_left", "core:hand_right"]] },
+      "inventory": { "footprint": { "width": 7, "height": 2 }, "initial_orientation": "rotated" },
+      "firearm_profile_id": "core:semi_automatic_rifle_01_profile"
+    },
+    {
+      "type": "item", "id": "core:automatic_rifle_01",
+      "display": { "name": "Rifle automático", "description": "Rifle de prueba que mantiene fuego mientras el gatillo permanezca presionado." },
+      "categories": ["weapon", "firearm"], "tags": ["item", "weapon", "firearm", "rifle"], "max_stack": 1,
+      "physical": { "weight_kg": 4.8, "volume_l": 6.8, "condition_max": 100 },
+      "economy": { "base_buy_value": 170, "base_sell_value": 64 },
+      "equip": { "equippable": true, "slot_sets": [["core:hand_left", "core:hand_right"]] },
+      "inventory": { "footprint": { "width": 7, "height": 2 }, "initial_orientation": "rotated" },
+      "firearm_profile_id": "core:automatic_rifle_01_profile"
+    }
+  ]
+}
