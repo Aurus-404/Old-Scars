@@ -12,17 +12,17 @@ Este archivo es la autoridad canonica para:
 
 `Current_Milestone.md` resume este estado, `Next_Sprints.md` deriva la cola inmediata y `Development_Log.md` conserva la cronologia append-only. Ninguno de esos documentos puede reasignar IDs ni contradecir el estado publicado aqui.
 
-Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 externo se conserva como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) mantiene la autoridad sobre contratos tecnicos vigentes despues de contrastarlos con el codigo real. [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto sin presentarla como implementada. [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md) fija la decisión de producto, evidencia y límites de terrain volumétrico alterable. [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md) define la secuencia M41.2–M41.4 autorizada después del closeout volumétrico. Este roadmap no sustituye esas fuentes ni convierte implementaciones en diseño final.
+Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 externo se conserva como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) mantiene la autoridad sobre contratos tecnicos vigentes despues de contrastarlos con el codigo real. [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto sin presentarla como implementada. [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md) fija la decisión de producto, evidencia y límites de terrain volumétrico alterable. [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md) define la secuencia M41.2–M41.4. Este roadmap no sustituye esas fuentes ni convierte implementaciones en diseño final.
 
 ## Estado De Produccion
 
 | Campo | Estado canonico |
 | --- | --- |
-| Milestone/coding unit cerrado mas reciente | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike |
+| Milestone/coding unit cerrado mas reciente | M41.2 — Basic Equipment & Weapon Coverage V1 |
 | Estado M37.0 | `DONE — PERSISTENCE CORE VALIDATED` |
-| Ultimo milestone/coding unit funcional cerrado | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike |
+| Ultimo milestone/coding unit funcional cerrado | M41.2 — Basic Equipment & Weapon Coverage V1 |
 | Estado M35.2 | `DONE — FUNCTIONAL SCOPE CLOSED AFTER M35.2.3` |
-| Ultimo submilestone validado | M35.2.3 — Unified Corpse Belongings Surface |
+| Ultimo submilestone validado | M41.2 — Basic Equipment & Weapon Coverage V1 |
 | Commit funcional validado de M41.1 | `1c843961ed72b554f485b86105c443669337e8c0` |
 | Commit documental de validacion de M41.1 | `2956bcae19719a5f9073e24d58da4705742732fa` |
 | Commit validado de Integrated Gameplay Runtime / SampleScene Convergence | `8c485c78b4ab294de9d983f70ebadfba634ab3e1` |
@@ -31,9 +31,10 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Commit validado de Macro Environment / Biome Regions V1 | `55bcb0db479af43351f28908dfe05125dd9d62e1` |
 | Commit técnico validado de Deformable Volumetric Terrain Foundation / Technical Spike | `d0309cf053be220a22151cae2dae9aca6f988e6f` |
 | Commit de integración terrain + documentación en dev | `1b41ead829cd566c55df5adfc0522e33e1dffb96` |
-| Milestone activo | M41.2 — Basic Equipment & Weapon Coverage V1 |
-| Estado M41.2 | `AUTHORIZED — IMMEDIATE PRIORITY` |
-| Estado M41.3 | `PLANNED — AFTER M41.2` |
+| Commit funcional validado de M41.2 | `4f877da10dee813b0bed816194110b5a27087683` |
+| Milestone activo | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 |
+| Estado M41.2 | `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED` |
+| Estado M41.3 | `AUTHORIZED — IMMEDIATE PRIORITY` |
 | Estado M41.4 | `PLANNED — AFTER M41.3` |
 | Estado ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
@@ -57,13 +58,15 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
-| Siguientes | M41.2 → M41.3 → M41.4 → playtest/review |
+| Siguientes | M41.3 → M41.4 → playtest/review |
 
-M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance, World Identity/Topology/Determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Worldgen Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1, Macro Climate Baseline V1 y Macro Environment / Biome Regions V1 quedan `VALIDATED — FOUNDATION COMPLETE`; Worldgen Pass Isolation queda `VALIDATED — SYSTEMIC CORRECTION COMPLETE`; Worldgen/World Session Observability queda `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`; Terrain Materialization Technical Spike queda `VALIDATED — TECHNICAL SPIKE COMPLETE`; Integrated Gameplay Runtime / SampleScene Convergence queda `VALIDATED — RUNTIME CONVERGENCE COMPLETE` en `8c485c78b4ab294de9d983f70ebadfba634ab3e1`; Macro Climate Baseline V1 queda validado y publicado en `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`; Player Traversal / Camera & Runtime Debug Ergonomics Pass queda `VALIDATED — RUNTIME ERGONOMICS COMPLETE` y publicado en `ab78da4fbb1af9189d6a5c178515fafdb56f368e`; Macro Environment / Biome Regions V1 queda validado y publicado en `55bcb0db479af43351f28908dfe05125dd9d62e1`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
+M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance, World Identity/Topology/Determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Worldgen Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1, Macro Climate Baseline V1 y Macro Environment / Biome Regions V1 quedan `VALIDATED — FOUNDATION COMPLETE`; Worldgen Pass Isolation queda `VALIDATED — SYSTEMIC CORRECTION COMPLETE`; Worldgen/World Session Observability queda `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`; Terrain Materialization Technical Spike y Deformable Volumetric Terrain Foundation / Technical Spike quedan `VALIDATED — TECHNICAL SPIKE COMPLETE`; Integrated Gameplay Runtime / SampleScene Convergence queda `VALIDATED — RUNTIME CONVERGENCE COMPLETE` en `8c485c78b4ab294de9d983f70ebadfba634ab3e1`; Macro Climate Baseline V1 queda validado y publicado en `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`; Player Traversal / Camera & Runtime Debug Ergonomics Pass queda `VALIDATED — RUNTIME ERGONOMICS COMPLETE` y publicado en `ab78da4fbb1af9189d6a5c178515fafdb56f368e`; Macro Environment / Biome Regions V1 queda validado y publicado en `55bcb0db479af43351f28908dfe05125dd9d62e1`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED`, M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` y M41.2 queda `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED` en `4f877da10dee813b0bed816194110b5a27087683`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
 
 La revisión post-Environment queda resuelta: el requirement volumétrico se validó con un bounded shared density field chunked, Marching Tetrahedra, mesh/collider, cráter, túnel con techo, cross-chunk mutation, dirty rebuild localizado, persistencia/replay `SPIKE_NON_PRODUCTION`, player traversal y NavMesh local. El commit técnico es `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`. Unity Terrain conserva su evidencia como benchmark heightmap y futuras features no deben asumir que sea la representación productiva definitiva.
 
-Tras ese cierre, la prioridad explícita pasa a la secuencia jugable `M41.2 → M41.3 → M41.4 → playtest/review`. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior sigue requiriendo reconciliación posterior sin renumeración ni reutilización silenciosa.
+M41.2 también queda cerrado: los 17 slots reales de `core:human_standard_01` tienen coverage data-driven; se agregaron 27 items Core de ropa/equipment, mochilas `8×10`/`10×12`/`12×14`, protección que reutiliza M40.1 y firearms `manual_cycle`/`semi_automatic`/`automatic` con ranges `80`/`75`/`60`. `firearm.range` y `melee_range` limitan alcance físico temporal; Current Slice, ownership, storage y M40/M40.1 permanecieron verdes sin schema bump. La prioridad explícita pasa a `M41.3 → M41.4 → playtest/review`.
+
+M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior sigue requiriendo reconciliación posterior sin renumeración ni reutilización silenciosa.
 
 ## Estados Canonicos
 
@@ -163,8 +166,8 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass | `VALIDATED — RUNTIME ERGONOMICS COMPLETE` | Commit final `ab78da4fbb1af9189d6a5c178515fafdb56f368e`: cámara follow-only con yaw/pitch/zoom/collision, sprint + stamina integrada con Needs y Current Slice, panel F3 development-only con ScrollView/time presets/teleport; Player Controls D3D11, M38 y WorldRuntime/session Play Mode `PASS`. |
 | ID TBD — Macro Environment / Biome Regions V1 | `VALIDATED — FOUNDATION COMPLETE` | Commit `55bcb0db479af43351f28908dfe05125dd9d62e1`: `macro_environment_v1`, 14 familias terrestres + None, Primary/Secondary/TransitionQ16, océano None/None/0, schema 7 exacto y schemas 1–6 legacy sin Environment fabricado. Excluye vegetation, fauna, geology, terrain materials, weather, region IDs y materialización local. |
 | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`: density field chunked, Marching Tetrahedra, mesh/collider, crater, roofed tunnel, cross-chunk mutation, dirty rebuild, persistence/replay spike, player traversal y NavMesh local; world_session schema 7 y goldens preservados. |
-| M41.2 — Basic Equipment & Weapon Coverage V1 | `AUTHORIZED — IMMEDIATE PRIORITY` | Coverage funcional de los 17 slots reales, varias mochilas y bolt/semi/automatic usando autoridades existentes; rangos hitscan/melee explícitos y debug clampado. No arte final ni NPC sandbox todavía. |
-| M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | `PLANNED — AFTER M41.2` | Spawn development-only en WorldRuntime, loadouts probabilísticos JSON con `none`, roaming básico, localized damage/death y corpse con pertenencias reales sin reroll. |
+| M41.2 — Basic Equipment & Weapon Coverage V1 | `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED` | Commit `4f877da10dee813b0bed816194110b5a27087683`: 17-slot coverage data-driven, 27 items Core, three backpack tiers, M40.1 protection reuse, manual/semi/automatic fire modes, range-limited hitscan/melee y Current Slice preservado sin schema bump. |
+| M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | `AUTHORIZED — IMMEDIATE PRIORITY` | Spawn development-only en WorldRuntime, loadouts probabilísticos JSON con `none`, roaming básico, localized damage/death y corpse con pertenencias reales sin reroll. |
 | M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | `PLANNED — AFTER M41.3` | Blue/Red debug sobre affiliation genérica, automatic threat acquisition por perception/LOS, cierre de distancia por arma y aim físicamente imperfecto sin aimbot. |
 
 ## Open World Rebaseline — Dirección Futura Aprobada
@@ -189,8 +192,8 @@ Camino conceptual propuesto:
 | 6 | ID TBD — Macro Climate Baseline V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidades 4–5; Pass Isolation; integración runtime cerrada | Truth mundial determinista de baseline térmica y humedad climática de largo plazo, persistida en schema 6; no weather runtime, vegetation ni materialización local. |
 | 6b | ID TBD — Macro Environment / Biome Regions V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidad 6; macro truth validada | Regiones environment/biome globales derivadas de Climate + Water, con Landform separado, persistidas en schema 7; sin vegetation/materiales finales ni region IDs. |
 | Spike volumétrico | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro truth + WorldRuntime + Terrain spike existentes | Density field local chunked, Marching Tetrahedra, mesh/collider, mutación 3D, replay persistente spike, player traversal y NavMesh local demostrados. |
-| Tramo jugable activo | M41.2 — Basic Equipment & Weapon Coverage V1 | `AUTHORIZED — IMMEDIATE PRIORITY` | M34/M35 equipment; M37 Current Slice; M40 combat; terrain volumétrico cerrado | Coverage funcional de equipment/storage/firearms para alimentar pruebas reales dentro de WorldRuntime. |
-| Después | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | `PLANNED — AFTER M41.2` | M41.2; M38/M39/M41.0 | NPCs spawneables con loadout probabilístico real, roaming, damage/death/corpse loot. |
+| Tramo jugable cerrado | M41.2 — Basic Equipment & Weapon Coverage V1 | `DONE — VALIDATED` | M34/M35 equipment; M37 Current Slice; M40 combat; terrain volumétrico cerrado | 17-slot coverage, 27 equipment items, three backpack tiers, manual/semi/automatic y range clamp validados en `4f877da10dee813b0bed816194110b5a27087683`. |
+| Tramo jugable activo | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | `AUTHORIZED — IMMEDIATE PRIORITY` | M41.2; M38/M39/M41.0 | NPCs spawneables con loadout probabilístico real, roaming, damage/death/corpse loot. |
 | Después | M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | `PLANNED — AFTER M41.3` | M41.3; M41.1; M40 | Hostility debug genérica, automatic threat acquisition, engagement por rango y aim imperfecto observable. |
 | Review | Playtest / Review M41.2–M41.4 | `PLANNED — REQUIRED BEFORE NEXT LARGE SYSTEM` | M41.4 | Jugar/observar varios NPC simultáneos y rebaselinear desde bugs/game feel reales. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | Macro truth y geography/features requeridos | Historia estructurada acotada que produce/explica estado presente real sin event-sourced persistence. |
@@ -236,8 +239,8 @@ Los IDs siguientes quedan reservados por M36.0 o por rebaseline posterior explí
 | CERRADO | ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass | Jugable/herramientas | `VALIDATED — RUNTIME ERGONOMICS COMPLETE` | Runtime convergence; M38.1; Current Slice | Cámara player-centric con pitch/collision, sprint+stamina integrada con Needs/persistence y Runtime Debug Tools development-only; commit final `ab78da4fbb1af9189d6a5c178515fafdb56f368e`. |
 | CERRADO | ID TBD — Macro Environment / Biome Regions V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro Climate Baseline V1; macro truth validada | `macro_environment_v1`, 14 familias + None, ecotone Primary/Secondary/Transition, schema 7 y legacy exacto; commit `55bcb0db479af43351f28908dfe05125dd9d62e1`. |
 | CERRADO | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | Arquitectura/world/terrain | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro Environment; Terrain spike; WorldRuntime | Density field chunked + Marching Tetrahedra, mesh/collider, crater/tunnel, dirty rebuild, persistence spike, player traversal y NavMesh local; commit `d0309cf053be220a22151cae2dae9aca6f988e6f`. |
-| AHORA | M41.2 — Basic Equipment & Weapon Coverage V1 | Jugable/contenido | `AUTHORIZED — IMMEDIATE PRIORITY` | M34/M35; M37.1; M40/M40.1; terrain volumétrico cerrado | Cubrir 17 slots reales, varias mochilas, bolt/semi/automatic y range debug coherente sin arte final ni sistemas paralelos. |
-| DESPUÉS | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | Jugable/AI sandbox | `PLANNED — AFTER M41.2` | M41.2; M38/M39/M41.0 | Spawn NPC real, loadouts probabilísticos JSON, roaming, localized health/death y corpse loot exacto. |
+| CERRADO | M41.2 — Basic Equipment & Weapon Coverage V1 | Jugable/contenido | `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED` | M34/M35; M37.1; M40/M40.1; terrain volumétrico cerrado | 17-slot coverage, 27 items, three backpack tiers, manual/semi/automatic y range clamp; commit `4f877da10dee813b0bed816194110b5a27087683`. |
+| AHORA | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | Jugable/AI sandbox | `AUTHORIZED — IMMEDIATE PRIORITY` | M41.2; M38/M39/M41.0 | Spawn NPC real, loadouts probabilísticos JSON, roaming, localized health/death y corpse loot exacto. |
 | DESPUÉS | M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | Jugable/AI combat | `PLANNED — AFTER M41.3` | M41.3; M41.1; M40/M40.1 | Blue/Red debug sobre affiliation genérica, threat acquisition, engagement por rango y aim imperfecto físico/observable. |
 | REVIEW | Playtest / Review M41.2–M41.4 | Jugable/QA | `PLANNED — REQUIRED` | M41.4 | No autorizar automáticamente otro sistema grande; evaluar bugs, navegación, ownership, combat y game feel reales. |
 | RESECUENCIAR | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1; futura world/sector foundation aplicable | Clima dinámico, forecast, exposicion y proteccion permanecen planificados; no equivalen al Macro Climate Baseline y ya no son el siguiente trabajo automático. |
@@ -290,13 +293,13 @@ Los gates ya aprobados no se reabren. Las ubicaciones M42.1 en adelante conserva
 
 Camino cerrado vigente:
 
-`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 DONE → M41.1 DONE → AI Ready APPROVED → open-world foundations validadas → Terrain Materialization Technical Spike VALIDATED → Integrated Gameplay Runtime / SampleScene Convergence VALIDATED → Macro Climate Baseline V1 VALIDATED → Macro Environment / Biome Regions V1 VALIDATED → Deformable Volumetric Terrain Foundation / Technical Spike VALIDATED`
+`M36.0 → M36.1 → M37.0 → (ID TBD validado + M37.1 cerrado) → Persistence Ready APPROVED → M38.0 DONE → M38.1 DONE → M39.0 DONE → M40.0 DONE → M40.1 DONE → Combat Ready APPROVED → M41.0 DONE → M41.1 DONE → AI Ready APPROVED → open-world foundations validadas → Terrain Materialization Technical Spike VALIDATED → Integrated Gameplay Runtime / SampleScene Convergence VALIDATED → Macro Climate Baseline V1 VALIDATED → Macro Environment / Biome Regions V1 VALIDATED → Deformable Volumetric Terrain Foundation / Technical Spike VALIDATED → M41.2 DONE`
 
 Cierre de soporte runtime posterior/intercalado: `Player Traversal / Camera & Runtime Debug Ergonomics Pass VALIDATED`.
 
 Camino crítico inmediato autorizado:
 
-`M41.2 Basic Equipment & Weapon Coverage V1 → M41.3 NPC Sandbox Spawn & Randomized Loadouts V1 → M41.4 Affiliation, Range-Aware Combat & Imperfect Aim V1 → Playtest / Review`
+`M41.3 NPC Sandbox Spawn & Randomized Loadouts V1 → M41.4 Affiliation, Range-Aware Combat & Imperfect Aim V1 → Playtest / Review`
 
 Después de ese tramo, el camino open-world grande vuelve a revisión explícita antes de Bounded History / World Persistence / Sector Blueprint / Large-Sector Navigation / Sector Materialization. No se autoriza continuar esas foundations por inercia.
 
@@ -322,21 +325,25 @@ Dependencias de produccion:
 
 ## Alcance Inmediato
 
-### M41.2 — Basic Equipment & Weapon Coverage V1
+### M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
 
 Estado: `AUTHORIZED — IMMEDIATE PRIORITY`.
 
 Autoridad de alcance: [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md).
 
-M41.2 debe usar el layout `core:human_standard_01` cargado como autoridad y cubrir sus 17 slots reales con contenido funcional suficiente para ejercitar Equipment. Debe agregar varias mochilas con diferencias reales usando el backend item-owned storage existente y ampliar la cobertura firearm desde el Lee-Enfield bolt-action hacia al menos un semi-automatic y un automatic mediante comportamiento genérico/data-driven si el backend actual lo requiere.
+M41.3 debe convertir el coverage de M41.2 y las foundations M38/M39/M41.0 en un sandbox visible dentro de `WorldRuntime`: control development-only de spawn, posición/materialización/NavMesh válida, identidad/ownership/equipment reales y loadouts probabilísticos declarados desde JSON con `none` explícito. Antes de diseñar el schema debe auditar Loot Tables v0 y decidir si extenderlas o crear un Actor Loadout Table/Profile separado, evitando mezclar semánticas de container loot con actor equipment si no corresponden.
 
-El alcance temporal de armas debe quedar coherente: `firearm.range` limita físicamente el hitscan actual, `melee_range` limita melee y el aim/trace debug no debe sugerir que un collider más allá de ese alcance puede recibir daño. La cámara puede seguir encontrando una dirección lejana bajo el mouse, pero la solución física/visual alcanzable se clampa al arma.
+El resultado concreto de cada spawn debe ser diagnosticable/reproducible, convertirse en ItemInstances reales y persistir como estado del actor mientras exista: equipment, backpack/item-owned storage, inventory, weapon y ammo. El NPC debe tener roaming básico mediante `ActorNavigationController`, recibir localized damage mediante M39/M40/M40.1, morir mediante lifecycle existente y dejar exactamente sus pertenencias reales en el corpse. Nunca rerollear loot al morir o abrir el cadáver.
 
-M41.2 no implementa NPC spawn/loadouts probabilísticos, affiliation, imperfect AI aim, full ballistics, modelos/iconos/animaciones finales, condition/repair/crafting ni producción masiva de contenido. Debe preservar `WeaponCombatService`, `ActorEquipmentComponent`, item-owned storage, ownership, `ItemInstance` y Current Slice como autoridades existentes.
+M41.3 no implementa todavía affiliation Blue/Red, automatic threat acquisition, imperfect aim, reaction/focus/spread, full ballistics, strategic AI, final population/ecology ni navegación productiva a gran escala. Debe preservar Actor spawn/identity, Equipment, ownership, ItemStorage, M39, M40/M40.1 y M41.0 como autoridades existentes.
 
-### Después — M41.3 Y M41.4
+### M41.2 — Closeout Validado
 
-M41.3 convierte ese coverage en NPCs spawneables con loadouts probabilísticos reales, roaming, localized damage/death y corpse loot exacto. M41.4 agrega la capa mínima de affiliation/disposition, automatic threat acquisition, range-aware combat e imperfect physical aim sobre M41.1/M41.0/M40 existentes. Después se exige un playtest/review antes de autorizar otro sistema grande.
+M41.2 queda `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED` en `4f877da10dee813b0bed816194110b5a27087683`. Cerró los 17 slots reales con coverage data-driven, 27 items Core nuevos, mochilas `8×10` / `10×12` / `12×14`, protección reutilizando M40.1 y firearms manual/semi/automatic con ranges 80/75/60. `firearm.range` y `melee_range` limitan alcance físico temporal; aim/tracer queda clampado y Current Slice preserva backpack content/ownership/firearm state sin schema bump.
+
+### Después — M41.4
+
+M41.4 agrega la capa mínima de affiliation/disposition, automatic threat acquisition, range-aware combat e imperfect physical aim sobre M41.1/M41.0/M40 existentes. Después se exige un playtest/review antes de autorizar otro sistema grande.
 
 ### M36.0 — Checkpoint A
 
@@ -472,15 +479,25 @@ M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. Validation: `AUTOMATED +
 
 El diagnóstico automático cubre avoid/flee, navegación inválida sin retry, fight con reload/disparo/armor, LostContact, no omniscience, reacquisition y lifecycle Dead. Mauro confirmó manualmente los cuatro escenarios y el tooling Editor quedó reducido a una fixture M41.1 explícita; diagnostics históricos se preservan para automatización sin entradas visibles obsoletas.
 
+### M41.2 — Basic Equipment & Weapon Coverage V1 Validado
+
+M41.2 queda `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED` en `4f877da10dee813b0bed816194110b5a27087683`.
+
+El layout `core:human_standard_01` mantiene 17 slots como Definition authority y todos tienen coverage data-driven. Se agregaron 27 items Core de ropa/equipment sin convertir arte final en requisito; manos pueden cubrirse con Lee-Enfield/crowbar/semi/auto, pies mediante calzado atómico y espalda mediante tres tiers de backpack. Small conserva `8×10`; medium usa `10×12`; large usa `12×14`. Casco y chaleco reutilizan M40.1 sin crear armor paralelo.
+
+`FirearmProfileDefinition` incorpora `fire_mode` validado con `manual_cycle`, `semi_automatic` y `automatic`. Lee-Enfield queda manual-cycle range `80`, Semi-Automatic Rifle range `75` y Automatic Rifle range `60`; las tres reutilizan `.303` existente. Manual/semi disparan una vez por press; automatic repite mientras LMB esté held, respeta `cycle_time`, consume una round por shot, no dispara a ammo cero y no auto-recarga. `firearm.range` limita hitscan físico y `melee_range` melee; aim/tracer debug termina en el endpoint alcanzable.
+
+Current Slice preservó backpack content, ownership/equipment y firearm loaded state sin schema bump. Runtime/Editor compile, M41.2 D3D11 Play Mode, M37/M37.1, Content Provenance/Namespace, Inventory UX, M40/M40.1, Player Controls/Health y `git diff --check` quedaron `PASS`; System Harmony no encontró autoridad paralela, worldgen/terrain/schema changes ni M41.3/M41.4 adelantados. `debug_accuracy_spread` queda intencionalmente pendiente de M41.4.
+
 ## Trabajo Congelado O Diferido
 
 - No ampliar OnGUI por inercia fuera de tooling development-only acotado a un milestone autorizado.
-- No iniciar por inercia Bounded History, World Persistence general, Sector Blueprint/Materialization, facciones amplias, UI final o producción masiva de contenido durante M41.2–M41.4.
+- No iniciar por inercia Bounded History, World Persistence general, Sector Blueprint/Materialization, facciones amplias, UI final o producción masiva de contenido durante M41.3–M41.4.
 - No introducir minería completa, geología/minerales de producción, fluid simulation, derrumbes estructurales, whole-world voxels o destructibilidad total como continuación automática del terrain spike.
 - No introducir enfermedades generales, agricultura o vehiculos en la version inicial completa sin un nuevo rebaseline aprobado.
 - No convertir JSON en scripting libre.
 - No crear sistemas universales preventivos sin necesidad actual demostrada.
-- M41.2 no adelanta NPC loadouts probabilísticos, affiliation, imperfect AI aim ni full ballistics; esos alcances pertenecen a M41.3/M41.4 o a futuros milestones explícitos.
+- M41.3 no adelanta affiliation, automatic hostile acquisition, imperfect AI aim ni full ballistics; esos alcances pertenecen a M41.4 o a futuros milestones explícitos.
 
 ## Regla Transversal De Integracion
 
