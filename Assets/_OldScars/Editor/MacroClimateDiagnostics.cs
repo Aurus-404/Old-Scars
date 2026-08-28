@@ -72,7 +72,7 @@ namespace OldScars.EditorTools
                 "- moisture combines regional tendency, gradual ocean influence, and bounded orographic response",
                 "- routine corpus: " + RoutineSeedsPerCombination + " seeds x 4 sizes x 3 coverages",
                 "- soft findings: " + softFindings.Count.ToString(CultureInfo.InvariantCulture),
-                "- timings / schema-6 payloads: " + string.Join("; ", measurements),
+                "- timings / schema-7 payloads: " + string.Join("; ", measurements),
                 "- preview: " + (previewPath ?? "<NOT GENERATED>"));
         }
 
@@ -599,10 +599,10 @@ namespace OldScars.EditorTools
             var store = new PersistenceFileStore(root);
             WorldSessionService.Close();
             WorldSessionOperationResult create = WorldSessionService.Create(
-                "Climate Schema 6", new WorldSeed(20260827),
+                "Climate Schema 7", new WorldSeed(20260827),
                 WorldGenerationSettings.ResolvePreset(WorldSizePreset.Medium),
                 LandCoveragePreset.Medium, content, store);
-            Check(create.Success, "Schema 6 creation failed: " + Safe(create.Failure), failures);
+            Check(create.Success, "Schema 7 creation failed: " + Safe(create.Failure), failures);
             if (!create.Success) return;
 
             WorldSession expected = create.Session;
@@ -612,14 +612,14 @@ namespace OldScars.EditorTools
                   payload["macroClimate"]?["moistureSamplesBase64"]?.Type == JTokenType.String &&
                   payload["macroClimate"]?["generationSettings"]?["prevailingMoistureDirection"]?.Type ==
                   JTokenType.String,
-                "Schema 6 must persist exact Climate fields/settings.", failures);
+                "Schema 7 must persist exact Climate fields/settings.", failures);
 
             WorldSessionService.Close();
             WorldSessionPersistenceResult read =
                 WorldSessionPersistenceService.Read(expected.WorldId.Canonical, store);
             Check(read.Success && read.Session.HasMacroClimate &&
                   SessionsHaveSameCommittedTruth(expected, read.Session),
-                "Schema 6 did not reconstruct exact committed Climate/world truth: " +
+                "Schema 7 did not reconstruct exact committed Climate/world truth: " +
                 Safe(read.Failure), failures);
 
             JObject corruptHash = (JObject)payload.DeepClone();
@@ -635,17 +635,19 @@ namespace OldScars.EditorTools
                 "Null Climate samples must fail strict semantic preflight.", failures);
 
             for (int schema = WorldSessionPersistenceService.LegacySchemaVersion;
-                 schema <= WorldSessionPersistenceService.MacroHumanGeographySchemaVersion;
+                 schema <= WorldSessionPersistenceService.MacroClimateSchemaVersion;
                  schema++)
             {
                 JObject legacyPayload = BuildLegacyPayload((JObject)payload, schema);
                 WorldSessionPersistenceResult legacy =
                     WorldSessionPersistenceService.FromPayload(legacyPayload);
                 bool expectedHuman = schema >= WorldSessionPersistenceService.MacroHumanGeographySchemaVersion;
-                Check(legacy.Success && !legacy.Session.HasMacroClimate &&
+                bool expectedClimate = schema >= WorldSessionPersistenceService.MacroClimateSchemaVersion;
+                Check(legacy.Success && legacy.Session.HasMacroClimate == expectedClimate &&
+                      !legacy.Session.HasMacroEnvironment &&
                       legacy.Session.HasMacroHumanGeography == expectedHuman &&
                       (int)WorldSessionPersistenceService.ToPayload(legacy.Session)["schemaVersion"] == schema,
-                    "Schema " + schema + " must load/re-save exact legacy truth without Climate fabrication: " +
+                    "Schema " + schema + " must load/re-save exact legacy truth without later-pass fabrication: " +
                     Safe(legacy.Failure), failures);
             }
         }
@@ -674,6 +676,8 @@ namespace OldScars.EditorTools
                 legacy["macroWater"] = current["macroWater"].DeepClone();
             if (schema >= WorldSessionPersistenceService.MacroHumanGeographySchemaVersion)
                 legacy["macroHumanGeography"] = current["macroHumanGeography"].DeepClone();
+            if (schema >= WorldSessionPersistenceService.MacroClimateSchemaVersion)
+                legacy["macroClimate"] = current["macroClimate"].DeepClone();
             return legacy;
         }
 
@@ -783,6 +787,7 @@ namespace OldScars.EditorTools
                    expected.MacroGeography.CanonicalHash == actual.MacroGeography.CanonicalHash &&
                    expected.MacroWater.CanonicalHash == actual.MacroWater.CanonicalHash &&
                    expected.MacroClimate.CanonicalHash == actual.MacroClimate.CanonicalHash &&
+                   expected.MacroEnvironment.CanonicalHash == actual.MacroEnvironment.CanonicalHash &&
                    expected.MacroClimate.PrevailingMoistureDirection ==
                    actual.MacroClimate.PrevailingMoistureDirection &&
                    expected.MacroHumanGeography.CanonicalHash == actual.MacroHumanGeography.CanonicalHash &&

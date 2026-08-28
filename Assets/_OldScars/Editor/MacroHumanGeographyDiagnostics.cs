@@ -290,6 +290,7 @@ namespace OldScars.EditorTools
             JObject legacyFour = (JObject)payload.DeepClone();
             legacyFour["schemaVersion"] = WorldSessionPersistenceService.MacroWaterSchemaVersion;
             legacyFour.Remove("macroClimate");
+            legacyFour.Remove("macroEnvironment");
             legacyFour.Remove("macroHumanGeography");
             WorldSessionPersistenceResult legacyRead =
                 WorldSessionPersistenceService.FromPayload(legacyFour);

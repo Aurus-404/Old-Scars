@@ -10,7 +10,7 @@ namespace OldScars.Core.World
     /// </summary>
     public static class WorldSessionBootstrap
     {
-        public const string CurrentGeneratorVersion = "world_pipeline_v4";
+        public const string CurrentGeneratorVersion = "world_pipeline_v5";
         public const string LegacyMacroGeographyGeneratorVersion = "macro_geography_v1";
         public const string LegacyGeneratorVersion = "bootstrap_v1";
         public const string LegacyMacroPlanGeneratorVersion = "macro_plan_v1";
@@ -84,6 +84,14 @@ namespace OldScars.Core.World
                     error = climateError;
                     return false;
                 }
+                if (!MacroEnvironmentGenerator.TryGenerate(
+                        context, macroClimate, macroWater,
+                        out MacroEnvironmentPlan macroEnvironment,
+                        out string environmentError))
+                {
+                    error = environmentError;
+                    return false;
+                }
                 if (!WorldGameplayQualityAnalyzer.TryAnalyze(
                         macroWorldPlan, macroGeography, macroWater,
                         out WorldGameplayQualityAnalysis quality, out string qualityError))
@@ -114,6 +122,7 @@ namespace OldScars.Core.World
                     macroGeography,
                     macroWater,
                     macroClimate,
+                    macroEnvironment,
                     quality,
                     macroHumanGeography,
                     starterSector,

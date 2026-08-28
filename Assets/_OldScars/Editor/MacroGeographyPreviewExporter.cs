@@ -47,6 +47,10 @@ namespace OldScars.EditorTools
                     context, plan, geography, water,
                     out MacroClimatePlan climate, out string climateError))
                 throw new InvalidOperationException("Preview Macro Climate generation failed: " + climateError);
+            if (!MacroEnvironmentGenerator.TryGenerate(
+                    context, climate, water,
+                    out MacroEnvironmentPlan environment, out string environmentError))
+                throw new InvalidOperationException("Preview Macro Environment generation failed: " + environmentError);
             if (!WorldGameplayQualityAnalyzer.TryAnalyze(
                     plan, geography, water,
                     out WorldGameplayQualityAnalysis quality, out string qualityError))
@@ -59,7 +63,8 @@ namespace OldScars.EditorTools
                     out MacroHumanGeographyPlan human, out string humanError))
                 throw new InvalidOperationException("Preview Macro Human Geography generation failed: " + humanError);
 
-            Export(plan, geography, water, climate, quality, human, starter, outputPath, 320, 320, true);
+            Export(plan, geography, water, climate, environment, quality, human, starter,
+                outputPath, 320, 320, true);
             Debug.Log(
                 "Macro Geography Preview Export: PASS\n" +
                 "Path: " + outputPath + "\n" +
@@ -69,6 +74,7 @@ namespace OldScars.EditorTools
                 "GeographyHash: " + geography.CanonicalHash + "\n" +
                 "WaterHash: " + water.CanonicalHash + "\n" +
                 "ClimateHash: " + climate.CanonicalHash + "\n" +
+                "EnvironmentHash: " + environment.CanonicalHash + "\n" +
                 "PrevailingMoistureDirection: " + climate.PrevailingMoistureDirection + "\n" +
                 "HumanGeographyHash: " + human.CanonicalHash + "\n" +
                 "Starter: " + starter.Canonical);
@@ -87,7 +93,7 @@ namespace OldScars.EditorTools
             bool overlaySectors)
         {
             ExportInternal(
-                plan, geography, water, null, quality, human, starterSector,
+                plan, geography, water, null, null, quality, human, starterSector,
                 outputPath, panelWidth, panelHeight, overlaySectors);
         }
 
@@ -105,7 +111,26 @@ namespace OldScars.EditorTools
             bool overlaySectors)
         {
             ExportInternal(
-                plan, geography, water, climate, quality, human, starterSector,
+                plan, geography, water, climate, null, quality, human, starterSector,
+                outputPath, panelWidth, panelHeight, overlaySectors);
+        }
+
+        public static void Export(
+            MacroWorldPlan plan,
+            MacroGeographyPlan geography,
+            MacroWaterPlan water,
+            MacroClimatePlan climate,
+            MacroEnvironmentPlan environment,
+            WorldGameplayQualityAnalysis quality,
+            MacroHumanGeographyPlan human,
+            SectorId starterSector,
+            string outputPath,
+            int panelWidth,
+            int panelHeight,
+            bool overlaySectors)
+        {
+            ExportInternal(
+                plan, geography, water, climate, environment, quality, human, starterSector,
                 outputPath, panelWidth, panelHeight, overlaySectors);
         }
 
@@ -114,6 +139,7 @@ namespace OldScars.EditorTools
             MacroGeographyPlan geography,
             MacroWaterPlan water,
             MacroClimatePlan climate,
+            MacroEnvironmentPlan environment,
             WorldGameplayQualityAnalysis quality,
             MacroHumanGeographyPlan human,
             SectorId starterSector,
@@ -124,9 +150,12 @@ namespace OldScars.EditorTools
         {
             if (plan == null || geography == null || water == null || quality == null || human == null)
                 throw new ArgumentNullException("Worldgen Inspector inputs are required.");
+            if (environment != null && climate == null)
+                throw new ArgumentException("Environment preview requires committed Climate.");
             if (plan.WorldBounds != geography.WorldBounds ||
                 geography.WorldBounds != water.WorldBounds ||
-                climate != null && geography.WorldBounds != climate.WorldBounds)
+                climate != null && geography.WorldBounds != climate.WorldBounds ||
+                environment != null && geography.WorldBounds != environment.WorldBounds)
                 throw new ArgumentException("Inspector plan/geography/water bounds must match.");
             if (string.IsNullOrWhiteSpace(outputPath))
                 throw new ArgumentException("Preview output path is required.", nameof(outputPath));
@@ -134,7 +163,7 @@ namespace OldScars.EditorTools
                 throw new ArgumentOutOfRangeException(nameof(panelWidth),
                     "Preview panels must be at least 64x64.");
 
-            int panelColumns = climate == null ? 3 : 4;
+            int panelColumns = environment != null ? 5 : climate == null ? 3 : 4;
             var texture = new Texture2D(panelWidth * panelColumns, panelHeight * 2,
                 TextureFormat.RGB24, false, true);
             texture.name = "OldScarsWorldgenInspectorPreview";
@@ -167,7 +196,7 @@ namespace OldScars.EditorTools
                         texture.SetPixel(panelWidth * 2 + x, panelHeight + y,
                             WaterColor(waterSample));
                     }
-                    else
+                    else if (environment == null)
                     {
                         MacroClimateSample climateSample = climate.SampleAt(position);
                         texture.SetPixel(panelWidth * 2 + x, y,
@@ -181,6 +210,27 @@ namespace OldScars.EditorTools
                         texture.SetPixel(panelWidth * 2 + x, panelHeight + y,
                             DrainageColor(geographySample, waterSample));
                         texture.SetPixel(panelWidth * 3 + x, panelHeight + y,
+                            WaterColor(waterSample));
+                    }
+                    else
+                    {
+                        MacroClimateSample climateSample = climate.SampleAt(position);
+                        MacroEnvironmentSample environmentSample = environment.SampleAt(position);
+                        texture.SetPixel(panelWidth * 2 + x, y,
+                            ThermalColor(climateSample.ThermalIndex));
+                        texture.SetPixel(panelWidth * 3 + x, y,
+                            MoistureColor(climateSample.MoistureIndex));
+                        texture.SetPixel(panelWidth * 4 + x, y,
+                            EnvironmentColor(environmentSample, waterSample));
+                        texture.SetPixel(x, panelHeight + y,
+                            QualityColor(quality, sampleX, sampleY));
+                        texture.SetPixel(panelWidth + x, panelHeight + y,
+                            WaterColor(waterSample));
+                        texture.SetPixel(panelWidth * 2 + x, panelHeight + y,
+                            DrainageColor(geographySample, waterSample));
+                        texture.SetPixel(panelWidth * 3 + x, panelHeight + y,
+                            TransitionColor(environmentSample, waterSample));
+                        texture.SetPixel(panelWidth * 4 + x, panelHeight + y,
                             WaterColor(waterSample));
                     }
                 }
@@ -328,6 +378,42 @@ namespace OldScars.EditorTools
             return Color.Lerp(new Color(0.44f, 0.66f, 0.32f), new Color(0.05f, 0.30f, 0.72f), (value - 0.5f) * 2f);
         }
 
+        private static Color EnvironmentColor(
+            MacroEnvironmentSample sample,
+            MacroWaterSample water)
+        {
+            if (water.IsOcean || sample.PrimaryBiome == MacroBiomeFamily.None)
+                return new Color(0.04f, 0.14f, 0.38f);
+            switch (sample.PrimaryBiome)
+            {
+                case MacroBiomeFamily.PolarBarrens: return new Color(0.88f, 0.92f, 0.96f);
+                case MacroBiomeFamily.Tundra: return new Color(0.62f, 0.72f, 0.70f);
+                case MacroBiomeFamily.ColdDesert: return new Color(0.70f, 0.63f, 0.52f);
+                case MacroBiomeFamily.ColdSteppe: return new Color(0.56f, 0.61f, 0.38f);
+                case MacroBiomeFamily.BorealForest: return new Color(0.12f, 0.35f, 0.26f);
+                case MacroBiomeFamily.TemperateDesert: return new Color(0.82f, 0.66f, 0.30f);
+                case MacroBiomeFamily.TemperateGrassland: return new Color(0.57f, 0.69f, 0.25f);
+                case MacroBiomeFamily.TemperateWoodland: return new Color(0.31f, 0.55f, 0.25f);
+                case MacroBiomeFamily.TemperateForest: return new Color(0.12f, 0.46f, 0.22f);
+                case MacroBiomeFamily.TemperateRainforest: return new Color(0.06f, 0.36f, 0.30f);
+                case MacroBiomeFamily.HotDesert: return new Color(0.90f, 0.68f, 0.20f);
+                case MacroBiomeFamily.Savanna: return new Color(0.70f, 0.64f, 0.16f);
+                case MacroBiomeFamily.WarmForest: return new Color(0.16f, 0.53f, 0.18f);
+                case MacroBiomeFamily.TropicalRainforest: return new Color(0.02f, 0.30f, 0.12f);
+                default: return Color.magenta;
+            }
+        }
+
+        private static Color TransitionColor(
+            MacroEnvironmentSample sample,
+            MacroWaterSample water)
+        {
+            if (water.IsOcean) return new Color(0.04f, 0.14f, 0.38f);
+            float value = sample.TransitionQ16 / 65535f;
+            return Color.Lerp(new Color(0.08f, 0.08f, 0.08f),
+                new Color(1.0f, 0.86f, 0.18f), value);
+        }
+
         private static Color DrainageColor(
             MacroGeographySample geography,
             MacroWaterSample water)
@@ -354,7 +440,7 @@ namespace OldScars.EditorTools
                 int sampleY = basin.RepresentativeSampleIndex / water.SampleColumns;
                 int x = sampleX * (panelWidth - 1) / (water.SampleColumns - 1);
                 int y = sampleY * (panelHeight - 1) / (water.SampleRows - 1);
-                int basinPanel = panelColumns == 4 ? 2 : 1;
+                int basinPanel = panelColumns >= 4 ? 2 : 1;
                 DrawMarker(texture, panelWidth * basinPanel + x, panelHeight + y,
                     Color.white, panelWidth * panelColumns, panelHeight * 2);
             }
@@ -421,7 +507,7 @@ namespace OldScars.EditorTools
                 ToPixel(plan.WorldBounds, placement.Position, panelWidth, panelHeight,
                     out int x, out int y);
                 Color color = placement.SectorId == starter ? Color.yellow : Color.white;
-                int topPanel = panelColumns == 4 ? 1 : 2;
+                int topPanel = panelColumns >= 4 ? 1 : 2;
                 DrawMarker(texture, panelWidth * topPanel + x, y, color,
                     panelWidth * panelColumns, panelHeight * 2);
                 DrawMarker(texture, x, panelHeight + y, color,

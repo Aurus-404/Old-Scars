@@ -18,6 +18,7 @@ namespace OldScars.Core.World
             MacroGeographyPlan macroGeography,
             MacroWaterPlan macroWater,
             MacroClimatePlan macroClimate,
+            MacroEnvironmentPlan macroEnvironment,
             WorldGameplayQualityAnalysis gameplayQuality,
             MacroHumanGeographyPlan macroHumanGeography,
             WorldTopology legacyTopology,
@@ -31,6 +32,7 @@ namespace OldScars.Core.World
             MacroGeography = macroGeography;
             MacroWater = macroWater;
             MacroClimate = macroClimate;
+            MacroEnvironment = macroEnvironment;
             GameplayQuality = gameplayQuality;
             MacroHumanGeography = macroHumanGeography;
             this.legacyTopology = legacyTopology;
@@ -45,6 +47,7 @@ namespace OldScars.Core.World
         public MacroGeographyPlan MacroGeography { get; }
         public MacroWaterPlan MacroWater { get; }
         public MacroClimatePlan MacroClimate { get; }
+        public MacroEnvironmentPlan MacroEnvironment { get; }
         public WorldGameplayQualityAnalysis GameplayQuality { get; }
         public MacroHumanGeographyPlan MacroHumanGeography { get; }
         public bool HasMacroWorldPlan => MacroWorldPlan != null;
@@ -52,12 +55,15 @@ namespace OldScars.Core.World
         public bool HasMacroGeography => MacroGeography != null;
         public bool HasMacroWater => MacroWater != null;
         public bool HasMacroClimate => MacroClimate != null;
+        public bool HasMacroEnvironment => MacroEnvironment != null;
         public bool HasGameplayQuality => GameplayQuality != null;
         public bool HasMacroHumanGeography => MacroHumanGeography != null;
         public bool IsLegacySchemaV2 => MacroWorldPlan != null && MacroGeography == null;
         public bool IsLegacySchemaV3 => MacroGeography != null && MacroWater == null;
         public bool IsLegacySchemaV4 => MacroWater != null && MacroHumanGeography == null;
         public bool IsLegacySchemaV5 => MacroHumanGeography != null && MacroClimate == null;
+        public bool IsLegacySchemaV6 => MacroClimate != null && MacroHumanGeography != null &&
+                                        MacroEnvironment == null;
         public WorldTopology Topology => MacroWorldPlan != null ? MacroWorldPlan.Topology : legacyTopology;
         public SectorId ActiveSectorId { get; }
         public WorldCreationContentEvidence CreationContentEvidence { get; }
@@ -72,6 +78,7 @@ namespace OldScars.Core.World
             MacroGeographyPlan macroGeography,
             MacroWaterPlan macroWater,
             MacroClimatePlan macroClimate,
+            MacroEnvironmentPlan macroEnvironment,
             WorldGameplayQualityAnalysis gameplayQuality,
             MacroHumanGeographyPlan macroHumanGeography,
             SectorId activeSectorId,
@@ -120,6 +127,14 @@ namespace OldScars.Core.World
                 error = "New WorldSession requires Macro Climate matching MacroWorldPlan/Geography bounds and grid";
                 return false;
             }
+            if (macroEnvironment == null ||
+                macroEnvironment.WorldBounds != macroWorldPlan.WorldBounds ||
+                macroEnvironment.SampleColumns != macroClimate.SampleColumns ||
+                macroEnvironment.SampleRows != macroClimate.SampleRows)
+            {
+                error = "New WorldSession requires Macro Environment matching Macro Climate bounds and grid";
+                return false;
+            }
             if (gameplayQuality == null || !gameplayQuality.MeetsHardRequirements)
             {
                 error = "New WorldSession requires gameplay-quality analysis with no hard failures";
@@ -165,11 +180,59 @@ namespace OldScars.Core.World
                 macroGeography,
                 macroWater,
                 macroClimate,
+                macroEnvironment,
                 gameplayQuality,
                 macroHumanGeography,
                 null,
                 activeSectorId,
                 creationContentEvidence);
+            return true;
+        }
+
+        /// <summary>
+        /// Explicit schema-6 compatibility path. It preserves committed Climate
+        /// and Human Geography but never fabricates Macro Environment.
+        /// </summary>
+        internal static bool TryCreateLegacySchemaV6(
+            WorldId worldId,
+            string displayName,
+            WorldGenerationContext generationContext,
+            MacroWorldPlan macroWorldPlan,
+            MacroGeographyPlan macroGeography,
+            MacroWaterPlan macroWater,
+            MacroClimatePlan macroClimate,
+            WorldGameplayQualityAnalysis gameplayQuality,
+            MacroHumanGeographyPlan macroHumanGeography,
+            SectorId activeSectorId,
+            WorldCreationContentEvidence creationContentEvidence,
+            out WorldSession session,
+            out string error)
+        {
+            session = null;
+            error = null;
+            if (!worldId.IsValid || !TryValidateDisplayName(displayName, out error) ||
+                generationContext == null || !generationContext.GeneratorVersion.IsValid ||
+                macroWorldPlan == null || macroGeography == null || macroWater == null ||
+                macroClimate == null || macroHumanGeography == null ||
+                macroWorldPlan.WorldBounds != macroGeography.WorldBounds ||
+                macroWorldPlan.WorldBounds != macroWater.WorldBounds ||
+                macroWorldPlan.WorldBounds != macroClimate.WorldBounds ||
+                macroWorldPlan.WorldBounds != macroHumanGeography.WorldBounds ||
+                macroClimate.SampleColumns != macroGeography.SampleColumns ||
+                macroClimate.SampleRows != macroGeography.SampleRows ||
+                gameplayQuality == null || !gameplayQuality.MeetsHardRequirements ||
+                !macroHumanGeography.Quality.MeetsHardRequirements ||
+                !ContainsSector(macroWorldPlan.Topology, activeSectorId) ||
+                creationContentEvidence == null)
+            {
+                if (string.IsNullOrEmpty(error))
+                    error = "Legacy schema-6 WorldSession contains invalid plan, geography, water, climate, quality, human geography, active sector, or provenance";
+                return false;
+            }
+            session = new WorldSession(
+                worldId, displayName, generationContext, macroWorldPlan, macroGeography,
+                macroWater, macroClimate, null, gameplayQuality, macroHumanGeography, null,
+                activeSectorId, creationContentEvidence);
             return true;
         }
 
@@ -211,7 +274,7 @@ namespace OldScars.Core.World
             }
             session = new WorldSession(
                 worldId, displayName, generationContext, macroWorldPlan, macroGeography,
-                macroWater, null, gameplayQuality, macroHumanGeography, null,
+                macroWater, null, null, gameplayQuality, macroHumanGeography, null,
                 activeSectorId, creationContentEvidence);
             return true;
         }
@@ -250,7 +313,8 @@ namespace OldScars.Core.World
             }
             session = new WorldSession(
                 worldId, displayName, generationContext, macroWorldPlan, macroGeography,
-                macroWater, null, gameplayQuality, null, null, activeSectorId, creationContentEvidence);
+                macroWater, null, null, gameplayQuality, null, null,
+                activeSectorId, creationContentEvidence);
             return true;
         }
 
@@ -284,7 +348,8 @@ namespace OldScars.Core.World
             }
             session = new WorldSession(
                 worldId, displayName, generationContext, macroWorldPlan, macroGeography,
-                null, null, null, null, null, activeSectorId, creationContentEvidence);
+                null, null, null, null, null, null,
+                activeSectorId, creationContentEvidence);
             return true;
         }
 
@@ -337,6 +402,7 @@ namespace OldScars.Core.World
                 displayName,
                 generationContext,
                 macroWorldPlan,
+                null,
                 null,
                 null,
                 null,
@@ -405,6 +471,7 @@ namespace OldScars.Core.World
                 worldId,
                 displayName,
                 generationContext,
+                null,
                 null,
                 null,
                 null,

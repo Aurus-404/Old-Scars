@@ -156,8 +156,8 @@ namespace OldScars.EditorTools
 
         private static void ValidateLogicalAuthority(WorldSession session, ICollection<string> failures)
         {
-            Check(WorldSessionPersistenceService.CurrentSchemaVersion == 6,
-                "current New Game schema must include Climate without changing terrain inputs", failures);
+            Check(WorldSessionPersistenceService.CurrentSchemaVersion == 7,
+                "current New Game schema must include Environment without changing terrain inputs", failures);
             Check(session.HasMacroWorldPlan && session.HasMacroGeography && session.HasMacroWater &&
                   session.HasMacroHumanGeography,
                 "persisted terrain fixture must expose all committed terrain-input truth", failures);
