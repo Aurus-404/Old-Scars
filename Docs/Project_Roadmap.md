@@ -12,7 +12,7 @@ Este archivo es la autoridad canonica para:
 
 `Current_Milestone.md` resume este estado, `Next_Sprints.md` deriva la cola inmediata y `Development_Log.md` conserva la cronologia append-only. Ninguno de esos documentos puede reasignar IDs ni contradecir el estado publicado aqui.
 
-Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 externo se conserva como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) mantiene la autoridad sobre contratos tecnicos vigentes despues de contrastarlos con el codigo real. [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto sin presentarla como implementada. Este roadmap no sustituye esas fuentes ni convierte implementaciones en diseño final.
+Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 externo se conserva como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) mantiene la autoridad sobre contratos tecnicos vigentes despues de contrastarlos con el codigo real. [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto sin presentarla como implementada. [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md) fija la decisión de producto y el alcance inmediato de terrain volumétrico alterable. Este roadmap no sustituye esas fuentes ni convierte implementaciones en diseño final.
 
 ## Estado De Produccion
 
@@ -29,7 +29,8 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Commit validado de Macro Climate Baseline V1 | `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108` |
 | Commit final validado de Player Traversal / Camera & Runtime Debug Ergonomics Pass | `ab78da4fbb1af9189d6a5c178515fafdb56f368e` |
 | Commit validado de Macro Environment / Biome Regions V1 | `55bcb0db479af43351f28908dfe05125dd9d62e1` |
-| Milestone activo | Ninguno |
+| Milestone activo | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike |
+| Estado ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | `AUTHORIZED — IMMEDIATE PRIORITY` |
 | Estado ID TBD — Global Content ID Namespace Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — Minimum Content Source Identity & Provenance Foundation | `VALIDATED — FOUNDATION COMPLETE` |
 | Estado ID TBD — World Identity, Topology & Determinism Foundation | `VALIDATED — FOUNDATION COMPLETE` |
@@ -51,11 +52,13 @@ Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Ga
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED` |
-| Siguientes | Revisión de secuencia post-Environment (`DESIGN REVIEW REQUIRED — NOT AUTHORIZED`) |
+| Siguientes | Deformable Volumetric Terrain Foundation / Technical Spike → tramo corto de Core Gameplay / Mechanics Polish |
 
 M37.0 queda `DONE — PERSISTENCE CORE VALIDATED` y M37.1 queda `DONE — CURRENT SLICE PERSISTENCE VALIDATED`; `Persistence Ready` está `APPROVED`. Global Content ID Namespace, Minimum Content Source Identity/Provenance, World Identity/Topology/Determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Worldgen Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1, Macro Climate Baseline V1 y Macro Environment / Biome Regions V1 quedan `VALIDATED — FOUNDATION COMPLETE`; Worldgen Pass Isolation queda `VALIDATED — SYSTEMIC CORRECTION COMPLETE`; Worldgen/World Session Observability queda `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`; World Session/New Game Save-Load queda `VALIDATED — APPLICATION SHELL COMPLETE`; Terrain Materialization Technical Spike queda `VALIDATED — TECHNICAL SPIKE COMPLETE`; Integrated Gameplay Runtime / SampleScene Convergence queda `VALIDATED — RUNTIME CONVERGENCE COMPLETE` en `8c485c78b4ab294de9d983f70ebadfba634ab3e1`; Macro Climate Baseline V1 queda validado y publicado en `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`; Player Traversal / Camera & Runtime Debug Ergonomics Pass queda `VALIDATED — RUNTIME ERGONOMICS COMPLETE` y publicado en `ab78da4fbb1af9189d6a5c178515fafdb56f368e`; Macro Environment / Biome Regions V1 queda validado y publicado en `55bcb0db479af43351f28908dfe05125dd9d62e1`. M38.0 queda `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED`, M38.1 queda `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED`, M39.0 queda `DONE — LOCALIZED HEALTH / MEDICINE VALIDATED`, M40.0 queda `DONE — COMBAT RESOLUTION & WEAPONS V1 VALIDATED`, M40.1 queda `DONE — ARMOR / PENETRATION V1 VALIDATED`, M41.0 queda `DONE — NAVIGATION / PERCEPTION FOUNDATION VALIDATED` y M41.1 queda `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`. M41.1 tiene validation `AUTOMATED + MANUAL UNITY PASSED`; `Combat Ready` y `AI Ready` están `APPROVED`.
 
-No hay milestone de implementación activo. Las foundations open-world de source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1, Macro Climate Baseline V1 y Macro Environment / Biome Regions V1, más la application shell, observabilidad acotada, Terrain Materialization Technical Spike, la convergencia del gameplay compartido en WorldRuntime y el pass de traversal/camera/debug ergonomics, quedaron validadas. Ninguna unidad posterior queda autorizada automáticamente por este documento. Antes de iniciar otro coding unit open-world se requiere una revisión explícita de la secuencia post-Environment hacia world persistence, sector blueprints y materialización física. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior dejó de ser el camino crítico inmediato y requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+La revisión post-Environment queda resuelta por decisión explícita de producto: antes de seguir acumulando worldgen macro o materialización sectorial basada en heightmap, Old Scars debe validar terrain volumétrico alterable y persistente. `ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike` queda autorizado como prioridad inmediata. El Terrain Materialization Technical Spike existente conserva toda su evidencia, pero Unity Terrain deja de ser candidato implícito a representación productiva definitiva. El objetivo productivo debe admitir cavado, cráteres/explosiones, zanjas/trincheras, excavación lateral, túneles/cuevas y otras mutaciones volumétricas sin exigir un mundo cúbico ni cargar el volumen mundial completo.
+
+Tras cerrar ese spike se prioriza un tramo corto de pulido de mecánicas/core gameplay antes de volver a profundizar las capas grandes de mundo, salvo que la prueba de terrain descubra un blocker técnico inmediato. M42.0–M47.1 conservan sus IDs y alcances planificados; su orden anterior sigue requiriendo reconciliación posterior sin renumeración ni reutilización silenciosa.
 
 ## Estados Canonicos
 
@@ -147,15 +150,16 @@ Estado canonico del conjunto: `VALIDATED`, dentro del alcance debug/fundacional 
 | ID TBD — Worldgen Gameplay Quality + Macro Water V1 | `VALIDATED — FOUNDATION COMPLETE` | Water global committed con Land Coverage separado, ocean/coastline, conditioned drainage/basins, quality hard/soft y starter suitable; persistencia `world_session_v1` schema 4, schemas 1/2/3 legacy sin truth fabricada. Excluye climate, final rivers, terrain/materialización y runtime water simulation. |
 | ID TBD — Worldgen Pass Isolation Correction | `VALIDATED — SYSTEMIC CORRECTION COMPLETE` | `GeneratorVersion` global queda como metadata y los passes poseen contratos deterministas separados. Restauró los outputs V1 de Plan/Geography y evita que evolución downstream re-seedee upstream truth. |
 | ID TBD — Macro Human Geography / Road Network V1 | `VALIDATED — FOUNDATION COMPLETE` | Hubs Regional/Local y roads Primary/Secondary globales, routeadas por coste entero y separadas del MST/topology, committed en `world_session_v1` schema 5. Excluye settlements detallados, bridges, terrain/road materialization, navigation física, climate/history y runtime routing. |
-| ID TBD — Terrain Materialization Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Proyección local transient a Unity Terrain/Collider, water/road diagnostics, player existente y NavMesh terrestre local. Preserva sector≠tile, M37/hashes y escala unfrozen; excluye streaming, transitions, mutations, voxels y materialización productiva. |
+| ID TBD — Terrain Materialization Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Proyección local transient a Unity Terrain/Collider, water/road diagnostics, player existente y NavMesh terrestre local. Preserva sector≠tile, M37/hashes y escala unfrozen; ahora queda explícitamente como benchmark heightmap, no representación productiva definitiva. |
 | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence | `VALIDATED — RUNTIME CONVERGENCE COMPLETE` | Commit `8c485c78b4ab294de9d983f70ebadfba634ab3e1`: WorldRuntime canónico y SampleScene laboratorio reutilizan la misma composición gameplay; worldgen aporta terrain/world truth sin reemplazar Inventory, Health, Needs, Interaction, Combat ni Persistence. Fixture M32 sólo development; identidad/persistencia/current-slice y regresiones M37–M41/worldgen validadas. |
 | ID TBD — Macro Climate Baseline V1 | `VALIDATED — FOUNDATION COMPLETE` | Commit `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`: truth mundial `ThermalIndex`/`MoistureIndex` bajo `macro_climate_v1`, dirección dominante persistida, schema 6 exacto y schemas 1–5 legacy sin Climate fabricado. Excluye weather runtime, vegetation, geology, final rivers y materialización local. |
 | ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass | `VALIDATED — RUNTIME ERGONOMICS COMPLETE` | Commit final `ab78da4fbb1af9189d6a5c178515fafdb56f368e`: cámara follow-only con yaw/pitch/zoom/collision, sprint + stamina integrada con Needs y Current Slice, panel F3 development-only con ScrollView/time presets/teleport; Player Controls D3D11, M38 y WorldRuntime/session Play Mode `PASS`. |
 | ID TBD — Macro Environment / Biome Regions V1 | `VALIDATED — FOUNDATION COMPLETE` | Commit `55bcb0db479af43351f28908dfe05125dd9d62e1`: `macro_environment_v1`, 14 familias terrestres + None, Primary/Secondary/TransitionQ16, océano None/None/0, schema 7 exacto y schemas 1–6 legacy sin Environment fabricado. Excluye vegetation, fauna, geology, terrain materials, weather, region IDs y materialización local. |
+| ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | `AUTHORIZED — IMMEDIATE PRIORITY` | Validar representación volumétrica chunked, mesh/collider local, deformación real, persistencia de una mutación de prueba y baseline visual cercano. Codex puede crear texturas placeholder task-owned simples/procedurales. No es minería completa ni materialización sectorial final. |
 
 ## Open World Rebaseline — Dirección Futura Aprobada
 
-[Open_World_Architecture.md](Open_World_Architecture.md) congela la dirección de producto/arquitectura futura con estado `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`. No reserva IDs numéricos, no inicia gameplay y no convierte contratos futuros en realidad técnica.
+[Open_World_Architecture.md](Open_World_Architecture.md) congela la dirección de producto/arquitectura futura con estado `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`. [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md) añade el requisito aprobado de terrain productivo volumétrico/deformable sin convertirlo todavía en implementación.
 
 Camino conceptual propuesto:
 
@@ -170,21 +174,23 @@ Camino conceptual propuesto:
 | Correction | ID TBD — Worldgen Pass Isolation Correction | `VALIDATED — SYSTEMIC CORRECTION COMPLETE` | Unidad 5 | Versión global separada de contratos deterministas por pass antes de sumar Climate/Environment. |
 | Correction | ID TBD — Worldgen / World Session Observability Correction | `VALIDATED — OBSERVABILITY CORRECTION COMPLETE` | Pass Isolation y application shell | Eventos únicos Create/Load/Runtime Ready/Save con evidence ya existente; sin cambio de generation, schema o runtime simulation. |
 | Infrastructure | ID TBD — Macro Human Geography / Road Network V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidades 3–5 | Red mundial lógica committed que consume truth macro sin convertir el MST scaffold en physical adjacency/travel graph ni materializar roads. |
-| Spike | ID TBD — Terrain Materialization Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro Geography/Water/Human Geography validadas | Conversión local medida a Unity Terrain/Collider, water/roads diagnósticos y NavMesh local sin sector=tile, persistence nueva, whole-world Terrain/NavMesh, streaming ni transición. |
+| Spike | ID TBD — Terrain Materialization Technical Spike | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro Geography/Water/Human Geography validadas | Conversión local medida a Unity Terrain/Collider, water/roads diagnósticos y NavMesh local; queda como benchmark heightmap y no congela representación productiva. |
 | Integration | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence | `VALIDATED — RUNTIME CONVERGENCE COMPLETE` | Terrain spike; M32–M41.1; World Session/Current Slice | WorldRuntime canónico ejecuta el gameplay compartido sobre worldgen; SampleScene queda laboratorio y no existe una autoridad gameplay paralela. |
 | 6 | ID TBD — Macro Climate Baseline V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidades 4–5; Pass Isolation; integración runtime cerrada | Truth mundial determinista de baseline térmica y humedad climática de largo plazo, persistida en schema 6; no weather runtime, vegetation ni materialización local. |
 | 6b | ID TBD — Macro Environment / Biome Regions V1 | `VALIDATED — FOUNDATION COMPLETE` | Unidad 6; macro truth validada | Regiones environment/biome globales derivadas de Climate + Water, con Landform separado, persistidas en schema 7; sin vegetation/materiales finales ni region IDs. |
+| AHORA | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | `AUTHORIZED — IMMEDIATE PRIORITY` | Macro truth + WorldRuntime + Terrain spike existentes | Probar terrain local smooth/volumétrico chunked, deformación 3D real, persistencia mínima de mutations y baseline visual cercano antes de comprometer materialización productiva. |
+| Después | Core Gameplay / Mechanics Polish Pass | `PLANNED — PRIORITY AFTER TERRAIN SPIKE` | Terrain spike volumétrico cerrado | Pulir sensación y usabilidad de movement/camera/stamina, interacción, inventory, combat, Needs e IA antes de volver a profundizar worldgen/materialización. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | Macro truth y geography/features requeridos | Historia estructurada acotada que produce/explica estado presente real sin event-sourced persistence. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | Unidades 1–7; M37 validado | Persistencia de geography, history, sector blueprints y gameplay world state general que reutiliza garantías M37 y deja `current_slice_v1` intacto. |
 | 9 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | Unidades 5–8 | Blueprint local validable y composición de estructuras/sitios autorados mediante autoridades existentes. |
-| 10 | ID TBD — Large-Sector Navigation & Performance Gate | `PLANNED — NOT AUTHORIZED` | Unidad 2; antes de materialización productiva | Spike medido de NavMesh/particiones/lifecycle sin reemplazar M41.0. |
-| 11 | ID TBD — Sector Materialization & Transition | `PLANNED — NOT AUTHORIZED` | Unidades 8–10 | Un sector autoritativo activo, staging inerte y transición runtime recuperable sin imponer autosave por frontera. |
+| 10 | ID TBD — Large-Sector Navigation & Performance Gate | `PLANNED — NOT AUTHORIZED` | Unidad 2; antes de materialización productiva | Spike medido de navegación/particiones/lifecycle sin reemplazar M41.0; debe incorporar evidencia de terrain deformable. |
+| 11 | ID TBD — Sector Materialization & Transition | `PLANNED — NOT AUTHORIZED` | Unidades 8–10 + terrain representation validada | Un sector autoritativo activo, staging inerte y transición runtime recuperable sin imponer autosave por frontera ni depender de una heightmap incapaz de mutaciones volumétricas. |
 | 12 | ID TBD — Connected First Playable | `PLANNED — NOT AUTHORIZED` | Unidades 1–11; M32–M41.1 | Prueba integrada A→B→A, mutaciones, save, full exit y fresh load; no vertical slice audiovisual final. |
 | 13 | ID TBD — Open World Playtest & Roadmap Rebaseline | `PLANNED — NOT AUTHORIZED` | Unidad 12 | Evidencia para reordenar sistemas posteriores y fijar gates/budgets reales. |
 
-Esta tabla no asigna milestone numbers ni autoriza su implementación. Weather/environment, ecology, condition/repair, crafting, progression, deeper shelter, vehicles, machines, settlements, economy, factions, UI y production permanecen en el producto; su orden final se revisará con evidencia del Connected First Playable.
+Esta tabla no asigna milestone numbers adicionales ni autoriza sistemas posteriores por inercia. El terrain volumétrico queda autorizado específicamente porque condiciona la futura representación física y no conviene construir dependencias de producción sobre Unity Terrain para reemplazarlas después.
 
-Macro Environment / Biome Regions V1 queda cerrado. No existe un siguiente coding unit operativo autorizado automáticamente: antes de elegir entre Bounded History / Present-Day Resolution, World Persistence, Sector Blueprint / Authored Composition u otra unidad del camino ya previsto, se requiere una revisión explícita de secuencia orientada a convertir la macro truth cerrada en lugares físicamente jugables. La application shell, los planes committed, el Terrain Materialization Technical Spike, la convergencia runtime, Macro Climate/Environment y el pass de traversal/camera/debug ergonomics no autorizan weather runtime, vegetation, arte/materiales finales o materialización productiva.
+La dirección aprobada de terrain no obliga todavía a un algoritmo final de meshing, resolución, tamaño de chunk, LOD, geología, mining loop o dinámica de fluidos. El primer spike debe medirlos proporcionalmente. Codex puede generar texturas placeholder task-owned simples/procedurales para surface/soil/rock y usarlas en el prototipo; no son arte final.
 
 ## Roadmap Estrategico Desde M36
 
@@ -195,7 +201,7 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | M36.0 — Old Scars Strategic Production Roadmap Rebaseline | Gobernanza | `DONE — DOCUMENTATION REVIEWED` | M35.2 cerrado | Checkpoints A/B y Documentation Review Correction Pass 1 revisados y aprobados por Mauro; Unity validation `NOT APPLICABLE`. |
 | CERRADO | M36.1 — Foundation Freeze & Persistent Identity Contract | Arquitectura | `DONE — FOUNDATION FREEZE APPROVED` | M36.0 revisado | Identidad durable/authored, ownership, rollback, stack granularity y politica exacta de `Condition` congelados con evidencia automatizada y manual; no implemento save/load. |
 | CERRADO | M37.0 — Save Format & Persistence Core | Arquitectura | `DONE — PERSISTENCE CORE VALIDATED` | M36.1 | Envelope V1, serializacion, safe write, backup/recovery, version policy y migration seam validados sin integrar estado gameplay. |
-| CERRADO | ID TBD — Global Content ID Namespace Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | M37.0 | `ContentId`, namespace `core`, referencias globales canónicas, compatibilidad legacy acotada, normalización schema-v1 y diagnósticos. Excluye manifests, provenance completa, dependencies y patches/load-order. |
+| CERRADO | ID TBD — Global Content ID Namespace Foundation | Arquitectura/datos | `VALIDATED — FOUNDATION COMPLETE` | M37.0 | `ContentId`, namespace `core`, referencias globales canónicas, compatibilidad legacy acotada, normalización schema-v1 y diagnósticos. Excluye manifests, provenance completa, dependencies ni patches/load-order. |
 | CERRADO | M37.1 — Current Slice Persistent Round-Trip | Arquitectura/jugable | `DONE — CURRENT SLICE PERSISTENCE VALIDATED` | M37.0; compatibilidad schema-v1 Core validada | Snapshot, apply transaccional, rollback, diagnóstico y round-trip fresh-session manual validados; `Persistence Ready` aprobado para el Current Slice. |
 | CERRADO | M38.0 — Actor Runtime & Lifecycle V1 | Arquitectura/jugable | `DONE — ACTOR RUNTIME & LIFECYCLE VALIDATED` | ID TBD y M37.1 cerrados | Identidad durable, Alive/Dead, corpse continuity, spawn/restore runtime y persistencia fresh-session validados con automatización y evidencia manual. |
 | CERRADO | M38.1 — Needs, World Clock & Recovery V1 | Jugable | `DONE — WORLD TIME / NEEDS / RECOVERY VALIDATED` | M38.0 | Autoridad temporal, Hunger/Thirst por game time, rest/sleep, persistence/rollback y diagnostics validados; fatigue queda deferred SHOULD. |
@@ -213,12 +219,13 @@ Los IDs siguientes quedan reservados por M36.0. No expresan fechas ni autorizan 
 | CERRADO | ID TBD — Worldgen Pass Isolation Correction | Arquitectura/worldgen | `VALIDATED — SYSTEMIC CORRECTION COMPLETE` | Gameplay Quality + Macro Water V1 | Contratos deterministas separados por pass y pipeline global sólo metadata; Plan/Geography goldens V1 restaurados sin regeneración legacy. |
 | CERRADO | ID TBD — Worldgen / World Session Observability Correction | Arquitectura/diagnóstico | `VALIDATED — OBSERVABILITY CORRECTION COMPLETE` | Pass Isolation; World Session shell | Lifecycle Create/Load/Runtime Ready/Save observable con cardinalidad estable, truth legacy explícita y `WRITE_COMMIT` preservado. |
 | CERRADO | ID TBD — Macro Human Geography / Road Network V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro Geography; Macro Water/quality; Pass Isolation | Hubs y red vial macro committed/global, multi-landmass, routeada por coste, persistida schema 5 y observable; sin settlements, roads físicas, terrain ni routing runtime. |
-| CERRADO | ID TBD — Terrain Materialization Technical Spike | Arquitectura/worldgen | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro Geography/Water/Human Geography | Ventana local Unity Terrain/Collider + NavMesh y overlays diagnósticos sobre truth persisted; escala provisional, sin streaming/transitions/materialización productiva. |
+| CERRADO | ID TBD — Terrain Materialization Technical Spike | Arquitectura/worldgen | `VALIDATED — TECHNICAL SPIKE COMPLETE` | Macro Geography/Water/Human Geography | Ventana local Unity Terrain/Collider + NavMesh y overlays diagnósticos; benchmark heightmap, no representación productiva definitiva. |
 | CERRADO | ID TBD — Integrated Gameplay Runtime / SampleScene Convergence | Arquitectura/jugable | `VALIDATED — RUNTIME CONVERGENCE COMPLETE` | Terrain spike; M32–M41.1; World Session/Current Slice | WorldRuntime canónico y SampleScene laboratorio comparten gameplay real sobre worldgen; commit `8c485c78b4ab294de9d983f70ebadfba634ab3e1`. |
 | CERRADO | ID TBD — Macro Climate Baseline V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro Geography/Water; Pass Isolation; runtime convergence | Baseline térmica/humedad climática committed bajo `macro_climate_v1`, schema 6 y legacy 1–5 exactos; commit `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`. |
 | CERRADO | ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass | Jugable/herramientas | `VALIDATED — RUNTIME ERGONOMICS COMPLETE` | Runtime convergence; M38.1; Current Slice | Cámara player-centric con pitch/collision, sprint+stamina integrada con Needs/persistence y Runtime Debug Tools development-only; commit final `ab78da4fbb1af9189d6a5c178515fafdb56f368e`. |
 | CERRADO | ID TBD — Macro Environment / Biome Regions V1 | Arquitectura/worldgen | `VALIDATED — FOUNDATION COMPLETE` | Macro Climate Baseline V1; macro truth validada | `macro_environment_v1`, 14 familias + None, ecotone Primary/Secondary/Transition, schema 7 y legacy exacto; commit `55bcb0db479af43351f28908dfe05125dd9d62e1`. |
-| REVISAR SECUENCIA | Post-Environment Open World Realization | Diseño/arquitectura | `DESIGN REVIEW REQUIRED — NOT AUTHORIZED` | Macro Environment cerrado | Elegir el próximo coding unit entre las unidades ya previstas sin abrir otra cadena automática de foundations abstractas. |
+| AHORA | ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike | Arquitectura/world/terrain | `AUTHORIZED — IMMEDIATE PRIORITY` | Macro Environment cerrado; Terrain spike; WorldRuntime | Validar chunks volumétricos/smooth density field o equivalente, mesh+collider, deformación 3D real, persistencia de mutation y baseline visual cercano. |
+| DESPUÉS | Core Gameplay / Mechanics Polish Pass | Jugable/pulido | `PLANNED — PRIORITY AFTER TERRAIN SPIKE` | Deformable Terrain spike cerrado | Tramo corto de pulido de mecánicas base antes de retomar worldgen/materialización grande. |
 | RESECUENCIAR | M42.0 — Weather, Exposure & Environment V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M38.1; futura world/sector foundation aplicable | Clima dinámico, forecast, exposicion y proteccion permanecen planificados; no equivalen al Macro Climate Baseline y ya no son el siguiente trabajo automático. |
 | RESECUENCIAR | M42.1 — Food, Water, Animals & Ecology V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M42.0; M41.0 para animales moviles; world/sector context aplicable | Calidad, purificacion, deterioro y animales acotados; gate `World Systems Ready` pendiente de reubicación revisada. |
 | RESECUENCIAR | M43.0 — Condition, Repair & Disassembly V1 | Jugable | `PLANNED — SEQUENCE REBASELINE REQUIRED` | M37.1 | Condition mutable, reparacion y desmontaje preservando identidad; prioridad final posterior al playtest open-world. |
@@ -273,11 +280,11 @@ Camino cerrado vigente:
 
 Cierre de soporte runtime posterior/intercalado: `Player Traversal / Camera & Runtime Debug Ergonomics Pass VALIDATED`.
 
-Camino crítico conceptual siguiente, todavía sin autorización de implementación:
+Camino crítico inmediato autorizado:
 
-`Revisión de secuencia post-Environment → Bounded History / Present-Day Resolution y/o World Persistence según decisión de diseño → Sector Blueprint / Authored Composition → Large-Sector Navigation / Performance Gate → Sector Materialization / Transition → Connected First Playable → Playtest / Rebaseline`
+`Deformable Volumetric Terrain Foundation / Technical Spike → Core Gameplay / Mechanics Polish Pass`
 
-La revisión post-Environment debe decidir el orden exacto de las unidades ya previstas antes de autorizar otra implementación. M42.0–M47.1 y los sistemas posteriores se reinsertarán de acuerdo con dependencias y evidencia reales. No se eliminan ni se consideran iniciados.
+Después de ese tramo, el camino open-world grande vuelve a revisión explícita antes de Bounded History / World Persistence / Sector Blueprint / Large-Sector Navigation / Sector Materialization. No se autoriza continuar esas foundations por inercia.
 
 Dependencias de produccion:
 
@@ -287,8 +294,9 @@ Dependencias de produccion:
 - condition antes de reparacion; reparacion/desmontaje antes de crafting;
 - source provenance y generation compatibility antes de comprometer compatibilidad de mundos persistentes;
 - macro truth y cross-sector networks antes de resolver blueprints vecinos;
-- world persistence general antes de comprometer mutaciones sectoriales;
-- spike medido de navegación/rendimiento antes de producción sectorial;
+- terrain volumétrico/deformable validado antes de materialización sectorial productiva que deba soportar cavado/explosiones/túneles;
+- world persistence general antes de comprometer mutaciones sectoriales de producción;
+- navegación/rendimiento deben medirse contra la representación deformable real, no solamente contra Unity Terrain;
 - sector materialization/transition antes del Connected First Playable;
 - tools y validators antes de contenido masivo;
 - economia material antes de comercio;
@@ -296,6 +304,20 @@ Dependencias de produccion:
 - toda Definition global nueva debe usar `ContentId` canónico; no se permite volver a IDs globales simples durante los milestones intermedios.
 
 ## Alcance Inmediato
+
+### ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike
+
+Estado: `AUTHORIZED — IMMEDIATE PRIORITY`.
+
+Autoridad de alcance: [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md).
+
+Debe validar terrain local volumétrico chunked que consuma la world truth existente, genere mesh+collision, soporte deformación 3D real localizada y persista al menos una mutation de prueba. El prototipo debe demostrar una cavidad/túnel/overhang/excavación lateral que una heightmap no pueda representar correctamente, medir costes y dejar una estrategia de dirty chunks/navigation/persistence.
+
+El spike también establece un baseline visual técnico cercano. Codex puede crear texturas placeholder task-owned simples y procedurales —por ejemplo PNGs de topsoil/soil/rock— y utilizarlas en el terreno. Deben ser mates, legibles, reemplazables y no finales. No se autoriza convertir esta prueba en geología, mining loop, fluid simulation, destructibilidad total, terrain art pipeline final, whole-world voxel allocation o streaming productivo.
+
+### Después — Core Gameplay / Mechanics Polish
+
+Tras cerrar terrain deformable, priorizar un tramo corto de pulido sobre sistemas ya implementados: movement/camera/stamina, interacción, inventory/containers, combat feedback/tuning, Needs/Rest e IA/perception/navigation. El objetivo es mejorar el juego minuto a minuto antes de volver a profundizar el mundo macro.
 
 ### M36.0 — Checkpoint A
 
@@ -434,7 +456,8 @@ El diagnóstico automático cubre avoid/flee, navegación inválida sin retry, f
 ## Trabajo Congelado O Diferido
 
 - No ampliar OnGUI ni continuar la serie M35.2 durante M36/M37.
-- No iniciar nuevas foundations open-world, facciones amplias, UI final o producción masiva de contenido sin autorización y dependencias explícitas.
+- No iniciar por inercia Bounded History, World Persistence general, Sector Blueprint/Materialization, facciones amplias, UI final o producción masiva de contenido durante el terrain spike.
+- No introducir minería completa, geología/minerales de producción, fluid simulation, derrumbes estructurales, whole-world voxels o destructibilidad total como parte del primer terrain spike.
 - No introducir enfermedades generales, agricultura o vehiculos en la version inicial completa sin un nuevo rebaseline aprobado.
 - No convertir JSON en scripting libre.
 - No crear sistemas universales preventivos sin necesidad actual demostrada.
