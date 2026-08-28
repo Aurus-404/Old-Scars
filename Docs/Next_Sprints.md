@@ -37,21 +37,73 @@ El spike también debe servir como baseline visual cercano. El terreno actual fu
 
 No hace falta usar generación de imagen por IA para estos placeholders; una textura procedural simple es válida. Si el entorno de ejecución dispone de una herramienta apropiada para producir un placeholder de imagen task-owned, también puede usarse, pero el objetivo es validar rendering/texel density/material response, no producir arte definitivo.
 
-### 2. Después Del Spike: Core Gameplay / Mechanics Polish
+### 2. Secuencia M41.2–M41.4 — Equipment + NPC Sandbox
 
-Tras cerrar la foundation de terrain deformable, la prioridad vuelve deliberadamente a las mecánicas base durante un tramo corto antes de profundizar otra vez el mundo abierto.
+Después de cerrar y reconciliar el terrain deformable, la prioridad pasa a una secuencia jugable concreta y observable antes de volver a ampliar worldgen.
 
-Orden orientativo, sujeto a inspección del estado real al terminar el spike:
+Documento de diseño y alcance completo: [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md).
 
-- movement/camera/stamina feel;
-- interaction y pickup/drop/equip;
-- inventory/containers usability;
-- combat/firearms/melee feedback y tuning;
-- Needs/Rest tuning para que generen decisiones y no busywork;
-- AI/perception/navigation usability y regresiones reales;
-- revisión de mecánicas base faltantes antes de autorizar otra foundation macro.
+#### M41.2 — Basic Equipment & Weapon Coverage V1
 
-No se autoriza convertir este tramo en UI final, content production masiva ni refactors preventivos.
+Estado: `PLANNED — NEXT AFTER TERRAIN CLOSEOUT`.
+
+Objetivo:
+
+- inspeccionar los 17 slots reales de `core:human_standard_01` y cubrir cada slot relevante con al menos una pieza equipable funcional;
+- agregar ropa/equipment básico sin exigir modelos, iconos o arte final;
+- agregar varias mochilas con capacidades distintas para estresar item-owned storage, ownership y persistence;
+- mantener Lee-Enfield como cobertura bolt-action y agregar al menos un arma semi-automatic y una automatic;
+- cualquier fire/action mode nuevo debe ser genérico/data-driven y reutilizar `WeaponCombatService`, no ramas hardcodeadas por arma;
+- hacer explícito que `firearm.range` es el máximo físico temporal del hitscan y `melee_range` el máximo melee;
+- clamp visual/debug de aim al rango efectivo para no sugerir disparos infinitos;
+- no implementar todavía bullet drop, velocidad de bala ni balística productiva.
+
+#### M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
+
+Estado: `PLANNED — AFTER M41.2`.
+
+Objetivo:
+
+- agregar un botón/control development-only para spawnear NPCs reales en WorldRuntime;
+- spawn sólo sobre posición/materialización/NavMesh válida y mediante las autoridades existentes de actor/identity;
+- loadout aleatorio desde JSON con probabilidades reales y posibilidad explícita de `none`;
+- equipment, backpack, inventory, weapon y ammo deben convertirse en estado real del actor, no loot decorativo;
+- las loot tables v0 actuales son determinísticas y no soportan chance/weights; antes de implementar se debe auditar si corresponde extenderlas o crear un Actor Loadout Table/Profile data-driven separado;
+- cada spawn puede ser distinto, pero el roll concreto debe quedar diagnosticable/reproducible;
+- roaming básico mediante `ActorNavigationController` para probar navegación real sobre el mapa/terrain vigente;
+- el actor debe usar M39/M40/M40.1, poder recibir daño localizado, morir y dejar exactamente su equipment/inventory real en el cadáver;
+- prohibido rerollear loot al morir o abrir el cadáver.
+
+#### M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1
+
+Estado: `PLANNED — AFTER M41.3`.
+
+Objetivo:
+
+- controles debug `Spawn Blue NPC` y `Spawn Red NPC` o equivalente;
+- los colores son representación debug, no reglas hardcodeadas de lógica;
+- baseline: Blue no hostil al Player; Red hostil a Blue y Player; same-team no hostil por defecto;
+- agregar la capa mínima de affiliation/disposition y adquisición automática de amenaza usando candidatos cercanos + `ActorVisualPerceptionService`/LOS antes de `HumanEncounterAIController`;
+- firearm AI debe cerrar distancia si el target está fuera de `firearm.range` o del preferred engagement range;
+- melee AI debe acercarse hasta `melee_range` antes de golpear;
+- ningún daño físico puede resolverse fuera del alcance del arma;
+- aim NPC no debe ser aimbot: target aproximado + error angular físico + `PhysicalShotPathResolver`;
+- reaction/acquisition delay y focus time deben hacer que la precisión mejore progresivamente sin llegar a perfección normal;
+- distancia, movimiento y arma/fire mode pueden modificar spread;
+- el sistema debe permitir misses físicos y golpes en regiones distintas, no un porcentaje abstracto que decida hit/miss antes del ray/path físico;
+- mantener observabilidad development-only de target, distancia, weapon range, state, perception, focus, spread y navigation para entender el comportamiento mirando la partida.
+
+Referencias de diseño ya investigadas y registradas en el documento de secuencia: Source/Half-Life 2 para reaction/focus/spread, Arma 3 para engagement/fire-mode ranges y Bungie Halo para importancia de engagement distance. Son referencias conceptuales, no implementaciones a copiar.
+
+### 3. Playtest / Review Después De M41.4
+
+No encadenar automáticamente otro sistema grande.
+
+La prueba objetivo es:
+
+`WorldRuntime → spawnear varios NPCs con loadouts distintos → navegación real → Blue/Red detectan hostiles → se acercan según alcance → disparan/golpean con precisión imperfecta → localized health/armor/death → corpse loot exacto`.
+
+Después de esa prueba se revisarán bugs reales, navegación, ownership/equipment, combate y game feel antes de decidir la siguiente mecánica o volver a worldgen/materialización.
 
 ## Estado Del Mundo Abierto Cerrado Hasta Aquí
 
@@ -82,6 +134,8 @@ El Connected First Playable sigue siendo el objetivo integrado posterior a las f
 
 La nueva decisión de terrain deformable añade una condición importante: Sector Materialization productiva no debe quedar atada a una heightmap incapaz de representar las mutaciones físicas requeridas.
 
+La secuencia M41.2–M41.4 se considera un sandbox de integración previo que estresa equipment, actors, navigation, perception, combat, localized health, corpse loot y ownership dentro del runtime real; no reemplaza el Connected First Playable.
+
 ## Modding Y Provenance
 
 La Global Content ID Foundation y la Minimum Content Source Identity & Provenance Foundation están validadas. Cada source requiere manifest `source_id`/`namespace`/`version`; ownership de declaraciones, orden estable y SHA-256 de recognized inputs están implementados sobre el pipeline Core/mod existente.
@@ -92,7 +146,7 @@ Dependencies, overrides/patches y compatibilidad de producción permanecen en al
 
 ## No Iniciar Todavía
 
-Durante el Deformable Terrain spike no iniciar:
+Durante el Deformable Terrain spike y la secuencia M41.2–M41.4 no iniciar por inercia:
 
 - minería como loop completo;
 - geología/minerales de producción;
@@ -109,10 +163,14 @@ Durante el Deformable Terrain spike no iniciar:
 - weather runtime, seasons o final rivers;
 - Bounded History / Present-Day Resolution;
 - World Persistence general o Sector Blueprint productivos por inercia;
-- nuevas ampliaciones OnGUI sin milestone autorizado;
-- UI final;
+- production UI;
+- facciones completas/reputación/memoria regional;
+- squads/tactics/cover AI sofisticada;
+- strategic/off-sector AI;
+- full ballistic simulation/bullet drop/wind;
+- final loot economy/balance;
+- final NPC population/ecology;
 - condition, repair o crafting;
-- facciones amplias;
 - producción masiva de contenido.
 
-El próximo paso después de actualizar la documentación es iniciar el coding unit autorizado de terrain deformable directamente en el checkout canónico, sin worktrees.
+El próximo paso inmediato continúa siendo terminar y cerrar el coding unit autorizado de terrain deformable en el checkout canónico. Cuando quede cerrado, la secuencia prevista es M41.2 → M41.3 → M41.4 → playtest/review.
