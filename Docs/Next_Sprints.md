@@ -4,106 +4,84 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximo Trabajo
 
-### 1. Deformable Volumetric Terrain Foundation / Technical Spike
+### 1. M41.2 — Basic Equipment & Weapon Coverage V1
 
 Estado: `AUTHORIZED — IMMEDIATE PRIORITY`.
 
-Documento de decisión y alcance: [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md).
+Documento de diseño y secuencia: [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md).
 
-La decisión de producto queda aprobada: el terreno productivo de Old Scars debe admitir deformación volumétrica localizada y persistente para soportar, cuando existan sus consumidores de gameplay, cavado, pozos, zanjas/trincheras, cráteres, explosiones, excavación lateral, túneles y cuevas. Una representación heightmap-only no satisface ese requisito.
+El Deformable Volumetric Terrain Foundation / Technical Spike ya está `VALIDATED — TECHNICAL SPIKE COMPLETE` en el commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`. Su evidencia y límites quedan registrados en [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md).
 
-`Terrain Materialization Technical Spike` permanece `VALIDATED — TECHNICAL SPIKE COMPLETE`, pero Unity `Terrain/TerrainCollider` pasa a considerarse benchmark/prototipo heightmap y no una representación productiva definitiva que futuros sistemas puedan asumir.
+M41.2 cambia deliberadamente el foco desde foundations grandes hacia coverage funcional que permita probar los sistemas existentes dentro de WorldRuntime.
 
-El primer coding unit autorizado es:
+Objetivos inmediatos:
 
-`ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike`
+- inspeccionar y usar los 17 slots reales de `core:human_standard_01` como única fuente de verdad;
+- cubrir cada slot ejercitable con al menos un item equipable funcional, sin exigir modelos, iconos, attachments ni arte final;
+- agregar ropa/equipment básico con sólo las propiedades que los sistemas actuales consumen;
+- agregar varias mochilas con capacidades realmente distintas para estresar item-owned storage, ownership, transfers y Current Slice;
+- preservar Lee-Enfield como bolt-action y agregar al menos una firearm semi-automatic y una automatic;
+- si el backend necesita representar fire/action modes, agregar únicamente la extensión genérica/data-driven mínima y reutilizar `WeaponCombatService`;
+- hacer explícito y observable que `firearm.range` es el máximo físico temporal del hitscan y `melee_range` el máximo melee;
+- clamp visual/debug del aim al alcance efectivo para no sugerir daño a distancia infinita;
+- validar equip/unequip, ownership, grid/storage, backpack content y persistence/round-trip sin crear autoridades paralelas.
 
-Objetivo inmediato: demostrar una representación local chunked volumétrica —preferentemente smooth voxel/density field o equivalente demostrado— que consuma la macro truth existente, genere mesh+collision, permita una deformación subtract real y persista al menos una modificación de prueba.
+Fuera de M41.2:
 
-Aceptación mínima:
+- modelos/animaciones/audio/iconos finales;
+- producción masiva de ropa o armas;
+- loot probabilístico de NPCs;
+- NPC spawn sandbox;
+- affiliation/hostility;
+- imperfect AI aim;
+- full ballistics/bullet drop/travel time/wind;
+- condition/repair/crafting;
+- terrain productivo adicional por inercia.
 
-- área local volumétrica derivada de la truth existente sin reemplazar Macro Geography/Water/Climate/Environment;
-- mesh y collision funcionales;
-- deformación runtime localizada con cráter/cavidad real;
-- al menos una forma imposible de representar correctamente con una única heightmap, por ejemplo túnel corto, cavidad con techo, overhang o excavación lateral;
-- rebuild limitado a chunks/regiones afectadas;
-- medición de generación, mesh rebuild, collider update y memoria aproximada;
-- prueba de persistencia o round-trip equivalente de la deformación;
-- player capaz de recorrer la superficie y la zona deformada;
-- estrategia explícita para dirty chunks/mutation state y navegación local posterior;
-- ningún whole-world voxel allocation ni autoridad mundial paralela.
-
-El spike también debe servir como baseline visual cercano. El terreno actual funciona razonablemente de lejos pero se percibe plástico/reflejante y tosco de cerca. No se exige arte final: Codex está autorizado a crear texturas placeholder task-owned simples —por ejemplo PNGs generados por script para surface/topsoil, soil y rock— y usarlas en la prueba. Deben ser mates, legibles de cerca, reemplazables y claramente no finales.
-
-No hace falta usar generación de imagen por IA para estos placeholders; una textura procedural simple es válida. Si el entorno de ejecución dispone de una herramienta apropiada para producir un placeholder de imagen task-owned, también puede usarse, pero el objetivo es validar rendering/texel density/material response, no producir arte definitivo.
-
-### 2. Secuencia M41.2–M41.4 — Equipment + NPC Sandbox
-
-Después de cerrar y reconciliar el terrain deformable, la prioridad pasa a una secuencia jugable concreta y observable antes de volver a ampliar worldgen.
-
-Documento de diseño y alcance completo: [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md).
-
-#### M41.2 — Basic Equipment & Weapon Coverage V1
-
-Estado: `PLANNED — NEXT AFTER TERRAIN CLOSEOUT`.
-
-Objetivo:
-
-- inspeccionar los 17 slots reales de `core:human_standard_01` y cubrir cada slot relevante con al menos una pieza equipable funcional;
-- agregar ropa/equipment básico sin exigir modelos, iconos o arte final;
-- agregar varias mochilas con capacidades distintas para estresar item-owned storage, ownership y persistence;
-- mantener Lee-Enfield como cobertura bolt-action y agregar al menos un arma semi-automatic y una automatic;
-- cualquier fire/action mode nuevo debe ser genérico/data-driven y reutilizar `WeaponCombatService`, no ramas hardcodeadas por arma;
-- hacer explícito que `firearm.range` es el máximo físico temporal del hitscan y `melee_range` el máximo melee;
-- clamp visual/debug de aim al rango efectivo para no sugerir disparos infinitos;
-- no implementar todavía bullet drop, velocidad de bala ni balística productiva.
-
-#### M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
+### 2. M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
 
 Estado: `PLANNED — AFTER M41.2`.
 
 Objetivo:
 
-- agregar un botón/control development-only para spawnear NPCs reales en WorldRuntime;
-- spawn sólo sobre posición/materialización/NavMesh válida y mediante las autoridades existentes de actor/identity;
+- control development-only para spawnear NPCs reales en WorldRuntime;
+- spawn sobre posición/materialización/NavMesh válida mediante las autoridades existentes de actor/identity;
 - loadout aleatorio desde JSON con probabilidades reales y posibilidad explícita de `none`;
-- equipment, backpack, inventory, weapon y ammo deben convertirse en estado real del actor, no loot decorativo;
-- las loot tables v0 actuales son determinísticas y no soportan chance/weights; antes de implementar se debe auditar si corresponde extenderlas o crear un Actor Loadout Table/Profile data-driven separado;
-- cada spawn puede ser distinto, pero el roll concreto debe quedar diagnosticable/reproducible;
-- roaming básico mediante `ActorNavigationController` para probar navegación real sobre el mapa/terrain vigente;
-- el actor debe usar M39/M40/M40.1, poder recibir daño localizado, morir y dejar exactamente su equipment/inventory real en el cadáver;
-- prohibido rerollear loot al morir o abrir el cadáver.
+- auditar Loot Tables v0 antes de decidir si se extienden o si corresponde un Actor Loadout Table/Profile separado;
+- equipment, backpack, inventory, weapon y ammo se convierten en estado real del actor;
+- seed/roll evidence diagnosticable para reproducir un spawn concreto;
+- roaming básico con `ActorNavigationController` sobre el terrain vigente;
+- localized health, armor, death y corpse continuity reales;
+- el cadáver conserva exactamente el equipment/inventory del actor vivo; nunca rerollear loot al morir o abrirlo.
 
-#### M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1
+### 3. M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1
 
 Estado: `PLANNED — AFTER M41.3`.
 
 Objetivo:
 
-- controles debug `Spawn Blue NPC` y `Spawn Red NPC` o equivalente;
-- los colores son representación debug, no reglas hardcodeadas de lógica;
+- controles debug equivalentes a `Spawn Blue NPC` / `Spawn Red NPC`;
+- colores sólo como presentación debug, con affiliation/disposition genérica por debajo;
 - baseline: Blue no hostil al Player; Red hostil a Blue y Player; same-team no hostil por defecto;
-- agregar la capa mínima de affiliation/disposition y adquisición automática de amenaza usando candidatos cercanos + `ActorVisualPerceptionService`/LOS antes de `HumanEncounterAIController`;
-- firearm AI debe cerrar distancia si el target está fuera de `firearm.range` o del preferred engagement range;
-- melee AI debe acercarse hasta `melee_range` antes de golpear;
-- ningún daño físico puede resolverse fuera del alcance del arma;
-- aim NPC no debe ser aimbot: target aproximado + error angular físico + `PhysicalShotPathResolver`;
-- reaction/acquisition delay y focus time deben hacer que la precisión mejore progresivamente sin llegar a perfección normal;
-- distancia, movimiento y arma/fire mode pueden modificar spread;
-- el sistema debe permitir misses físicos y golpes en regiones distintas, no un porcentaje abstracto que decida hit/miss antes del ray/path físico;
-- mantener observabilidad development-only de target, distancia, weapon range, state, perception, focus, spread y navigation para entender el comportamiento mirando la partida.
+- adquisición automática mínima de amenazas mediante candidatos cercanos + `ActorVisualPerceptionService`/LOS antes de `HumanEncounterAIController`;
+- firearm AI cierra distancia hasta un engagement válido y nunca resuelve daño más allá de `firearm.range`;
+- melee AI se acerca hasta `melee_range` antes de golpear;
+- aim NPC físicamente imperfecto: target aproximado + error angular + `PhysicalShotPathResolver`;
+- reaction/acquisition delay, focus time y spread afectado por distancia/movimiento/arma sin llegar a aimbot perfecto;
+- misses físicos y posibles impactos en otras regiones/obstáculos;
+- observabilidad development-only de target, distancia, weapon range, state, perception, focus, spread y navigation.
 
-Referencias de diseño ya investigadas y registradas en el documento de secuencia: Source/Half-Life 2 para reaction/focus/spread, Arma 3 para engagement/fire-mode ranges y Bungie Halo para importancia de engagement distance. Son referencias conceptuales, no implementaciones a copiar.
+Las referencias investigadas registradas en [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md) —Source/Half-Life 2, Arma 3 y Halo— son referencias conceptuales, no código ni valores a copiar.
 
-### 3. Playtest / Review Después De M41.4
+### 4. Playtest / Review Después De M41.4
 
 No encadenar automáticamente otro sistema grande.
 
-La prueba objetivo es:
+Prueba objetivo:
 
-`WorldRuntime → spawnear varios NPCs con loadouts distintos → navegación real → Blue/Red detectan hostiles → se acercan según alcance → disparan/golpean con precisión imperfecta → localized health/armor/death → corpse loot exacto`.
+`WorldRuntime → varios NPCs con loadouts distintos → navegación real → Blue/Red detectan hostiles → cierran distancia según arma → disparan/golpean con precisión imperfecta → localized health/armor/death → corpse loot exacto`
 
-Después de esa prueba se revisarán bugs reales, navegación, ownership/equipment, combate y game feel antes de decidir la siguiente mecánica o volver a worldgen/materialización.
+Después se revisarán bugs reales, navegación, ownership/equipment, combate y game feel antes de decidir la siguiente mecánica o volver a worldgen/materialización.
 
 ## Estado Del Mundo Abierto Cerrado Hasta Aquí
 
@@ -122,19 +100,16 @@ Las foundations y application shell cerradas incluyen:
 - `Integrated Gameplay Runtime / SampleScene Convergence` — `VALIDATED — RUNTIME CONVERGENCE COMPLETE`, commit `8c485c78b4ab294de9d983f70ebadfba634ab3e1`;
 - `Macro Climate Baseline V1` — `VALIDATED — FOUNDATION COMPLETE`, commit `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`;
 - `Player Traversal / Camera & Runtime Debug Ergonomics Pass` — `VALIDATED — RUNTIME ERGONOMICS COMPLETE`, commit final `ab78da4fbb1af9189d6a5c178515fafdb56f368e`;
-- `Macro Environment / Biome Regions V1` — `VALIDATED — FOUNDATION COMPLETE`, commit `55bcb0db479af43351f28908dfe05125dd9d62e1`.
+- `Macro Environment / Biome Regions V1` — `VALIDATED — FOUNDATION COMPLETE`, commit `55bcb0db479af43351f28908dfe05125dd9d62e1`;
+- `Deformable Volumetric Terrain Foundation / Technical Spike` — `VALIDATED — TECHNICAL SPIKE COMPLETE`, commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`.
 
-Environment añade `MacroEnvironmentPlan` bajo `macro_environment_v1`, con 14 familias terrestres + `None`, `PrimaryBiome` / `SecondaryBiome` / `TransitionQ16`, océano `None/None/0`, sin biome noise ni region IDs persistentes. `world_session_v1` schema `7` persiste esa truth y schemas `1`–`6` continúan legacy exactos sin Environment fabricado.
+El terrain volumétrico validó una lattice de density compartida y chunked, Marching Tetrahedra, mesh/collider, crater, túnel con techo, cross-chunk mutation, dirty rebuild, persistencia/replay `SPIKE_NON_PRODUCTION`, player traversal y NavMesh local sin cambiar `world_session_v1` schema `7` ni los goldens de worldgen.
 
-New Game actual genera plan finito → elevation/landforms → Macro Water → Macro Climate → Macro Environment → quality/starter → Macro Human Geography. Ese worldgen macro queda suficientemente avanzado por ahora y no debe seguir creciendo por inercia mientras gameplay y representación física cercana todavía necesitan trabajo.
+New Game actual genera plan finito → elevation/landforms → Macro Water → Macro Climate → Macro Environment → quality/starter → Macro Human Geography. Ese worldgen macro queda suficientemente avanzado por ahora y no debe seguir creciendo por inercia mientras gameplay integrado necesita más cobertura real.
 
 ## Connected First Playable
 
-El Connected First Playable sigue siendo el objetivo integrado posterior a las foundations/materialización/continuidad necesarias. Debe demostrar A→B→A, continuidad cross-sector, mutaciones persistentes, save, full process exit y fresh load usando M32–M41.1 dentro del runtime canónico.
-
-La nueva decisión de terrain deformable añade una condición importante: Sector Materialization productiva no debe quedar atada a una heightmap incapaz de representar las mutaciones físicas requeridas.
-
-La secuencia M41.2–M41.4 se considera un sandbox de integración previo que estresa equipment, actors, navigation, perception, combat, localized health, corpse loot y ownership dentro del runtime real; no reemplaza el Connected First Playable.
+El Connected First Playable sigue siendo el objetivo integrado posterior a las foundations/materialización/continuidad necesarias. La secuencia M41.2–M41.4 es un sandbox de integración previo que estresa equipment, actors, navigation, perception, combat, localized health, corpse loot y ownership dentro del runtime real; no reemplaza el Connected First Playable.
 
 ## Modding Y Provenance
 
@@ -146,7 +121,7 @@ Dependencies, overrides/patches y compatibilidad de producción permanecen en al
 
 ## No Iniciar Todavía
 
-Durante el Deformable Terrain spike y la secuencia M41.2–M41.4 no iniciar por inercia:
+Durante M41.2–M41.4 no iniciar por inercia:
 
 - minería como loop completo;
 - geología/minerales de producción;
@@ -173,4 +148,4 @@ Durante el Deformable Terrain spike y la secuencia M41.2–M41.4 no iniciar por 
 - condition, repair o crafting;
 - producción masiva de contenido.
 
-El próximo paso inmediato continúa siendo terminar y cerrar el coding unit autorizado de terrain deformable en el checkout canónico. Cuando quede cerrado, la secuencia prevista es M41.2 → M41.3 → M41.4 → playtest/review.
+El próximo paso inmediato es `M41.2 — Basic Equipment & Weapon Coverage V1`. Después: `M41.3 → M41.4 → playtest/review`.
