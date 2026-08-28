@@ -18,13 +18,15 @@ La meta no es producción masiva de contenido ni IA final. La meta es crear un s
 5. hacer que NPCs con relaciones distintas detecten, persigan o ataquen a otros actores usando las autoridades ya implementadas;
 6. observar errores reales de integración, navegación, ownership, persistence, equipment, combat y corpse loot en lugar de depender únicamente de diagnostics aislados.
 
-`Deformable Volumetric Terrain Foundation / Technical Spike` ya quedó `VALIDATED — TECHNICAL SPIKE COMPLETE` en el commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`. La secuencia queda activa y comienza ahora por M41.2.
+`Deformable Volumetric Terrain Foundation / Technical Spike` ya quedó `VALIDATED — TECHNICAL SPIKE COMPLETE` en el commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`. M41.2 quedó cerrado en `4f877da10dee813b0bed816194110b5a27087683`; la secuencia continúa ahora por M41.3.
 
 ---
 
 # M41.2 — Basic Equipment & Weapon Coverage V1
 
-Estado actual: `AUTHORIZED — IMMEDIATE PRIORITY`
+Estado final: `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED`
+
+Commit funcional publicado: `4f877da10dee813b0bed816194110b5a27087683`.
 
 ## Objetivo
 
@@ -34,7 +36,7 @@ El contenido debe vivir en el pipeline data-driven Core/mod existente. JSON decl
 
 ## Equipment coverage
 
-El layout humano actual `core:human_standard_01` contiene 17 slots. Antes de agregar datos, la implementación debe inspeccionar las Definitions reales y enumerar los 17 slots exactos. No se debe mantener una lista paralela hardcodeada en documentación o C#.
+El layout humano actual `core:human_standard_01` contiene 17 slots. La implementación debe inspeccionar las Definitions reales y enumerar los slots desde allí; no se debe mantener una lista paralela hardcodeada como autoridad runtime.
 
 Cada slot real debe poder ser ejercitado por al menos una pieza equipable válida.
 
@@ -63,7 +65,7 @@ No inventar estadísticas sin consumidor. Si una propiedad todavía no afecta ga
 
 ## Mochilas
 
-Agregar varias mochilas funcionalmente distintas para estresar item-owned storage y Equipment. Como mínimo debe existir una pequeña, una intermedia y una grande, con diferencias reales de capacidad/footprint/peso según los contratos vigentes.
+M41.2 debía dejar varias mochilas funcionalmente distintas para estresar item-owned storage y Equipment, con diferencias reales de capacidad/footprint/peso según los contratos vigentes.
 
 Objetivos de prueba:
 
@@ -80,52 +82,53 @@ No crear un backend nuevo de mochila.
 
 ## Weapon coverage
 
-El Lee-Enfield ya cubre el arquetipo bolt-action. M41.2 debe agregar al menos cobertura funcional de:
+El Lee-Enfield cubre bolt/manual-cycle. M41.2 debía agregar cobertura funcional de:
 
-- bolt-action — existente;
+- bolt/manual-cycle — existente;
 - semi-automatic;
 - automatic.
 
-La lista exacta de armas puede ser pequeña. El objetivo es cubrir comportamientos, no inflar el catálogo.
-
-Si el backend actual está demasiado especializado en el Lee-Enfield, implementar la extensión genérica mínima para que fire/action mode sea data-driven y compartido por `WeaponCombatService` y consumidores existentes.
-
-Prohibido crear sistemas separados por arma, por ejemplo `SemiAutoSystem`, `AutomaticGunSystem` o branches específicos por ID de Definition.
-
-Armas adicionales como handgun, shotgun o heavy weapon sólo se agregan si un consumidor de prueba posterior las necesita realmente.
+El objetivo era cubrir comportamientos, no inflar el catálogo. La extensión debía ser genérica/data-driven y compartida por `WeaponCombatService` y consumidores existentes, sin sistemas separados por arma o branches por DefinitionId.
 
 ## Rango físico temporal de armas
 
 La balística física completa permanece futura, pero el hitscan temporal no debe comportarse como un disparo infinito.
 
-El código actual ya usa `firearm.range` para la resolución física y `melee_range` para melee. M41.2 debe volver este contrato explícito y coherente en toda la experiencia debug:
+Contrato cerrado por M41.2:
 
 - `firearm.range` = distancia física máxima temporal del disparo hitscan;
 - `melee_range` = distancia física máxima de un ataque melee;
-- el aim/trace/debug visual no debe sugerir que un objetivo a kilómetros es alcanzable si excede el rango del arma;
-- el ray de cámara puede seguir buscando el punto bajo el mouse para determinar dirección, pero la solución física y la visualización alcanzable deben quedar clampadas al rango efectivo;
-- no implementar gravedad, caída de proyectil, velocidad de bala o solver balístico productivo en este milestone.
+- el aim/trace/debug visual no debe sugerir que un objetivo más allá del rango es alcanzable;
+- el ray de cámara puede seguir buscando el punto bajo el mouse para determinar dirección, pero la solución física y la visualización alcanzable quedan clampadas al rango efectivo;
+- gravedad, caída de proyectil, velocidad de bala y solver balístico productivo siguen fuera.
 
-Este rango será reemplazable/extendible por futura balística; no debe diseñarse como contrato que impida proyectiles con travel time.
+Este rango sigue siendo un contrato temporal reemplazable/extendible por futura balística.
 
-## Aceptación M41.2
+## Closeout M41.2
 
-M41.2 se considera funcionalmente validado sólo si:
+M41.2 cerró con evidencia reportada `PASS` y dejó:
 
-- se enumeraron y ejercitaron los 17 slots reales del layout humano;
-- existe al menos una pieza funcional para cada slot posible relevante;
-- varias mochilas tienen capacidades realmente distintas;
-- equip/unequip, ownership, grid/storage y Current Slice no regresionan;
-- existe cobertura funcional bolt/semi/automatic usando autoridades compartidas;
-- los rangos firearm/melee son respetados físicamente y son legibles en debug;
-- no se agregaron modelos/iconos como requisito de cierre;
-- no se introdujeron branches hardcodeados por arma/ropa.
+- los 17 slots reales de `core:human_standard_01` cubiertos desde Definitions;
+- `27` items Core nuevos de ropa/equipment para coverage y variedad funcional;
+- mochilas pequeña/media/grande con storage real `8×10`, `10×12` y `12×14`;
+- casco y chaleco reutilizando M40.1;
+- Lee-Enfield `manual_cycle`, range `80`;
+- Semi-Automatic Rifle `semi_automatic`, range `75`;
+- Automatic Rifle `automatic`, range `60`;
+- contrato `fire_mode` canónico con `manual_cycle`, `semi_automatic`, `automatic`;
+- manual/semi = un disparo por press; automatic = repetición mientras LMB esté held, limitada por `cycle_time`, munición y sin auto-reload;
+- aim/tracer clampado al endpoint alcanzable;
+- Current Slice preservando backpack content, ownership/equipment y estado cargado firearm sin schema bump;
+- Runtime/Editor compile, M41.2 D3D11 Play Mode, M37/M37.1, Content Provenance/Namespace, Inventory UX, M40/M40.1, Player Controls/Health y `git diff --check` en PASS;
+- revisión de System Harmony sin autoridad paralela, worldgen/terrain/schema changes ni adelanto de M41.3/M41.4.
+
+Deuda intencional: `debug_accuracy_spread` sigue sin sistema de precisión; se reserva para M41.4.
 
 ---
 
 # M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
 
-Estado planificado: `PLANNED — AFTER M41.2`
+Estado actual: `AUTHORIZED — IMMEDIATE PRIORITY`
 
 ## Objetivo
 
@@ -389,17 +392,17 @@ Debe demostrarse dentro de WorldRuntime:
 
 # Secuencia De Ejecución Aprobada
 
-La secuencia activa es:
+Estado actual de la secuencia:
 
-`M41.2 Basic Equipment & Weapon Coverage V1`
-
-→
-
-`M41.3 NPC Sandbox Spawn & Randomized Loadouts V1`
+`M41.2 Basic Equipment & Weapon Coverage V1 — DONE / VALIDATED`
 
 →
 
-`M41.4 Affiliation, Range-Aware Combat & Imperfect Aim V1`
+`M41.3 NPC Sandbox Spawn & Randomized Loadouts V1 — AUTHORIZED / ACTIVE NEXT`
+
+→
+
+`M41.4 Affiliation, Range-Aware Combat & Imperfect Aim V1 — PLANNED`
 
 →
 
