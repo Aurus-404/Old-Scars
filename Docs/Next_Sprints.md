@@ -4,57 +4,40 @@ Este documento contiene sólo los próximos trabajos reales. El trabajo activo s
 
 ## Próximo Trabajo
 
-### 1. M41.2 — Basic Equipment & Weapon Coverage V1
+### 1. M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
 
 Estado: `AUTHORIZED — IMMEDIATE PRIORITY`.
 
 Documento de diseño y secuencia: [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md).
 
-El Deformable Volumetric Terrain Foundation / Technical Spike ya está `VALIDATED — TECHNICAL SPIKE COMPLETE` en el commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`. Su evidencia y límites quedan registrados en [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md).
+M41.2 ya quedó `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED` en `4f877da10dee813b0bed816194110b5a27087683`. El layout humano de 17 slots tiene coverage data-driven, existen 27 items Core nuevos de ropa/equipment, tres tiers reales de mochila `8×10` / `10×12` / `12×14`, y las firearms cubren `manual_cycle` / `semi_automatic` / `automatic` con ranges `80` / `75` / `60` sin branches por DefinitionId. `firearm.range` y `melee_range` limitan el alcance físico temporal; Current Slice, ownership, storage y M40/M40.1 permanecieron verdes.
 
-M41.2 cambia deliberadamente el foco desde foundations grandes hacia coverage funcional que permita probar los sistemas existentes dentro de WorldRuntime.
+Objetivo inmediato de M41.3:
 
-Objetivos inmediatos:
+- agregar un control development-only para spawnear NPCs reales dentro de `WorldRuntime`;
+- usar las autoridades existentes de actor spawn/identity, Equipment, ItemInstance, ownership, inventory y corpse continuity;
+- ubicar el spawn sobre posición materializada y NavMesh válida;
+- generar loadouts distintos desde JSON con probabilidades reales y posibilidad explícita de `none`;
+- auditar las Loot Tables v0 determinísticas antes de decidir si conviene extenderlas o crear un `Actor Loadout Table/Profile` separado y semánticamente correcto;
+- mantener el roll concreto diagnosticable/reproducible mediante seed/evidence de debug;
+- convertir equipment, backpack, inventory, weapon y ammo seleccionados en estado real del actor;
+- roaming básico mediante `ActorNavigationController` para estresar navegación sobre el terrain vigente;
+- reutilizar M39/M40/M40.1 para localized health, armor, damage y muerte;
+- al morir, el corpse conserva exactamente las pertenencias del actor vivo; no rerollear loot al morir ni al abrir el cadáver;
+- permitir varios NPC simultáneos sin autoridades paralelas ni duplicación de ownership/items.
 
-- inspeccionar y usar los 17 slots reales de `core:human_standard_01` como única fuente de verdad;
-- cubrir cada slot ejercitable con al menos un item equipable funcional, sin exigir modelos, iconos, attachments ni arte final;
-- agregar ropa/equipment básico con sólo las propiedades que los sistemas actuales consumen;
-- agregar varias mochilas con capacidades realmente distintas para estresar item-owned storage, ownership, transfers y Current Slice;
-- preservar Lee-Enfield como bolt-action y agregar al menos una firearm semi-automatic y una automatic;
-- si el backend necesita representar fire/action modes, agregar únicamente la extensión genérica/data-driven mínima y reutilizar `WeaponCombatService`;
-- hacer explícito y observable que `firearm.range` es el máximo físico temporal del hitscan y `melee_range` el máximo melee;
-- clamp visual/debug del aim al alcance efectivo para no sugerir daño a distancia infinita;
-- validar equip/unequip, ownership, grid/storage, backpack content y persistence/round-trip sin crear autoridades paralelas.
+Fuera de M41.3:
 
-Fuera de M41.2:
-
-- modelos/animaciones/audio/iconos finales;
-- producción masiva de ropa o armas;
-- loot probabilístico de NPCs;
-- NPC spawn sandbox;
-- affiliation/hostility;
-- imperfect AI aim;
+- affiliation Blue/Red;
+- hostile acquisition automático;
+- reaction/focus/spread o imperfect AI aim;
 - full ballistics/bullet drop/travel time/wind;
-- condition/repair/crafting;
-- terrain productivo adicional por inercia.
+- strategic AI, squads, cover tactics, jobs o schedules;
+- final NPC ecology/population;
+- production UI;
+- world streaming/LOD/navigation productivos.
 
-### 2. M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
-
-Estado: `PLANNED — AFTER M41.2`.
-
-Objetivo:
-
-- control development-only para spawnear NPCs reales en WorldRuntime;
-- spawn sobre posición/materialización/NavMesh válida mediante las autoridades existentes de actor/identity;
-- loadout aleatorio desde JSON con probabilidades reales y posibilidad explícita de `none`;
-- auditar Loot Tables v0 antes de decidir si se extienden o si corresponde un Actor Loadout Table/Profile separado;
-- equipment, backpack, inventory, weapon y ammo se convierten en estado real del actor;
-- seed/roll evidence diagnosticable para reproducir un spawn concreto;
-- roaming básico con `ActorNavigationController` sobre el terrain vigente;
-- localized health, armor, death y corpse continuity reales;
-- el cadáver conserva exactamente el equipment/inventory del actor vivo; nunca rerollear loot al morir o abrirlo.
-
-### 3. M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1
+### 2. M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1
 
 Estado: `PLANNED — AFTER M41.3`.
 
@@ -73,7 +56,7 @@ Objetivo:
 
 Las referencias investigadas registradas en [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md) —Source/Half-Life 2, Arma 3 y Halo— son referencias conceptuales, no código ni valores a copiar.
 
-### 4. Playtest / Review Después De M41.4
+### 3. Playtest / Review Después De M41.4
 
 No encadenar automáticamente otro sistema grande.
 
@@ -83,61 +66,21 @@ Prueba objetivo:
 
 Después se revisarán bugs reales, navegación, ownership/equipment, combate y game feel antes de decidir la siguiente mecánica o volver a worldgen/materialización.
 
-## Estado Del Mundo Abierto Cerrado Hasta Aquí
+## Estado Cerrado Relevante
 
-Las foundations y application shell cerradas incluyen:
-
-- `Minimum Content Source Identity & Provenance Foundation` — `VALIDATED — FOUNDATION COMPLETE`;
-- `World Identity, Topology & Determinism Foundation` — `VALIDATED — FOUNDATION COMPLETE`;
-- `World Session + Persistence V1 / New Game Save-Load Application Shell` — `VALIDATED — APPLICATION SHELL COMPLETE`;
-- `Macro World Plan V1` — `VALIDATED — FOUNDATION COMPLETE`;
-- `Macro Elevation / Landforms V1` — `VALIDATED — FOUNDATION COMPLETE`;
-- `Worldgen Gameplay Quality + Macro Water V1` — `VALIDATED — FOUNDATION COMPLETE`;
-- `Worldgen Pass Isolation Correction` — `VALIDATED — SYSTEMIC CORRECTION COMPLETE`;
-- `Worldgen / World Session Observability Correction` — `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`;
-- `Macro Human Geography / Road Network V1` — `VALIDATED — FOUNDATION COMPLETE`;
-- `Terrain Materialization Technical Spike` — `VALIDATED — TECHNICAL SPIKE COMPLETE`;
-- `Integrated Gameplay Runtime / SampleScene Convergence` — `VALIDATED — RUNTIME CONVERGENCE COMPLETE`, commit `8c485c78b4ab294de9d983f70ebadfba634ab3e1`;
-- `Macro Climate Baseline V1` — `VALIDATED — FOUNDATION COMPLETE`, commit `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`;
-- `Player Traversal / Camera & Runtime Debug Ergonomics Pass` — `VALIDATED — RUNTIME ERGONOMICS COMPLETE`, commit final `ab78da4fbb1af9189d6a5c178515fafdb56f368e`;
-- `Macro Environment / Biome Regions V1` — `VALIDATED — FOUNDATION COMPLETE`, commit `55bcb0db479af43351f28908dfe05125dd9d62e1`;
-- `Deformable Volumetric Terrain Foundation / Technical Spike` — `VALIDATED — TECHNICAL SPIKE COMPLETE`, commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`.
-
-El terrain volumétrico validó una lattice de density compartida y chunked, Marching Tetrahedra, mesh/collider, crater, túnel con techo, cross-chunk mutation, dirty rebuild, persistencia/replay `SPIKE_NON_PRODUCTION`, player traversal y NavMesh local sin cambiar `world_session_v1` schema `7` ni los goldens de worldgen.
-
-New Game actual genera plan finito → elevation/landforms → Macro Water → Macro Climate → Macro Environment → quality/starter → Macro Human Geography. Ese worldgen macro queda suficientemente avanzado por ahora y no debe seguir creciendo por inercia mientras gameplay integrado necesita más cobertura real.
-
-## Connected First Playable
-
-El Connected First Playable sigue siendo el objetivo integrado posterior a las foundations/materialización/continuidad necesarias. La secuencia M41.2–M41.4 es un sandbox de integración previo que estresa equipment, actors, navigation, perception, combat, localized health, corpse loot y ownership dentro del runtime real; no reemplaza el Connected First Playable.
-
-## Modding Y Provenance
-
-La Global Content ID Foundation y la Minimum Content Source Identity & Provenance Foundation están validadas. Cada source requiere manifest `source_id`/`namespace`/`version`; ownership de declaraciones, orden estable y SHA-256 de recognized inputs están implementados sobre el pipeline Core/mod existente.
-
-`Provenance` prueba qué fuentes/inputs estuvieron presentes. `Generation compatibility` continúa no implementada y será responsable de decidir compatibilidad semántica de mundos; no se infiere solamente desde igualdad/diferencia del fingerprint.
-
-Dependencies, overrides/patches y compatibilidad de producción permanecen en alcance posterior M50.0.
+- `M41.2 — Basic Equipment & Weapon Coverage V1` — `DONE — VALIDATED`, commit `4f877da10dee813b0bed816194110b5a27087683`;
+- `Deformable Volumetric Terrain Foundation / Technical Spike` — `VALIDATED — TECHNICAL SPIKE COMPLETE`, commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`;
+- `M41.1 — Human Encounter AI V1` — `DONE — HUMAN ENCOUNTER AI V1 VALIDATED`;
+- M37/M37.1 persistence, M39 localized health, M40/M40.1 combat/armor, M41.0 navigation/perception y M34/M35 equipment/ownership permanecen autoridades reutilizables.
 
 ## No Iniciar Todavía
 
-Durante M41.2–M41.4 no iniciar por inercia:
+Durante M41.3–M41.4 no iniciar por inercia:
 
-- minería como loop completo;
-- geología/minerales de producción;
-- fluid simulation o agua entrando físicamente en túneles;
-- derrumbes/soil structural simulation;
-- destrucción completa de edificios/cimientos;
-- whole-world voxel allocation;
-- caves mundiales masivas;
-- streaming/sector transition productivo;
-- LOD productivo definitivo;
-- dynamic NavMesh de producción a gran escala;
-- vegetation/biomes locales finales;
-- terrain art/material pipeline final;
-- weather runtime, seasons o final rivers;
-- Bounded History / Present-Day Resolution;
-- World Persistence general o Sector Blueprint productivos por inercia;
+- minería/geología/fluid simulation;
+- whole-world voxels, streaming/sector transition o LOD productivo;
+- weather/seasons/final rivers;
+- Bounded History / World Persistence general / Sector Blueprint;
 - production UI;
 - facciones completas/reputación/memoria regional;
 - squads/tactics/cover AI sofisticada;
@@ -145,7 +88,7 @@ Durante M41.2–M41.4 no iniciar por inercia:
 - full ballistic simulation/bullet drop/wind;
 - final loot economy/balance;
 - final NPC population/ecology;
-- condition, repair o crafting;
+- condition/repair/crafting;
 - producción masiva de contenido.
 
-El próximo paso inmediato es `M41.2 — Basic Equipment & Weapon Coverage V1`. Después: `M41.3 → M41.4 → playtest/review`.
+El próximo paso inmediato es `M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1`. Después: `M41.4 → playtest/review`.
