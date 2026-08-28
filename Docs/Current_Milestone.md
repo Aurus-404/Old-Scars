@@ -4,6 +4,26 @@ Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, depen
 
 ## Estado Actual
 
+### ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike
+
+Estado actual:
+
+`AUTHORIZED — IMMEDIATE PRIORITY`
+
+Autoridad de alcance: [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md).
+
+La decisión de producto queda aprobada: el terrain productivo de Old Scars debe admitir deformación volumétrica localizada y persistente para soportar cavado, pozos, zanjas/trincheras, cráteres, explosiones, excavación lateral, túneles/cuevas y otras mutaciones tridimensionales cuando existan sus consumidores de gameplay. Una representación heightmap-only no satisface ese requisito.
+
+El Terrain Materialization Technical Spike actual conserva su evidencia y sigue `VALIDATED — TECHNICAL SPIKE COMPLETE`, pero Unity `Terrain/TerrainCollider` pasa a ser benchmark/prototipo heightmap, no candidato implícito a representación productiva definitiva.
+
+El primer spike debe validar una representación local chunked volumétrica —smooth voxel/density field o equivalente demostrado— que consuma la world truth existente, genere mesh+collision, permita deformación subtract real, produzca al menos una cavidad/túnel/overhang/excavación lateral imposible de representar correctamente con una única heightmap, limite rebuilds a regiones afectadas y persista al menos una mutation de prueba.
+
+Debe medir generación inicial, mesh rebuild, collider update y memoria aproximada; dejar estrategia explícita para dirty chunks/persistence/navigation local; preservar WorldRuntime/WorldSession y las autoridades Macro Geography/Water/Climate/Environment; y evitar whole-world voxel allocation, minería completa, geología de producción, fluid simulation, destructibilidad total o streaming productivo.
+
+El spike también debe corregir suficientemente la lectura cercana del terrain técnico. El terrain actual funciona razonablemente de lejos pero se percibe plástico/reflejante y tosco de cerca. Codex está autorizado a crear texturas placeholder task-owned simples/procedurales —por ejemplo PNGs de topsoil/soil/rock— y usarlas en el prototipo. Deben ser mates, legibles, reemplazables y claramente no finales.
+
+Después de cerrar esta foundation, la prioridad pasa a un tramo corto de Core Gameplay / Mechanics Polish antes de volver a profundizar las capas grandes de mundo.
+
 ### M41.1 — Human Encounter AI V1
 
 Estado final:
@@ -21,6 +41,8 @@ Estado de dirección:
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
 [Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1, Macro Climate Baseline V1 y Macro Environment / Biome Regions V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local, la convergencia del gameplay compartido en WorldRuntime y el pass de traversal/camera/debug ergonomics, están implementadas y validadas. Final rivers, geology, vegetación/biome realization local, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+
+La dirección post-Environment ya no deja abierta la representación física base: [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md) exige que la futura materialización productiva pueda representar volumen real y mutaciones persistentes. El algoritmo final, resolución, chunk size, LOD y estrategia de navegación permanecen sujetos a la evidencia del spike inmediato.
 
 ### ID TBD — Macro Environment / Biome Regions V1
 
@@ -156,6 +178,8 @@ Estado final:
 
 Una session con la macro truth requerida puede proyectar alrededor del active-sector anchor una ventana Unity local con Terrain/TerrainCollider, ocean mask, roads diagnósticas, player sobre tierra y una NavMesh terrestre local consumida por `ActorNavigationController`. La baseline provisional es `768×768` Unity units, relief `240`, ventana lógica `1800×1800` y heightmap `257`. Product sector no equivale a Terrain tile, la escala final permanece unfrozen y no existen streaming, transitions, mutations, voxels ni materialización productiva. Climate/Environment committed no cambian este contrato ni pintan materiales/vegetación automáticamente.
 
+Esta evidencia queda preservada como comparación, pero no congela Unity Terrain como representación productiva. La nueva requirement P0 es volumétrica/deformable; futuras features no deben asumir heightmap-only.
+
 ## Evidencia De Cierre
 
 - Runtime/Editor compile y `M41.1 Human Encounter AI Diagnostics`: `PASS`.
@@ -205,10 +229,18 @@ Una session con la macro truth requerida puede proyectar alrededor del active-se
 - `CameraRigController` conserva follow player-centric y `AllowsIndependentPan=false`; yaw/pitch/zoom/collision son una única autoridad de cámara y el collision query no reemplaza Interior Visibility.
 - `ActorStaminaComponent` es estado gameplay del player; `PlayerMovementController` sigue siendo la única autoridad de movimiento, `ActorNeedsComponent` la autoridad de Hunger/Thirst y `WorldClock` la única autoridad temporal. Los controles F3/teleport/multiplicadores son development-only y efímeros.
 
+## Dirección Aprobada Pendiente De Implementación
+
+- La representación productiva de terrain debe ser volumétrica y deformable; una heightmap única no puede ser la base definitiva si impide túneles, cuevas, overhangs, excavación lateral o cráteres volumétricos.
+- La hipótesis técnica inicial es un density/material field chunked con smooth meshing o equivalente demostrado, sin congelar todavía algoritmo de meshing, resolución, chunk size o LOD.
+- La persistencia debe tender a `baseline + terrain mutations/deltas = current terrain`, con compaction/dirty chunk strategy elegida después de medir.
+- Gameplay futuro de pala, explosivos o maquinaria debe consumir una autoridad común de terrain mutation; no crear deformadores paralelos.
+- El primer spike puede crear texturas placeholder simples/procedurales para validar surface/soil/rock y respuesta visual cercana; no son content/art final.
+
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. `ID TBD — Macro Environment / Biome Regions V1` queda cerrado y publicado en `55bcb0db479af43351f28908dfe05125dd9d62e1`.
+`ID TBD — Deformable Volumetric Terrain Foundation / Technical Spike` está `AUTHORIZED — IMMEDIATE PRIORITY` y es el siguiente coding unit.
 
-El próximo paso es una revisión de secuencia post-Environment, no un coding unit automático. Debe decidir cómo avanzar desde la macro truth ya cerrada hacia lugares físicamente jugables y cómo ordenar Bounded History / Present-Day Resolution, World Persistence, Sector Blueprint / Authored Composition, Large-Sector Navigation / Performance y Sector Materialization / Transition. Hasta esa decisión, ninguna de esas unidades queda autorizada.
+Después de cerrarlo, la prioridad prevista es un tramo corto de Core Gameplay / Mechanics Polish antes de volver a worldgen/materialización grande. Bounded History, World Persistence, Sector Blueprint, Large-Sector Navigation y Sector Materialization no quedan autorizados por inercia.
 
-Macro Climate/Environment no autorizan weather runtime, seasons, vegetation, fauna, final rivers, geology, terrain materials ni retuning sin un alcance posterior explícito. El Terrain Materialization Technical Spike y la convergencia runtime tampoco autorizan materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. El pass de traversal/camera/debug ergonomics no autoriza look-ahead/aim-camera, free pan, UI final ni una ampliación general de stats/fitness. M42.0 conserva su ID y alcance planificado, pero no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+Macro Climate/Environment tampoco autorizan weather runtime, seasons, vegetation, fauna, final rivers, geology ni retuning sin un alcance posterior explícito. M42.0 conserva su ID y alcance planificado, pero no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
