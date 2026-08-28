@@ -28,6 +28,9 @@ namespace OldScars.Core.ApplicationShell
             TerrainMaterializationConfiguration.CreateProvisionalBaseline();
 
         private bool menuOpen;
+        // World information is a development aid, not a modal gameplay menu.
+        // Keep it collapsed by default so the shared debug surfaces remain usable.
+        private bool worldInfoVisible;
         private string statusMessage;
         private WorldTerrainMaterializationController materializationController;
         private PlayerGameplayComposition playerComposition;
@@ -41,6 +44,7 @@ namespace OldScars.Core.ApplicationShell
         private WorldRuntimePlayerBindSource playerBindSource;
 
         public bool IsMenuOpen => menuOpen;
+        public bool IsWorldInfoVisible => worldInfoVisible;
         public string StatusMessage => statusMessage;
         public WorldTerrainMaterializationController MaterializationController => materializationController;
         public PlayerGameplayComposition PlayerComposition => playerComposition;
@@ -193,7 +197,74 @@ namespace OldScars.Core.ApplicationShell
             if (session == null)
                 return;
 
-            GUILayout.BeginArea(new Rect(18f, 18f, Mathf.Min(720f, Screen.width - 36f), 250f), GUI.skin.box);
+            float infoWidth = Mathf.Min(720f, Mathf.Max(1f, Screen.width - 36f));
+            float infoButtonWidth = 112f;
+            Rect infoButtonRect = new Rect(
+                Mathf.Max(18f, (Screen.width - infoButtonWidth) * 0.5f),
+                18f,
+                Mathf.Min(infoButtonWidth, Mathf.Max(1f, Screen.width - 36f)),
+                28f);
+
+            if (!worldInfoVisible)
+            {
+                if (GUI.Button(infoButtonRect, "WORLD INFO"))
+                    OpenWorldInfo();
+            }
+            else
+            {
+                float infoHeight = 292f;
+                Rect infoRect = new Rect(
+                    Mathf.Max(18f, (Screen.width - infoWidth) * 0.5f),
+                    18f,
+                    infoWidth,
+                    Mathf.Min(infoHeight, Mathf.Max(150f, Screen.height - 36f)));
+                GUILayout.BeginArea(infoRect, GUI.skin.window);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("WORLD INFORMATION", HeadingStyle());
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("X", GUILayout.Width(28f), GUILayout.Height(24f)))
+                    CloseWorldInfo();
+                GUILayout.EndHorizontal();
+
+                DrawWorldInformation(session);
+                GUILayout.EndArea();
+            }
+
+            if (!menuOpen)
+                return;
+
+            float width = 390f;
+            float height = 390f;
+            var menuArea = new Rect(
+                Mathf.Max(20f, (Screen.width - width) * 0.5f),
+                Mathf.Max(20f, (Screen.height - height) * 0.5f),
+                width,
+                height);
+            GUILayout.BeginArea(menuArea, GUI.skin.window);
+            GUILayout.Space(12f);
+            GUILayout.Label("WORLD MENU", CenteredHeadingStyle());
+            GUILayout.Space(22f);
+            if (GUILayout.Button("CONTINUE", GUILayout.Height(44f)))
+                ContinueGame();
+            GUILayout.Space(10f);
+            if (GUILayout.Button("SAVE GAME", GUILayout.Height(44f)))
+                SaveGame();
+            GUILayout.Space(10f);
+            if (GUILayout.Button("RETURN TO MAIN MENU", GUILayout.Height(44f)))
+                ReturnToMainMenu();
+            GUILayout.Space(10f);
+            if (GUILayout.Button("EXIT", GUILayout.Height(44f)))
+                ExitApplication();
+            if (!string.IsNullOrEmpty(statusMessage))
+            {
+                GUILayout.Space(12f);
+                GUILayout.Label(statusMessage, WrappedLabelStyle());
+            }
+            GUILayout.EndArea();
+        }
+
+        private void DrawWorldInformation(WorldSession session)
+        {
             GUILayout.Label(session.DisplayName, HeadingStyle());
             GUILayout.Label("World: " + session.WorldId.Canonical);
             GUILayout.Label("Seed: " + session.GenerationContext.WorldSeed.Canonical);
@@ -239,39 +310,16 @@ namespace OldScars.Core.ApplicationShell
                 GUILayout.Label("Macro water: legacy schema 3 (not fabricated)");
             }
             GUILayout.Label("Press Escape for menu");
-            GUILayout.EndArea();
+        }
 
-            if (!menuOpen)
-                return;
+        public void OpenWorldInfo()
+        {
+            worldInfoVisible = true;
+        }
 
-            float width = 390f;
-            float height = 390f;
-            var menuArea = new Rect(
-                Mathf.Max(20f, (Screen.width - width) * 0.5f),
-                Mathf.Max(20f, (Screen.height - height) * 0.5f),
-                width,
-                height);
-            GUILayout.BeginArea(menuArea, GUI.skin.window);
-            GUILayout.Space(12f);
-            GUILayout.Label("WORLD MENU", CenteredHeadingStyle());
-            GUILayout.Space(22f);
-            if (GUILayout.Button("CONTINUE", GUILayout.Height(44f)))
-                ContinueGame();
-            GUILayout.Space(10f);
-            if (GUILayout.Button("SAVE GAME", GUILayout.Height(44f)))
-                SaveGame();
-            GUILayout.Space(10f);
-            if (GUILayout.Button("RETURN TO MAIN MENU", GUILayout.Height(44f)))
-                ReturnToMainMenu();
-            GUILayout.Space(10f);
-            if (GUILayout.Button("EXIT", GUILayout.Height(44f)))
-                ExitApplication();
-            if (!string.IsNullOrEmpty(statusMessage))
-            {
-                GUILayout.Space(12f);
-                GUILayout.Label(statusMessage, WrappedLabelStyle());
-            }
-            GUILayout.EndArea();
+        public void CloseWorldInfo()
+        {
+            worldInfoVisible = false;
         }
 
         public void OpenMenu()
