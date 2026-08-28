@@ -23,6 +23,21 @@ namespace OldScars.Core.Interactions
             }
         }
 
+        /// <summary>
+        /// Keyboard movement remains available while the pointer is over
+        /// development panels. Only modal inventory input, or an actively
+        /// focused item-filter text field, suppresses movement keys.
+        /// </summary>
+        public bool BlocksKeyboardMovement
+        {
+            get
+            {
+                EnsureReferences();
+                return (inventorySessionController != null && inventorySessionController.BlocksWorldInput) ||
+                       actorNeedsPanel != null && actorNeedsPanel.IsItemDebugFilterFocused;
+            }
+        }
+
         private void Awake()
         {
             if (actionPanel == null)

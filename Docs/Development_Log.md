@@ -3354,3 +3354,11 @@ La revisión System Harmony confirmó ausencia de player/camera/session/WorldClo
 Regla permanente: `WorldRuntime` es el runtime gameplay integrado canónico; `SampleScene` es un laboratorio. Una feature sólo cuenta como integrada cuando sus autoridades, UI/input, consumers del mundo e interacciones de persistencia coexisten y pueden probarse en ese runtime.
 
 No se implementaron Biomes, climate, settlements, terrain-scale tuning, final roads, streaming ni optimización de NavMesh. El siguiente candidato no se inicia en esta tarea.
+
+### Runtime Playtest Ergonomics Cleanup
+
+Fecha: 2026-08-28.
+
+Se corrigió la separación de input del panel F3: el puntero sobre Runtime Debug Tools ya no suprime WASD/Shift, pero clicks, cámara e interacciones siguen bloqueados por las superficies existentes; Inventory conserva su modalidad y el filtro Item Debug captura teclado sólo mientras está enfocado. Item Debug enumera las `ItemDefinition` reales de `GameDatabase` y usa el camino normal `InventoryComponent.AddItemByDefinitionId` para probar equipment, storage y armas sin una autoridad paralela. El resolver de teleport mantiene la validación de solape de `PlayerMovementController` y permite suelo materializado o superficies authored visibles con normal de suelo, rechazando actores, triggers y geometría no caminable.
+
+Validación autónoma: Runtime compile y Editor compile `PASS`; Play Mode D3D11 de `MainMenu → New Game → WorldRuntime → Save → Return → Load` con `[WorldRuntime][GAMEPLAY_RUNTIME_READY]` y `World Session Application Play Flow: PASS`. No se modificaron schemas, worldgen, terrain authority ni gameplay persistence.

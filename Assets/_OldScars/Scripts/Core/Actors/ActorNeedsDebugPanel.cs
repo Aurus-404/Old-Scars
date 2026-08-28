@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using OldScars.Core.Data;
+using OldScars.Core.Data.Definitions;
 using OldScars.Core.Feedback;
 using OldScars.Core.Interactions;
 using OldScars.Core.Items;
@@ -26,10 +29,18 @@ namespace OldScars.Core.Actors
         private Vector2 scrollPosition;
         private bool teleportArmed;
         private string teleportFeedback;
+        private string itemDebugFilter = string.Empty;
+        private string selectedItemDefinitionId;
+        private string itemDebugFeedback;
+        private Vector2 itemDebugScrollPosition;
+
+        private const string ItemDebugFilterControlName = "OldScars.ItemDebugFilter";
 
         public bool IsVisible => IsDevelopmentBuild && visible &&
                                  (inventorySessionController == null || !inventorySessionController.IsOpen);
         public bool IsTeleportArmed => teleportArmed;
+        public bool IsItemDebugFilterFocused =>
+            IsVisible && GUI.GetNameOfFocusedControl() == ItemDebugFilterControlName;
 
         private void Awake()
         {
@@ -88,6 +99,7 @@ namespace OldScars.Core.Actors
             DrawWorldTimeControls();
             DrawCameraControls();
             DrawWorldControls();
+            DrawItemDebugControls();
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
@@ -261,6 +273,104 @@ namespace OldScars.Core.Actors
                 GUILayout.Label(teleportFeedback);
         }
 
+        private void DrawItemDebugControls()
+        {
+            GUILayout.Space(6f);
+            GUILayout.Label("ITEM DEBUG");
+
+            GameDataManager dataManager = GameDataManager.Instance;
+            GameDatabase database = dataManager != null && dataManager.IsReady
+                ? dataManager.Database
+                : null;
+            if (database == null)
+            {
+                GUILayout.Label("GameDataManager: <NOT READY>");
+                return;
+            }
+
+            GUI.SetNextControlName(ItemDebugFilterControlName);
+            itemDebugFilter = GUILayout.TextField(itemDebugFilter ?? string.Empty);
+            string filter = itemDebugFilter.Trim();
+            var matches = new List<ItemDefinition>();
+            foreach (ItemDefinition definition in database.GetAllItems())
+            {
+                if (definition == null || string.IsNullOrWhiteSpace(definition.id))
+                    continue;
+
+                string displayName = definition.display != null ? definition.display.name : null;
+                if (filter.Length > 0 &&
+                    (definition.id.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0) &&
+                    (string.IsNullOrWhiteSpace(displayName) ||
+                     displayName.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0))
+                    continue;
+
+                matches.Add(definition);
+            }
+            matches.Sort((left, right) => string.CompareOrdinal(left.id, right.id));
+
+            itemDebugScrollPosition = GUILayout.BeginScrollView(
+                itemDebugScrollPosition,
+                GUILayout.Height(150f));
+            for (int index = 0; index < matches.Count; index++)
+            {
+                ItemDefinition definition = matches[index];
+                string displayName = definition.display != null ? definition.display.name : null;
+                string label = string.IsNullOrWhiteSpace(displayName) || displayName == definition.id
+                    ? definition.id
+                    : displayName + " (" + definition.id + ")";
+                if (GUILayout.Button(label, GUILayout.Height(22f)))
+                    selectedItemDefinitionId = definition.id;
+            }
+            GUILayout.EndScrollView();
+
+            if (matches.Count == 0)
+                GUILayout.Label("No matching ItemDefinitions.");
+
+            ItemDefinition selected = !string.IsNullOrWhiteSpace(selectedItemDefinitionId)
+                ? database.GetItem(selectedItemDefinitionId)
+                : null;
+            GUILayout.Label("Selected: " + (selected == null ? "<NONE>" : FormatItem(selected)));
+            if (GUILayout.Button("Give 1", GUILayout.Height(24f)))
+                GrantSelectedItem();
+            if (!string.IsNullOrWhiteSpace(itemDebugFeedback))
+                GUILayout.Label(itemDebugFeedback);
+        }
+
+        private void GrantSelectedItem()
+        {
+            if (string.IsNullOrWhiteSpace(selectedItemDefinitionId))
+            {
+                itemDebugFeedback = "Give failed: select an ItemDefinition first.";
+                return;
+            }
+
+            InventoryComponent inventory = actorNeeds != null
+                ? actorNeeds.GetComponent<InventoryComponent>()
+                : null;
+            if (inventory == null)
+            {
+                itemDebugFeedback = "Give failed: player InventoryComponent is missing.";
+                return;
+            }
+
+            ItemInstance item = inventory.AddItemByDefinitionId(selectedItemDefinitionId, 1);
+            if (item == null)
+            {
+                itemDebugFeedback = "Give failed: no legal inventory space or item could not be created.";
+                return;
+            }
+
+            itemDebugFeedback = "Granted " + item.DefinitionId + " [" + item.InstanceId + "]";
+        }
+
+        private static string FormatItem(ItemDefinition definition)
+        {
+            string displayName = definition.display != null ? definition.display.name : null;
+            return string.IsNullOrWhiteSpace(displayName) || displayName == definition.id
+                ? definition.id
+                : displayName + " (" + definition.id + ")";
+        }
+
         private void ApplyDebugRest(double durationGameSeconds)
         {
             ActorRestResult result = ActorRestService.TryRest(actorNeeds, durationGameSeconds);
@@ -374,7 +484,8 @@ namespace OldScars.Core.Actors
                 if (collider == null || hit.normal.y < 0.65f || hit.distance >= nearestDistance ||
                     player != null && collider.transform.IsChildOf(player) ||
                     collider.GetComponentInParent<CharacterController>() != null ||
-                    collider.GetComponentInParent<WorldObjectTags>() != null ||
+                    collider.GetComponentInParent<ActorInteractionContext>() != null ||
+                    collider.GetComponentInParent<ActorRuntimeIdentity>() != null ||
                     !IsMaterializedGround(collider))
                 {
                     continue;
@@ -389,11 +500,22 @@ namespace OldScars.Core.Actors
 
         private static bool IsMaterializedGround(Collider collider)
         {
+            if (collider == null || collider.isTrigger)
+                return false;
+
             if (collider is TerrainCollider)
                 return true;
 
             int groundLayer = LayerMask.NameToLayer("Ground");
-            return groundLayer >= 0 && collider.gameObject.layer == groundLayer;
+            if (groundLayer >= 0 && collider.gameObject.layer == groundLayer)
+                return true;
+
+            // Authored building/platform surfaces opt into the existing
+            // visibility marker. The hit-normal and CharacterController
+            // clearance checks above still reject walls, actors and ceilings.
+            BuildingOccluderTarget buildingSurface =
+                collider.GetComponentInParent<BuildingOccluderTarget>();
+            return buildingSurface != null && !buildingSurface.IsHidden;
         }
 
         private void DisarmTeleport()

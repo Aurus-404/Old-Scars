@@ -38,9 +38,10 @@ namespace OldScars.Core.Interactions
                 return;
             }
 
-            bool pointerOverDebugUi = Mouse.current != null && uiInputBlocker != null &&
-                                      uiInputBlocker.IsPointerOverBlockingPanel(Mouse.current.position.ReadValue());
-            if (pointerOverDebugUi)
+            // Keyboard movement is independent from pointer routing. Debug
+            // panels consume mouse/world actions, but hovering them must not
+            // make WASD or Shift stop working.
+            if (uiInputBlocker != null && uiInputBlocker.BlocksKeyboardMovement)
             {
                 movementController.ClearMovement();
                 wasMoving = false;
