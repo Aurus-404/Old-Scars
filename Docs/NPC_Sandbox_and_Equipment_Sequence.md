@@ -1,6 +1,6 @@
 # Old Scars — Equipment, NPC Sandbox & Combat Validation Sequence
 
-- Estado de dirección: `APPROVED — PLANNED AFTER DEFORMABLE TERRAIN CLOSEOUT`
+- Estado de dirección: `APPROVED — ACTIVE SEQUENCE`
 - Tipo: gameplay/content validation sequence
 - Alcance: cobertura funcional de equipment/weapons, NPC sandbox visible en WorldRuntime y combate AI observable sobre el mapa actual
 - Autoridad relacionada: `Project_Roadmap.md`, `Current_Milestone.md`, `Next_Sprints.md`, `Technical_Architecture.md`, `DataDriven_JSON_Rules.md`
@@ -18,13 +18,13 @@ La meta no es producción masiva de contenido ni IA final. La meta es crear un s
 5. hacer que NPCs con relaciones distintas detecten, persigan o ataquen a otros actores usando las autoridades ya implementadas;
 6. observar errores reales de integración, navegación, ownership, persistence, equipment, combat y corpse loot en lugar de depender únicamente de diagnostics aislados.
 
-Esta secuencia comienza sólo después de cerrar técnicamente `Deformable Volumetric Terrain Foundation / Technical Spike` y reconciliar su documentación/Git.
+`Deformable Volumetric Terrain Foundation / Technical Spike` ya quedó `VALIDATED — TECHNICAL SPIKE COMPLETE` en el commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`. La secuencia queda activa y comienza ahora por M41.2.
 
 ---
 
 # M41.2 — Basic Equipment & Weapon Coverage V1
 
-Estado planificado: `PLANNED — NEXT AFTER TERRAIN CLOSEOUT`
+Estado actual: `AUTHORIZED — IMMEDIATE PRIORITY`
 
 ## Objetivo
 
@@ -389,7 +389,7 @@ Debe demostrarse dentro de WorldRuntime:
 
 # Secuencia De Ejecución Aprobada
 
-Después del cierre del terrain deformable:
+La secuencia activa es:
 
 `M41.2 Basic Equipment & Weapon Coverage V1`
 
