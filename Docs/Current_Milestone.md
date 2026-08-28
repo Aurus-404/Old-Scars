@@ -20,7 +20,21 @@ Estado de dirección:
 
 `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`
 
-[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1 y Macro Climate Baseline V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local, la convergencia del gameplay compartido en WorldRuntime y el pass de traversal/camera/debug ergonomics, están implementadas y validadas. Final rivers, geology/biomes, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+[Open_World_Architecture.md](Open_World_Architecture.md) define el futuro mundo lógico persistente, sectores grandes interconectados, macro planning, blueprints sectoriales, materialización Unity y mutación persistente. Las foundations mínimas de content source identity/provenance, world identity/topology/determinism, Macro World Plan V1, Macro Elevation/Landforms V1, Gameplay Quality/Macro Water V1, Macro Human Geography/Road Network V1, Macro Climate Baseline V1 y Macro Environment / Biome Regions V1, más la shell acotada de World Session/New Game/Save/Load, el Terrain Materialization Technical Spike local, la convergencia del gameplay compartido en WorldRuntime y el pass de traversal/camera/debug ergonomics, están implementadas y validadas. Final rivers, geology, vegetación/biome realization local, settlement detail, world persistence general de blueprints/mutaciones sectoriales, materialización sectorial/streaming de producción, transición y generation compatibility continúan no implementados.
+
+### ID TBD — Macro Environment / Biome Regions V1
+
+Estado final:
+
+`VALIDATED — FOUNDATION COMPLETE`
+
+Commit validado: `55bcb0db479af43351f28908dfe05125dd9d62e1`.
+
+`MacroEnvironmentPlan` añade truth ecológica mundial inmutable bajo `macro_environment_v1`. Cada sample terrestre conserva `PrimaryBiome`, `SecondaryBiome` y `TransitionQ16`; la taxonomía V1 contiene 14 familias terrestres más `None`, y los océanos siguen estrictamente `None/None/0` bajo la autoridad de Macro Water. La clasificación usa distancia determinista sobre Thermal/Moisture committed, sin biome noise, sin region IDs persistentes, sin conflar Landform/Coast con Biome y sin crear una autoridad runtime/GameObject paralela.
+
+`world_session_v1` schema `7` persiste Environment exacto; schemas `1`–`6` permanecen legacy y nunca fabrican Environment. Schema `6` conserva Climate + Human Geography con `HasMacroEnvironment=false`. `world_pipeline_v5` es metadata global de creación; Plan/Geography/Water/Climate/Human mantienen sus contratos deterministas propios y sus goldens previos. Environment no entra todavía en Gameplay Quality, Starter ni Human Geography V1.
+
+Macro Environment Diagnostics, corpus `72/72`, schema 7 round-trip, schemas 1–6 legacy, Fresh Process A/B, pass isolation, Human Geography, Terrain Materialization D3D11 y Main Menu→WorldRuntime→Save→Return→Load quedaron `PASS`. Golden Environment: `f8081c040da64ccce5e5eb5ffed941c2c2c44cd7ac5442582ee5d331c3abd1c5`. Las previews Small/Medium/Large/Huge fueron inspeccionadas y mostraron regiones coherentes sin seams/checkerboard; no se implementaron vegetation, fauna, geology, terrain materials ni weather.
 
 ### ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass
 
@@ -32,7 +46,7 @@ Commit final validado: `ab78da4fbb1af9189d6a5c178515fafdb56f368e`.
 
 La cámara continúa player-centric y `AllowsIndependentPan=false`: RMB controla yaw/pitch con clamp, la rueda conserva el zoom pedido y un `SphereCast` retrae sólo la distancia física actual ante geometría sólida para impedir atravesar paredes/terreno; al desaparecer la obstrucción la cámara recupera suavemente la distancia solicitada. `BuildingVisibilityManager` conserva su autoridad separada.
 
-Shift sprint reutiliza el único `PlayerMovementController`/`CharacterController`. `ActorStaminaComponent` añade stamina gameplay simple con drain/recovery en tiempo real, lockout al agotarse y threshold de recuperación; reservas Hunger/Thirst altas mejoran recovery, mientras stamina baja encarece sólo el coste adicional de seguir sprinting. Descansar con stamina baja no añade consumo metabólico extra. Stamina se captura/preflighta/restaura dentro de Current Slice y su rollback existente; `world_session_v1` no cambió.
+Shift sprint reutiliza el único `PlayerMovementController`/`CharacterController`. `ActorStaminaComponent` añade stamina gameplay simple con drain/recovery en tiempo real, lockout al agotarse y threshold de recuperación; reservas Hunger/Thirst altas mejoran recovery, mientras stamina baja encarece sólo el coste adicional de seguir sprinting. Descansar con stamina baja no añade consumo metabólico extra. Stamina se captura/preflighta/restaura dentro de Current Slice y su rollback existente; `world_session_v1` no cambió por este pass.
 
 `ActorNeedsDebugPanel` quedó como Runtime Debug Tools development-only, oculto por defecto y toggleable con F3, con `ScrollView`, movement multiplier efímero, control de stamina/Hunger/Thirst, presets `1x/2x/3x/5x/10x/20x/50x/100x` sobre la autoridad `WorldClock`, reset de cámara y teleport armado de un solo click limitado a suelo materializado válido. El panel reutiliza `DebugWorldUiInputBlocker`; sus cheats/configuración debug no se persisten.
 
@@ -48,7 +62,7 @@ Commit validado: `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
 
 `MacroClimatePlan` aporta truth climática mundial inmutable bajo `macro_climate_v1`: `ThermalIndex` y `MoistureIndex` fixed-point, gradiente térmico norte-frío/sur-cálido con anomalía regional y enfriamiento por elevación, humedad regional con influencia oceánica gradual y respuesta orográfica acotada, y una dirección dominante persistida entre ocho direcciones canónicas. El escalado Small→Huge aumenta resolución/frecuencia regional en lugar de estirar un único patrón.
 
-`world_session_v1` schema `6` persiste Climate committed con validación estricta; schemas `1`–`5` conservan su truth legacy exacta y no fabrican Climate, incluido schema `5` con Human Geography y `HasMacroClimate=false`. Fresh Process A/B, Main Menu→WorldRuntime→Save→Return→Load, pass isolation, goldens upstream y regresores de worldgen/persistence pasaron. Climate no entra todavía en Gameplay Quality, Starter ni Human Geography V1 y no implementa weather runtime, biomes, vegetation ni materialización local.
+`world_session_v1` schema `6` introdujo Climate committed con validación estricta; schemas `1`–`5` conservan su truth legacy exacta y no fabrican Climate, incluido schema `5` con Human Geography y `HasMacroClimate=false`. Schema `7` conserva Climate y añade Environment como pass posterior. Climate no entra todavía en Gameplay Quality, Starter ni Human Geography V1 y no implementa weather runtime, vegetation ni materialización local.
 
 ### ID TBD — Integrated Gameplay Runtime / SampleScene Convergence
 
@@ -76,7 +90,7 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-`WorldId`, `WorldSeed`, `GeneratorVersion`, `SectorId`, derivación SHA-256 por contrato/scope/pass y `WorldTopology` conectado/multiconexión existen como datos lógicos puros. `GeneratorVersion` es metadata global de creación; Plan y Geography poseen contratos deterministas propios. `WorldId` no entra en generación; provenance tampoco se convierte en compatibilidad ni input automático.
+`WorldId`, `WorldSeed`, `GeneratorVersion`, `SectorId`, derivación SHA-256 por contrato/scope/pass y `WorldTopology` conectado/multiconexión existen como datos lógicos puros. `GeneratorVersion` es metadata global de creación; los passes poseen contratos deterministas propios. `WorldId` no entra en generación; provenance tampoco se convierte en compatibilidad ni input automático.
 
 ### ID TBD — World Session + Persistence V1 / New Game Save-Load Application Shell
 
@@ -84,7 +98,7 @@ Estado final:
 
 `VALIDATED — APPLICATION SHELL COMPLETE`
 
-`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. New Game actual escribe schema `6` con Climate committed; schema `5` continúa siendo legacy válido con Human Geography y Climate ausente. Main Menu es el startup de producto y WorldRuntime es el runtime canónico integrado: materializa la ventana terrain técnica desde la truth disponible y ejecuta sobre ella el gameplay compartido. SampleScene continúa laboratorio. La persistencia gameplay validada sigue siendo la del Current Slice soportado, no una implementación general de futuras mutaciones/blueprints sectoriales.
+`WorldSessionService` posee una única session activa y lifecycle Create/Load/Save/Close. `world_session_v1` es hermano de `current_slice_v1` sobre el envelope/store M37; usa `WorldId` como slot, persiste identity/topology/active sector/provenance evidence y preflighta antes de publicar. New Game actual escribe schema `7` con Climate + Environment + Human Geography committed. Schema `6` continúa legacy válido con Climate + Human Geography y Environment ausente; no se ejecuta MacroEnvironmentGenerator al cargarlo. Main Menu es el startup de producto y WorldRuntime es el runtime canónico integrado: materializa la ventana terrain técnica desde la truth disponible y ejecuta sobre ella el gameplay compartido. SampleScene continúa laboratorio. La persistencia gameplay validada sigue siendo la del Current Slice soportado, no una implementación general de futuras mutaciones/blueprints sectoriales.
 
 ### ID TBD — Macro World Plan V1
 
@@ -100,7 +114,7 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` conserva ese formato legacy sin Water fabricada. El spike consume esta truth en una ventana física; geology, vegetation/biomes y materialización terrain de producción continúan pendientes.
+New Game genera después del plan un `MacroGeographyPlan` global fixed-point, continuo y compacto. Elevation normalizada e identidades regionales `Plains`, `RollingHills`, `Highlands` y `Mountains` se consultan por coordenadas macro, no por sector/topology. `world_session_v1` schema `3` conserva ese formato legacy sin Water fabricada. El spike consume esta truth en una ventana física; geology, vegetation/materialización biome local y materialización terrain de producción continúan pendientes.
 
 ### ID TBD — Worldgen Gameplay Quality + Macro Water V1
 
@@ -116,7 +130,7 @@ Estado final:
 
 `VALIDATED — SYSTEMIC CORRECTION COMPLETE`
 
-`WorldDeterminism.DerivePassDomainKey` separa `WorldSeed + pass generation contract + scope + pass` de la versión global del pipeline. Plan conserva `macro_plan_v1`, Geography `macro_geography_v1`, Water `macro_water_v1`, Climate `macro_climate_v1`, Human Geography `macro_human_roads_v1`, y New Game registra `world_pipeline_v4` sólo como metadata global. Cambiar una versión downstream ya no re-seedea truth upstream sin una dependencia real; los saves schemas `1`–`6` rehidratan únicamente su truth committed sin regeneración ni upgrade silencioso.
+`WorldDeterminism.DerivePassDomainKey` separa `WorldSeed + pass generation contract + scope + pass` de la versión global del pipeline. Plan conserva `macro_plan_v1`, Geography `macro_geography_v1`, Water `macro_water_v1`, Climate `macro_climate_v1`, Environment `macro_environment_v1`, Human Geography `macro_human_roads_v1`, y New Game registra `world_pipeline_v5` sólo como metadata global. Cambiar una versión downstream ya no re-seedea truth upstream sin una dependencia real; los saves schemas `1`–`7` rehidratan únicamente su truth committed sin regeneración ni upgrade silencioso.
 
 ### ID TBD — Worldgen / World Session Observability Correction
 
@@ -124,7 +138,7 @@ Estado final:
 
 `VALIDATED — OBSERVABILITY CORRECTION COMPLETE`
 
-Create/Load/Runtime Ready y Save manual poseen eventos estructurados únicos y filtrables en sus límites reales. `WORLD_CREATED` resume identity/settings/contracts/hashes/starter, `LOAD_OK` declara schema y truth presente o ausente, `SESSION_READY` confirma la session publicada, y `SAVE_OK` aporta contexto semántico sin reemplazar `[Persistence][WRITE_COMMIT]`. Climate schema `6` extiende esa observabilidad con presencia/ausencia y evidencia climática sin duplicar lifecycle logs.
+Create/Load/Runtime Ready y Save manual poseen eventos estructurados únicos y filtrables en sus límites reales. `WORLD_CREATED` resume identity/settings/contracts/hashes/starter, `LOAD_OK` declara schema y truth presente o ausente, `SESSION_READY` confirma la session publicada, y `SAVE_OK` aporta contexto semántico sin reemplazar `[Persistence][WRITE_COMMIT]`. Schema `7` extiende esa observabilidad con presencia/ausencia y hash Environment sin duplicar lifecycle logs; schemas legacy declaran Environment ausente.
 
 ### ID TBD — Macro Human Geography / Road Network V1
 
@@ -132,7 +146,7 @@ Estado final:
 
 `VALIDATED — FOUNDATION COMPLETE`
 
-New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial bajo `macro_human_roads_v1`: hubs Regional/Local en tierra, backbone Primary conectado por landmass, enlaces alternativos/ciclos y branches Secondary, todos con IDs estables y polylines globales routeadas sobre un cost field entero de relief/traversal. No usa el MST de `WorldTopology` como road graph, no cruza océano y no materializa settlements, roads, bridges, terrain ni navegación física. Su truth nació en `world_session_v1` schema `5`; schema `6` la preserva sin hacer de Climate un input de Human Geography V1. Schemas `1`–`4` permanecen legacy exactos y no fabrican infraestructura.
+New Game genera después de quality/starter un `MacroHumanGeographyPlan` mundial bajo `macro_human_roads_v1`: hubs Regional/Local en tierra, backbone Primary conectado por landmass, enlaces alternativos/ciclos y branches Secondary, todos con IDs estables y polylines globales routeadas sobre un cost field entero de relief/traversal. No usa el MST de `WorldTopology` como road graph, no cruza océano y no materializa settlements, roads, bridges, terrain ni navegación física. Su truth nació en `world_session_v1` schema `5`; schemas `6` y `7` la preservan sin hacer de Climate o Environment inputs de Human Geography V1. Schemas `1`–`4` permanecen legacy exactos y no fabrican infraestructura.
 
 ### ID TBD — Terrain Materialization Technical Spike
 
@@ -140,7 +154,7 @@ Estado final:
 
 `VALIDATED — TECHNICAL SPIKE COMPLETE`
 
-Una session con la macro truth requerida puede proyectar alrededor del active-sector anchor una ventana Unity local con Terrain/TerrainCollider, ocean mask, roads diagnósticas, player sobre tierra y una NavMesh terrestre local consumida por `ActorNavigationController`. La baseline provisional es `768×768` Unity units, relief `240`, ventana lógica `1800×1800` y heightmap `257`. Product sector no equivale a Terrain tile, la escala final permanece unfrozen y no existen streaming, transitions, mutations, voxels ni materialización productiva. Climate schema `6` no cambia este contrato ni colorea/materializa el clima.
+Una session con la macro truth requerida puede proyectar alrededor del active-sector anchor una ventana Unity local con Terrain/TerrainCollider, ocean mask, roads diagnósticas, player sobre tierra y una NavMesh terrestre local consumida por `ActorNavigationController`. La baseline provisional es `768×768` Unity units, relief `240`, ventana lógica `1800×1800` y heightmap `257`. Product sector no equivale a Terrain tile, la escala final permanece unfrozen y no existen streaming, transitions, mutations, voxels ni materialización productiva. Climate/Environment committed no cambian este contrato ni pintan materiales/vegetación automáticamente.
 
 ## Evidencia De Cierre
 
@@ -177,6 +191,7 @@ Una session con la macro truth requerida puede proyectar alrededor del active-se
 - `Macro Climate Baseline V1 Diagnostics`: `PASS`; goldens upstream preservados — Plan `3f300ba2129962493d2ab8f2ad6ec0863e96aa0ceeb400f9899f91889a34e91a`, Geography `c2d412fcdcb1b0e1b41f4fdbda2df01258758e6db9c6b93aac59b446be7dbd3e`, Water `ec29f501e4f36ae3b2313d3da6089f2fe6e92b052f18079c649e21ce8faabfc0`, Human `a786f018ce3bdea44aeb066c80e38cb1f5dc8e114c65bd7eb352489628245ba6`— y Climate golden `a4b7869a7d8deab093eb9b9c5f7a2da118156f22c61ac466fbd0a9e64958eec1`.
 - Climate schema `6` round-trip exacto, schemas `1`–`5` legacy sin Climate fabricado, Fresh Process A/B, Main Menu→WorldRuntime→Save→Return→Load, Pass Isolation, Water/Quality, Human Geography, Terrain Materialization D3D11, M37 y Content Provenance: `PASS`. Las previews Small→Huge fueron inspeccionadas y mostraron mayor frecuencia/provincias con el preset, tendencia térmica norte-frío/sur-cálido, humedad costa/interior gradual y ausencia de seams/ruido estático evidente. Hubo `13` findings blandos de distribución y cero fallo contractual reportado. El commit publicado es `457836e7f10a9b2ddbc08cc1db05ca38cd3f7108`.
 - Player Traversal / Camera & Runtime Debug Ergonomics Pass: `PlayerControlsHealthWindowDiagnostics` bajo D3D11, `M38NeedsWorldClockRecoveryDiagnostics` Play Mode y `WorldSessionApplicationDiagnostics`/WorldRuntime Play Mode: `PASS`. La validación cubrió follow/yaw/pitch/clamp, colisión y restauración de zoom, WASD camera-relative, sprint/stamina/Needs, Current Slice rollback, ocho multiplicadores de WorldClock y teleport seguro. Commit final publicado: `ab78da4fbb1af9189d6a5c178515fafdb56f368e`.
+- Macro Environment / Biome Regions V1: Runtime/Editor compile, Macro Environment Diagnostics, schema `7` round-trip, schemas `1`–`6` legacy, Fresh Process A/B, World Session edit-mode, Main Menu→WorldRuntime→Save→Return→Load D3D11, Pass Isolation, Human Geography y Terrain Materialization: `PASS`. Corpus stress `72/72`, soft findings `0`; Environment golden `f8081c040da64ccce5e5eb5ffed941c2c2c44cd7ac5442582ee5d331c3abd1c5`. Timings/payload aproximados: Small `46 ms / 80,282 B`, Medium `125 ms / 145,436 B`, Large `469 ms / 232,255 B`, Huge `1,645 ms / 426,844 B`; raw Environment `9,604/16,900/26,244/51,076 B`. Previews Small→Huge inspeccionadas sin seams/checkerboard. Commit publicado: `55bcb0db479af43351f28908dfe05125dd9d62e1`.
 
 ## Contratos Cerrados
 
@@ -184,13 +199,16 @@ Una session con la macro truth requerida puede proyectar alrededor del active-se
 - Perception conserva LOS; Navigation conserva path; `WeaponCombatService` conserva ammo, reload, impacto y consecuencias. Player y NPC comparten `PhysicalShotPathResolver`.
 - `LostContact` usa sólo last-known de percepción positiva, cancela acción y exige reacquisition explícita tras timeout; `Dead` deja IA y Navigation inactivas.
 - Encounter state, target, timers, órdenes y resultados de percepción siguen efímeros; M41.1 no cambia schema/envelope.
-- `MacroClimatePlan` es la única truth climática committed de esta foundation; no existe GameObject o simulación runtime Climate paralela.
-- `MoistureIndex` expresa tendencia climática de largo plazo, no humedad del aire/suelo ni lluvia actual. Weather y Biome Regions permanecen consumidores futuros separados.
+- `MacroClimatePlan` es la única truth climática committed de su foundation; `MacroEnvironmentPlan` consume Climate/Water committed como clasificación ecológica separada. No existe GameObject o simulación runtime Climate/Environment paralela.
+- `MoistureIndex` expresa tendencia climática de largo plazo, no humedad del aire/suelo ni lluvia actual. `MacroBiomeFamily` expresa potencial ecológico macro, no densidad de árboles, ground material, weather ni fauna.
+- Environment mantiene Landform, Water, Climate y Biome como dimensiones separadas; `None/None/0` en océano no duplica marine ecology y no existen `CoastalBiome`, `MountainBiome` ni IDs persistentes de biome region.
 - `CameraRigController` conserva follow player-centric y `AllowsIndependentPan=false`; yaw/pitch/zoom/collision son una única autoridad de cámara y el collision query no reemplaza Interior Visibility.
 - `ActorStaminaComponent` es estado gameplay del player; `PlayerMovementController` sigue siendo la única autoridad de movimiento, `ActorNeedsComponent` la autoridad de Hunger/Thirst y `WorldClock` la única autoridad temporal. Los controles F3/teleport/multiplicadores son development-only y efímeros.
 
 ## Próximo Trabajo
 
-No hay milestone de implementación activo. `ID TBD — Player Traversal / Camera & Runtime Debug Ergonomics Pass` queda cerrado y publicado en `ab78da4fbb1af9189d6a5c178515fafdb56f368e`. El siguiente coding unit candidato es `ID TBD — Macro Environment / Biome Regions V1`, `PLANNED — NOT AUTHORIZED`. Debe consumir la truth ya validada de landform/Water/Climate para resolver regiones environment/biome globales sin confundir landform con biome ni iniciar vegetation/materiales finales.
+No hay milestone de implementación activo. `ID TBD — Macro Environment / Biome Regions V1` queda cerrado y publicado en `55bcb0db479af43351f28908dfe05125dd9d62e1`.
 
-Macro Climate Baseline V1 queda cerrado y no autoriza weather runtime, seasons, vegetation, final rivers, geology, terrain materials ni retuning climático sin un alcance posterior explícito. El Terrain Materialization Technical Spike y la convergencia runtime tampoco autorizan materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. El pass de traversal/camera/debug ergonomics no autoriza look-ahead/aim-camera, free pan, UI final ni una ampliación general de stats/fitness. M42.0 conserva su ID y alcance planificado, pero ya no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
+El próximo paso es una revisión de secuencia post-Environment, no un coding unit automático. Debe decidir cómo avanzar desde la macro truth ya cerrada hacia lugares físicamente jugables y cómo ordenar Bounded History / Present-Day Resolution, World Persistence, Sector Blueprint / Authored Composition, Large-Sector Navigation / Performance y Sector Materialization / Transition. Hasta esa decisión, ninguna de esas unidades queda autorizada.
+
+Macro Climate/Environment no autorizan weather runtime, seasons, vegetation, fauna, final rivers, geology, terrain materials ni retuning sin un alcance posterior explícito. El Terrain Materialization Technical Spike y la convergencia runtime tampoco autorizan materialización productiva, whole-world Terrain/NavMesh, sector streaming/transitions ni mutación persistente general. El pass de traversal/camera/debug ergonomics no autoriza look-ahead/aim-camera, free pan, UI final ni una ampliación general de stats/fitness. M42.0 conserva su ID y alcance planificado, pero no es el siguiente trabajo automático. La secuencia M42.0–M47.1 requiere reconciliación posterior sin renumeración ni reutilización silenciosa.
