@@ -366,6 +366,18 @@ Reglas de `initial_equipment`:
 - ese rollback no revierte display, tags, health, layout ni `initial_inventory`; el profile completo no es una transaccion;
 - `initial_inventory` e `initial_equipment` son listas independientes; repetir una definicion en ambas crea instancias distintas.
 
+### Actor Loadout Profiles M41.3
+
+`ActorLoadoutProfileDefinition` es una familia distinta de `LootTableDefinition`, cargada desde `actor_loadout_profiles/*.json`. Un `ActorProfileDefinition` puede referenciarla mediante `loadout_profile_id` para materializar una sola vez el estado inicial de un actor runtime nuevo.
+
+- El profile usa `type: "actor_loadout_profile"`, Global Content ID canónico `id` y grupos con Local ID estable.
+- Cada grupo declara elecciones con pesos enteros no negativos; la suma del grupo debe ser mayor que cero. `none: true` es una elección explícita y no puede contener items.
+- Una elección no vacía declara `inventory`, `equipment` o ambos. Inventario usa `item_id`, `quantity_min` y `quantity_max`; Equipment reutiliza exactamente el contrato de `initial_equipment` y sus `slot_ids` opcionales.
+- Los items, slots y packages firearm/ammo se resuelven contra las Definitions cargadas. Un arma de fuego debe incluir ammo cuyo `ammo_profile_id` sea aceptado por su `FirearmProfileDefinition`; no hay branches C# por item ID.
+- Grupos diferentes no pueden producir ocupación solapada de un mismo slot. El actor profile referenciador debe declarar un `equipment_layout_id` compatible y no puede mezclar este loadout aleatorio con `initial_inventory`/`initial_equipment` deterministas.
+- El roll requiere una seed explícita, crea `ItemInstance` reales y equipa mediante las autoridades existentes de Inventory, Equipment, ownership y item-owned storage. Un fallo del spawn destruye la representación transaccional y sus identidades nuevas.
+- Restore de Current Slice, muerte y apertura/reapertura de cadáver no vuelven a consultar ni ejecutar el loadout profile: operan únicamente sobre el estado de instancias ya materializado.
+
 ### Actor Profiles: capacidades M41.0
 
 `ActorProfileDefinition` puede declarar dos bloques opcionales e independientes:

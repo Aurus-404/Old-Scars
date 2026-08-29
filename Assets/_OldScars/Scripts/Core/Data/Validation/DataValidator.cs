@@ -66,6 +66,7 @@ namespace OldScars.Core.Data.Validation
             ValidateItemStorageProfiles();
             ValidateItems();
             ValidateLootTables();
+            ValidateActorLoadoutProfiles();
             ValidateActorProfiles();
             ValidateWorldObjectProfiles();
         }
@@ -645,12 +646,25 @@ namespace OldScars.Core.Data.Validation
                 ValidateActorProfileEncounterAI(actorProfile, $"{ctx}: encounter_ai");
                 ValidateActorProfileInventory(actorProfile.initial_inventory, $"{ctx}: initial_inventory");
 
+                if (!string.IsNullOrWhiteSpace(actorProfile.loadout_profile_id))
+                {
+                    RequireGlobalContentId(actorProfile.loadout_profile_id, "loadout_profile_id", ctx);
+                    if (database.GetActorLoadoutProfile(actorProfile.loadout_profile_id) == null)
+                        report.Error($"{ctx}: loadout_profile_id references '{actorProfile.loadout_profile_id}' which was not loaded.");
+                    if (actorProfile.initial_inventory != null && actorProfile.initial_inventory.Length > 0 ||
+                        actorProfile.initial_equipment != null && actorProfile.initial_equipment.Length > 0)
+                        report.Error($"{ctx}: loadout_profile_id cannot coexist with deterministic initial_inventory or initial_equipment.");
+                }
+
                 if (!string.IsNullOrWhiteSpace(actorProfile.equipment_layout_id))
                 {
                     RequireGlobalContentId(actorProfile.equipment_layout_id, "equipment_layout_id", ctx);
                     if (database.GetEquipmentLayout(actorProfile.equipment_layout_id) == null)
                         report.Error($"{ctx}: equipment_layout_id references '{actorProfile.equipment_layout_id}' which was not loaded.");
                 }
+
+                if (!string.IsNullOrWhiteSpace(actorProfile.loadout_profile_id))
+                    ValidateActorLoadoutCompatibility(actorProfile, ctx);
 
                 ValidateActorProfileEquipment(
                     actorProfile.initial_equipment,
@@ -1005,6 +1019,151 @@ namespace OldScars.Core.Data.Validation
 
                 for (int index = 0; index < lootTable.entries.Length; index++)
                     ValidateLootTableEntry(lootTable.entries[index], $"{ctx}: entries[{index}]");
+            }
+        }
+
+        private void ValidateActorLoadoutProfiles()
+        {
+            foreach (ActorLoadoutProfileDefinition profile in database.GetAllActorLoadoutProfiles())
+            {
+                string ctx = $"ActorLoadoutProfile '{SafeId(profile != null ? profile.id : null)}'";
+                if (profile == null)
+                {
+                    report.Error("ActorLoadoutProfile: null definition loaded.");
+                    continue;
+                }
+                RequireType(profile.type, "actor_loadout_profile", ctx);
+                RequireGlobalContentId(profile.id, "id", ctx);
+                if (profile.groups == null || profile.groups.Length == 0)
+                {
+                    report.Error($"{ctx}: 'groups' is required and must not be empty.");
+                    continue;
+                }
+
+                var groupIds = new HashSet<string>();
+                var possibleSlotsByGroup = new Dictionary<string, HashSet<string>>();
+                for (int groupIndex = 0; groupIndex < profile.groups.Length; groupIndex++)
+                {
+                    ActorLoadoutGroupDefinition group = profile.groups[groupIndex];
+                    string groupCtx = $"{ctx}: groups[{groupIndex}]";
+                    if (group == null)
+                    {
+                        report.Error($"{groupCtx}: group must not be null.");
+                        continue;
+                    }
+                    RequireLocalId(group.id, "id", groupCtx);
+                    if (!groupIds.Add(group.id)) report.Error($"{ctx}: duplicate group id '{SafeId(group.id)}'.");
+                    if (group.choices == null || group.choices.Length == 0)
+                    {
+                        report.Error($"{groupCtx}: 'choices' is required and must not be empty.");
+                        continue;
+                    }
+
+                    long totalWeight = 0;
+                    var possibleSlots = new HashSet<string>();
+                    for (int choiceIndex = 0; choiceIndex < group.choices.Length; choiceIndex++)
+                    {
+                        ActorLoadoutChoiceDefinition choice = group.choices[choiceIndex];
+                        string choiceCtx = $"{groupCtx}: choices[{choiceIndex}]";
+                        if (choice == null) { report.Error($"{choiceCtx}: choice must not be null."); continue; }
+                        if (choice.weight < 0) report.Error($"{choiceCtx}: 'weight' must be >= 0.");
+                        totalWeight += choice.weight;
+                        int inventoryCount = choice.inventory?.Length ?? 0;
+                        int equipmentCount = choice.equipment?.Length ?? 0;
+                        if (choice.none && (inventoryCount > 0 || equipmentCount > 0))
+                            report.Error($"{choiceCtx}: explicit NONE cannot declare inventory or equipment.");
+                        if (!choice.none && inventoryCount == 0 && equipmentCount == 0)
+                            report.Error($"{choiceCtx}: a non-NONE choice must declare inventory and/or equipment.");
+
+                        for (int itemIndex = 0; itemIndex < inventoryCount; itemIndex++)
+                        {
+                            ActorLoadoutInventoryEntry entry = choice.inventory[itemIndex];
+                            string itemCtx = $"{choiceCtx}: inventory[{itemIndex}]";
+                            if (entry == null) { report.Error($"{itemCtx}: entry must not be null."); continue; }
+                            RequireGlobalContentId(entry.item_id, "item_id", itemCtx);
+                            if (database.GetItem(entry.item_id) == null) report.Error($"{itemCtx}: item_id '{entry.item_id}' was not loaded.");
+                            if (entry.quantity_min <= 0 || entry.quantity_max < entry.quantity_min)
+                                report.Error($"{itemCtx}: quantity range must satisfy 0 < quantity_min <= quantity_max.");
+                        }
+
+                        for (int itemIndex = 0; itemIndex < equipmentCount; itemIndex++)
+                        {
+                            ItemDefinition item = database.GetItem(choice.equipment[itemIndex]?.item_id);
+                            string[][] sets = ResolveActorProfileSlotSets(item);
+                            string[] selected = choice.equipment[itemIndex]?.slot_ids;
+                            if (item == null || sets == null || sets.Length == 0 || item.max_stack != 1)
+                            {
+                                report.Error($"{choiceCtx}: equipment[{itemIndex}] must reference a quantity-1 equippable item with declared slots.");
+                                continue;
+                            }
+                            if (selected != null)
+                            {
+                                bool declared = false;
+                                for (int setIndex = 0; setIndex < sets.Length; setIndex++)
+                                    if (SameSlotSet(sets[setIndex], selected)) declared = true;
+                                if (!declared)
+                                    report.Error($"{choiceCtx}: equipment[{itemIndex}].slot_ids is not a declared complete slot set for '{item.id}'.");
+                            }
+                            if (selected == null && sets != null && sets.Length == 1) selected = sets[0];
+                            if (selected == null)
+                                report.Error($"{choiceCtx}: equipment[{itemIndex}] has multiple slot alternatives; slot_ids must select one.");
+                            if (selected != null) for (int slotIndex = 0; slotIndex < selected.Length; slotIndex++) possibleSlots.Add(selected[slotIndex]);
+                        }
+                        ValidateLoadoutWeaponAmmoPackage(choice, choiceCtx);
+                    }
+                    if (totalWeight <= 0) report.Error($"{groupCtx}: total choice weight must be > 0.");
+                    possibleSlotsByGroup[group.id ?? string.Empty] = possibleSlots;
+                }
+
+                string[] keys = new List<string>(possibleSlotsByGroup.Keys).ToArray();
+                for (int left = 0; left < keys.Length; left++)
+                    for (int right = left + 1; right < keys.Length; right++)
+                        foreach (string slot in possibleSlotsByGroup[keys[left]])
+                            if (possibleSlotsByGroup[keys[right]].Contains(slot))
+                                report.Error($"{ctx}: groups '{keys[left]}' and '{keys[right]}' can both occupy '{slot}', making a weighted result non-atomic.");
+            }
+        }
+
+        private void ValidateActorLoadoutCompatibility(ActorProfileDefinition actorProfile, string context)
+        {
+            ActorLoadoutProfileDefinition loadout = database.GetActorLoadoutProfile(actorProfile.loadout_profile_id);
+            if (loadout?.groups == null) return;
+            if (string.IsNullOrWhiteSpace(actorProfile.equipment_layout_id))
+            {
+                report.Error($"{context}: equipment_layout_id is required when loadout_profile_id is present.");
+                return;
+            }
+            for (int groupIndex = 0; groupIndex < loadout.groups.Length; groupIndex++)
+            {
+                ActorLoadoutChoiceDefinition[] choices = loadout.groups[groupIndex]?.choices;
+                if (choices == null) continue;
+                for (int choiceIndex = 0; choiceIndex < choices.Length; choiceIndex++)
+                    ValidateActorProfileEquipment(
+                        choices[choiceIndex]?.equipment,
+                        actorProfile.equipment_layout_id,
+                        $"{context}: loadout '{loadout.id}' groups[{groupIndex}].choices[{choiceIndex}].equipment");
+            }
+        }
+
+        private void ValidateLoadoutWeaponAmmoPackage(ActorLoadoutChoiceDefinition choice, string context)
+        {
+            if (choice?.equipment == null) return;
+            for (int equipmentIndex = 0; equipmentIndex < choice.equipment.Length; equipmentIndex++)
+            {
+                ItemDefinition weaponItem = database.GetItem(choice.equipment[equipmentIndex]?.item_id);
+                if (weaponItem == null || string.IsNullOrWhiteSpace(weaponItem.firearm_profile_id)) continue;
+                FirearmProfileDefinition firearm = database.GetFirearmProfile(weaponItem.firearm_profile_id);
+                bool compatibleAmmo = false;
+                ActorLoadoutInventoryEntry[] inventory = choice.inventory ?? new ActorLoadoutInventoryEntry[0];
+                for (int inventoryIndex = 0; inventoryIndex < inventory.Length; inventoryIndex++)
+                {
+                    ItemDefinition ammo = database.GetItem(inventory[inventoryIndex]?.item_id);
+                    if (ammo == null || string.IsNullOrWhiteSpace(ammo.ammo_profile_id) || firearm?.accepted_ammo_profile_ids == null) continue;
+                    for (int accepted = 0; accepted < firearm.accepted_ammo_profile_ids.Length; accepted++)
+                        if (firearm.accepted_ammo_profile_ids[accepted] == ammo.ammo_profile_id) compatibleAmmo = true;
+                }
+                if (!compatibleAmmo)
+                    report.Error($"{context}: firearm '{weaponItem.id}' requires inventory ammo whose ammo_profile_id is accepted by '{firearm?.id ?? weaponItem.firearm_profile_id}'.");
             }
         }
 

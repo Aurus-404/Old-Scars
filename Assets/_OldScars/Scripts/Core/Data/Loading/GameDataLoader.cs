@@ -329,6 +329,7 @@ namespace OldScars.Core.Data.Loading
             LoadItemVisualProfilesFrom(Path.Combine(modDirectory, "item_visual_profiles"), context);
             LoadAttachmentPosesFrom(Path.Combine(modDirectory, "attachment_poses"), context);
             LoadLootTablesFrom(Path.Combine(modDirectory, "loot_tables"), context);
+            LoadActorLoadoutProfilesFrom(Path.Combine(modDirectory, "actor_loadout_profiles"), context);
             LoadActorProfilesFrom(Path.Combine(modDirectory, "actor_profiles"), context);
             LoadWorldObjectProfilesFrom(Path.Combine(modDirectory, "world_object_profiles"), context);
         }
@@ -674,6 +675,25 @@ namespace OldScars.Core.Data.Loading
             }
         }
 
+        private void LoadActorLoadoutProfilesFrom(string directory, ContentLoadContext context)
+        {
+            foreach (string file in JsonFilesIn(directory, context))
+            {
+                ActorLoadoutProfilesWrapper wrapper = Parse<ActorLoadoutProfilesWrapper>(file, context);
+                if (wrapper == null || wrapper.actor_loadout_profiles == null)
+                {
+                    report.Warning($"No 'actor_loadout_profiles' array found in {FileName(file)}.");
+                    continue;
+                }
+
+                foreach (ActorLoadoutProfileDefinition profile in wrapper.actor_loadout_profiles)
+                    if (profile == null || DefinitionContentIdNormalizer.Normalize(profile, context, FileName(file), report))
+                        Database.RegisterActorLoadoutProfile(profile, report);
+
+                Debug.Log($"[GameDataLoader] ActorLoadoutProfiles: {wrapper.actor_loadout_profiles.Length} entries from {FileName(file)}");
+            }
+        }
+
         private void LoadWorldObjectProfilesFrom(string directory, ContentLoadContext context)
         {
             foreach (string file in JsonFilesIn(directory, context))
@@ -753,6 +773,7 @@ namespace OldScars.Core.Data.Loading
         [Serializable] private sealed class ItemVisualProfilesWrapper { public ItemVisualProfileDefinition[] item_visual_profiles; }
         [Serializable] private sealed class AttachmentPosesWrapper { public AttachmentPoseDefinition[] attachment_poses; }
         [Serializable] private sealed class LootTablesWrapper { public LootTableDefinition[] loot_tables; }
+        [Serializable] private sealed class ActorLoadoutProfilesWrapper { public ActorLoadoutProfileDefinition[] actor_loadout_profiles; }
         [Serializable] private sealed class ActorProfilesWrapper { public ActorProfileDefinition[] actor_profiles; }
         [Serializable] private sealed class WorldObjectProfilesWrapper { public WorldObjectProfileDefinition[] world_object_profiles; }
     }

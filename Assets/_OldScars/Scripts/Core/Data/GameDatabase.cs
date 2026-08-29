@@ -30,6 +30,7 @@ namespace OldScars.Core.Data
         private readonly Dictionary<string, PenetrationProfileDefinition> _penetrationProfiles = new Dictionary<string, PenetrationProfileDefinition>();
         private readonly Dictionary<string, ActionDefinition> _actions = new Dictionary<string, ActionDefinition>();
         private readonly Dictionary<string, LootTableDefinition> _lootTables = new Dictionary<string, LootTableDefinition>();
+        private readonly Dictionary<string, ActorLoadoutProfileDefinition> _actorLoadoutProfiles = new Dictionary<string, ActorLoadoutProfileDefinition>();
         private readonly Dictionary<string, ActorProfileDefinition> _actorProfiles = new Dictionary<string, ActorProfileDefinition>();
         private readonly Dictionary<string, WorldObjectProfileDefinition> _worldObjectProfiles = new Dictionary<string, WorldObjectProfileDefinition>();
         private readonly Dictionary<string, VisualRigCapabilityDefinition> _visualRigCapabilities = new Dictionary<string, VisualRigCapabilityDefinition>();
@@ -51,6 +52,7 @@ namespace OldScars.Core.Data
         public int PenetrationProfileCount => _penetrationProfiles.Count;
         public int ActionCount => _actions.Count;
         public int LootTableCount => _lootTables.Count;
+        public int ActorLoadoutProfileCount => _actorLoadoutProfiles.Count;
         public int ActorProfileCount => _actorProfiles.Count;
         public int WorldObjectProfileCount => _worldObjectProfiles.Count;
         public int VisualRigCapabilityCount => _visualRigCapabilities.Count;
@@ -119,6 +121,11 @@ namespace OldScars.Core.Data
         public void RegisterLootTable(LootTableDefinition definition, DataLoadReport report)
         {
             Register(_lootTables, definition != null ? definition.id : null, definition, "LootTable", report);
+        }
+
+        public void RegisterActorLoadoutProfile(ActorLoadoutProfileDefinition definition, DataLoadReport report)
+        {
+            Register(_actorLoadoutProfiles, definition != null ? definition.id : null, definition, "ActorLoadoutProfile", report);
         }
 
         public void RegisterActorProfile(ActorProfileDefinition definition, DataLoadReport report)
@@ -268,6 +275,11 @@ namespace OldScars.Core.Data
         public LootTableDefinition GetLootTable(string id)
         {
             return LookupContent(_lootTables, id, "LootTable");
+        }
+
+        public ActorLoadoutProfileDefinition GetActorLoadoutProfile(string id)
+        {
+            return LookupContent(_actorLoadoutProfiles, id, "ActorLoadoutProfile");
         }
 
         public ActorProfileDefinition GetActorProfile(string id)
@@ -443,6 +455,11 @@ namespace OldScars.Core.Data
             return _lootTables.Values;
         }
 
+        public IEnumerable<ActorLoadoutProfileDefinition> GetAllActorLoadoutProfiles()
+        {
+            return _actorLoadoutProfiles.Values;
+        }
+
         public IEnumerable<ActorProfileDefinition> GetAllActorProfiles()
         {
             return _actorProfiles.Values;
@@ -492,6 +509,7 @@ namespace OldScars.Core.Data
                       $"\n  PenetrationProfiles: {_penetrationProfiles.Count}" +
                       $"\n  Actions:         {_actions.Count}" +
                       $"\n  LootTables:      {_lootTables.Count}" +
+                      $"\n  ActorLoadoutProfiles: {_actorLoadoutProfiles.Count}" +
                       $"\n  ActorProfiles:   {_actorProfiles.Count}" +
                       $"\n  WorldObjectProfiles: {_worldObjectProfiles.Count}" +
                       $"\n  VisualRigCapabilities: {_visualRigCapabilities.Count}" +

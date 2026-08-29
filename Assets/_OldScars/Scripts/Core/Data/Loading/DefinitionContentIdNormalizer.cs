@@ -120,6 +120,8 @@ namespace OldScars.Core.Data.Loading
                 "equipment_layout_id", context, sourceFile, report, ref valid);
             ResolveOptionalReference(ref definition.visual_rig_profile_id, "ActorProfileDefinition", definition.id,
                 "visual_rig_profile_id", context, sourceFile, report, ref valid);
+            ResolveOptionalReference(ref definition.loadout_profile_id, "ActorProfileDefinition", definition.id,
+                "loadout_profile_id", context, sourceFile, report, ref valid);
 
             ActorProfileInventoryEntry[] inventory = definition.initial_inventory ?? Array.Empty<ActorProfileInventoryEntry>();
             for (int index = 0; index < inventory.Length; index++)
@@ -142,6 +144,48 @@ namespace OldScars.Core.Data.Loading
                     $"initial_equipment[{index}].slot_ids", context, sourceFile, report, ref valid);
             }
 
+            return valid;
+        }
+
+        internal static bool Normalize(
+            ActorLoadoutProfileDefinition definition,
+            ContentLoadContext context,
+            string sourceFile,
+            DataLoadReport report)
+        {
+            if (!ResolveDefinitionId(ref definition.id, "ActorLoadoutProfileDefinition", context, sourceFile, report))
+                return false;
+
+            bool valid = true;
+            ActorLoadoutGroupDefinition[] groups = definition.groups ?? Array.Empty<ActorLoadoutGroupDefinition>();
+            for (int groupIndex = 0; groupIndex < groups.Length; groupIndex++)
+            {
+                ActorLoadoutChoiceDefinition[] choices = groups[groupIndex]?.choices ?? Array.Empty<ActorLoadoutChoiceDefinition>();
+                for (int choiceIndex = 0; choiceIndex < choices.Length; choiceIndex++)
+                {
+                    ActorLoadoutChoiceDefinition choice = choices[choiceIndex];
+                    ActorLoadoutInventoryEntry[] inventory = choice?.inventory ?? Array.Empty<ActorLoadoutInventoryEntry>();
+                    for (int itemIndex = 0; itemIndex < inventory.Length; itemIndex++)
+                    {
+                        if (inventory[itemIndex] == null) continue;
+                        ResolveReference(ref inventory[itemIndex].item_id, "ActorLoadoutProfileDefinition", definition.id,
+                            $"groups[{groupIndex}].choices[{choiceIndex}].inventory[{itemIndex}].item_id",
+                            context, sourceFile, report, ref valid);
+                    }
+
+                    ActorProfileInitialEquipmentEntry[] equipment = choice?.equipment ?? Array.Empty<ActorProfileInitialEquipmentEntry>();
+                    for (int itemIndex = 0; itemIndex < equipment.Length; itemIndex++)
+                    {
+                        if (equipment[itemIndex] == null) continue;
+                        ResolveReference(ref equipment[itemIndex].item_id, "ActorLoadoutProfileDefinition", definition.id,
+                            $"groups[{groupIndex}].choices[{choiceIndex}].equipment[{itemIndex}].item_id",
+                            context, sourceFile, report, ref valid);
+                        ResolveEquipmentSlots(equipment[itemIndex].slot_ids, "ActorLoadoutProfileDefinition", definition.id,
+                            $"groups[{groupIndex}].choices[{choiceIndex}].equipment[{itemIndex}].slot_ids",
+                            context, sourceFile, report, ref valid);
+                    }
+                }
+            }
             return valid;
         }
 

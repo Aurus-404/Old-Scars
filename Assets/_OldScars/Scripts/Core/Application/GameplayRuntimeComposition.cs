@@ -31,6 +31,7 @@ namespace OldScars.Core.ApplicationShell
         private DebugWorldUiInputBlocker inputBlocker;
         private WorldInteractionDebugTester worldInteraction;
         private FirearmDebugController firearmController;
+        private SandboxNpcController sandboxNpcController;
 
         public PlayerGameplayComposition Player => player;
         public InventoryUISessionController InventorySession => inventorySession;
@@ -41,6 +42,7 @@ namespace OldScars.Core.ApplicationShell
         public DebugWorldUiInputBlocker InputBlocker => inputBlocker;
         public WorldInteractionDebugTester WorldInteraction => worldInteraction;
         public FirearmDebugController FirearmController => firearmController;
+        public SandboxNpcController SandboxNpcController => sandboxNpcController;
 
         public static bool TryCreateAndBind(
             Transform parent,
@@ -113,7 +115,9 @@ namespace OldScars.Core.ApplicationShell
                 player.MovementController,
                 player.CameraRig,
                 player.GameplayCamera,
-                inputBlocker);
+                inputBlocker,
+                sandboxNpcController);
+            sandboxNpcController.BindRuntime(player.PlayerTransform);
             inputBlocker.BindRuntime(
                 actionPanel, actionResultPanel, inventoryPanel, storagePanel,
                 needsPanel, healthWindow, inventorySession);
@@ -142,6 +146,8 @@ namespace OldScars.Core.ApplicationShell
                 return Fail("Interaction runtime surfaces are incomplete.", out failure);
             if (firearmController == null)
                 return Fail("Existing firearm/combat input surface is missing.", out failure);
+            if (sandboxNpcController == null)
+                return Fail("Sandbox NPC spawn adapter is missing from the shared runtime.", out failure);
             if (player.Stamina == null)
                 return Fail("Player stamina authority is missing.", out failure);
 
@@ -191,6 +197,7 @@ namespace OldScars.Core.ApplicationShell
             healthWindow = GetOrAdd(healthWindow);
             inputBlocker = GetOrAdd(inputBlocker);
             worldInteraction = GetOrAdd(worldInteraction);
+            sandboxNpcController = GetOrAdd(sandboxNpcController);
         }
 
         private T GetOrAdd<T>(T current) where T : Component

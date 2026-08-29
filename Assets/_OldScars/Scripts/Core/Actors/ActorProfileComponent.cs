@@ -327,6 +327,9 @@ namespace OldScars.Core.Actors
             Collider bodyCollider = GetComponent<Collider>();
             if (bodyCollider != null)
             {
+                // Runtime actors are positioned immediately before their profile is applied.
+                // Ensure collider bounds reflect that pose before deriving NavMeshAgent geometry.
+                Physics.SyncTransforms();
                 Bounds bounds = bodyCollider.bounds;
                 agent.baseOffset = Mathf.Max(0f, transform.position.y - bounds.min.y);
                 agent.height = Mathf.Max(0.1f, bounds.size.y);

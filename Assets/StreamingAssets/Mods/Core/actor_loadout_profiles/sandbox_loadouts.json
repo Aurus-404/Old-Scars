@@ -1,0 +1,90 @@
+{
+  "actor_loadout_profiles": [
+    {
+      "type": "actor_loadout_profile",
+      "id": "core:debug_sandbox_npc_loadout_01",
+      "groups": [
+        { "id": "head", "choices": [
+          { "weight": 45, "none": true },
+          { "weight": 30, "equipment": [{ "item_id": "core:knit_cap_01" }] },
+          { "weight": 15, "equipment": [{ "item_id": "core:work_cap_01" }] },
+          { "weight": 10, "equipment": [{ "item_id": "core:steel_helmet_01" }] }
+        ]},
+        { "id": "eyes", "choices": [
+          { "weight": 65, "none": true },
+          { "weight": 20, "equipment": [{ "item_id": "core:safety_glasses_01" }] },
+          { "weight": 15, "equipment": [{ "item_id": "core:work_goggles_01" }] }
+        ]},
+        { "id": "neck", "choices": [
+          { "weight": 60, "none": true },
+          { "weight": 40, "equipment": [{ "item_id": "core:wool_scarf_01" }] }
+        ]},
+        { "id": "torso_inner", "choices": [
+          { "weight": 15, "none": true },
+          { "weight": 85, "equipment": [{ "item_id": "core:thermal_shirt_01" }] }
+        ]},
+        { "id": "torso_middle", "choices": [
+          { "weight": 20, "none": true },
+          { "weight": 45, "equipment": [{ "item_id": "core:work_shirt_01" }] },
+          { "weight": 35, "equipment": [{ "item_id": "core:wool_sweater_01" }] }
+        ]},
+        { "id": "torso_outer", "choices": [
+          { "weight": 35, "none": true },
+          { "weight": 30, "equipment": [{ "item_id": "core:field_jacket_01" }] },
+          { "weight": 20, "equipment": [{ "item_id": "core:rain_coat_01" }] },
+          { "weight": 15, "equipment": [{ "item_id": "core:protective_vest_01" }] }
+        ]},
+        { "id": "hands_wear", "choices": [
+          { "weight": 50, "none": true },
+          { "weight": 30, "equipment": [{ "item_id": "core:work_gloves_01" }] },
+          { "weight": 20, "equipment": [{ "item_id": "core:leather_gloves_01" }] }
+        ]},
+        { "id": "back", "choices": [
+          { "weight": 50, "none": true },
+          { "weight": 25, "equipment": [{ "item_id": "core:small_backpack_01" }] },
+          { "weight": 15, "equipment": [{ "item_id": "core:medium_backpack_01" }] },
+          { "weight": 10, "equipment": [{ "item_id": "core:large_backpack_01" }] }
+        ]},
+        { "id": "waist", "choices": [
+          { "weight": 55, "none": true },
+          { "weight": 30, "equipment": [{ "item_id": "core:canvas_belt_01" }] },
+          { "weight": 15, "equipment": [{ "item_id": "core:utility_belt_01" }] }
+        ]},
+        { "id": "sling", "choices": [
+          { "weight": 70, "none": true },
+          { "weight": 30, "equipment": [{ "item_id": "core:canvas_bandolier_01" }] }
+        ]},
+        { "id": "legs_inner", "choices": [
+          { "weight": 10, "none": true },
+          { "weight": 50, "equipment": [{ "item_id": "core:work_trousers_01" }] },
+          { "weight": 40, "equipment": [{ "item_id": "core:cargo_trousers_01" }] }
+        ]},
+        { "id": "legs_outer", "choices": [
+          { "weight": 70, "none": true },
+          { "weight": 30, "equipment": [{ "item_id": "core:weather_overtrousers_01" }] }
+        ]},
+        { "id": "feet_inner", "choices": [
+          { "weight": 35, "none": true },
+          { "weight": 65, "equipment": [{ "item_id": "core:wool_socks_01" }] }
+        ]},
+        { "id": "footwear", "choices": [
+          { "weight": 10, "none": true },
+          { "weight": 55, "equipment": [{ "item_id": "core:work_boots_01" }] },
+          { "weight": 35, "equipment": [{ "item_id": "core:leather_shoes_01" }] }
+        ]},
+        { "id": "weapon", "choices": [
+          { "weight": 25, "none": true },
+          { "weight": 20, "equipment": [{ "item_id": "core:rusted_crowbar_01", "slot_ids": ["core:hand_right"] }] },
+          { "weight": 25, "equipment": [{ "item_id": "core:lee_enfield_rifle_01" }], "inventory": [{ "item_id": "core:ammo_303_british_01", "quantity_min": 12, "quantity_max": 24 }] },
+          { "weight": 20, "equipment": [{ "item_id": "core:semi_automatic_rifle_01" }], "inventory": [{ "item_id": "core:ammo_303_british_01", "quantity_min": 20, "quantity_max": 40 }] },
+          { "weight": 10, "equipment": [{ "item_id": "core:automatic_rifle_01" }], "inventory": [{ "item_id": "core:ammo_303_british_01", "quantity_min": 30, "quantity_max": 60 }] }
+        ]},
+        { "id": "supplies", "choices": [
+          { "weight": 40, "none": true },
+          { "weight": 35, "inventory": [{ "item_id": "core:bandage_01", "quantity_min": 1, "quantity_max": 3 }] },
+          { "weight": 25, "inventory": [{ "item_id": "core:food_ration_01", "quantity_min": 1, "quantity_max": 2 }, { "item_id": "core:water_bottle_01", "quantity_min": 1, "quantity_max": 1 }] }
+        ]}
+      ]
+    }
+  ]
+}

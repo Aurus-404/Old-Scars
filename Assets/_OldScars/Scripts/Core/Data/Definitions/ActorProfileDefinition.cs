@@ -17,6 +17,7 @@ namespace OldScars.Core.Data.Definitions
         public ActorProfileHealth health;
         public ActorProfileInventoryEntry[] initial_inventory;
         public ActorProfileInitialEquipmentEntry[] initial_equipment;
+        public string loadout_profile_id; // Optional ActorLoadoutProfileDefinition used only for new runtime spawns.
         public string equipment_layout_id;
         public string visual_rig_profile_id;
         public ActorProfileNavigation navigation;

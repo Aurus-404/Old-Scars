@@ -244,9 +244,23 @@ namespace OldScars.Core.Actors
             out ActorRuntimeIdentity identity,
             out string error)
         {
-            return TrySpawn(
+            return TrySpawnInternal(
                 actorProfileId, position, rotation, null,
-                ActorSpawnInitialization.Bootstrap, out identity, out error);
+                ActorSpawnInitialization.Bootstrap, null, out identity, out _, out error);
+        }
+
+        public static bool TrySpawnWithLoadoutSeed(
+            string actorProfileId,
+            Vector3 position,
+            Quaternion rotation,
+            long loadoutSeed,
+            out ActorRuntimeIdentity identity,
+            out ActorLoadoutResult loadout,
+            out string error)
+        {
+            return TrySpawnInternal(
+                actorProfileId, position, rotation, null,
+                ActorSpawnInitialization.Bootstrap, loadoutSeed, out identity, out loadout, out error);
         }
 
         public static bool TrySpawn(
@@ -258,10 +272,28 @@ namespace OldScars.Core.Actors
             out ActorRuntimeIdentity identity,
             out string error)
         {
+            return TrySpawnInternal(
+                actorProfileId, position, rotation, existingActorInstanceId,
+                initialization, null, out identity, out _, out error);
+        }
+
+        private static bool TrySpawnInternal(
+            string actorProfileId,
+            Vector3 position,
+            Quaternion rotation,
+            string existingActorInstanceId,
+            ActorSpawnInitialization initialization,
+            long? loadoutSeed,
+            out ActorRuntimeIdentity identity,
+            out ActorLoadoutResult loadout,
+            out string error)
+        {
             identity = null;
+            loadout = null;
             error = null;
             if (!CanSpawn(actorProfileId, out string canonicalProfileId, out error))
                 return false;
+            ActorProfileDefinition actorProfile = GameDataManager.Instance.Database.GetActorProfile(canonicalProfileId);
 
             string actorInstanceId = existingActorInstanceId;
             if (initialization == ActorSpawnInitialization.Bootstrap)
@@ -314,11 +346,23 @@ namespace OldScars.Core.Actors
                 if (!configured)
                     throw new InvalidOperationException(error);
 
+                if (initialization == ActorSpawnInitialization.Bootstrap &&
+                    !string.IsNullOrWhiteSpace(actorProfile.loadout_profile_id))
+                {
+                    if (!loadoutSeed.HasValue)
+                        throw new InvalidOperationException(
+                            $"Actor profile '{canonicalProfileId}' requires an explicit loadout seed for a new runtime spawn.");
+                    if (!ActorLoadoutService.TryApply(identity, actorProfile, loadoutSeed.Value, out loadout, out error))
+                        throw new InvalidOperationException(error);
+                }
+
                 Debug.Log(
                     "[Actors][SPAWN_COMMITTED]" +
                     $"\n  ActorInstanceId: {actorInstanceId}" +
                     $"\n  ActorProfileId: {canonicalProfileId}" +
                     $"\n  Initialization: {initialization}" +
+                    $"\n  LoadoutProfileId: {loadout?.ProfileId ?? "<ABSENT>"}" +
+                    $"\n  LoadoutSignature: {loadout?.Signature ?? "<ABSENT>"}" +
                     "\n  Origin: Runtime");
                 return true;
             }
@@ -334,6 +378,7 @@ namespace OldScars.Core.Actors
                     UnityEngine.Object.Destroy(root);
                 }
                 identity = null;
+                loadout = null;
                 return false;
             }
         }

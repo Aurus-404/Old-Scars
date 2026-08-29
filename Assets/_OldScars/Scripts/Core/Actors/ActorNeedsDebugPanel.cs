@@ -26,6 +26,7 @@ namespace OldScars.Core.Actors
         private CameraRigController cameraRig;
         private Camera gameplayCamera;
         private DebugWorldUiInputBlocker inputBlocker;
+        private SandboxNpcController sandboxNpcController;
         private Vector2 scrollPosition;
         private bool teleportArmed;
         private string teleportFeedback;
@@ -33,6 +34,8 @@ namespace OldScars.Core.Actors
         private string selectedItemDefinitionId;
         private string itemDebugFeedback;
         private Vector2 itemDebugScrollPosition;
+        private string sandboxSeedText = SandboxNpcController.DefaultBaseSeed.ToString();
+        private string sandboxFeedback;
 
         private const string ItemDebugFilterControlName = "OldScars.ItemDebugFilter";
 
@@ -99,6 +102,7 @@ namespace OldScars.Core.Actors
             DrawWorldTimeControls();
             DrawCameraControls();
             DrawWorldControls();
+            DrawNpcSandboxControls();
             DrawItemDebugControls();
             GUILayout.EndScrollView();
             GUILayout.EndArea();
@@ -132,7 +136,8 @@ namespace OldScars.Core.Actors
             PlayerMovementController movement,
             CameraRigController camera,
             Camera playerCamera,
-            DebugWorldUiInputBlocker blocker)
+            DebugWorldUiInputBlocker blocker,
+            SandboxNpcController sandbox)
         {
             actorNeeds = needs;
             worldClock = clock;
@@ -142,6 +147,33 @@ namespace OldScars.Core.Actors
             cameraRig = camera;
             gameplayCamera = playerCamera;
             inputBlocker = blocker;
+            sandboxNpcController = sandbox;
+        }
+
+        private void DrawNpcSandboxControls()
+        {
+            GUILayout.Space(6f);
+            GUILayout.Label("NPC SANDBOX");
+            if (sandboxNpcController == null)
+            {
+                GUILayout.Label("Sandbox spawn adapter: <NONE>");
+                return;
+            }
+            GUILayout.Label("Base seed");
+            sandboxSeedText = GUILayout.TextField(sandboxSeedText ?? string.Empty);
+            if (GUILayout.Button("Spawn Random NPC", GUILayout.Height(24f)))
+            {
+                if (!sandboxNpcController.TrySetBaseSeed(sandboxSeedText, out string seedError))
+                    sandboxFeedback = seedError;
+                else if (!sandboxNpcController.TrySpawnRandomNpc(out _, out string spawnError))
+                    sandboxFeedback = spawnError;
+                else
+                    sandboxFeedback = sandboxNpcController.LastFeedback;
+            }
+            GUILayout.Label("Sequence: " + sandboxNpcController.SpawnSequence);
+            if (!string.IsNullOrWhiteSpace(sandboxFeedback))
+                GUILayout.Label(sandboxFeedback);
+            GUILayout.Label(sandboxNpcController.DescribeLastSpawn());
         }
 
         private void DrawPlayerControls()
