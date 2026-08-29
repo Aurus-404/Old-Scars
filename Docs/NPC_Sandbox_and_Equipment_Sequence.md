@@ -7,18 +7,22 @@
 
 ## Propósito
 
-Esta secuencia existe para dejar de validar los sistemas de actor/equipment/AI solamente en fixtures muy cerradas y empezar a probarlos juntos dentro del runtime real de Old Scars, sobre el mapa/materialización física vigente.
+Esta secuencia existe para dejar de validar actor/equipment/AI únicamente mediante fixtures cerradas y empezar a probar los sistemas juntos dentro del runtime real de Old Scars.
 
-La meta no es producción masiva de contenido ni IA final. La meta es crear un sandbox jugable y observable donde sea posible:
+La meta no es producción masiva de contenido ni IA final. La meta es disponer de un sandbox jugable y observable donde sea posible:
 
 1. tener suficiente equipment y armas para ejercitar los sistemas existentes;
 2. spawnear NPCs con loadouts distintos generados desde datos;
 3. verlos navegar en el mapa real;
 4. dañarlos por regiones corporales, matarlos y lootear exactamente lo que poseían;
-5. hacer que NPCs con relaciones distintas detecten, persigan o ataquen a otros actores usando las autoridades ya implementadas;
-6. observar errores reales de integración, navegación, ownership, persistence, equipment, combat y corpse loot en lugar de depender únicamente de diagnostics aislados.
+5. hacer que actores con relaciones distintas detecten, persigan o ataquen usando las autoridades ya implementadas;
+6. observar errores reales de integración, navegación, ownership, persistence, equipment, combat y corpse loot.
 
-`Deformable Volumetric Terrain Foundation / Technical Spike` ya quedó `VALIDATED — TECHNICAL SPIKE COMPLETE` en el commit técnico `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado en `dev` por `1b41ead829cd566c55df5adfc0522e33e1dffb96`. M41.2 quedó cerrado en `4f877da10dee813b0bed816194110b5a27087683`; la secuencia continúa ahora por M41.3.
+`Deformable Volumetric Terrain Foundation / Technical Spike` permanece `VALIDATED — TECHNICAL SPIKE COMPLETE` en `d0309cf053be220a22151cae2dae9aca6f988e6f`, integrado por `1b41ead829cd566c55df5adfc0522e33e1dffb96`.
+
+La secuencia funcional queda:
+
+`M41.2 DONE → M41.3 DONE → M41.4 AUTHORIZED → Playtest / Review`.
 
 ---
 
@@ -26,231 +30,221 @@ La meta no es producción masiva de contenido ni IA final. La meta es crear un s
 
 Estado final: `DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED`
 
-Commit funcional publicado: `4f877da10dee813b0bed816194110b5a27087683`.
+Commit funcional: `4f877da10dee813b0bed816194110b5a27087683`.
 
-## Objetivo
+## Resultado cerrado
 
-Agregar contenido funcional mínimo suficiente para cubrir los espacios de equipment existentes y varias familias de armas, sin exigir arte final.
-
-El contenido debe vivir en el pipeline data-driven Core/mod existente. JSON declara contenido; C# sólo implementa comportamiento genérico que todavía falte.
-
-## Equipment coverage
-
-El layout humano actual `core:human_standard_01` contiene 17 slots. La implementación debe inspeccionar las Definitions reales y enumerar los slots desde allí; no se debe mantener una lista paralela hardcodeada como autoridad runtime.
-
-Cada slot real debe poder ser ejercitado por al menos una pieza equipable válida.
-
-Las piezas de prueba pueden ser simples, por ejemplo:
-
-- gorros/cascos;
-- camisas/chaquetas/abrigos;
-- pantalones;
-- guantes;
-- botas/calzado;
-- equipamiento de cintura u otros slots que realmente existan;
-- back equipment y mochilas.
-
-No se exige:
-
-- modelo 3D;
-- sprite/icono propio;
-- textura;
-- attachment visual;
-- animación;
-- arte final.
-
-Un item puede usar el fallback visual actual. Lo importante es que tenga nombre, peso, slots válidos, propiedades realmente consumidas por los sistemas actuales y que equip/unequip/ownership/persistence funcionen correctamente.
-
-No inventar estadísticas sin consumidor. Si una propiedad todavía no afecta gameplay, no crear un sistema nuevo sólo para llenar JSON.
-
-## Mochilas
-
-M41.2 debía dejar varias mochilas funcionalmente distintas para estresar item-owned storage y Equipment, con diferencias reales de capacidad/footprint/peso según los contratos vigentes.
-
-Objetivos de prueba:
-
-- mochila con poco espacio;
-- mochila intermedia;
-- mochila grande con más espacio y mayor coste físico razonable;
-- equip/unequip con contenido;
-- ownership correcto;
-- storage item-owned preservado;
-- persistence/round-trip;
-- cadáveres y transferencias sin duplicar ni perder contenido.
-
-No crear un backend nuevo de mochila.
-
-## Weapon coverage
-
-El Lee-Enfield cubre bolt/manual-cycle. M41.2 debía agregar cobertura funcional de:
-
-- bolt/manual-cycle — existente;
-- semi-automatic;
-- automatic.
-
-El objetivo era cubrir comportamientos, no inflar el catálogo. La extensión debía ser genérica/data-driven y compartida por `WeaponCombatService` y consumidores existentes, sin sistemas separados por arma o branches por DefinitionId.
-
-## Rango físico temporal de armas
-
-La balística física completa permanece futura, pero el hitscan temporal no debe comportarse como un disparo infinito.
-
-Contrato cerrado por M41.2:
-
-- `firearm.range` = distancia física máxima temporal del disparo hitscan;
-- `melee_range` = distancia física máxima de un ataque melee;
-- el aim/trace/debug visual no debe sugerir que un objetivo más allá del rango es alcanzable;
-- el ray de cámara puede seguir buscando el punto bajo el mouse para determinar dirección, pero la solución física y la visualización alcanzable quedan clampadas al rango efectivo;
-- gravedad, caída de proyectil, velocidad de bala y solver balístico productivo siguen fuera.
-
-Este rango sigue siendo un contrato temporal reemplazable/extendible por futura balística.
-
-## Closeout M41.2
-
-M41.2 cerró con evidencia reportada `PASS` y dejó:
+M41.2 dejó:
 
 - los 17 slots reales de `core:human_standard_01` cubiertos desde Definitions;
-- `27` items Core nuevos de ropa/equipment para coverage y variedad funcional;
+- 27 items Core nuevos de ropa/equipment sin exigir arte final;
 - mochilas pequeña/media/grande con storage real `8×10`, `10×12` y `12×14`;
 - casco y chaleco reutilizando M40.1;
 - Lee-Enfield `manual_cycle`, range `80`;
 - Semi-Automatic Rifle `semi_automatic`, range `75`;
 - Automatic Rifle `automatic`, range `60`;
-- contrato `fire_mode` canónico con `manual_cycle`, `semi_automatic`, `automatic`;
-- manual/semi = un disparo por press; automatic = repetición mientras LMB esté held, limitada por `cycle_time`, munición y sin auto-reload;
-- aim/tracer clampado al endpoint alcanzable;
-- Current Slice preservando backpack content, ownership/equipment y estado cargado firearm sin schema bump;
-- Runtime/Editor compile, M41.2 D3D11 Play Mode, M37/M37.1, Content Provenance/Namespace, Inventory UX, M40/M40.1, Player Controls/Health y `git diff --check` en PASS;
-- revisión de System Harmony sin autoridad paralela, worldgen/terrain/schema changes ni adelanto de M41.3/M41.4.
+- contrato `fire_mode` data-driven sin branches por DefinitionId;
+- manual/semi = un disparo por press;
+- automatic = repetición mientras LMB permanezca held, limitada por `cycle_time`, ammo y sin auto-reload;
+- `firearm.range` como máximo físico temporal de hitscan;
+- `melee_range` como máximo físico melee;
+- aim/tracer debug limitado al endpoint alcanzable;
+- Current Slice preservando backpack content, ownership/equipment y firearm loaded state sin schema bump.
 
-Deuda intencional: `debug_accuracy_spread` sigue sin sistema de precisión; se reserva para M41.4.
+`debug_accuracy_spread` quedó intencionalmente sin un sistema de precisión completo para ser consumido en M41.4.
 
 ---
 
 # M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
 
-Estado actual: `AUTHORIZED — IMMEDIATE PRIORITY`
+Estado final: `DONE — NPC SANDBOX SPAWN & RANDOMIZED LOADOUTS V1 VALIDATED`
 
-## Objetivo
+Commit funcional publicado: `a90dc4e1a38bef69e3762e398a378a666a9f993e`.
 
-Convertir las foundations existentes de actor, navigation, health, equipment, ownership y corpse loot en una prueba visible dentro de WorldRuntime.
+## Objetivo cumplido
 
-Debe existir una herramienta development-only simple para spawnear NPCs reales en el mapa actual.
+M41.3 convirtió las foundations existentes de actor, navigation, health, equipment, ownership y corpse loot en una prueba visible dentro de `WorldRuntime`.
 
-## Spawn
+La implementación no creó una población productiva ni una IA nueva. Construyó tooling development-only sobre autoridades ya existentes.
 
-Agregar un control debug reproducible, por ejemplo `Spawn NPC`, que:
+## Actor Loadout Profile
 
-- encuentre una posición válida/materializada;
-- use la autoridad de spawn/identity existente;
-- no cree un segundo actor registry;
-- configure Navigation/Perception mediante profiles existentes cuando corresponda;
-- coloque al actor sobre superficie física/NavMesh válida;
-- permita varios NPC simultáneos para pruebas de navegación y ownership.
+Se implementó una familia de Definition separada para loadouts de actor.
 
-La UI puede ser OnGUI/debug mientras permanezca development-only y pequeña. No es UI final.
+`ActorLoadoutProfileDefinition` puede expresar:
 
-## Randomized actor loadouts
-
-Cada NPC debe poder aparecer con equipment e inventory distintos a partir de datos JSON.
-
-El sistema debe admitir probabilidades reales, incluyendo explícitamente la posibilidad de `none`/vacío.
-
-Ejemplo conceptual, no schema congelado:
-
-```text
-Head:
-  40% wool_cap
-  15% helmet
-  45% none
-
-Back:
-  20% small_backpack
-  10% large_backpack
-  70% none
-
-Primary weapon:
-  55% bolt_action
-  20% semi_auto
-  10% automatic
-  15% none
-```
-
-Las loot tables v0 existentes son determinísticas y hoy sólo modelan `item_id + count`; no tienen chance/weights/rarity. Antes de implementar M41.3 se debe auditar el contrato real y elegir la extensión mínima correcta.
-
-Dirección preferida: un `Actor Loadout Table/Profile` o equivalente data-driven que pueda expresar equipment, inventory, probabilidades y `none`, en vez de deformar las loot tables de contenedores si sus semánticas no coinciden.
-
-No congelar el nombre/schema exacto antes de auditar consumidores.
-
-## Reglas del random loadout
-
-El resultado concreto de un spawn debe convertirse en estado real del actor:
-
-- equipment real en `ActorEquipmentComponent`;
-- items reales con `ItemInstanceId`;
-- ownership real;
-- backpack/item-owned storage real;
+- grupos de elección ponderados;
+- `none` explícito como resultado válido;
+- equipment real;
 - inventory real;
-- ammo compatible con el arma seleccionada cuando corresponda;
-- cadáver debe conservar exactamente las pertenencias del actor, no regenerar loot al morir.
+- cantidades/rangos de cantidad;
+- slot ids cuando son necesarios;
+- packages weapon/ammo sin branches por DefinitionId.
 
-Una vez generado el actor, su contenido no debe volver a rerollearse al abrir el cadáver o consultar inventory.
+La semántica de `LootTableDefinition` de contenedores se preservó; no se deformó para resolver actor equipment.
 
-La semántica final de determinismo de spawns productivos queda futura. Para el sandbox es válido un RNG de prueba controlable/reproducible, pero debe ser posible registrar la seed/roll evidence para diagnosticar un spawn concreto.
+Core incluye el profile:
 
-## Roaming básico
+`core:debug_sandbox_npc_loadout_01`.
 
-El NPC del sandbox debe desplazarse de manera simple para probar navegación real. No se requiere comportamiento complejo.
+También existe un actor profile development-only:
 
-Puede usar destinos locales elegidos dentro de una región válida y navegar mediante `ActorNavigationController`.
+`core:debug_sandbox_npc_01`.
 
-Objetivos:
+El actor usa `core:human_standard_01`, health/navigation/perception existentes y no incorpora encounter combat AI en M41.3.
 
-- comprobar NavMesh en la representación física nueva;
-- comprobar slopes/borders/colliders;
-- observar múltiples actores moviéndose;
-- detectar rápidamente zonas sin navegación o spawn inválido.
+## Generación y RNG
 
-No implementar strategic AI, schedules, needs AI ni pathfinding mundial.
+El roll ocurre únicamente durante NEW ACTOR BOOTSTRAP.
 
-## Damage, death y loot
+Cadena validada:
 
-El NPC debe reutilizar exactamente los sistemas existentes:
+`ActorSpawnService → actor identity/components → actor profile → actor loadout profile → deterministic debug roll → real ItemInstances → Equipment/Inventory/ownership`.
 
-- seis regiones corporales;
-- wounds/bleeding/pain de M39;
-- M40/M40.1 para impactos/armor;
-- lifecycle Alive/Dead;
+El sandbox utiliza un RNG reproducible basado en base seed + spawn sequence/profile evidence; no usa `UnityEngine.Random` como autoridad oculta.
+
+El resultado concreto se transforma inmediatamente en estado normal del actor.
+
+No se rerollea en:
+
+- muerte;
+- apertura de cadáver;
+- cierre/reapertura;
+- Current Slice restore.
+
+## Evidencia de variación
+
+El gate integrado demostró simultáneamente:
+
+- `12` NPCs activos;
+- `12` `ActorInstanceId` únicos;
+- `131` `ItemInstance` únicos;
+- `12` firmas de loadout distintas.
+
+El profile Core incluye probabilidades reales de no portar algunas piezas, backpack o weapon.
+
+## Spawn y navegación
+
+Los actores se spawnean cerca del player sobre una posición NavMesh válida y usan `ActorSpawnService` como autoridad.
+
+El roaming development-only delega órdenes exclusivamente a `ActorNavigationController`.
+
+Durante M41.3 se descubrió un defecto genérico previo de composición:
+
+`ActorProfileComponent` consultaba `Collider.bounds` inmediatamente después de crear/mover la representación mientras transforms físicos todavía no estaban sincronizados. Esto podía producir `NavMeshAgent.baseOffset` cercano a `79` en lugar de aproximadamente la altura normal del actor.
+
+La corrección usa `Physics.SyncTransforms()` antes de derivar la geometría/configuración del agent.
+
+Después de corregirlo, los NPCs recibieron destinos válidos y se desplazaron mediante la autoridad existente.
+
+Esta corrección no crea pathfinding paralelo ni navegación alternativa.
+
+## Damage, death y corpse continuity
+
+Los NPCs utilizan la ruta real:
+
+- M39 localized health/wounds/bleeding;
+- M40 combat/weapons;
+- M40.1 armor/penetration;
+- M38 lifecycle Alive/Dead.
+
+Se verificó daño localizado en múltiples regiones.
+
+La muerte se produjo por heridas M40 y sangrado M39 impulsado por `WorldClock`, no por una resta debug directa de HP como ruta productiva.
+
+Se capturó evidencia canónica de pertenencias y se validó:
+
+`PRE-DEATH BELONGINGS == CORPSE BELONGINGS == REOPENED CORPSE BELONGINGS`.
+
+La apertura/cierre/reapertura se ejercitó mediante la sesión real de inventario.
+
+No hubo:
+
+- reroll al morir;
+- reroll al abrir;
+- pérdida del arma;
+- pérdida del backpack;
+- duplicación de ItemInstances;
+- ruptura de ownership.
+
+## Persistence
+
+Current Slice snapshot/teardown/restore preservó:
+
+- Actor/Item IDs;
+- Definitions;
+- cantidades;
+- Equipment;
+- ownership;
+- item-owned storages.
+
+En restore, `LoadoutProfileId` y `LoadoutSignature` aparecen ausentes como metadata de bootstrap; el generador no vuelve a ejecutarse. Se restaura el estado real ya generado.
+
+No hubo schema bump de Current Slice ni `world_session_v1`.
+
+## Validación M41.3
+
+Reportado `PASS`:
+
+- Runtime compile;
+- Editor compile;
+- WorldRuntime D3D11 integrated gate;
+- GameDataLoader/DataValidator;
+- Content Namespace/Provenance;
+- Equipment/ownership/item-owned storage;
+- M37 Persistence Core;
+- M37.1 Current Slice;
+- M38 Actor Lifecycle;
+- M39 localized health;
+- M40 weapons/combat;
+- M40.1 armor/penetration;
+- M41.0 Navigation/Perception;
+- M41.1 Human Encounter AI regression;
+- M41.2 Equipment/Weapon Coverage;
+- player controls/runtime;
+- `git diff --check`.
+
+La revisión automática encontró únicamente dos findings pequeños de observabilidad y ambos fueron corregidos antes del cierre: identificación de firearms en el resumen del sandbox y ubicación del feedback de seed inválida.
+
+## System Harmony M41.3
+
+Se preservan como autoridades únicas:
+
+- `ActorSpawnService`;
+- actor runtime registry/identity;
+- `ItemInstance`/ItemInstanceId;
+- Equipment;
+- Inventory/item-owned storage;
+- ownership;
 - corpse continuity;
-- equipment/inventory/ownership ya reales;
-- corpse belongings/loot existente.
+- `ActorNavigationController`;
+- M39 health;
+- M40/M40.1 combat;
+- M37/M37.1 persistence.
 
-Debe ser posible:
+No se introdujo:
 
-`Spawn NPC → inspeccionar loadout → dañarlo en regiones distintas → matarlo → abrir cadáver → encontrar el mismo equipment/inventory que poseía`.
+- segundo registry;
+- fake corpse loot;
+- reroll-on-death/open/restore;
+- pathfinding paralelo;
+- nueva save schema;
+- worldgen change;
+- M41.4 adelantado.
 
-No crear health simplificado especial para NPC sandbox.
+## Deuda intencional después de M41.3
 
-## Aceptación M41.3
-
-- varios spawns producen loadouts distintos de acuerdo con datos/probabilidades;
-- `none` es un resultado válido en categorías configuradas;
-- no hay reroll al morir/lootear;
-- equipment e inventory del cadáver son exactamente los del actor vivo;
-- navegación básica funciona sobre el mapa real;
-- actor recibe daño localizado y puede morir;
-- corpse loot/ownership no duplica ni pierde items;
-- spawn inválido/NavMesh failure queda diagnosticable;
-- no existe una autoridad paralela de actor, equipment, health, navigation o loot.
+El roaming y la metadata de sandbox son tooling efímero. No constituyen población persistente, schedules, ecological simulation ni AI productiva.
 
 ---
 
 # M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1
 
-Estado planificado: `PLANNED — AFTER M41.3`
+Estado: `AUTHORIZED — IMMEDIATE PRIORITY`
 
 ## Objetivo
 
-Permitir un sandbox de combate observable NPC↔NPC y NPC↔Player usando las autoridades ya implementadas, sin aimbot perfecto y sin reescribir M41.1.
+Permitir un sandbox de combate observable NPC↔NPC y NPC↔Player usando las autoridades existentes, sin aimbot perfecto y sin reescribir M41.1.
 
 ## Blue / Red debug actors
 
@@ -263,183 +257,163 @@ Los colores son únicamente presentación/debug. La lógica no debe depender de 
 
 Debe existir una representación mínima de affiliation/team/disposition genérica suficiente para expresar relaciones del sandbox.
 
-Baseline de prueba:
+Baseline:
 
-- Blue no es hostil al Player;
+- Blue no hostil al Player;
 - Red considera hostiles a Blue y Player;
-- Red vs Red no debe atacarse por defecto;
-- Blue vs Blue no debe atacarse por defecto.
+- Red vs Red no hostil por defecto;
+- Blue vs Blue no hostil por defecto.
 
-La arquitectura debe poder extenderse a relaciones futuras sin convertir esta prueba en el sistema completo de facciones M46.1.
+La arquitectura debe poder extenderse posteriormente sin convertirse en el sistema completo de facciones/reputación.
 
 ## Threat acquisition
 
-M41.1 actualmente puede combatir una amenaza explícitamente asignada. M41.4 debe agregar la capa mínima para que un actor encuentre candidatos hostiles cercanos y use `ActorVisualPerceptionService` antes de asignar/actualizar amenaza.
-
-No permitir omnisciencia.
+M41.1 sabe combatir una amenaza explícitamente asignada. M41.4 debe agregar la capa mínima para encontrar candidatos hostiles cercanos y comprobar percepción antes de asignarlos.
 
 Cadena deseada:
 
-`affiliation/disposition → nearby candidate → perception/LOS → threat assignment → existing HumanEncounterAIController → Navigation/WeaponCombatService`.
+`affiliation/disposition → nearby candidate → ActorVisualPerceptionService/LOS → threat assignment → HumanEncounterAIController → ActorNavigationController / WeaponCombatService`.
 
-No crear otro combat brain ni otro perception service.
+No permitir omnisciencia.
+
+No crear otro perception service ni otro combat brain.
 
 ## Range-aware combat
 
-La IA debe entender el alcance del arma actualmente equipada.
+La IA debe entender el alcance de su arma equipada.
 
 Para firearm:
 
-- nunca intentar resolver daño más allá de `firearm.range`;
-- usar un `preferred engagement distance` coherente y nunca mayor al rango físico;
-- si la amenaza está demasiado lejos, navegar para cerrar distancia;
-- entrar en Fighting sólo cuando exista una condición de engagement válida;
-- si el target sale del rango/LOS, responder mediante navegación/lost-contact existentes.
+- jamás resolver daño más allá de `firearm.range`;
+- usar una distancia de engagement válida nunca mayor al alcance físico;
+- si el target está demasiado lejos, cerrar distancia mediante Navigation;
+- combatir sólo cuando exista LOS/engagement válido;
+- si se pierde rango/LOS, reutilizar navegación y lost-contact existentes.
 
 Para melee:
 
 - usar `melee_range`;
-- si el enemigo está lejos, acercarse;
-- sólo golpear cuando está físicamente a distancia válida;
-- no proyectar un melee ray kilométrico.
+- acercarse cuando el target está lejos;
+- golpear únicamente a distancia válida;
+- nunca proyectar melee a distancia absurda.
 
-El comportamiento exacto de mantener distancia, retroceder o buscar cover queda fuera salvo que sea necesario para corregir una falla evidente del sandbox.
+Mantener distancia compleja, retreat táctico y cover quedan fuera salvo que aparezca un blocker real.
 
 ## Imperfect aim — no aimbot
 
-Los NPC no deben disparar siempre al punto exacto de la cabeza ni convertir una probabilidad abstracta directamente en `hit/miss`.
+No usar:
 
-Dirección preferida:
+`posición exacta de Head → ray perfecto → hit garantizado`.
 
-`target observado → punto objetivo aproximado → error angular físico → dirección de disparo real → PhysicalShotPathResolver → lo que golpea físicamente recibe el impacto`.
+Tampoco usar una probabilidad abstracta que salte directamente a hit/miss.
 
-Esto permite misses reales, impactos accidentales en otras regiones, paredes u otros actores.
+Dirección:
 
-Baseline V1 propuesto:
+`target observado → punto objetivo aproximado → error angular físico → dirección de disparo → PhysicalShotPathResolver → impacto real`.
 
-- apuntar principalmente a center mass;
-- selección/variación limitada de región objetivo para aprovechar localized health;
-- head no debe ser objetivo dominante;
-- reaction/acquisition delay antes de precisión útil;
-- focus time: el spread disminuye mientras conserva una observación válida;
-- nunca llegar a spread perfecto cero para un NPC normal;
-- mayor distancia aumenta error;
+Esto debe permitir:
+
+- misses reales;
+- impactos en otra región;
+- impactos en paredes/obstáculos;
+- eventual impacto accidental en otro actor si la ruta física lo determina.
+
+Baseline V1:
+
+- center mass como objetivo predominante;
+- head no dominante;
+- reaction/acquisition delay;
+- focus time que reduce gradualmente spread mientras la percepción válida se mantiene;
+- spread nunca perfecto cero para un NPC normal;
+- mayor distancia = mayor error;
 - movimiento/cambio brusco de target puede aumentar error;
-- arma/fire mode puede aportar accuracy/spread data;
-- automatic fire puede aumentar spread durante una ráfaga y recuperarlo al pausar si es proporcional al scope.
+- arma/fire mode puede aportar datos de precisión existentes;
+- automatic fire puede incrementar spread durante ráfaga y recuperarlo tras pausa si resulta proporcional al scope.
 
-No implementar una simulación balística completa todavía. El error angular debe poder alimentar una futura trayectoria física sin tirar este trabajo.
+No implementar todavía bullet travel, gravity, wind, drag o solver balístico productivo.
 
-## Referencias de diseño investigadas
+## Referencias conceptuales
 
-Estas referencias sirven para entender patrones, no para copiar implementaciones ni valores:
+Usar como referencias de patrones, no como código ni valores a copiar:
 
-- Valve Source SDK / Half-Life 2 AI: reaction delays, focus time y spread defocused/focused. `ai_basenpc.cpp` en Source SDK 2013.
-  - https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/server/ai_basenpc.cpp
-- Valve Developer Community: weapon bullet spread cones y comportamiento de Combine Soldier según arma/rango.
-  - https://developer.valvesoftware.com/wiki/Authoring_a_weapon_entity
-  - https://developer.valvesoftware.com/wiki/AI_Learning:_CombineSoldier
-- Bohemia Interactive / Arma 3 AI Config Reference: fire modes con `minRange`, `midRange`, `maxRange` y probabilidades asociadas.
-  - https://community.bohemia.net/wiki/Arma_3:_AI_Config_Reference
-- Bungie GDC 2002 Halo AI: engagement distance como parte crítica de la lectura/calidad del comportamiento.
-  - https://halo.bungie.org/misc/gdc.2002.haloai/talk.html?page=19
+- Valve Source SDK / Half-Life 2 AI: reaction/focus y spread defocused/focused;
+- Valve Developer Community: weapon spread y engagement según arma;
+- Arma 3 AI config: min/mid/max ranges y probabilidades por fire mode;
+- Bungie/Halo AI talks: engagement distance como parte crítica de comportamiento legible.
 
-Principio común adoptado para Old Scars:
+## Observabilidad M41.4
 
-`weapon capability + physical range + perception + reaction/focus + aim error + navigation` son dimensiones separadas que se integran; ninguna debe convertirse en un aimbot o en un porcentaje mágico de daño.
+El sandbox debe poder explicar decisiones sin depender únicamente de logs crípticos.
 
-## Observabilidad obligatoria
-
-Para evitar repetir las fixtures cerradas anteriores, el sandbox debe poder mostrar en development build información explicable de un actor seleccionado o cercano, por ejemplo:
+Ejemplo development-only:
 
 ```text
-Actor: actor_...
-Affiliation: red
-Target: player
-Distance: 41.3 m
-Weapon: ...
-Weapon range: 35 m
-Preferred range: 28 m
-State: Closing Distance
-Perception: Perceived/Occluded/LostContact
-Aim focus: 0.42
-Spread: 5.1 deg
-Navigation: Moving
+NPC actor_x
+Affiliation: Red
+Target: actor_y / Player
+Perception: Perceived
+Distance: 27.8
+Weapon: Automatic Rifle
+Weapon range: 60
+State: Fighting
+Focus: 0.71
+Spread: 3.4 deg
+Navigation: Idle/Moving
 ```
 
-No es UI final. La meta es poder mirar la partida y entender por qué una IA se acerca, espera, falla o dispara.
+Fuera de range:
+
+```text
+Distance: 72
+Weapon range: 60
+State: Closing Distance
+```
 
 ## Aceptación M41.4
 
-Debe demostrarse dentro de WorldRuntime:
+Debe demostrarse como mínimo:
 
-- Blue/Red spawneables con loadouts M41.3;
-- relaciones debug genéricas, no color hardcodeado;
-- adquisición automática de amenazas mediante percepción/LOS;
-- Red puede atacar Player y Blue;
-- Blue no ataca Player en baseline;
-- firearm users cierran distancia cuando están fuera de alcance;
-- melee users se acercan hasta rango de golpe;
-- no hay disparos físicos más allá del rango del arma;
-- aim tiene error físico visible y no aimbot;
-- diferentes disparos pueden fallar o golpear distintas regiones;
-- existing M39/M40/M40.1 siguen resolviendo heridas/armor/death;
-- actor muerto deja su loadout real para loot;
-- navigation funciona suficientemente sobre el terrain/materialización vigente;
-- comportamiento es observable/debuggable sin depender únicamente de automated PASS.
-
----
-
-# Secuencia De Ejecución Aprobada
-
-Estado actual de la secuencia:
-
-`M41.2 Basic Equipment & Weapon Coverage V1 — DONE / VALIDATED`
-
-→
-
-`M41.3 NPC Sandbox Spawn & Randomized Loadouts V1 — AUTHORIZED / ACTIVE NEXT`
-
-→
-
-`M41.4 Affiliation, Range-Aware Combat & Imperfect Aim V1 — PLANNED`
-
-→
-
-`PLAYTEST / REVIEW BEFORE AUTHORIZING ANOTHER LARGE SYSTEM`
-
-No encadenar automáticamente otro milestone después de M41.4. El resultado debe evaluarse jugando y observando varios NPC simultáneamente.
-
-## Resultado esperado de la secuencia
-
-Una prueba exitosa debería permitir:
-
-`entrar al WorldRuntime → spawnear varios NPCs con equipment/inventory diferentes → verlos navegar → Blue/Red descubrir enemigos → acercarse según alcance del arma → disparar/golpear con precisión imperfecta → recibir heridas localizadas/armor → morir → lootear exactamente sus pertenencias`.
-
-El objetivo estratégico es comprobar que las foundations de Old Scars forman un pequeño ecosistema jugable integrado y detectar deuda real antes de seguir agregando worldgen o sistemas abstractos.
+- Blue/Red spawn usando el sandbox real de M41.3;
+- affiliation/disposition genérica y no branches por color;
+- same-team no hostil por defecto;
+- Red detecta Blue/Player únicamente mediante percepción/LOS;
+- target automático llega al existing encounter AI;
+- firearm cierra distancia si está fuera del engagement/range;
+- melee cierra distancia hasta `melee_range`;
+- no damage fuera de los ranges físicos existentes;
+- reaction/focus/spread producen disparos físicamente imperfectos;
+- no existe head aimbot;
+- NPC↔NPC y NPC↔Player usan M39/M40/M40.1 existentes;
+- death/corpse continuity de M41.3 permanece intacta;
+- no stack paralelo de faction/AI/navigation/combat.
 
 ---
 
-# Fuera De Alcance De M41.2–M41.4
+# Playtest / Review Después De M41.4
 
-- modelos/animaciones/sonido final de todas las prendas y armas;
-- production UI;
-- producción masiva de content;
+No encadenar automáticamente otro sistema grande.
+
+Prueba objetivo:
+
+`WorldRuntime → varios NPCs con loadouts distintos → navegación real → Blue/Red detectan hostiles → cierran distancia según arma → disparan/golpean con precisión imperfecta → localized health/armor/death → corpse loot exacto`.
+
+Después del playtest se revisarán bugs reales, performance, navegación, ownership/equipment, combat readability y game feel. Recién entonces se decidirá si conviene:
+
+- corregir/pulir gameplay;
+- sumar otra mecánica base;
+- o volver a world realization/materialización.
+
+## Límites generales de la secuencia
+
+No iniciar por inercia durante M41.4:
+
 - sistema completo de facciones/reputación/memoria regional;
-- cover AI sofisticada;
-- squads/tactics;
-- strategic AI/off-sector combat;
-- full ballistic trajectory, bullet drop o wind;
-- ricochet/spall más allá de contratos existentes;
-- suppressive fire avanzado;
-- morale completo;
-- schedules/jobs/needs AI;
-- settlement simulation;
-- final loot economy/balance;
-- final spawn ecology;
-- procedural NPC population mundial;
-- streaming AI de producción;
-- dynamic navigation architecture final para terreno deformado;
-- reescritura de `HumanEncounterAIController`, `ActorNavigationController`, `ActorVisualPerceptionService`, `WeaponCombatService`, M39 health o ownership/equipment.
-
-La regla es reutilizar y estresar las autoridades existentes antes de sustituirlas.
+- squads, cover tactics sofisticadas o strategic/off-sector AI;
+- final NPC population/ecology;
+- full ballistic simulation;
+- production UI;
+- Bounded History / World Persistence general / Sector Blueprint;
+- world streaming/LOD/navigation productivos;
+- mining/geology/fluid simulation;
+- condition/repair/crafting;
+- producción masiva de contenido.
