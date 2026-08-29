@@ -14,6 +14,7 @@ namespace OldScars.Core.Actors
     {
         private const float PanelWidth = 340f;
         private const float PanelHeight = 500f;
+        private const int MaximumItemDebugQuantity = 1000;
         private static readonly float[] TimeMultipliers = { 1f, 2f, 3f, 5f, 10f, 20f, 50f, 100f };
 
         [SerializeField] private ActorNeedsComponent actorNeeds;
@@ -34,6 +35,8 @@ namespace OldScars.Core.Actors
         private string selectedItemDefinitionId;
         private string itemDebugFeedback;
         private Vector2 itemDebugScrollPosition;
+        private int itemDebugQuantity = 1;
+        private string itemDebugQuantityText = "1";
         private string sandboxSeedText = SandboxNpcController.DefaultBaseSeed.ToString();
         private string sandboxFeedback;
 
@@ -96,7 +99,11 @@ namespace OldScars.Core.Actors
             ResolveReferences();
             GUILayout.BeginArea(GetPanelRect(), GUI.skin.box);
             GUILayout.Label("RUNTIME DEBUG TOOLS");
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(PanelHeight - 34f));
+            scrollPosition = GUILayout.BeginScrollView(
+                scrollPosition,
+                GUIStyle.none,
+                GUI.skin.verticalScrollbar,
+                GUILayout.Height(PanelHeight - 34f));
             DrawPlayerControls();
             DrawNeedsControls();
             DrawWorldTimeControls();
@@ -174,6 +181,35 @@ namespace OldScars.Core.Actors
             if (!string.IsNullOrWhiteSpace(sandboxFeedback))
                 GUILayout.Label(sandboxFeedback);
             GUILayout.Label(sandboxNpcController.DescribeLastSpawn());
+            DrawSandboxNpcHealthDiagnostics();
+        }
+
+        private void DrawSandboxNpcHealthDiagnostics()
+        {
+            SandboxNpcMetadata lastSpawn = sandboxNpcController?.LastSpawn;
+            if (lastSpawn == null)
+                return;
+
+            ActorRuntimeIdentity identity = lastSpawn.GetComponent<ActorRuntimeIdentity>();
+            ActorHealthComponent health = lastSpawn.GetComponent<ActorHealthComponent>();
+            ActorMedicalStateComponent medical = lastSpawn.GetComponent<ActorMedicalStateComponent>();
+            string healthValue = health != null
+                ? $"{health.CurrentHealth:0.#} / {health.MaxHealth:0.#}"
+                : "<NONE>";
+            string vitalFraction = medical != null ? medical.VitalFraction.ToString("0.###") : "<NONE>";
+            string wounds = medical != null ? medical.WoundCount.ToString() : "<NONE>";
+            string bleeding = medical != null
+                ? medical.EffectiveBleedingRatePerGameHour.ToString("0.###")
+                : "<NONE>";
+            string lifecycle = identity != null
+                ? identity.LifecycleState.ToString()
+                : health != null && health.IsDead ? "Dead" : "Alive";
+            GUILayout.Label("HEALTH DIAGNOSTIC\n" +
+                            "Health: " + healthValue + "\n" +
+                            "Vital fraction: " + vitalFraction + "\n" +
+                            "Wounds: " + wounds + "\n" +
+                            "Effective bleeding / game hour: " + bleeding + "\n" +
+                            "Lifecycle: " + lifecycle);
         }
 
         private void DrawPlayerControls()
@@ -342,15 +378,13 @@ namespace OldScars.Core.Actors
 
             itemDebugScrollPosition = GUILayout.BeginScrollView(
                 itemDebugScrollPosition,
+                GUIStyle.none,
+                GUI.skin.verticalScrollbar,
                 GUILayout.Height(150f));
             for (int index = 0; index < matches.Count; index++)
             {
                 ItemDefinition definition = matches[index];
-                string displayName = definition.display != null ? definition.display.name : null;
-                string label = string.IsNullOrWhiteSpace(displayName) || displayName == definition.id
-                    ? definition.id
-                    : displayName + " (" + definition.id + ")";
-                if (GUILayout.Button(label, GUILayout.Height(22f)))
+                if (GUILayout.Button(FormatItemButtonLabel(definition), GUILayout.ExpandWidth(true), GUILayout.Height(22f)))
                     selectedItemDefinitionId = definition.id;
             }
             GUILayout.EndScrollView();
@@ -362,13 +396,30 @@ namespace OldScars.Core.Actors
                 ? database.GetItem(selectedItemDefinitionId)
                 : null;
             GUILayout.Label("Selected: " + (selected == null ? "<NONE>" : FormatItem(selected)));
-            if (GUILayout.Button("Give 1", GUILayout.Height(24f)))
-                GrantSelectedItem();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Quantity", GUILayout.Width(58f));
+            itemDebugQuantityText = GUILayout.TextField(itemDebugQuantityText ?? "1", GUILayout.Width(64f));
+            bool validQuantity = int.TryParse(itemDebugQuantityText, out int requestedQuantity);
+            if (validQuantity)
+            {
+                itemDebugQuantity = Mathf.Clamp(requestedQuantity, 1, MaximumItemDebugQuantity);
+                itemDebugQuantityText = itemDebugQuantity.ToString();
+            }
+            else
+            {
+                GUILayout.Label("Enter 1-" + MaximumItemDebugQuantity);
+            }
+            bool previousGuiEnabled = GUI.enabled;
+            GUI.enabled = previousGuiEnabled && validQuantity;
+            if (GUILayout.Button("Give " + itemDebugQuantity, GUILayout.Height(24f)))
+                GrantSelectedItem(itemDebugQuantity);
+            GUI.enabled = previousGuiEnabled;
+            GUILayout.EndHorizontal();
             if (!string.IsNullOrWhiteSpace(itemDebugFeedback))
                 GUILayout.Label(itemDebugFeedback);
         }
 
-        private void GrantSelectedItem()
+        private void GrantSelectedItem(int quantity)
         {
             if (string.IsNullOrWhiteSpace(selectedItemDefinitionId))
             {
@@ -385,22 +436,46 @@ namespace OldScars.Core.Actors
                 return;
             }
 
-            ItemInstance item = inventory.AddItemByDefinitionId(selectedItemDefinitionId, 1);
+            ItemInstance item = inventory.AddItemByDefinitionId(selectedItemDefinitionId, quantity);
             if (item == null)
             {
                 itemDebugFeedback = "Give failed: no legal inventory space or item could not be created.";
                 return;
             }
 
-            itemDebugFeedback = "Granted " + item.DefinitionId + " [" + item.InstanceId + "]";
+            itemDebugFeedback = "Granted " + GetItemDisplayName(item.DefinitionId) + " x" + quantity +
+                                " [" + item.InstanceId + "]";
         }
 
         private static string FormatItem(ItemDefinition definition)
         {
-            string displayName = definition.display != null ? definition.display.name : null;
-            return string.IsNullOrWhiteSpace(displayName) || displayName == definition.id
-                ? definition.id
-                : displayName + " (" + definition.id + ")";
+            return GetItemDisplayName(definition) + "\nContentId: " + definition.id;
+        }
+
+        private static string FormatItemButtonLabel(ItemDefinition definition)
+        {
+            string label = GetItemDisplayName(definition);
+            const int maximumLength = 34;
+            if (label.Length <= maximumLength)
+                return label;
+            return label.Substring(0, maximumLength - 3) + "...";
+        }
+
+        private static string GetItemDisplayName(ItemDefinition definition)
+        {
+            string displayName = definition?.display != null ? definition.display.name : null;
+            return string.IsNullOrWhiteSpace(displayName) ? definition?.id ?? "<NONE>" : displayName.Trim();
+        }
+
+        private static string GetItemDisplayName(string definitionId)
+        {
+            return GetItemDisplayName(GetItemDefinition(definitionId));
+        }
+
+        private static ItemDefinition GetItemDefinition(string definitionId)
+        {
+            GameDatabase database = GameDataManager.Instance?.Database;
+            return database != null ? database.GetItem(definitionId) : null;
         }
 
         private void ApplyDebugRest(double durationGameSeconds)

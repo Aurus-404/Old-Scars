@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -135,6 +136,7 @@ namespace OldScars.Editor
                             (float)(WorldClock.DefaultGameSecondsPerRealSecond * multiplier)),
                     $"WorldClock did not apply the {multiplier:0}x debug multiplier relative to its authored baseline.");
             }
+            RunDebugMultiplierFrameRegression(clock);
 
             RestoreClock(clock, KnownElapsedGameSeconds);
             SetNeed(needs, "hunger", 61f);
@@ -270,6 +272,40 @@ namespace OldScars.Editor
             Require(!clock.TryRestoreElapsedGameSeconds(WorldClock.MaxElapsedGameSeconds + 1d, out _) &&
                     Near(clock.ElapsedGameSeconds, unchanged),
                 "Out-of-range persistence time mutated the World Clock.");
+        }
+
+        private static void RunDebugMultiplierFrameRegression(WorldClock clock)
+        {
+            bool previousAdvanceDuringGameplay = clock.AdvanceDuringGameplay;
+            double baselineDelta = 0d;
+            var observations = new List<string>();
+            try
+            {
+                clock.AdvanceDuringGameplay = true;
+                float[] multipliers = { 1f, 2f, 10f, 100f };
+                for (int index = 0; index < multipliers.Length; index++)
+                {
+                    float multiplier = multipliers[index];
+                    RestoreClock(clock, WorldClock.DefaultElapsedGameSeconds);
+                    Require(clock.TrySetDebugTimeMultiplier(multiplier, out string multiplierFailure),
+                        "Could not set frame-proof multiplier: " + multiplierFailure);
+                    clock.SendMessage("Update", SendMessageOptions.RequireReceiver);
+                    double delta = clock.ElapsedGameSeconds;
+                    Require(delta > 0d, $"WorldClock Update did not advance at {multiplier:0}x.");
+                    if (multiplier == 1f)
+                        baselineDelta = delta;
+                    else
+                        Require(Near(delta, baselineDelta * multiplier, Math.Max(0.001d, baselineDelta * multiplier * 0.01d)),
+                            $"WorldClock Update advanced {delta:R} at {multiplier:0}x; expected approximately {(baselineDelta * multiplier):R}.");
+                    observations.Add($"{multiplier:0}x={delta:R}");
+                }
+            }
+            finally
+            {
+                clock.ResetDebugTimeMultiplier();
+                clock.AdvanceDuringGameplay = previousAdvanceDuringGameplay;
+            }
+            Debug.Log("[WorldClock][DEBUG_MULTIPLIER_FRAME_PROOF] " + string.Join(", ", observations));
         }
 
         private static void RunConsumableRegression(ActorNeedsComponent needs, ActorHealthComponent health)

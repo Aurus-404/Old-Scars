@@ -3362,3 +3362,18 @@ Fecha: 2026-08-28.
 Se corrigió la separación de input del panel F3: el puntero sobre Runtime Debug Tools ya no suprime WASD/Shift, pero clicks, cámara e interacciones siguen bloqueados por las superficies existentes; Inventory conserva su modalidad y el filtro Item Debug captura teclado sólo mientras está enfocado. Item Debug enumera las `ItemDefinition` reales de `GameDatabase` y usa el camino normal `InventoryComponent.AddItemByDefinitionId` para probar equipment, storage y armas sin una autoridad paralela. El resolver de teleport mantiene la validación de solape de `PlayerMovementController` y permite suelo materializado o superficies authored visibles con normal de suelo, rechazando actores, triggers y geometría no caminable.
 
 Validación autónoma: Runtime compile y Editor compile `PASS`; Play Mode D3D11 de `MainMenu → New Game → WorldRuntime → Save → Return → Load` con `[WorldRuntime][GAMEPLAY_RUNTIME_READY]` y `World Session Application Play Flow: PASS`. No se modificaron schemas, worldgen, terrain authority ni gameplay persistence.
+
+### Runtime Playtest Hotfix A — WorldClock / Item Debug / Sandbox Health Observability
+
+Fecha: 2026-08-29.
+
+Se corrigió el consumo del multiplicador debug de `WorldClock`: `Update` ahora avanza mediante `GameSecondsPerRealSecond`, conservando `Time.deltaTime`, el baseline persistido y el carácter efímero/reset a 1x del multiplicador. Item Debug mantiene `GameDatabase` + `InventoryComponent.AddItemByDefinitionId` como authorities, elimina scroll horizontal, muestra nombres display cortos, deja `ContentId` en detalles seleccionados y agrega cantidad entera `1..1000` para `Give X`. El último NPC sandbox ahora expone health/max, vital fraction, wounds, bleeding efectivo por game hour y lifecycle usando `ActorHealthComponent`, `ActorMedicalStateComponent` y `ActorRuntimeIdentity`; no se modificó la letalidad de firearms.
+
+Validación autónoma en Unity `6000.4.6f1`, batchmode D3D11:
+
+- Runtime/Editor compile: `PASS`; sólo warnings preexistentes del proyecto y mensajes de assemblies/licensing separados;
+- prueba real de `WorldClock.Update`: `1x=1.2949677184224129`, `2x=2.5899354368448257`, `10x=12.949677184224129`, `100x=129.49677184224129` game seconds por frame de referencia; M38.1 `PASS`;
+- M39 localized health/medicine: `PASS`; M40 combat/firearms: `PASS`; M41.3 WorldRuntime sandbox D3D11: `PASS`; Inventory Interaction UX/stack ownership: `PASS`;
+- `git diff --check`: `PASS`; no schema, JSON, scene, ProjectSettings, M41.4 ni combat-lethality changes.
+
+La confirmación visual manual de la ausencia del scrollbar, el click `Give X` sobre `.303` y la lectura del panel F3 queda pendiente de Mauro; la validación automatizada no se presenta como sustituto de esa aceptación manual.

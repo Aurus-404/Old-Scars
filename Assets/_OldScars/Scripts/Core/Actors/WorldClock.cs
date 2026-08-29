@@ -90,7 +90,7 @@ namespace OldScars.Core.Actors
             if (!advanceDuringGameplay || Time.deltaTime <= 0f)
                 return;
 
-            double deltaGameSeconds = Time.deltaTime * gameSecondsPerRealSecond;
+            double deltaGameSeconds = Time.deltaTime * GameSecondsPerRealSecond;
             if (TryAdvanceGameTime(deltaGameSeconds, out string failure))
             {
                 limitFailureLogged = false;
