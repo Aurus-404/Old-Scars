@@ -200,6 +200,30 @@
       "visual_perception": { "visual_range": 15.0, "horizontal_fov_degrees": 120.0, "eye_height": 1.6 },
       "initial_inventory": [],
       "initial_equipment": []
+    },
+    {
+      "type": "actor_profile",
+      "id": "core:debug_combat_sandbox_npc_01",
+      "display_name": "Debug Combat Sandbox NPC",
+      "loadout_profile_id": "core:debug_sandbox_npc_loadout_01",
+      "equipment_layout_id": "core:human_standard_01",
+      "visual_rig_profile_id": "core:human_standard_visual_rig",
+      "initial_tags": ["human", "inspectable"],
+      "health": { "max_health": 100, "current_health": 100 },
+      "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
+      "visual_perception": { "visual_range": 90.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
+      "encounter_ai": {
+        "response_policy": "fight",
+        "alert_duration_seconds": 0.35,
+        "lost_contact_timeout_seconds": 1.0,
+        "avoid_distance": 5.0,
+        "flee_distance": 9.0,
+        "preferred_combat_distance": 12.0,
+        "decision_interval_seconds": 0.25,
+        "replan_distance": 0.75
+      },
+      "initial_inventory": [],
+      "initial_equipment": []
     }
   ]
 }

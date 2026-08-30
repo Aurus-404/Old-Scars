@@ -257,11 +257,13 @@ namespace OldScars.Editor
                     ActorMedicalStateComponent medical = threat.GetComponent<ActorMedicalStateComponent>();
                     bool hasFiredWeapon = EquippedFirearm(out ItemInstance fired);
                     WeaponCombatResult shot = controller.LastCombatResult;
+                    bool validLocalizedArmorResolution = shot.Combat.Region.HasValue &&
+                        (shot.Combat.Armor.Outcome == ArmorResolutionOutcome.Penetrated ||
+                         shot.Combat.Armor.Outcome == ArmorResolutionOutcome.Unarmored);
                     Require(hasFiredWeapon && fired.LoadedRounds == 9 && medical.WoundCount == 1 &&
                             shot.Quantity == 1 && shot.PhysicalShot.Termination == PhysicalShotTermination.Impact &&
-                            shot.Combat.Resolved && shot.Combat.Region == BodyRegion.Torso &&
+                            shot.Combat.Resolved && validLocalizedArmorResolution &&
                             shot.Combat.FinalWoundType == WoundType.Puncture &&
-                            shot.Combat.Armor.Outcome == ArmorResolutionOutcome.Penetrated &&
                             shot.Combat.Armor.ResidualPower > 0f,
                         "Fight contract mismatch." +
                         $" Weapon={hasFiredWeapon}, Loaded={(hasFiredWeapon ? fired.LoadedRounds : -1)}," +

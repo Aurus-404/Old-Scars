@@ -177,6 +177,26 @@ namespace OldScars.Core.Actors
                 else
                     sandboxFeedback = sandboxNpcController.LastFeedback;
             }
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Spawn Blue NPC", GUILayout.Height(24f)))
+            {
+                if (!sandboxNpcController.TrySetBaseSeed(sandboxSeedText, out string seedError))
+                    sandboxFeedback = seedError;
+                else if (!sandboxNpcController.TrySpawnBlueNpc(out _, out string spawnError))
+                    sandboxFeedback = spawnError;
+                else
+                    sandboxFeedback = sandboxNpcController.LastFeedback;
+            }
+            if (GUILayout.Button("Spawn Red NPC", GUILayout.Height(24f)))
+            {
+                if (!sandboxNpcController.TrySetBaseSeed(sandboxSeedText, out string seedError))
+                    sandboxFeedback = seedError;
+                else if (!sandboxNpcController.TrySpawnRedNpc(out _, out string spawnError))
+                    sandboxFeedback = spawnError;
+                else
+                    sandboxFeedback = sandboxNpcController.LastFeedback;
+            }
+            GUILayout.EndHorizontal();
             GUILayout.Label("Sequence: " + sandboxNpcController.SpawnSequence);
             if (!string.IsNullOrWhiteSpace(sandboxFeedback))
                 GUILayout.Label(sandboxFeedback);

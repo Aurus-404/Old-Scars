@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using OldScars.Core.Combat;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Items;
@@ -30,6 +30,14 @@ namespace OldScars.Core.Actors
     public sealed class HumanEncounterAIController : MonoBehaviour
     {
         private const float DestinationProjectionDistance = 3f;
+        private const float MinimumNpcSpreadDegrees = 1.25f;
+        private const float MaximumNpcSpreadDegrees = 4.5f;
+        private const float FocusBuildSeconds = 1.5f;
+        private const float FocusDecaySeconds = 0.75f;
+        private const float BurstSpreadRecoveryPerSecond = 1.25f;
+        private const int InitialColliderBufferCapacity = 8;
+
+        private readonly List<Collider> colliderBuffer = new List<Collider>(InitialColliderBufferCapacity);
 
         private ActorRuntimeIdentity identity;
         private ActorHealthComponent health;
@@ -55,6 +63,15 @@ namespace OldScars.Core.Actors
         private HumanEncounterResponse failedPlanResponse;
         private Vector3 lastPlannedThreatPosition;
         private bool hasPlan;
+        private bool deterministicAimSeedConfigured;
+        private long deterministicAimSeed;
+        private ulong aimSampleSequence;
+        private double lastAimUpdateTime;
+        private bool hasPreviousObservedPosition;
+        private Vector3 previousObservedPosition;
+        private double previousObservedTime;
+        private float observedTargetSpeed;
+        private float burstSpreadDegrees;
 
         private float alertDuration;
         private float lostContactTimeout;
@@ -80,6 +97,19 @@ namespace OldScars.Core.Actors
         public int NavigationPlanAttemptCount { get; private set; }
         public ActorVisualPerceptionResult LastPerception { get; private set; }
         public WeaponCombatResult LastCombatResult { get; private set; }
+        public float CurrentFocus { get; private set; }
+        public float CurrentSpreadDegrees { get; private set; } = MaximumNpcSpreadDegrees;
+        public float CurrentDefocusedSpreadDegrees { get; private set; } = MaximumNpcSpreadDegrees;
+        public float CurrentTargetDistance { get; private set; }
+        public float CurrentWeaponRange { get; private set; }
+        public bool IsClosingDistance { get; private set; }
+        public Vector3 CurrentAimPoint { get; private set; }
+        public Vector3 CurrentShotDirection { get; private set; }
+        public int PhysicalActorHitCount { get; private set; }
+        public int PhysicalMissCount { get; private set; }
+        public int PhysicalObstacleImpactCount { get; private set; }
+        public int ArmoredActorHitCount { get; private set; }
+        public ulong AimSampleSequence => aimSampleSequence;
 
         private void Awake() => ResolveReferences();
 
@@ -95,10 +125,14 @@ namespace OldScars.Core.Actors
             }
 
             double now = Time.timeAsDouble;
-            if (now < nextDecisionTime)
-                return;
-            nextDecisionTime = now + decisionInterval;
-            EvaluateEncounter(now);
+            if (now >= nextDecisionTime)
+            {
+                nextDecisionTime = now + decisionInterval;
+                EvaluateEncounter(now);
+            }
+            UpdateAimState(now);
+            if (State == HumanEncounterAIState.Fighting && HasFreshPerception(now))
+                ExecuteWeaponCycle(now);
         }
 
         private void OnDisable()
@@ -139,9 +173,18 @@ namespace OldScars.Core.Actors
             preferredCombatDistance = profile.preferred_combat_distance;
             decisionInterval = profile.decision_interval_seconds;
             replanDistance = profile.replan_distance;
+            if (!deterministicAimSeedConfigured)
+                deterministicAimSeed = StableHash(identity.ActorProfileId);
             configured = true;
             ResetEncounter("Profile configured");
             return true;
+        }
+
+        public void ConfigureDeterministicAimSeed(long seed)
+        {
+            deterministicAimSeed = seed;
+            deterministicAimSeedConfigured = true;
+            aimSampleSequence = 0UL;
         }
 
         public bool TryAssignThreat(ActorRuntimeIdentity target, out string error)
@@ -162,6 +205,7 @@ namespace OldScars.Core.Actors
             threat = target;
             responseOverride = null;
             ClearEncounterMemory();
+            ResetAimTracking();
             CancelActiveAction();
             navigation.Stop();
             Transition(HumanEncounterAIState.Idle, "Threat assigned; awaiting perception");
@@ -217,6 +261,7 @@ namespace OldScars.Core.Actors
             LastPerception = perception.Evaluate(threat);
             if (LastPerception.Perceived)
             {
+                UpdateObservedMotion(LastPerception.ObservedPosition, now);
                 lastKnownPosition = LastPerception.ObservedPosition;
                 hasLastKnownPosition = true;
                 lastSeenTime = now;
@@ -229,6 +274,7 @@ namespace OldScars.Core.Actors
                     return;
                 if (State != HumanEncounterAIState.LostContact)
                 {
+                    IsClosingDistance = false;
                     CancelActiveAction();
                     if (State != HumanEncounterAIState.Avoiding && State != HumanEncounterAIState.Fleeing)
                         navigation.Stop();
@@ -258,7 +304,7 @@ namespace OldScars.Core.Actors
                     ExecuteRetreat(fleeDistance, true);
                     break;
                 case HumanEncounterAIState.Fighting:
-                    ExecuteFight(now);
+                    EvaluateFightTactics();
                     break;
             }
         }
@@ -317,29 +363,65 @@ namespace OldScars.Core.Actors
                 "\n  ActionTaken: failure latched until actor or threat context changes");
         }
 
-        private void ExecuteFight(double now)
+        private void EvaluateFightTactics()
         {
             if (!WeaponCombatService.TryGetEquippedWeapon(ownership, out ItemInstance weapon, out _,
                     out FirearmProfileDefinition firearm, out WeaponProfileDefinition melee))
             {
                 CancelActiveAction();
                 navigation.Stop();
+                IsClosingDistance = false;
+                CurrentWeaponRange = 0f;
                 return;
             }
 
-            float distance = FlatDistance(transform.position, lastKnownPosition);
+            Collider targetCollider = SelectTargetCollider(threat);
+            if (targetCollider == null)
+                return;
+            Vector3 attackPoint = targetCollider.bounds.center;
+            float distance = FlatDistance(transform.position, attackPoint);
             float engagementRange = firearm != null ? Mathf.Min(firearm.range, preferredCombatDistance) : melee.melee_range;
+            float physicalDistance = firearm != null
+                ? Vector3.Distance(PhysicalOrigin(), attackPoint)
+                : Vector3.Distance(transform.position, attackPoint);
+            CurrentTargetDistance = physicalDistance;
+            CurrentWeaponRange = firearm != null ? firearm.range : melee.melee_range;
             float engagementTolerance = navigation.Agent != null ? navigation.Agent.stoppingDistance : 0.2f;
-            if (distance > engagementRange + engagementTolerance)
+            if (physicalDistance > engagementRange + engagementTolerance)
             {
                 CancelActiveAction();
-                NavigateTowardEngagement(distance, engagementRange);
+                float desiredFlatDistance = firearm != null
+                    ? Mathf.Max(0.5f, engagementRange * 0.9f)
+                    : Mathf.Max(0.25f, melee.melee_range * 0.6f);
+                NavigateTowardEngagement(distance, desiredFlatDistance);
+                IsClosingDistance = true;
                 return;
             }
             navigation.Stop();
+            IsClosingDistance = false;
+        }
+
+        private void ExecuteWeaponCycle(double now)
+        {
+            if (!WeaponCombatService.TryGetEquippedWeapon(ownership, out ItemInstance weapon, out _,
+                    out FirearmProfileDefinition firearm, out WeaponProfileDefinition melee))
+                return;
+
+            Collider targetCollider = SelectTargetCollider(threat);
+            if (targetCollider == null)
+                return;
+            Vector3 aimPoint = targetCollider.bounds.center;
 
             if (firearm != null)
             {
+                Vector3 origin = PhysicalOrigin();
+                float distance = Vector3.Distance(origin, aimPoint);
+                float engagementRange = Mathf.Min(firearm.range, preferredCombatDistance);
+                float engagementTolerance = navigation.Agent != null ? navigation.Agent.stoppingDistance : 0.2f;
+                CurrentTargetDistance = distance;
+                CurrentWeaponRange = firearm.range;
+                if (distance > engagementRange + engagementTolerance || distance > firearm.range + 0.01f)
+                    return;
                 if (reloadPending)
                 {
                     if (weapon.InstanceId != reloadWeaponInstanceId)
@@ -368,13 +450,11 @@ namespace OldScars.Core.Actors
                 if (now < nextAttackTime)
                     return;
 
-                Collider targetCollider = SelectTargetCollider(threat);
-                if (targetCollider == null)
-                    return;
-                Vector3 origin = PhysicalOrigin();
-                Vector3 direction = lastKnownPosition - origin;
+                Vector3 direction = BuildImperfectShotDirection(origin, aimPoint, CurrentSpreadDegrees);
                 if (direction.sqrMagnitude <= 0.0001f)
                     return;
+                CurrentAimPoint = aimPoint;
+                CurrentShotDirection = direction;
                 LastCombatResult = WeaponCombatService.FireEquipped(
                     ownership,
                     weapon.InstanceId,
@@ -384,16 +464,20 @@ namespace OldScars.Core.Actors
                 {
                     AttackCount++;
                     nextAttackTime = now + firearm.cycle_time;
+                    if (firearm.fire_mode == "automatic")
+                        burstSpreadDegrees = Mathf.Min(2f, burstSpreadDegrees + 0.22f);
+                    RecordPhysicalShot(LastCombatResult);
                 }
                 return;
             }
 
             if (now < nextAttackTime)
                 return;
-            Collider meleeTarget = SelectTargetCollider(threat);
-            if (meleeTarget == null)
+            CurrentTargetDistance = Vector3.Distance(transform.position, aimPoint);
+            CurrentWeaponRange = melee.melee_range;
+            if (CurrentTargetDistance > melee.melee_range + 0.05f)
                 return;
-            LastCombatResult = WeaponCombatService.StrikeEquipped(ownership, weapon.InstanceId, meleeTarget, lastKnownPosition);
+            LastCombatResult = WeaponCombatService.StrikeEquipped(ownership, weapon.InstanceId, targetCollider, aimPoint);
             if (LastCombatResult.Success)
             {
                 AttackCount++;
@@ -431,16 +515,42 @@ namespace OldScars.Core.Actors
 
         private Vector3 PhysicalOrigin()
         {
-            Collider body = GetComponentsInChildren<Collider>(false)
-                .FirstOrDefault(collider => collider != null && collider.enabled && !collider.isTrigger);
+            colliderBuffer.Clear();
+            GetComponentsInChildren(false, colliderBuffer);
+            Collider body = null;
+            for (int index = 0; index < colliderBuffer.Count; index++)
+            {
+                Collider candidate = colliderBuffer[index];
+                if (candidate == null || !candidate.enabled || candidate.isTrigger)
+                    continue;
+                body = candidate;
+                break;
+            }
             return body != null ? body.bounds.center : transform.position + Vector3.up * perception.EyeHeight;
         }
 
-        private static Collider SelectTargetCollider(ActorRuntimeIdentity target) => target == null ? null :
-            target.GetComponentsInChildren<Collider>(false)
-                .Where(collider => collider != null && collider.enabled && !collider.isTrigger)
-                .OrderBy(collider => collider.bounds.center.y)
-                .FirstOrDefault();
+        private Collider SelectTargetCollider(ActorRuntimeIdentity target)
+        {
+            if (target == null)
+                return null;
+            colliderBuffer.Clear();
+            target.GetComponentsInChildren(false, colliderBuffer);
+            Collider selected = null;
+            float preferredHeight = target.transform.position.y + 1f;
+            float closestHeight = float.PositiveInfinity;
+            for (int index = 0; index < colliderBuffer.Count; index++)
+            {
+                Collider candidate = colliderBuffer[index];
+                if (candidate == null || !candidate.enabled || candidate.isTrigger)
+                    continue;
+                float heightDistance = Mathf.Abs(candidate.bounds.center.y - preferredHeight);
+                if (heightDistance >= closestHeight)
+                    continue;
+                selected = candidate;
+                closestHeight = heightDistance;
+            }
+            return selected;
+        }
 
         private void EnterInactive(string reason)
         {
@@ -450,6 +560,7 @@ namespace OldScars.Core.Actors
             navigation?.Stop();
             threat = null;
             ClearEncounterMemory();
+            ResetAimTracking();
             Transition(HumanEncounterAIState.Inactive, reason);
         }
 
@@ -463,6 +574,7 @@ namespace OldScars.Core.Actors
             ResetPlanLatch();
             nextDecisionTime = 0d;
             nextAttackTime = 0d;
+            ResetAimTracking();
             Transition(identity != null && identity.LifecycleState == ActorLifecycleState.Dead
                 ? HumanEncounterAIState.Inactive : HumanEncounterAIState.Idle, reason);
         }
@@ -473,6 +585,7 @@ namespace OldScars.Core.Actors
             lastKnownPosition = default;
             lastSeenTime = double.NaN;
             LastPerception = default;
+            IsClosingDistance = false;
         }
 
         private void CancelActiveAction()
@@ -480,6 +593,135 @@ namespace OldScars.Core.Actors
             reloadPending = false;
             reloadCompletionTime = 0d;
             reloadWeaponInstanceId = null;
+        }
+
+        private void UpdateObservedMotion(Vector3 observedPosition, double now)
+        {
+            if (hasPreviousObservedPosition)
+            {
+                double elapsed = now - previousObservedTime;
+                if (elapsed > 0.0001d)
+                    observedTargetSpeed = (observedPosition - previousObservedPosition).magnitude / (float)elapsed;
+            }
+            previousObservedPosition = observedPosition;
+            previousObservedTime = now;
+            hasPreviousObservedPosition = true;
+        }
+
+        private void UpdateAimState(double now)
+        {
+            if (double.IsNaN(lastAimUpdateTime) || lastAimUpdateTime <= 0d)
+                lastAimUpdateTime = now;
+            float elapsed = Mathf.Clamp((float)(now - lastAimUpdateTime), 0f, 0.25f);
+            lastAimUpdateTime = now;
+            if (HasFreshPerception(now))
+                CurrentFocus = Mathf.Clamp01(CurrentFocus + elapsed / FocusBuildSeconds);
+            else
+                CurrentFocus = Mathf.Clamp01(CurrentFocus - elapsed / FocusDecaySeconds);
+            burstSpreadDegrees = Mathf.Max(0f, burstSpreadDegrees - elapsed * BurstSpreadRecoveryPerSecond);
+
+            if (!WeaponCombatService.TryGetEquippedWeapon(ownership, out _, out _,
+                    out FirearmProfileDefinition firearm, out _ ) || firearm == null)
+            {
+                CurrentSpreadDegrees = 0f;
+                return;
+            }
+
+            float distancePenalty = Mathf.Clamp01(CurrentTargetDistance / Mathf.Max(0.01f, firearm.range)) * 2.25f;
+            float targetMotionPenalty = Mathf.Min(2f, observedTargetSpeed * 0.18f);
+            float shooterSpeed = navigation?.Agent != null ? navigation.Agent.velocity.magnitude : 0f;
+            float shooterMotionPenalty = Mathf.Min(1.5f, shooterSpeed * 0.22f);
+            float focusSpread = Mathf.Lerp(MaximumNpcSpreadDegrees, MinimumNpcSpreadDegrees, CurrentFocus);
+            float contextualSpread = firearm.debug_accuracy_spread + distancePenalty +
+                                     targetMotionPenalty + shooterMotionPenalty + burstSpreadDegrees;
+            CurrentDefocusedSpreadDegrees = Mathf.Max(
+                MinimumNpcSpreadDegrees,
+                MaximumNpcSpreadDegrees + contextualSpread);
+            CurrentSpreadDegrees = Mathf.Max(MinimumNpcSpreadDegrees, focusSpread + contextualSpread);
+        }
+
+        private bool HasFreshPerception(double now)
+        {
+            if (!LastPerception.Perceived || threat == null)
+                return false;
+            double freshness = Math.Max(0.2d, decisionInterval * 1.5d);
+            return now - lastSeenTime <= freshness;
+        }
+
+        private Vector3 BuildImperfectShotDirection(Vector3 origin, Vector3 aimPoint, float spreadDegrees)
+        {
+            Vector3 forward = aimPoint - origin;
+            if (forward.sqrMagnitude <= 0.000001f)
+                return Vector3.zero;
+            forward.Normalize();
+
+            ulong sample = Mix(unchecked((ulong)deterministicAimSeed) +
+                               aimSampleSequence++ * 0x9E3779B97F4A7C15UL);
+            float radialSample = (sample & 0x00ffffffUL) / 16777216f;
+            sample = Mix(sample + 0xD1B54A32D192ED03UL);
+            float angularSample = (sample & 0x00ffffffUL) / 16777216f;
+            float radius = Mathf.Sqrt(radialSample) * Mathf.Tan(spreadDegrees * Mathf.Deg2Rad);
+            float angle = angularSample * Mathf.PI * 2f;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            if (right.sqrMagnitude <= 0.000001f)
+                right = transform.right;
+            right.Normalize();
+            Vector3 up = Vector3.Cross(forward, right).normalized;
+            return (forward + right * (Mathf.Cos(angle) * radius) + up * (Mathf.Sin(angle) * radius)).normalized;
+        }
+
+        private void RecordPhysicalShot(WeaponCombatResult result)
+        {
+            if (result.Code == WeaponCombatCode.Miss ||
+                result.PhysicalShot.Termination == PhysicalShotTermination.Miss)
+            {
+                PhysicalMissCount++;
+                return;
+            }
+            if (result.Combat.Resolved)
+            {
+                PhysicalActorHitCount++;
+                if (result.Combat.Armor.ArmorFound)
+                    ArmoredActorHitCount++;
+            }
+            else
+                PhysicalObstacleImpactCount++;
+        }
+
+        private void ResetAimTracking()
+        {
+            CurrentFocus = 0f;
+            CurrentSpreadDegrees = MaximumNpcSpreadDegrees;
+            CurrentDefocusedSpreadDegrees = MaximumNpcSpreadDegrees;
+            CurrentTargetDistance = 0f;
+            CurrentWeaponRange = 0f;
+            CurrentAimPoint = default;
+            CurrentShotDirection = default;
+            IsClosingDistance = false;
+            hasPreviousObservedPosition = false;
+            observedTargetSpeed = 0f;
+            burstSpreadDegrees = 0f;
+            aimSampleSequence = 0UL;
+            lastAimUpdateTime = Time.timeAsDouble;
+        }
+
+        private static long StableHash(string value)
+        {
+            ulong hash = 1469598103934665603UL;
+            string text = value ?? string.Empty;
+            for (int index = 0; index < text.Length; index++)
+            {
+                hash ^= text[index];
+                hash *= 1099511628211UL;
+            }
+            return unchecked((long)hash);
+        }
+
+        private static ulong Mix(ulong value)
+        {
+            value = (value ^ (value >> 30)) * 0xBF58476D1CE4E5B9UL;
+            value = (value ^ (value >> 27)) * 0x94D049BB133111EBUL;
+            return value ^ (value >> 31);
         }
 
         private void ResetPlanLatch()

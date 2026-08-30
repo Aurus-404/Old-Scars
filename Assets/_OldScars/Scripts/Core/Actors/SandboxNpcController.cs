@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OldScars.Core.Combat;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Items;
@@ -9,10 +10,20 @@ using UnityEngine.AI;
 
 namespace OldScars.Core.Actors
 {
+    public enum SandboxCombatAffiliation
+    {
+        Blue,
+        Red
+    }
+
     [DisallowMultipleComponent]
     public sealed class SandboxNpcController : MonoBehaviour
     {
         public const string SandboxActorProfileId = "core:debug_sandbox_npc_01";
+        public const string CombatSandboxActorProfileId = "core:debug_combat_sandbox_npc_01";
+        public const string PlayerAffiliationId = "debug_player";
+        public const string BlueAffiliationId = "debug_blue";
+        public const string RedAffiliationId = "debug_red";
         public const long DefaultBaseSeed = 41303L;
         private const float MinimumSpawnRadius = 4f;
         private const float MaximumSpawnRadius = 10f;
@@ -32,6 +43,13 @@ namespace OldScars.Core.Actors
         public void BindRuntime(Transform playerTransform)
         {
             player = playerTransform;
+            if (player == null)
+                return;
+            ActorAffiliationComponent playerAffiliation = player.GetComponent<ActorAffiliationComponent>() ??
+                                                          player.gameObject.AddComponent<ActorAffiliationComponent>();
+            if (!playerAffiliation.TryConfigure(
+                    PlayerAffiliationId, "Player", Array.Empty<string>(), out string error))
+                Debug.LogError("[Actors][PLAYER_AFFILIATION_REJECTED]\n  Failure: " + error);
         }
 
         public bool TrySetBaseSeed(string text, out string error)
@@ -99,6 +117,102 @@ namespace OldScars.Core.Actors
             return true;
         }
 
+        public bool TrySpawnBlueNpc(out SandboxNpcMetadata metadata, out string error) =>
+            TrySpawnCombatNpc(SandboxCombatAffiliation.Blue, out metadata, out error);
+
+        public bool TrySpawnRedNpc(out SandboxNpcMetadata metadata, out string error) =>
+            TrySpawnCombatNpc(SandboxCombatAffiliation.Red, out metadata, out error);
+
+        private bool TrySpawnCombatNpc(
+            SandboxCombatAffiliation requestedAffiliation,
+            out SandboxNpcMetadata metadata,
+            out string error)
+        {
+            metadata = null;
+            error = null;
+            if (player == null)
+            {
+                error = "Combat sandbox spawn requires the shared runtime player transform.";
+                return Fail(error);
+            }
+
+            GameDatabase database = GameDataManager.Instance?.Database;
+            ActorProfileDefinition actorProfile = database?.GetActorProfile(CombatSandboxActorProfileId);
+            if (actorProfile == null || string.IsNullOrWhiteSpace(actorProfile.loadout_profile_id))
+            {
+                error = $"Combat sandbox actor profile '{CombatSandboxActorProfileId}' or its loadout profile is unavailable.";
+                return Fail(error);
+            }
+
+            const int maximumWeaponRollAttempts = 8;
+            for (int attempt = 0; attempt < maximumWeaponRollAttempts; attempt++)
+            {
+                long sequence = spawnSequence + attempt;
+                long derivedSeed = ActorLoadoutService.DeriveSandboxSpawnSeed(
+                    baseSeed, sequence, actorProfile.id, actorProfile.loadout_profile_id);
+                if (!TryResolveSpawnPosition(player.position, derivedSeed, out Vector3 position, out error))
+                    continue;
+                if (!ActorSpawnService.TrySpawnWithLoadoutSeed(
+                        actorProfile.id, position, Quaternion.identity, derivedSeed,
+                        out ActorRuntimeIdentity identity, out ActorLoadoutResult loadout, out error))
+                    continue;
+
+                ActorItemOwnershipComponent ownership = identity.GetComponent<ActorItemOwnershipComponent>();
+                if (!WeaponCombatService.TryGetEquippedWeapon(ownership, out _, out _, out _, out _))
+                {
+                    ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(identity.ActorInstanceId, out _);
+                    continue;
+                }
+
+                string affiliationId = requestedAffiliation == SandboxCombatAffiliation.Blue
+                    ? BlueAffiliationId
+                    : RedAffiliationId;
+                string[] hostileAffiliations = requestedAffiliation == SandboxCombatAffiliation.Red
+                    ? new[] { BlueAffiliationId, PlayerAffiliationId }
+                    : Array.Empty<string>();
+                ActorAffiliationComponent affiliation = identity.gameObject.AddComponent<ActorAffiliationComponent>();
+                if (!affiliation.TryConfigure(
+                        affiliationId, requestedAffiliation.ToString(), hostileAffiliations, out error))
+                {
+                    ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(identity.ActorInstanceId, out _);
+                    return Fail(error);
+                }
+
+                HumanEncounterAIController encounter = identity.GetComponent<HumanEncounterAIController>();
+                encounter.ConfigureDeterministicAimSeed(derivedSeed);
+                ActorThreatAcquisitionController acquisition =
+                    identity.gameObject.AddComponent<ActorThreatAcquisitionController>();
+                if (!acquisition.TryConfigure(derivedSeed, out error))
+                {
+                    ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(identity.ActorInstanceId, out _);
+                    return Fail(error);
+                }
+
+                metadata = identity.gameObject.AddComponent<SandboxNpcMetadata>();
+                metadata.Configure(baseSeed, sequence, derivedSeed, loadout, requestedAffiliation.ToString());
+                ApplyDebugColor(identity.gameObject, requestedAffiliation);
+                spawned.RemoveAll(value => value == null);
+                spawned.Add(metadata);
+                LastSpawn = metadata;
+                spawnSequence = sequence + 1;
+                LastFeedback = "Spawned " + requestedAffiliation + " " + identity.ActorInstanceId +
+                               " with " + loadout.Signature;
+                Debug.Log("[Actors][COMBAT_SANDBOX_NPC_SPAWNED]" +
+                          $"\n  ActorInstanceId: {identity.ActorInstanceId}" +
+                          $"\n  Affiliation: {requestedAffiliation}" +
+                          $"\n  SandboxBaseSeed: {baseSeed}" +
+                          $"\n  SpawnSequence: {sequence}" +
+                          $"\n  DerivedSpawnSeed: {derivedSeed}" +
+                          $"\n  LoadoutProfileId: {loadout.ProfileId}" +
+                          $"\n  LoadoutSignature: {loadout.Signature}" +
+                          $"\n  Position: {position}");
+                return true;
+            }
+
+            error = $"No armed combat sandbox loadout was produced within {maximumWeaponRollAttempts} deterministic attempts.";
+            return Fail(error);
+        }
+
         public string DescribeLastSpawn()
         {
             if (LastSpawn == null) return LastFeedback;
@@ -106,6 +220,8 @@ namespace OldScars.Core.Actors
             ActorNavigationController navigation = LastSpawn.GetComponent<ActorNavigationController>();
             ActorEquipmentComponent equipment = LastSpawn.GetComponent<ActorEquipmentComponent>();
             InventoryComponent inventory = LastSpawn.GetComponent<InventoryComponent>();
+            ActorAffiliationComponent affiliation = LastSpawn.GetComponent<ActorAffiliationComponent>();
+            HumanEncounterAIController encounter = LastSpawn.GetComponent<HumanEncounterAIController>();
             GameDatabase database = GameDataManager.Instance?.Database;
             var lines = new List<string>
             {
@@ -113,6 +229,10 @@ namespace OldScars.Core.Actors
                 "Seed: " + LastSpawn.DerivedSpawnSeed,
                 "Loadout: " + LastSpawn.LoadoutProfileId,
                 "Signature: " + LastSpawn.LoadoutSignature,
+                "Affiliation: " + (affiliation?.DebugDisplayName ?? "<NONE>"),
+                "Target: " + (encounter?.ThreatActorInstanceId ?? "<NONE>"),
+                "Perception: " + DescribePerception(encounter),
+                "Distance: " + DescribeDistance(identity, encounter),
                 "Navigation: " + (navigation != null ? navigation.State.ToString() : "<NONE>"),
                 "Equipment:"
             };
@@ -134,9 +254,45 @@ namespace OldScars.Core.Actors
             if (carried.Length == 0) lines.Add("  <EMPTY>");
             lines.Add("Weapon: " + Category(equipped, database, item =>
                 item.combat != null || !string.IsNullOrWhiteSpace(item.firearm_profile_id)));
+            if (WeaponCombatService.TryGetEquippedWeapon(
+                    LastSpawn.GetComponent<ActorItemOwnershipComponent>(), out _, out _,
+                    out FirearmProfileDefinition firearm, out WeaponProfileDefinition melee))
+                lines.Add("Weapon range: " + (firearm != null ? firearm.range : melee.melee_range).ToString("0.###"));
+            else
+                lines.Add("Weapon range: <NONE>");
+            lines.Add("AI State: " + (encounter != null
+                ? encounter.IsClosingDistance ? "Closing Distance" : encounter.State.ToString()
+                : "<NONE>"));
+            lines.Add("Focus: " + (encounter != null ? encounter.CurrentFocus.ToString("0.###") : "<NONE>"));
+            lines.Add("Spread: " + (encounter != null ? encounter.CurrentSpreadDegrees.ToString("0.###") + " deg" : "<NONE>"));
             lines.Add("Backpack: " + Category(equipped, database, item => !string.IsNullOrWhiteSpace(item.owned_storage_profile_id)));
             lines.Add("Armor: " + Category(equipped, database, item => !string.IsNullOrWhiteSpace(item.armor_profile_id)));
             return string.Join("\n", lines);
+        }
+
+        private static string DescribePerception(HumanEncounterAIController encounter)
+        {
+            if (encounter == null || encounter.Threat == null)
+                return "<NONE>";
+            return encounter.LastPerception.Perceived
+                ? "Perceived"
+                : encounter.LastPerception.Reason.ToString();
+        }
+
+        private static string DescribeDistance(ActorRuntimeIdentity identity, HumanEncounterAIController encounter)
+        {
+            return identity != null && encounter?.Threat != null
+                ? Vector3.Distance(identity.transform.position, encounter.Threat.transform.position).ToString("0.###")
+                : "<NONE>";
+        }
+
+        private static void ApplyDebugColor(GameObject actor, SandboxCombatAffiliation affiliation)
+        {
+            Renderer renderer = actor != null ? actor.GetComponentInChildren<Renderer>() : null;
+            if (renderer != null)
+                renderer.material.color = affiliation == SandboxCombatAffiliation.Blue
+                    ? new Color(0.16f, 0.42f, 1f)
+                    : new Color(0.9f, 0.12f, 0.08f);
         }
 
         private static bool TryResolveSpawnPosition(Vector3 origin, long seed, out Vector3 position, out string error)
@@ -203,14 +359,21 @@ namespace OldScars.Core.Actors
         public long DerivedSpawnSeed { get; private set; }
         public string LoadoutProfileId { get; private set; }
         public string LoadoutSignature { get; private set; }
+        public string DebugAffiliation { get; private set; }
 
-        internal void Configure(long baseSeed, long sequence, long derivedSeed, ActorLoadoutResult loadout)
+        internal void Configure(
+            long baseSeed,
+            long sequence,
+            long derivedSeed,
+            ActorLoadoutResult loadout,
+            string debugAffiliation = null)
         {
             SandboxBaseSeed = baseSeed;
             SpawnSequence = sequence;
             DerivedSpawnSeed = derivedSeed;
             LoadoutProfileId = loadout.ProfileId;
             LoadoutSignature = loadout.Signature;
+            DebugAffiliation = debugAffiliation;
         }
     }
 
