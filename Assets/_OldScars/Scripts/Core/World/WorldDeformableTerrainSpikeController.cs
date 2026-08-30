@@ -122,6 +122,7 @@ namespace OldScars.Core.World
         public NavMeshSurface NavMeshSurface => navMeshSurface;
         public int NavMeshVertexCount { get; private set; }
         public long NavigationBuildMilliseconds { get; private set; }
+        public int NavigationRebuildCount { get; private set; }
         public bool HasMutations => MutationService?.Mutations.Count > 0;
 
         public bool TryMaterializeActiveSession(
@@ -323,6 +324,7 @@ namespace OldScars.Core.World
             navMeshSurface = null;
             NavMeshVertexCount = 0;
             NavigationBuildMilliseconds = 0L;
+            NavigationRebuildCount = 0;
             MutationService = null;
             Volume = null;
             SourcePlan = null;
@@ -420,6 +422,7 @@ namespace OldScars.Core.World
             navMeshSurface.BuildNavMesh();
             watch.Stop();
             NavigationBuildMilliseconds = watch.ElapsedMilliseconds;
+            NavigationRebuildCount++;
             NavMeshTriangulation triangulation = NavMesh.CalculateTriangulation();
             NavMeshVertexCount = triangulation.vertices.Length;
             if (navMeshSurface.navMeshData == null || NavMeshVertexCount < 1)
