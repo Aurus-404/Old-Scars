@@ -128,9 +128,10 @@ namespace OldScars.Core.ApplicationShell
                 playerContext.GetComponent<ActorCarryWeightComponent>() == null ||
                 playerContext.GetComponent<ActorHealthComponent>() == null ||
                 playerContext.GetComponent<ActorMedicalStateComponent>() == null ||
+                playerContext.GetComponent<ActorConditionComponent>() == null ||
                 playerContext.GetComponent<ActorNeedsComponent>() == null ||
                 playerContext.GetComponent<ActorStaminaComponent>() == null)
-                return Fail("Player inventory/equipment/ownership/health/medical/needs/stamina composition is incomplete.", out failure);
+                return Fail("Player inventory/equipment/ownership/health/medical/condition/needs/stamina composition is incomplete.", out failure);
             if (playerContext.GetComponentInChildren<EntityVisualRigRuntime>(true) == null ||
                 playerContext.GetComponentInChildren<EntityEquipmentVisualSynchronizer>(true) == null ||
                 playerContext.GetComponent<ActorVisualAnimatorDriver>() == null)

@@ -33,6 +33,8 @@ namespace OldScars.Editor
         private const string NullSlot = "m39_null_medical";
         private const string NumericEnumSlot = "m39_numeric_enum_medical";
         private const string CaseNullSlot = "m39_case_null_medical";
+        private const string InvalidConditionSlot = "m39_invalid_condition";
+        private const string NullConditionSlot = "m39_null_condition";
         private const string LeftWoundId = "wound_11111111111111111111111111111111";
         private const string TorsoWoundId = "wound_22222222222222222222222222222222";
         private const string FatalWoundId = "wound_33333333333333333333333333333333";
@@ -120,16 +122,18 @@ namespace OldScars.Editor
             WorldClock clock = Clock();
             ActorHealthComponent health = PlayerHealth();
             ActorMedicalStateComponent medical = health.GetComponent<ActorMedicalStateComponent>();
+            ActorConditionComponent condition = health.GetComponent<ActorConditionComponent>();
             ActorNeedsComponent needs = health.GetComponent<ActorNeedsComponent>();
             ActorItemOwnershipComponent ownership = health.GetComponent<ActorItemOwnershipComponent>();
-            Require(medical != null && needs != null && ownership != null && !health.IsDead,
-                "Player medical/needs/ownership baseline is incomplete.");
+            Require(medical != null && condition != null && needs != null && ownership != null && !health.IsDead,
+                "Player medical/condition/needs/ownership baseline is incomplete.");
 
             CurrentSliceSaveData initial = Capture("initial M39 bootstrap");
             Write(InitialSlot, initial);
 
             Require(medical.WoundCount == 0 && ActorMedicalStateComponent.HumanRegions.Count == 6 &&
-                    Near(medical.VitalFraction, 1f),
+                    Near(medical.VitalFraction, 1f) && Near(condition.BloodFraction, 1f) &&
+                    Near(condition.ConsciousnessStability, 1f),
                 "A. Healthy baseline did not expose six uninjured regions and full vital state.");
 
             Require(medical.TryApplyWound(
@@ -144,7 +148,8 @@ namespace OldScars.Editor
                 "G. Torso isolation fixture failed: " + failure);
 
             RestoreClock(clock, 0d);
-            float beforeBleed = health.CurrentHealth;
+            float beforeBleed = condition.BloodFraction;
+            float healthBeforeBleed = health.CurrentHealth;
             float rateBeforeTreatment = medical.EffectiveBleedingRatePerGameHour;
             int events = 0;
             Action<double> countAdvance = _ => events++;
@@ -152,17 +157,19 @@ namespace OldScars.Editor
             Require(clock.TryAdvanceGameTime(WorldClock.SecondsPerHour * 0.25d, out failure),
                 "C. Known bleeding advance failed: " + failure);
             clock.GameTimeAdvanced -= countAdvance;
-            float expectedAfterBleed = beforeBleed - rateBeforeTreatment * 0.25f * health.MaxHealth;
-            Require(events == 1 && Near(health.CurrentHealth, expectedAfterBleed),
-                "C. Bleeding did not change vital state exactly once for the WorldClock delta.");
+            float expectedAfterBleed = beforeBleed - rateBeforeTreatment * 0.25f;
+            Require(events == 1 && Near(condition.BloodFraction, expectedAfterBleed) &&
+                    Near(health.CurrentHealth, healthBeforeBleed),
+                "C. Bleeding did not drain circulatory state exactly once or still drained parallel HP.");
 
-            float beforeRest = health.CurrentHealth;
+            float beforeRest = condition.BloodFraction;
             events = 0;
             clock.GameTimeAdvanced += countAdvance;
             ActorRestResult rest = ActorRestService.TryRest(needs, WorldClock.SecondsPerHour * 0.5d);
             clock.GameTimeAdvanced -= countAdvance;
-            float expectedAfterRest = beforeRest - rateBeforeTreatment * 0.5f * health.MaxHealth;
-            Require(rest.Success && events == 1 && Near(health.CurrentHealth, expectedAfterRest) && medical.WoundCount == 2,
+            float expectedAfterRest = beforeRest - rateBeforeTreatment * 0.5f;
+            Require(rest.Success && events == 1 && Near(condition.BloodFraction, expectedAfterRest) &&
+                    Near(health.CurrentHealth, healthBeforeBleed) && medical.WoundCount == 2,
                 "D. Rest did not process one shared clock delta or removed/healed a wound.");
             Require(Near(medical.TotalPain, 0.67f), "E. Pain was not derived from both durable wounds.");
 
@@ -193,6 +200,8 @@ namespace OldScars.Editor
 
             CurrentSliceSaveData target = Capture("M39 localized target");
             Require(target.player.medicalState.wounds.Length == 2 &&
+                    target.player.conditionState != null &&
+                    Near(target.player.conditionState.bloodFraction, condition.BloodFraction) &&
                     target.player.medicalState.wounds.Any(wound => wound.woundId == LeftWoundId &&
                         wound.treatmentState == WoundTreatmentState.Bandaged.ToString()),
                 "I. Target DTO did not capture localized wounds and treatment.");
@@ -201,8 +210,13 @@ namespace OldScars.Editor
             JObject legacy = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
             Require(((JObject)legacy["player"]).Remove("medicalState"),
                 "K. Could not construct legacy player payload.");
+            Require(((JObject)legacy["player"]).Remove("conditionState"),
+                "K. Could not construct legacy player condition payload.");
             foreach (JObject actor in legacy["actors"].Children<JObject>())
+            {
                 Require(actor.Remove("medicalState"), "K. Could not construct legacy actor payload.");
+                Require(actor.Remove("conditionState"), "K. Could not construct legacy actor condition payload.");
+            }
             WritePayload(LegacySlot, legacy);
 
             JObject invalid = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
@@ -219,6 +233,12 @@ namespace OldScars.Editor
             caseNullPlayer.Remove("medicalState");
             caseNullPlayer["MedicalState"] = JValue.CreateNull();
             WritePayload(CaseNullSlot, caseNull);
+            JObject invalidCondition = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
+            invalidCondition["player"]["conditionState"]["bloodFraction"] = 1.5f;
+            WritePayload(InvalidConditionSlot, invalidCondition);
+            JObject nullCondition = (JObject)CurrentSliceSnapshotService.ToPayload(target).DeepClone();
+            nullCondition["player"]["conditionState"] = JValue.CreateNull();
+            WritePayload(NullConditionSlot, nullCondition);
         }
 
         private static void RunDeathRegression(WorldClock clock, ActorHealthComponent playerHealth)
@@ -238,13 +258,15 @@ namespace OldScars.Editor
                 "H. Lethal medical fixture did not use a runtime-origin actor.");
             ActorMedicalStateComponent medical = victim.GetComponent<ActorMedicalStateComponent>();
             ActorHealthComponent health = victim.GetComponent<ActorHealthComponent>();
-            Require(medical != null && health != null, "H. Victim lacks medical or lifecycle health state.");
+            ActorConditionComponent condition = victim.GetComponent<ActorConditionComponent>();
+            Require(medical != null && condition != null && health != null, "H. Victim lacks medical, condition or lifecycle health state.");
             Require(medical.TryApplyWound(
                     FatalWoundId, BodyRegion.Torso, WoundType.Puncture, 1f, 1f, 1f, out string failure),
                 "H. Fatal bleeding fixture failed: " + failure);
             Require(clock.TryAdvanceGameTime(WorldClock.SecondsPerHour, out failure),
                 "H. Lethal bleeding clock advance failed: " + failure);
             Require(health.IsDead && victim.LifecycleState == ActorLifecycleState.Dead &&
+                    condition.BloodFraction <= condition.FatalBloodFraction &&
                     victim.GetComponent<WorldObjectTags>()?.HasTag(ActorHealthComponent.DeadActorTag) == true &&
                     victim.GetComponent<WorldObjectTags>()?.HasTag(ActorHealthComponent.LootableActorTag) == true,
                 "H. Vital depletion did not preserve M38 Dead/corpse continuity.");
@@ -285,14 +307,18 @@ namespace OldScars.Editor
             WorldClock clock = Clock();
             ActorHealthComponent health = PlayerHealth();
             ActorMedicalStateComponent medical = health.GetComponent<ActorMedicalStateComponent>();
-            Require(medical != null && medical.WoundCount == 0,
-                "J. Fresh Play session did not bootstrap a healthy localized state.");
+            ActorConditionComponent condition = health.GetComponent<ActorConditionComponent>();
+            Require(medical != null && condition != null && medical.WoundCount == 0 &&
+                    Near(condition.BloodFraction, 1f),
+                "J. Fresh Play session did not bootstrap a healthy localized/condition state.");
 
             CurrentSliceSaveData target = Read(TargetSlot);
             CurrentSliceLoadResult targetLoad = CurrentSliceLoadService.Load(TargetSlot, Store());
             Require(targetLoad.Success, "I/J. Fresh-session localized load failed: " + targetLoad.Failure);
             AssertEquivalent(target, Capture("post M39 fresh-session load"), "I/J. localized round-trip");
             Require(EquivalentMedical(target.player.medicalState, medical.CaptureState()) &&
+                    Near(target.player.conditionState.bloodFraction, condition.BloodFraction) &&
+                    Near(target.player.conditionState.transientTrauma, condition.TransientTrauma) &&
                     Near(target.player.currentHealth, health.CurrentHealth) &&
                     Near(medical.TotalPain, target.player.medicalState.wounds.Sum(wound => wound.painContribution)),
                 "I/J. Wound IDs/regions/treatment/pain/vital state did not restore exactly.");
@@ -306,7 +332,9 @@ namespace OldScars.Editor
 
             CurrentSliceSaveData legacy = Read(LegacySlot);
             Require(legacy.player.medicalState != null && legacy.player.medicalState.wounds.Length == 0 &&
-                    legacy.actors.All(actor => actor.medicalState != null && actor.medicalState.wounds.Length == 0),
+                    legacy.player.conditionState != null && Near(legacy.player.conditionState.bloodFraction, 1f) &&
+                    legacy.actors.All(actor => actor.medicalState != null && actor.medicalState.wounds.Length == 0 &&
+                        actor.conditionState != null && Near(actor.conditionState.bloodFraction, 1f)),
                 "K. Omitted localized state did not normalize to an etiology-free baseline.");
             CurrentSliceLoadResult legacyLoad = CurrentSliceLoadService.Load(LegacySlot, Store());
             Require(legacyLoad.Success && medical.WoundCount == 0 && Near(health.CurrentHealth, legacy.player.currentHealth),
@@ -333,6 +361,16 @@ namespace OldScars.Editor
                     !caseNullLoad.MutationStarted,
                 "L. Case-variant explicit-null medical state was misclassified as legacy omission.");
             AssertEquivalent(beforeInvalid, Capture("post case null preflight"), "L. case null no-mutation preflight");
+            CurrentSliceLoadResult invalidConditionLoad = CurrentSliceLoadService.Load(InvalidConditionSlot, Store());
+            Require(invalidConditionLoad.FailureCode == CurrentSliceLoadFailureCode.SemanticPreflightFailed &&
+                    !invalidConditionLoad.MutationStarted,
+                "L. Invalid actor condition payload was not rejected before mutation.");
+            AssertEquivalent(beforeInvalid, Capture("post invalid condition preflight"), "L. condition no-mutation preflight");
+            CurrentSliceLoadResult nullConditionLoad = CurrentSliceLoadService.Load(NullConditionSlot, Store());
+            Require(nullConditionLoad.FailureCode == CurrentSliceLoadFailureCode.SemanticPreflightFailed &&
+                    !nullConditionLoad.MutationStarted,
+                "L. Explicit-null actor condition was misclassified as legacy omission.");
+            AssertEquivalent(beforeInvalid, Capture("post null condition preflight"), "L. null condition no-mutation preflight");
 
             Require(medical.TryApplyWound(
                     RollbackWoundId, BodyRegion.RightLeg, WoundType.Blunt, 0.3f, 0f, 0.27f, out string failure),

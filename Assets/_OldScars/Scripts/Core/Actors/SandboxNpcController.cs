@@ -221,6 +221,7 @@ namespace OldScars.Core.Actors
             ActorEquipmentComponent equipment = LastSpawn.GetComponent<ActorEquipmentComponent>();
             InventoryComponent inventory = LastSpawn.GetComponent<InventoryComponent>();
             ActorAffiliationComponent affiliation = LastSpawn.GetComponent<ActorAffiliationComponent>();
+            ActorConditionComponent condition = LastSpawn.GetComponent<ActorConditionComponent>();
             HumanEncounterAIController encounter = LastSpawn.GetComponent<HumanEncounterAIController>();
             ActorThreatAcquisitionController acquisition = LastSpawn.GetComponent<ActorThreatAcquisitionController>();
             GameDatabase database = GameDataManager.Instance?.Database;
@@ -231,6 +232,10 @@ namespace OldScars.Core.Actors
                 "Loadout: " + LastSpawn.LoadoutProfileId,
                 "Signature: " + LastSpawn.LoadoutSignature,
                 "Affiliation: " + (affiliation?.DebugDisplayName ?? "<NONE>"),
+                "Condition: " + (condition != null
+                    ? condition.ObservableState + " / Stability " + condition.ConsciousnessStability.ToString("0.###") +
+                      " / Blood " + condition.BloodFraction.ToString("0.###")
+                    : "<NONE>"),
                 "Target: " + (encounter?.ThreatActorInstanceId ?? "<NONE>"),
                 "Perception: " + DescribePerception(encounter),
                 "Recognition: " + (acquisition != null

@@ -41,6 +41,7 @@ namespace OldScars.Core.Actors
 
         private ActorRuntimeIdentity identity;
         private ActorHealthComponent health;
+        private ActorConditionComponent condition;
         private ActorNavigationController navigation;
         private ActorVisualPerceptionService perception;
         private ActorItemOwnershipComponent ownership;
@@ -123,6 +124,13 @@ namespace OldScars.Core.Actors
                 EnterInactive("Actor lifecycle is Dead");
                 return;
             }
+            if (condition != null && !condition.CanPerformActiveActions)
+            {
+                EnterInactive("Actor is functionally incapacitated");
+                return;
+            }
+            if (State == HumanEncounterAIState.Inactive)
+                ResetEncounter("Actor recovered functional capacity");
 
             double now = Time.timeAsDouble;
             if (now >= nextDecisionTime)
@@ -749,6 +757,7 @@ namespace OldScars.Core.Actors
         {
             if (identity == null) identity = GetComponent<ActorRuntimeIdentity>();
             if (health == null) health = GetComponent<ActorHealthComponent>();
+            if (condition == null) condition = GetComponent<ActorConditionComponent>();
             if (navigation == null) navigation = GetComponent<ActorNavigationController>();
             if (perception == null) perception = GetComponent<ActorVisualPerceptionService>();
             if (ownership == null) ownership = GetComponent<ActorItemOwnershipComponent>();

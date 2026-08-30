@@ -625,6 +625,8 @@ namespace OldScars.Core.Persistence
             player.Health.ApplyInitialHealth(player.Health.MaxHealth, snapshot.player.currentHealth);
             if (!player.Medical.TryApplyPersistenceState(snapshot.player.medicalState, out string playerMedicalError))
                 throw new InvalidOperationException($"Player medical restore failed: {playerMedicalError}");
+            if (!player.Condition.TryApplyPersistenceState(snapshot.player.conditionState, out string playerConditionError))
+                throw new InvalidOperationException($"Player condition restore failed: {playerConditionError}");
             var needs = Items(snapshot.player.needs).ToDictionary(value => value.needId, value => value.currentValue, StringComparer.Ordinal);
             if (!player.Needs.TryApplyPersistenceState(needs, out string needsError))
                 throw new InvalidOperationException($"Player needs restore failed: {needsError}");
@@ -642,6 +644,9 @@ namespace OldScars.Core.Persistence
                 if (!actor.Medical.TryApplyPersistenceState(state.medicalState, out string actorMedicalError))
                     throw new InvalidOperationException(
                         $"Actor '{state.actorInstanceId}' medical restore failed: {actorMedicalError}");
+                if (!actor.Condition.TryApplyPersistenceState(state.conditionState, out string actorConditionError))
+                    throw new InvalidOperationException(
+                        $"Actor '{state.actorInstanceId}' condition restore failed: {actorConditionError}");
                 actor.Lootable?.RefreshLootableState();
                 bool expectedDead = state.lifecycleState == CurrentSliceSnapshotService.DeadLifecycle;
                 if (actor.Health.IsDead != expectedDead ||
@@ -657,6 +662,9 @@ namespace OldScars.Core.Persistence
                 if (!actor.Medical.TryApplyPersistenceState(ActorMedicalStateComponent.HealthyBaseline(), out string corpseMedicalError))
                     throw new InvalidOperationException(
                         $"Legacy corpse '{corpse.persistentId}' medical baseline failed: {corpseMedicalError}");
+                if (!actor.Condition.TryApplyPersistenceState(ActorConditionComponent.HealthyBaseline(), out string corpseConditionError))
+                    throw new InvalidOperationException(
+                        $"Legacy corpse '{corpse.persistentId}' condition baseline failed: {corpseConditionError}");
                 actor.Lootable?.RefreshLootableState();
             }
 
@@ -825,6 +833,7 @@ namespace OldScars.Core.Persistence
             internal ActorItemOwnershipComponent Ownership;
             internal ActorHealthComponent Health;
             internal ActorMedicalStateComponent Medical;
+            internal ActorConditionComponent Condition;
             internal ActorNeedsComponent Needs;
             internal ActorStaminaComponent Stamina;
             internal LootableActorInventoryComponent Lootable;
@@ -944,12 +953,13 @@ namespace OldScars.Core.Persistence
                     Ownership = identity.GetComponent<ActorItemOwnershipComponent>(),
                     Health = identity.GetComponent<ActorHealthComponent>(),
                     Medical = identity.GetComponent<ActorMedicalStateComponent>(),
+                    Condition = identity.GetComponent<ActorConditionComponent>(),
                     Needs = identity.GetComponent<ActorNeedsComponent>(),
                     Stamina = identity.GetComponent<ActorStaminaComponent>(),
                     Lootable = identity.GetComponent<LootableActorInventoryComponent>(),
                     Navigation = identity.GetComponent<ActorNavigationController>()
                 };
-                if (actor.Inventory == null || actor.Health == null || actor.Medical == null ||
+                if (actor.Inventory == null || actor.Health == null || actor.Medical == null || actor.Condition == null ||
                     requireOwnership && actor.Ownership == null || requireNeeds && actor.Needs == null)
                     return FailActor(out actor, out error, $"Actor '{id}' lacks required Current Slice runtime components.");
                 if (requireDead && !actor.Health.IsDead)
@@ -981,12 +991,14 @@ namespace OldScars.Core.Persistence
                     Ownership = identity.GetComponent<ActorItemOwnershipComponent>(),
                     Health = identity.GetComponent<ActorHealthComponent>(),
                     Medical = identity.GetComponent<ActorMedicalStateComponent>(),
+                    Condition = identity.GetComponent<ActorConditionComponent>(),
                     Needs = identity.GetComponent<ActorNeedsComponent>(),
                     Stamina = identity.GetComponent<ActorStaminaComponent>(),
                     Lootable = identity.GetComponent<LootableActorInventoryComponent>(),
                     Navigation = identity.GetComponent<ActorNavigationController>()
                 };
-                if (actor.Inventory == null || actor.Health == null || actor.Medical == null || actor.Ownership == null)
+                if (actor.Inventory == null || actor.Health == null || actor.Medical == null ||
+                    actor.Condition == null || actor.Ownership == null)
                     return FailActor(out actor, out error,
                         $"Runtime actor '{state.actorInstanceId}' lacks required lifecycle runtime components.");
                 return true;

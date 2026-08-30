@@ -14,6 +14,7 @@ namespace OldScars.Core.Combat
         Success,
         Miss,
         InvalidActor,
+        Incapacitated,
         NotEquipped,
         InvalidWeapon,
         Unloaded,
@@ -98,6 +99,8 @@ namespace OldScars.Core.Combat
 
         public static WeaponCombatResult ReloadEquipped(ActorItemOwnershipComponent ownership, string expectedFirearmInstanceId)
         {
+            if (!CanPerformActiveActions(ownership))
+                return Fail(WeaponCombatCode.Incapacitated, "Functionally incapacitated actors cannot reload.");
             if (!TryGetEquippedWeapon(ownership, out ItemInstance firearmItem, out _, out FirearmProfileDefinition profile, out _) ||
                 firearmItem.InstanceId != expectedFirearmInstanceId || profile == null)
             {
@@ -184,6 +187,8 @@ namespace OldScars.Core.Combat
             float? diagnosticPenetrationPower,
             PhysicalShotResolver physicalResolver)
         {
+            if (!CanPerformActiveActions(ownership))
+                return Fail(WeaponCombatCode.Incapacitated, "Functionally incapacitated actors cannot fire.");
             if (!TryGetEquippedWeapon(ownership, out ItemInstance firearmItem, out _, out FirearmProfileDefinition profile, out _) ||
                 firearmItem.InstanceId != expectedFirearmInstanceId || profile == null)
                 return Fail(WeaponCombatCode.NotEquipped, "The same firearm is not equipped.");
@@ -282,6 +287,8 @@ namespace OldScars.Core.Combat
             Collider hitCollider,
             Vector3 hitPoint)
         {
+            if (!CanPerformActiveActions(ownership))
+                return Fail(WeaponCombatCode.Incapacitated, "Functionally incapacitated actors cannot strike.");
             if (!TryGetEquippedWeapon(ownership, out ItemInstance weapon, out _, out _, out WeaponProfileDefinition profile) ||
                 weapon.InstanceId != expectedWeaponInstanceId || profile == null)
                 return Fail(WeaponCombatCode.NotEquipped, "The same melee weapon is not equipped.");
@@ -349,6 +356,13 @@ namespace OldScars.Core.Combat
         }
 
         private static ItemDefinition Definition(ItemInstance item) => item == null ? null : Database()?.GetItem(item.DefinitionId);
+        private static bool CanPerformActiveActions(ActorItemOwnershipComponent ownership)
+        {
+            ActorConditionComponent condition = ownership != null
+                ? ownership.GetComponent<ActorConditionComponent>()
+                : null;
+            return condition == null || condition.CanPerformActiveActions;
+        }
         private static GameDatabase Database() => GameDataManager.Instance != null && GameDataManager.Instance.IsReady
             ? GameDataManager.Instance.Database : null;
         private static bool Contains(string[] values, string expected) => values != null && values.Contains(expected, StringComparer.Ordinal);

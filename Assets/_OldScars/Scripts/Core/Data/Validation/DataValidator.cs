@@ -641,6 +641,7 @@ namespace OldScars.Core.Data.Validation
 
                 ValidateActorProfileInitialTags(actorProfile.initial_tags, $"{ctx}: initial_tags");
                 ValidateActorProfileHealth(actorProfile.health, $"{ctx}: health");
+                ValidateActorProfileConsciousness(actorProfile.consciousness, $"{ctx}: consciousness");
                 ValidateActorProfileNavigation(actorProfile.navigation, $"{ctx}: navigation");
                 ValidateActorProfileVisualPerception(actorProfile.visual_perception, $"{ctx}: visual_perception");
                 ValidateActorProfileEncounterAI(actorProfile, $"{ctx}: encounter_ai");
@@ -691,6 +692,12 @@ namespace OldScars.Core.Data.Validation
             RequireFinitePositive(navigation.acceleration, "acceleration", context);
             RequireFinitePositive(navigation.angular_speed, "angular_speed", context);
             RequireFinitePositive(navigation.stopping_distance, "stopping_distance", context);
+        }
+
+        private void ValidateActorProfileConsciousness(ActorProfileConsciousness consciousness, string context)
+        {
+            if (!ActorConditionComponent.TryValidateProfile(consciousness, out string failure))
+                report.Error($"{context}: {failure}");
         }
 
         private void ValidateActorProfileVisualPerception(ActorProfileVisualPerception perception, string context)

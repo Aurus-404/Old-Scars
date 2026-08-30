@@ -301,9 +301,34 @@ namespace OldScars.Core.Actors
 
         private void ApplyRuntimeCapabilities(ActorProfileDefinition profile)
         {
+            ApplyConsciousness(profile);
             ApplyNavigation(profile);
             ApplyVisualPerception(profile);
             ApplyEncounterAI(profile);
+        }
+
+        private void ApplyConsciousness(ActorProfileDefinition profile)
+        {
+            ActorConditionComponent condition = GetComponent<ActorConditionComponent>();
+            if (condition == null)
+            {
+                Debug.LogError(
+                    "[Actors][CONSCIOUSNESS_PROFILE_REJECTED]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
+                    "\n  Failure: ActorConditionComponent is missing" +
+                    "\n  ActionTaken: functional condition remains unavailable");
+                return;
+            }
+            if (!condition.TryConfigure(profile.consciousness, out string error))
+            {
+                Debug.LogError(
+                    "[Actors][CONSCIOUSNESS_PROFILE_REJECTED]" +
+                    $"\n  Actor: {name}" +
+                    $"\n  ActorProfileId: {profile.id ?? "<EMPTY>"}" +
+                    $"\n  Failure: {error ?? "<UNKNOWN>"}" +
+                    "\n  ActionTaken: default runtime condition tuning remains active");
+            }
         }
 
         private void ApplyNavigation(ActorProfileDefinition profile)

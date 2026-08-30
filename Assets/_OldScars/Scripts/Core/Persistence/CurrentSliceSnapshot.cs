@@ -59,6 +59,7 @@ namespace OldScars.Core.Persistence
         public PoseState pose;
         public float currentHealth;
         public ActorMedicalStateData medicalState;
+        public ActorConditionStateData conditionState;
         public NeedState[] needs = Array.Empty<NeedState>();
         public ActorStaminaState stamina;
         public string inventoryStorageId;
@@ -91,6 +92,7 @@ namespace OldScars.Core.Persistence
         public PoseState pose;
         public float currentHealth;
         public ActorMedicalStateData medicalState;
+        public ActorConditionStateData conditionState;
         public string inventoryStorageId;
         public string equipmentStorageId;
     }
@@ -341,9 +343,12 @@ namespace OldScars.Core.Persistence
                 JObject playerObject = payloadObject?["player"] as JObject;
                 bool legacyPlayerMedicalMissing = playerObject != null &&
                     !HasProperty(playerObject, "medicalState");
+                bool legacyPlayerConditionMissing = playerObject != null &&
+                    !HasProperty(playerObject, "conditionState");
                 bool legacyPlayerStaminaMissing = playerObject != null &&
                     !HasProperty(playerObject, "stamina");
                 var legacyActorMedicalMissing = new HashSet<int>();
+                var legacyActorConditionMissing = new HashSet<int>();
                 var legacyFirearmStateMissing = new HashSet<int>();
                 if (payloadObject?["actors"] is JArray actorArray)
                 {
@@ -353,6 +358,11 @@ namespace OldScars.Core.Persistence
                             !HasProperty(actorObject, "medicalState"))
                         {
                             legacyActorMedicalMissing.Add(index);
+                        }
+                        if (actorArray[index] is JObject conditionActorObject &&
+                            !HasProperty(conditionActorObject, "conditionState"))
+                        {
+                            legacyActorConditionMissing.Add(index);
                         }
                     }
                 }
@@ -374,6 +384,8 @@ namespace OldScars.Core.Persistence
                 }
                 if (legacyPlayerMedicalMissing && snapshot?.player != null)
                     snapshot.player.medicalState = ActorMedicalStateComponent.HealthyBaseline();
+                if (legacyPlayerConditionMissing && snapshot?.player != null)
+                    snapshot.player.conditionState = ActorConditionComponent.HealthyBaseline();
                 if (legacyPlayerStaminaMissing && snapshot?.player != null)
                 {
                     ActorStaminaComponent stamina = UnityEngine.Object.FindObjectsByType<PersistentSceneObjectId>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
@@ -387,6 +399,11 @@ namespace OldScars.Core.Persistence
                 {
                     if (index >= 0 && index < actors.Length && actors[index] != null)
                         actors[index].medicalState = ActorMedicalStateComponent.HealthyBaseline();
+                }
+                foreach (int index in legacyActorConditionMissing)
+                {
+                    if (index >= 0 && index < actors.Length && actors[index] != null)
+                        actors[index].conditionState = ActorConditionComponent.HealthyBaseline();
                 }
                 GameDatabase database = GameDataManager.Instance != null ? GameDataManager.Instance.Database : null;
                 if (!CurrentSliceContentIdCompatibility.TryNormalizeLegacyCoreReferences(snapshot, database, out string migrationError))
@@ -561,10 +578,12 @@ namespace OldScars.Core.Persistence
                 InventoryComponent playerInventory = player.GetInventoryComponent();
                 ActorHealthComponent playerHealth = player.GetComponent<ActorHealthComponent>();
                 ActorMedicalStateComponent playerMedical = player.GetComponent<ActorMedicalStateComponent>();
+                ActorConditionComponent playerCondition = player.GetComponent<ActorConditionComponent>();
                 ActorNeedsComponent playerNeeds = player.GetComponent<ActorNeedsComponent>();
                 ActorStaminaComponent playerStamina = player.GetComponent<ActorStaminaComponent>();
-                if (playerInventory == null || playerHealth == null || playerMedical == null || playerNeeds == null || playerStamina == null)
-                    return Fail($"Player '{playerId}' is missing Inventory, Health, Medical, Needs or Stamina runtime state.");
+                if (playerInventory == null || playerHealth == null || playerMedical == null || playerCondition == null ||
+                    playerNeeds == null || playerStamina == null)
+                    return Fail($"Player '{playerId}' is missing Inventory, Health, Medical, Condition, Needs or Stamina runtime state.");
 
                 var snapshot = new CurrentSliceSaveData
                 {
@@ -585,6 +604,7 @@ namespace OldScars.Core.Persistence
                     pose = CurrentSliceSnapshotService.Pose(player.transform),
                     currentHealth = playerHealth.CurrentHealth,
                     medicalState = playerMedical.CaptureState(),
+                    conditionState = playerCondition.CaptureState(),
                     needs = playerNeeds.RuntimeStates.Where(state => state != null)
                         .Select(state => new NeedState { needId = state.needId, currentValue = state.currentValue })
                         .OrderBy(state => state.needId, StringComparer.Ordinal).ToArray(),
@@ -645,10 +665,11 @@ namespace OldScars.Core.Persistence
                 ActorProfileComponent profile = identity.GetComponent<ActorProfileComponent>();
                 ActorHealthComponent health = identity.GetComponent<ActorHealthComponent>();
                 ActorMedicalStateComponent medical = identity.GetComponent<ActorMedicalStateComponent>();
+                ActorConditionComponent condition = identity.GetComponent<ActorConditionComponent>();
                 InventoryComponent inventory = identity.GetComponent<InventoryComponent>();
-                if (profile == null || health == null || medical == null || inventory == null)
+                if (profile == null || health == null || medical == null || condition == null || inventory == null)
                 {
-                    Failure = $"Actor '{identity.ActorInstanceId}' lacks Profile, Health, Medical or Inventory runtime state.";
+                    Failure = $"Actor '{identity.ActorInstanceId}' lacks Profile, Health, Medical, Condition or Inventory runtime state.";
                     return null;
                 }
                 if (identity.LifecycleState == ActorLifecycleState.Dead != health.IsDead)
@@ -669,6 +690,7 @@ namespace OldScars.Core.Persistence
                     pose = CurrentSliceSnapshotService.Pose(identity.transform),
                     currentHealth = health.CurrentHealth,
                     medicalState = medical.CaptureState(),
+                    conditionState = condition.CaptureState(),
                     inventoryStorageId = CaptureStorage(InventoryKind, ownerId, inventory),
                     equipmentStorageId = CaptureEquipment(ownerId, identity.GetComponent<ActorEquipmentComponent>())
                 };
@@ -1066,6 +1088,11 @@ namespace OldScars.Core.Persistence
                     if (!Finite(snapshot.player.currentHealth) || health == null || snapshot.player.currentHealth < 0f || snapshot.player.currentHealth > health.MaxHealth)
                         errors.Add($"Player '{snapshot.player.persistentId}' has invalid health {snapshot.player.currentHealth}.");
                     ValidateMedical(snapshot.player.medicalState, $"Player '{snapshot.player.persistentId}'");
+                    ValidateCondition(snapshot.player.conditionState, $"Player '{snapshot.player.persistentId}'");
+                    if (snapshot.player.currentHealth > 0f &&
+                        snapshot.player.conditionState != null &&
+                        snapshot.player.conditionState.bloodFraction <= ResolveFatalBloodFraction(snapshot.player.actorProfileId))
+                        errors.Add($"Player '{snapshot.player.persistentId}' is Alive with fatal blood fraction {snapshot.player.conditionState.bloodFraction}.");
                     ActorNeedsComponent needs = SceneComponent<ActorNeedsComponent>(snapshot.player.persistentId);
                     var needIds = new HashSet<string>(StringComparer.Ordinal);
                     foreach (NeedState need in Items(snapshot.player.needs))
@@ -1149,6 +1176,10 @@ namespace OldScars.Core.Persistence
                         actor.lifecycleState == DeadLifecycle && actor.currentHealth != 0f)
                         errors.Add($"Actor '{actor.actorInstanceId}' lifecycle '{actor.lifecycleState}' contradicts health {actor.currentHealth}.");
                     ValidateMedical(actor.medicalState, $"Actor '{actor.actorInstanceId}'");
+                    ValidateCondition(actor.conditionState, $"Actor '{actor.actorInstanceId}'");
+                    if (actor.lifecycleState == AliveLifecycle && actor.conditionState != null &&
+                        actor.conditionState.bloodFraction <= ResolveFatalBloodFraction(actor.actorProfileId))
+                        errors.Add($"Actor '{actor.actorInstanceId}' is Alive with fatal blood fraction {actor.conditionState.bloodFraction}.");
 
                     if (actor.originKind == AuthoredActorOrigin)
                     {
@@ -1233,6 +1264,18 @@ namespace OldScars.Core.Persistence
             {
                 if (!ActorMedicalStateComponent.TryValidatePersistenceState(medicalState, out string failure))
                     errors.Add($"{context} has invalid localized medical state: {failure}");
+            }
+
+            private void ValidateCondition(ActorConditionStateData conditionState, string context)
+            {
+                if (!ActorConditionComponent.TryValidatePersistenceState(conditionState, out string failure))
+                    errors.Add($"{context} has invalid actor condition state: {failure}");
+            }
+
+            private float ResolveFatalBloodFraction(string actorProfileId)
+            {
+                ActorProfileDefinition profile = database?.GetActorProfile(actorProfileId);
+                return profile?.consciousness?.fatal_blood_fraction ?? 0f;
             }
 
             private void ValidateStorages()

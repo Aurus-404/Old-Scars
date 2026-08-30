@@ -30,6 +30,8 @@ namespace OldScars.Core.Actors
         {
             if (GetComponent<ActorMedicalStateComponent>() == null)
                 gameObject.AddComponent<ActorMedicalStateComponent>();
+            if (GetComponent<ActorConditionComponent>() == null)
+                gameObject.AddComponent<ActorConditionComponent>();
             ResolveWorldObjectTags();
             ClampHealth();
 
@@ -90,7 +92,10 @@ namespace OldScars.Core.Actors
             if (IsDead)
                 ProcessDeath();
             else
+            {
                 SyncLivingTags();
+                GetComponent<ActorConditionComponent>()?.ResetForHealthInitialization(true);
+            }
         }
 
         private void ResolveWorldObjectTags()
@@ -141,6 +146,7 @@ namespace OldScars.Core.Actors
         private void ProcessDeath()
         {
             GetComponent<ActorRuntimeIdentity>()?.SetLifecycle(ActorLifecycleState.Dead);
+            GetComponent<ActorConditionComponent>()?.ResetForHealthInitialization(false);
             ResolveWorldObjectTags();
             if (deathProcessed)
                 return;

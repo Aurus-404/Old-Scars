@@ -66,9 +66,9 @@ namespace OldScars.Core.Actors
         };
 
         private readonly List<ActorMedicalWoundState> wounds = new List<ActorMedicalWoundState>();
-        private WorldClock connectedClock;
         private ActorHealthComponent actorHealth;
         private ActorRuntimeIdentity actorIdentity;
+        private ActorConditionComponent actorCondition;
         private int revision;
 
         public static IReadOnlyList<BodyRegion> HumanRegions => HumanRegionValues;
@@ -91,21 +91,6 @@ namespace OldScars.Core.Actors
         private void Awake()
         {
             ResolveActor();
-        }
-
-        private void OnEnable()
-        {
-            ConnectWorldClock(WorldClock.Current);
-        }
-
-        private void Start()
-        {
-            ConnectWorldClock(WorldClock.Current);
-        }
-
-        private void OnDisable()
-        {
-            ConnectWorldClock(null);
         }
 
         public bool ApplyWound(
@@ -161,6 +146,8 @@ namespace OldScars.Core.Actors
 
             wounds.Add(Clone(candidate));
             revision++;
+            ResolveActor();
+            actorCondition?.ApplyImmediateTrauma(region, woundType, severity);
             failure = null;
             return true;
         }
@@ -236,6 +223,8 @@ namespace OldScars.Core.Actors
             wounds.Clear();
             wounds.AddRange((state.wounds ?? Array.Empty<ActorMedicalWoundState>()).Select(Clone));
             revision++;
+            ResolveActor();
+            actorCondition?.RecalculateFromMedicalState();
             return true;
         }
 
@@ -319,36 +308,6 @@ namespace OldScars.Core.Actors
             return "Critical";
         }
 
-        private void ConnectWorldClock(WorldClock clock)
-        {
-            if (connectedClock != clock)
-            {
-                if (connectedClock != null)
-                    connectedClock.GameTimeAdvanced -= OnGameTimeAdvanced;
-                connectedClock = clock;
-            }
-            if (connectedClock != null && isActiveAndEnabled)
-            {
-                connectedClock.GameTimeAdvanced -= OnGameTimeAdvanced;
-                connectedClock.GameTimeAdvanced += OnGameTimeAdvanced;
-            }
-        }
-
-        private void OnGameTimeAdvanced(double elapsedGameSeconds)
-        {
-            ResolveActor();
-            if (!Finite(elapsedGameSeconds) || elapsedGameSeconds <= 0d || IsDead() || actorHealth == null)
-                return;
-
-            double gameHours = elapsedGameSeconds / WorldClock.SecondsPerHour;
-            double vitalLoss = EffectiveBleedingRatePerGameHour * gameHours;
-            if (vitalLoss <= 0d)
-                return;
-
-            float damage = (float)Math.Min(actorHealth.MaxHealth, vitalLoss * actorHealth.MaxHealth);
-            actorHealth.ApplyDamage(damage);
-        }
-
         private bool IsDead()
         {
             ResolveActor();
@@ -362,6 +321,8 @@ namespace OldScars.Core.Actors
                 actorHealth = GetComponent<ActorHealthComponent>();
             if (actorIdentity == null)
                 actorIdentity = GetComponent<ActorRuntimeIdentity>();
+            if (actorCondition == null)
+                actorCondition = GetComponent<ActorConditionComponent>();
         }
 
         private ActorMedicalWoundState FindWound(string woundId)

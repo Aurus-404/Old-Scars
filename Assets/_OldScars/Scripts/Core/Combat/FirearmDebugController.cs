@@ -27,6 +27,7 @@ namespace OldScars.Core.Combat
         [SerializeField] private float tracerDuration = 0.12f;
 
         private ActorItemOwnershipComponent ownership;
+        private ActorConditionComponent condition;
         private DebugActionProgressController progressController;
         private bool isCombatActive;
         private string aimedWeaponInstanceId;
@@ -83,6 +84,11 @@ namespace OldScars.Core.Combat
         {
             UpdateTracer();
             ResolveReferences();
+            if (condition != null && !condition.CanPerformActiveActions)
+            {
+                SetCombatMode(false, false);
+                return;
+            }
             if (uiInputBlocker != null && uiInputBlocker.BlocksWorldInput)
                 return;
 
@@ -155,6 +161,11 @@ namespace OldScars.Core.Combat
             ResolveReferences();
             if (enabled)
             {
+                if (condition != null && !condition.CanPerformActiveActions)
+                {
+                    if (feedback) Record(GameplayFeedbackEntryType.Warning, "Actor is functionally incapacitated.");
+                    return false;
+                }
                 if (!TryGetEquipped(out ItemInstance item, out _, out _, out _))
                 {
                     if (feedback) Record(GameplayFeedbackEntryType.Warning, "No weapon equipped in hand slots.");
@@ -437,6 +448,7 @@ namespace OldScars.Core.Combat
         {
             if (inventory == null) inventory = GetComponent<InventoryComponent>();
             if (ownership == null) ownership = GetComponent<ActorItemOwnershipComponent>();
+            if (condition == null) condition = GetComponent<ActorConditionComponent>();
             if (inputCamera == null) inputCamera = Camera.main;
             if (uiInputBlocker == null) uiInputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
             if (movementInput == null) movementInput = GetComponent<PlayerMovementInputController>();

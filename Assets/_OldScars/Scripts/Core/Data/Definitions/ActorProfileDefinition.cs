@@ -15,6 +15,7 @@ namespace OldScars.Core.Data.Definitions
         public string inventory_seed_actor_tag; // Optional debug bootstrap selector for actors without ActorProfileComponent.
         public string[] initial_tags;
         public ActorProfileHealth health;
+        public ActorProfileConsciousness consciousness;
         public ActorProfileInventoryEntry[] initial_inventory;
         public ActorProfileInitialEquipmentEntry[] initial_equipment;
         public string loadout_profile_id; // Optional ActorLoadoutProfileDefinition used only for new runtime spawns.
@@ -31,6 +32,20 @@ namespace OldScars.Core.Data.Definitions
     {
         public float max_health;
         public float current_health;
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileConsciousness
+    {
+        public float consciousness_resilience;
+        public float pain_tolerance;
+        public float blunt_trauma_resistance;
+        public float dazed_threshold;
+        public float incapacitated_threshold;
+        public float unconscious_threshold;
+        public float blood_pressure_start_fraction;
+        public float fatal_blood_fraction;
+        public float trauma_recovery_per_game_hour;
     }
 
     [System.Serializable]

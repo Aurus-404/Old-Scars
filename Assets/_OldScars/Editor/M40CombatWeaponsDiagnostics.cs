@@ -232,8 +232,11 @@ namespace OldScars.Editor
             input.DiagnosticStartCycle(0f);
             Require(input.IsAttackReady, "I. Bolt cycle gate did not reopen after its duration.");
 
-            health.ApplyInitialHealth(health.MaxHealth, 4f);
-            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour, out failure),
+            ActorConditionComponent condition = target.GetComponent<ActorConditionComponent>();
+            double lethalBleedingHours =
+                (condition.BloodFraction - condition.FatalBloodFraction + 0.01f) /
+                Math.Max(0.001f, medical.EffectiveBleedingRatePerGameHour);
+            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * lethalBleedingHours, out failure),
                 "J. Combat bleeding clock advance failed: " + failure);
             Require(health.IsDead && target.LifecycleState == ActorLifecycleState.Dead &&
                     target.GetComponent<WorldObjectTags>()?.HasTag(ActorHealthComponent.LootableActorTag) == true,

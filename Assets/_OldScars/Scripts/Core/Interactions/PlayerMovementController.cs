@@ -19,6 +19,7 @@ namespace OldScars.Core.Interactions
 
         private CharacterController characterController;
         private ActorStaminaComponent stamina;
+        private ActorConditionComponent condition;
         private Vector3 requestedMovementDirection;
         private float verticalVelocity;
         private bool sprintRequested;
@@ -36,6 +37,7 @@ namespace OldScars.Core.Interactions
         {
             characterController = GetComponent<CharacterController>();
             stamina = GetComponent<ActorStaminaComponent>();
+            condition = GetComponent<ActorConditionComponent>();
             debugMovementMultiplier = 1f;
         }
 
@@ -114,6 +116,13 @@ namespace OldScars.Core.Interactions
 
         private void Update()
         {
+            if (condition == null)
+                condition = GetComponent<ActorConditionComponent>();
+            if (condition != null && !condition.CanPerformActiveActions)
+            {
+                ClearMovement();
+                return;
+            }
             if (characterController == null)
             {
                 Debug.LogError("[PlayerMovementController] CharacterController was not found. Add one to the player actor.");

@@ -211,6 +211,8 @@ namespace OldScars.Editor
                 "Could not place blocked-LOS combat pair: " + placementError);
             automaticRed.GetComponent<ActorHealthComponent>().ApplyInitialHealth(500f, 500f);
             armoredBlue.GetComponent<ActorHealthComponent>().ApplyInitialHealth(500f, 500f);
+            ConfigureDiagnosticConsciousnessResilience(armoredBlue);
+            ConfigureDiagnosticConsciousnessResilience(corpseBlue);
             CreateLosWall(automaticRed, armoredBlue);
             ActorVisualPerceptionResult blocked = automaticRed.GetComponent<ActorVisualPerceptionService>().Evaluate(armoredBlue);
             Require(!blocked.Perceived && blocked.Reason == ActorVisualPerceptionReason.Occluded,
@@ -260,6 +262,26 @@ namespace OldScars.Editor
                 "Deterministic combat corpus did not produce distinct armored and corpse Blue actors.");
             Require(ActorRuntimeRegistry.ActiveCount >= 5,
                 "M41.4 corpus did not retain multiple simultaneous actors plus Player.");
+        }
+
+        private static void ConfigureDiagnosticConsciousnessResilience(ActorRuntimeIdentity actor)
+        {
+            ActorProfileConsciousness source = GameDataManager.Instance.Database
+                .GetActorProfile(actor.ActorProfileId).consciousness;
+            var diagnostic = new ActorProfileConsciousness
+            {
+                consciousness_resilience = 100f,
+                pain_tolerance = source.pain_tolerance,
+                blunt_trauma_resistance = source.blunt_trauma_resistance,
+                dazed_threshold = source.dazed_threshold,
+                incapacitated_threshold = source.incapacitated_threshold,
+                unconscious_threshold = source.unconscious_threshold,
+                blood_pressure_start_fraction = source.blood_pressure_start_fraction,
+                fatal_blood_fraction = source.fatal_blood_fraction,
+                trauma_recovery_per_game_hour = source.trauma_recovery_per_game_hour
+            };
+            Require(actor.GetComponent<ActorConditionComponent>().TryConfigure(diagnostic, out string failure),
+                "Could not configure diagnostic combat-target resilience: " + failure);
         }
 
         private static void VerifyBlockedLosThenOpen()

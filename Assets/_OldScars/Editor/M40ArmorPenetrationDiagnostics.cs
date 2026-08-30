@@ -284,12 +284,15 @@ namespace OldScars.Editor
             ActorHealthComponent deathHealth = deathTarget.GetComponent<ActorHealthComponent>();
             ActorMedicalStateComponent deathMedical = deathTarget.GetComponent<ActorMedicalStateComponent>();
             Collider deathCollider = deathTarget.GetComponent<Collider>();
-            deathHealth.ApplyInitialHealth(deathHealth.MaxHealth, 1f);
             Vector3 deathTorso = Point(deathCollider.bounds, 0f, .65f);
             WeaponCombatResult lethal = FireDirect(playerOwnership, rifle, deathCollider, deathTorso, 1f);
             string clockFailure = null;
+            ActorConditionComponent deathCondition = deathTarget.GetComponent<ActorConditionComponent>();
+            double lethalBleedingHours =
+                (deathCondition.BloodFraction - deathCondition.FatalBloodFraction + 0.01f) /
+                Math.Max(0.001f, deathMedical.EffectiveBleedingRatePerGameHour);
             Require(lethal.Combat.Armor.Outcome == ArmorResolutionOutcome.Penetrated && deathMedical.WoundCount == 1 &&
-                    WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour, out clockFailure),
+                    WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * lethalBleedingHours, out clockFailure),
                 "P. Lethal penetration setup/clock failed: " + clockFailure);
             Require(deathHealth.IsDead && deathTarget.LifecycleState == ActorLifecycleState.Dead &&
                     deathTarget.GetComponent<WorldObjectTags>()?.HasTag(ActorHealthComponent.LootableActorTag) == true &&

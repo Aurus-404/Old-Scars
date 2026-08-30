@@ -19,6 +19,7 @@ namespace OldScars.Core.Actors
         InvalidRequest,
         MissingIdentity,
         Dead,
+        Incapacitated,
         AgentDisabled,
         NotOnNavMesh,
         DestinationOffNavMesh,
@@ -62,6 +63,7 @@ namespace OldScars.Core.Actors
 
         private NavMeshAgent agent;
         private ActorRuntimeIdentity identity;
+        private ActorConditionComponent condition;
         private bool configured;
         private Vector3 requestedDestination;
         private Vector3 resolvedDestination;
@@ -93,6 +95,11 @@ namespace OldScars.Core.Actors
             if (identity.LifecycleState == ActorLifecycleState.Dead)
             {
                 Fail(ActorNavigationFailure.Dead, "Actor became Dead while navigating.");
+                return;
+            }
+            if (condition != null && !condition.CanPerformActiveActions)
+            {
+                Fail(ActorNavigationFailure.Incapacitated, "Actor became functionally incapacitated while navigating.");
                 return;
             }
             if (agent == null || !agent.enabled)
@@ -167,6 +174,8 @@ namespace OldScars.Core.Actors
                 return Reject(ActorNavigationFailure.MissingIdentity, "Actor runtime identity is unavailable.", out result);
             if (identity.LifecycleState == ActorLifecycleState.Dead)
                 return Reject(ActorNavigationFailure.Dead, "Dead actors cannot begin navigation.", out result);
+            if (condition != null && !condition.CanPerformActiveActions)
+                return Reject(ActorNavigationFailure.Incapacitated, "Functionally incapacitated actors cannot begin navigation.", out result);
             if (agent == null || !agent.enabled)
                 return Reject(ActorNavigationFailure.AgentDisabled, "NavMeshAgent is disabled or missing.", out result);
             if (!agent.isOnNavMesh)
@@ -240,6 +249,8 @@ namespace OldScars.Core.Actors
                 agent = GetComponent<NavMeshAgent>();
             if (identity == null)
                 identity = GetComponent<ActorRuntimeIdentity>();
+            if (condition == null)
+                condition = GetComponent<ActorConditionComponent>();
         }
 
         private void ResetAgentPath()

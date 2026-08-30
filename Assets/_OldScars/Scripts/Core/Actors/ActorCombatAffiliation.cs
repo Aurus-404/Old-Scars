@@ -112,6 +112,7 @@ namespace OldScars.Core.Actors
 
         private ActorRuntimeIdentity identity;
         private ActorHealthComponent health;
+        private ActorConditionComponent condition;
         private ActorAffiliationComponent affiliation;
         private ActorVisualPerceptionService perception;
         private HumanEncounterAIController encounter;
@@ -154,11 +155,19 @@ namespace OldScars.Core.Actors
                 enabled = false;
                 return;
             }
+            if (condition != null && !condition.CanPerformActiveActions)
+            {
+                encounter?.ClearThreat("Acquirer is functionally incapacitated");
+                ClearRecognitionStates();
+                return;
+            }
 
             ActorRuntimeIdentity current = encounter.Threat;
             if (current != null)
             {
+                ActorConditionComponent currentCondition = current.GetComponent<ActorConditionComponent>();
                 if (current.IsRegistered && current.LifecycleState == ActorLifecycleState.Alive &&
+                    (currentCondition == null || currentCondition.CanPerformActiveActions) &&
                     affiliation.IsHostileToward(current))
                 {
                     ClearRecognitionStates();
@@ -217,6 +226,9 @@ namespace OldScars.Core.Actors
                 RegistryCandidateVisitCount++;
                 if (candidate == null || candidate == identity || !candidate.IsRegistered ||
                     candidate.LifecycleState == ActorLifecycleState.Dead)
+                    continue;
+                ActorConditionComponent candidateCondition = candidate.GetComponent<ActorConditionComponent>();
+                if (candidateCondition != null && !candidateCondition.CanPerformActiveActions)
                     continue;
                 if (!affiliation.IsHostileToward(candidate))
                     continue;
@@ -367,6 +379,7 @@ namespace OldScars.Core.Actors
         {
             if (identity == null) identity = GetComponent<ActorRuntimeIdentity>();
             if (health == null) health = GetComponent<ActorHealthComponent>();
+            if (condition == null) condition = GetComponent<ActorConditionComponent>();
             if (affiliation == null) affiliation = GetComponent<ActorAffiliationComponent>();
             if (perception == null) perception = GetComponent<ActorVisualPerceptionService>();
             if (encounter == null) encounter = GetComponent<HumanEncounterAIController>();
