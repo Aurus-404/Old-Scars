@@ -42,14 +42,16 @@ Default to zero subagents. Request a deliberate number and bounded roles only wh
 
 For a long interruptible task, maintain only this short state in the active Codex task/conversation: `ACTIVE TASK`, `GOAL`, `BASE`, `CHANGES MADE`, `VALIDATION PASSED`, `VALIDATION PENDING`, `KNOWN FAILURE`, `DO NOT TOUCH`, `NEXT EXACT STEP`. Do not put ephemeral checkpoints in canonical docs or commit them by default.
 
-## Git And Worktrees
+## Git And Canonical Checkout
 
-Preserve user work. Before material mutations, inspect proportional Git state; for isolated or risky work, use a real Git worktree from the intended base.
+Preserve user work. Codex works directly in the canonical checkout `D:\Programs\UnityProject\Old Scarss` unless Mauro explicitly changes this workflow.
 
+- Do not create Git worktrees, clones, temporary Unity project copies, or alternate project folders for normal Old Scars tasks.
+- Before material mutations, inspect the current branch/status and distinguish user-owned changes from task changes.
 - Never reset, clean, restore, stash, rebase, amend a published commit, or force-push without explicit authorization.
 - Review `git diff --stat` before a large diff, then inspect the relevant files. Use filtered searches/log excerpts before opening huge output.
-- A validated mutating task normally closes with a descriptive commit body, `git log -1 --format=full`, push, `HEAD == origin/dev`, divergence `0/0`, and a clean tree. Exceptions: read-only audit, failed checks, a scope block, unrelated local changes, or explicit no-publish instruction.
-- The checkout that hosts the user must remain untouched when the task explicitly requires an isolated worktree. Remove only the worktree created for the completed task after a safe integration; never remove another worktree.
+- Stage only files intentionally changed by the task. Unrelated user-owned dirty files may remain dirty and must be preserved.
+- A validated mutating task normally closes with a descriptive commit body, `git log -1 --format=full`, push, `HEAD == origin/dev`, and divergence `0/0`. A clean tree is not required when unrelated user-owned changes are intentionally preserved.
 
 ## Unity And Validation
 
