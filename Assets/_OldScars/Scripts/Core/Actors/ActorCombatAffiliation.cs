@@ -90,14 +90,25 @@ namespace OldScars.Core.Actors
     [DisallowMultipleComponent]
     public sealed class ActorThreatAcquisitionController : MonoBehaviour
     {
-        private const float AcquisitionIntervalSeconds = 0.25f;
+        private const float AcquisitionIntervalSeconds = 0.1f;
         private const int InitialRegistryCapacity = 32;
         private const int InitialCandidateCapacity = 16;
+        private const int InitialRecognitionCapacity = 16;
+
+        private struct RecognitionState
+        {
+            public ActorRuntimeIdentity Candidate;
+            public float Progress;
+            public float LastUpdateTime;
+            public int LastScanRevision;
+        }
 
         private readonly List<ActorRuntimeIdentity> registryBuffer =
             new List<ActorRuntimeIdentity>(InitialRegistryCapacity);
         private readonly List<ActorRuntimeIdentity> candidateBuffer =
             new List<ActorRuntimeIdentity>(InitialCandidateCapacity);
+        private readonly List<RecognitionState> recognitionStates =
+            new List<RecognitionState>(InitialRecognitionCapacity);
 
         private ActorRuntimeIdentity identity;
         private ActorHealthComponent health;
@@ -105,6 +116,7 @@ namespace OldScars.Core.Actors
         private ActorVisualPerceptionService perception;
         private HumanEncounterAIController encounter;
         private float nextAcquisitionTime;
+        private int recognitionScanRevision;
         private bool configured;
 
         public bool IsConfigured => configured;
@@ -113,11 +125,22 @@ namespace OldScars.Core.Actors
         public int PerceptionEvaluationCount { get; private set; }
         public int RegistryBufferExpansionCount { get; private set; }
         public int CandidateBufferExpansionCount { get; private set; }
+        public int RecognitionStateBufferExpansionCount { get; private set; }
+        public int PeakRecognitionStateCount { get; private set; }
+        public int RecognitionStateCount => recognitionStates.Count;
+        public float RecognitionScanIntervalSeconds => AcquisitionIntervalSeconds;
+        public float HighestRecognitionProgress { get; private set; }
+        public string HighestRecognitionTargetActorInstanceId { get; private set; }
         public ActorVisualPerceptionResult LastAcquisitionPerception { get; private set; }
 
         private void Awake()
         {
             ResolveReferences();
+        }
+
+        private void OnDisable()
+        {
+            ClearRecognitionStates();
         }
 
         private void Update()
@@ -127,6 +150,7 @@ namespace OldScars.Core.Actors
             if (identity == null || health == null || identity.LifecycleState == ActorLifecycleState.Dead || health.IsDead)
             {
                 encounter?.ClearThreat("Acquirer became inactive");
+                ClearRecognitionStates();
                 enabled = false;
                 return;
             }
@@ -136,7 +160,10 @@ namespace OldScars.Core.Actors
             {
                 if (current.IsRegistered && current.LifecycleState == ActorLifecycleState.Alive &&
                     affiliation.IsHostileToward(current))
+                {
+                    ClearRecognitionStates();
                     return;
+                }
                 encounter.ClearThreat("Assigned actor is no longer a living hostile candidate");
             }
 
@@ -144,7 +171,7 @@ namespace OldScars.Core.Actors
             if (now < nextAcquisitionTime)
                 return;
             nextAcquisitionTime = now + AcquisitionIntervalSeconds;
-            AcquireNearestPerceivedHostile();
+            AcquireNearestRecognizedHostile(now);
         }
 
         public bool TryConfigure(long deterministicPhaseSeed, out string error)
@@ -159,14 +186,23 @@ namespace OldScars.Core.Actors
             }
 
             configured = true;
+            ClearRecognitionStates();
             float phase = (Mix(unchecked((ulong)deterministicPhaseSeed)) & 0xffffUL) / 65535f;
             nextAcquisitionTime = Time.time + AcquisitionIntervalSeconds * (0.5f + phase * 0.5f);
             return true;
         }
 
-        private void AcquireNearestPerceivedHostile()
+        public bool TryGetRecognitionProgress(ActorRuntimeIdentity candidate, out float progress)
+        {
+            int index = FindRecognitionState(candidate);
+            progress = index >= 0 ? recognitionStates[index].Progress : 0f;
+            return index >= 0;
+        }
+
+        private void AcquireNearestRecognizedHostile(float now)
         {
             AcquisitionScanCount++;
+            recognitionScanRevision++;
             int registryCapacity = registryBuffer.Capacity;
             ActorRuntimeRegistry.CopyActiveRepresentationsTo(registryBuffer);
             if (registryBuffer.Capacity > registryCapacity)
@@ -194,18 +230,120 @@ namespace OldScars.Core.Actors
             SortCandidatesByApproximateDistance();
             for (int index = 0; index < candidateBuffer.Count; index++)
             {
-                LastAcquisitionPerception = perception.Evaluate(candidateBuffer[index]);
+                ActorRuntimeIdentity candidate = candidateBuffer[index];
+                int stateIndex = FindRecognitionState(candidate);
+                if (stateIndex < 0)
+                {
+                    int previousCapacity = recognitionStates.Capacity;
+                    recognitionStates.Add(new RecognitionState
+                    {
+                        Candidate = candidate,
+                        Progress = 0f,
+                        LastUpdateTime = now,
+                        LastScanRevision = recognitionScanRevision
+                    });
+                    if (recognitionStates.Capacity > previousCapacity)
+                        RecognitionStateBufferExpansionCount++;
+                    stateIndex = recognitionStates.Count - 1;
+                    PeakRecognitionStateCount = Mathf.Max(PeakRecognitionStateCount, recognitionStates.Count);
+                }
+
+                RecognitionState state = recognitionStates[stateIndex];
+                float elapsed = Mathf.Max(0f, now - state.LastUpdateTime);
+                LastAcquisitionPerception = perception.Evaluate(candidate);
                 PerceptionEvaluationCount++;
-                if (!LastAcquisitionPerception.Perceived)
-                    continue;
-                if (encounter.TryAssignThreat(candidateBuffer[index], out string error))
-                    return;
-                Debug.LogWarning(
-                    "[AI][THREAT_ACQUISITION_REJECTED]" +
-                    $"\n  Actor: {identity.ActorInstanceId}" +
-                    $"\n  Candidate: {candidateBuffer[index].ActorInstanceId}" +
-                    $"\n  Failure: {error ?? "<UNKNOWN>"}");
+                state.LastUpdateTime = now;
+                state.LastScanRevision = recognitionScanRevision;
+                if (LastAcquisitionPerception.Perceived)
+                {
+                    float recognitionSeconds = perception.RecognitionSecondsAtDistance(LastAcquisitionPerception.Distance);
+                    state.Progress = Mathf.Clamp01(state.Progress + elapsed / recognitionSeconds);
+                }
+                else
+                {
+                    state.Progress = Mathf.Clamp01(state.Progress - elapsed / perception.RecognitionDecaySeconds);
+                }
+                recognitionStates[stateIndex] = state;
+
+                if (state.Progress >= 1f)
+                {
+                    if (encounter.TryAssignThreat(candidate, out string error))
+                    {
+                        ClearRecognitionStates();
+                        return;
+                    }
+                    Debug.LogWarning(
+                        "[AI][THREAT_ACQUISITION_REJECTED]" +
+                        $"\n  Actor: {identity.ActorInstanceId}" +
+                        $"\n  Candidate: {candidate.ActorInstanceId}" +
+                        $"\n  Failure: {error ?? "<UNKNOWN>"}");
+                }
+                else if (state.Progress <= 0f && !LastAcquisitionPerception.Perceived)
+                {
+                    recognitionStates.RemoveAt(stateIndex);
+                }
             }
+
+            DecayOrRemoveUnscannedStates(now);
+            UpdateRecognitionObservability();
+        }
+
+        private void DecayOrRemoveUnscannedStates(float now)
+        {
+            float visualRangeSquared = perception.VisualRange * perception.VisualRange;
+            for (int index = recognitionStates.Count - 1; index >= 0; index--)
+            {
+                RecognitionState state = recognitionStates[index];
+                if (state.LastScanRevision == recognitionScanRevision)
+                    continue;
+                ActorRuntimeIdentity candidate = state.Candidate;
+                if (candidate == null || !candidate.IsRegistered ||
+                    candidate.LifecycleState == ActorLifecycleState.Dead || !affiliation.IsHostileToward(candidate))
+                {
+                    recognitionStates.RemoveAt(index);
+                    continue;
+                }
+
+                float elapsed = Mathf.Max(0f, now - state.LastUpdateTime);
+                state.LastUpdateTime = now;
+                state.Progress = Mathf.Clamp01(state.Progress - elapsed / perception.RecognitionDecaySeconds);
+                bool outsideBroadRange = (candidate.transform.position - transform.position).sqrMagnitude > visualRangeSquared;
+                if (state.Progress <= 0f || outsideBroadRange && elapsed >= perception.RecognitionDecaySeconds)
+                    recognitionStates.RemoveAt(index);
+                else
+                    recognitionStates[index] = state;
+            }
+        }
+
+        private int FindRecognitionState(ActorRuntimeIdentity candidate)
+        {
+            for (int index = 0; index < recognitionStates.Count; index++)
+            {
+                if (recognitionStates[index].Candidate == candidate)
+                    return index;
+            }
+            return -1;
+        }
+
+        private void UpdateRecognitionObservability()
+        {
+            HighestRecognitionProgress = 0f;
+            HighestRecognitionTargetActorInstanceId = null;
+            for (int index = 0; index < recognitionStates.Count; index++)
+            {
+                RecognitionState state = recognitionStates[index];
+                if (state.Candidate == null || state.Progress <= HighestRecognitionProgress)
+                    continue;
+                HighestRecognitionProgress = state.Progress;
+                HighestRecognitionTargetActorInstanceId = state.Candidate.ActorInstanceId;
+            }
+        }
+
+        private void ClearRecognitionStates()
+        {
+            recognitionStates.Clear();
+            HighestRecognitionProgress = 0f;
+            HighestRecognitionTargetActorInstanceId = null;
         }
 
         private void SortCandidatesByApproximateDistance()

@@ -699,8 +699,14 @@ namespace OldScars.Core.Data.Validation
                 return;
             RequireFinitePositive(perception.visual_range, "visual_range", context);
             RequireFinitePositive(perception.eye_height, "eye_height", context);
+            RequireFinitePositive(perception.recognition_near_seconds, "recognition_near_seconds", context);
+            RequireFinitePositive(perception.recognition_far_seconds, "recognition_far_seconds", context);
+            RequireFinitePositive(perception.recognition_decay_seconds, "recognition_decay_seconds", context);
             if (!FinitePositive(perception.horizontal_fov_degrees) || perception.horizontal_fov_degrees > 360f)
                 report.Error($"{context}: 'horizontal_fov_degrees' must be finite and within (0, 360] (got {perception.horizontal_fov_degrees}).");
+            if (FinitePositive(perception.recognition_near_seconds) && FinitePositive(perception.recognition_far_seconds) &&
+                perception.recognition_far_seconds <= perception.recognition_near_seconds)
+                report.Error($"{context}: 'recognition_far_seconds' must be greater than 'recognition_near_seconds'.");
         }
 
         private void RequireFinitePositive(float value, string field, string context)

@@ -68,11 +68,17 @@ namespace OldScars.Core.Actors
         private float visualRange;
         private float horizontalFovDegrees;
         private float eyeHeight;
+        private float recognitionNearSeconds;
+        private float recognitionFarSeconds;
+        private float recognitionDecaySeconds;
 
         public bool IsConfigured => configured;
         public float VisualRange => visualRange;
         public float HorizontalFovDegrees => horizontalFovDegrees;
         public float EyeHeight => eyeHeight;
+        public float RecognitionNearSeconds => recognitionNearSeconds;
+        public float RecognitionFarSeconds => recognitionFarSeconds;
+        public float RecognitionDecaySeconds => recognitionDecaySeconds;
         public int TargetColliderBufferExpansionCount { get; private set; }
         public int LineOfSightFallbackCount { get; private set; }
 
@@ -81,20 +87,38 @@ namespace OldScars.Core.Actors
             observer = GetComponent<ActorRuntimeIdentity>();
         }
 
-        public bool TryConfigure(float range, float horizontalFov, float observerEyeHeight, out string error)
+        public bool TryConfigure(
+            float range,
+            float horizontalFov,
+            float observerEyeHeight,
+            float nearRecognitionSeconds,
+            float farRecognitionSeconds,
+            float decaySeconds,
+            out string error)
         {
             error = null;
             if (!FinitePositive(range) || !FinitePositive(horizontalFov) || horizontalFov > 360f ||
-                !FinitePositive(observerEyeHeight))
+                !FinitePositive(observerEyeHeight) || !FinitePositive(nearRecognitionSeconds) ||
+                !FinitePositive(farRecognitionSeconds) || farRecognitionSeconds <= nearRecognitionSeconds ||
+                !FinitePositive(decaySeconds))
             {
-                error = "Visual range and eye height must be finite and positive; horizontal FOV must be within (0, 360].";
+                error = "Visual range, eye height and recognition times must be finite and positive; horizontal FOV must be within (0, 360] and far recognition must exceed near recognition.";
                 return false;
             }
             visualRange = range;
             horizontalFovDegrees = horizontalFov;
             eyeHeight = observerEyeHeight;
+            recognitionNearSeconds = nearRecognitionSeconds;
+            recognitionFarSeconds = farRecognitionSeconds;
+            recognitionDecaySeconds = decaySeconds;
             configured = true;
             return true;
+        }
+
+        public float RecognitionSecondsAtDistance(float distance)
+        {
+            float normalizedDistance = Mathf.Clamp01(distance / Mathf.Max(visualRange, 0.001f));
+            return Mathf.Lerp(recognitionNearSeconds, recognitionFarSeconds, normalizedDistance);
         }
 
         public ActorVisualPerceptionResult Evaluate(ActorRuntimeIdentity target)

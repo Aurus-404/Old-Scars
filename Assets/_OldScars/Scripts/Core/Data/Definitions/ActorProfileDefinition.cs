@@ -48,6 +48,9 @@ namespace OldScars.Core.Data.Definitions
         public float visual_range;
         public float horizontal_fov_degrees;
         public float eye_height;
+        public float recognition_near_seconds = 0.2f;
+        public float recognition_far_seconds = 1.0f;
+        public float recognition_decay_seconds = 0.5f;
     }
 
     [System.Serializable]

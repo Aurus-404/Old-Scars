@@ -194,7 +194,10 @@ namespace OldScars.Editor
                     Approximately(navigatorController.Agent.stoppingDistance, profile.navigation.stopping_distance) &&
                     Approximately(perception.VisualRange, profile.visual_perception.visual_range) &&
                     Approximately(perception.HorizontalFovDegrees, profile.visual_perception.horizontal_fov_degrees) &&
-                    Approximately(perception.EyeHeight, profile.visual_perception.eye_height),
+                    Approximately(perception.EyeHeight, profile.visual_perception.eye_height) &&
+                    Approximately(perception.RecognitionNearSeconds, profile.visual_perception.recognition_near_seconds) &&
+                    Approximately(perception.RecognitionFarSeconds, profile.visual_perception.recognition_far_seconds) &&
+                    Approximately(perception.RecognitionDecaySeconds, profile.visual_perception.recognition_decay_seconds),
                 "Runtime M41.0 parameters do not match ActorProfile data.");
 
             PlayerMovementController player = UnityEngine.Object.FindAnyObjectByType<PlayerMovementController>();

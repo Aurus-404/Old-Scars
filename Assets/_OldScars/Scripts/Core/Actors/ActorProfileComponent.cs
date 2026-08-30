@@ -365,6 +365,9 @@ namespace OldScars.Core.Actors
                     profile.visual_perception.visual_range,
                     profile.visual_perception.horizontal_fov_degrees,
                     profile.visual_perception.eye_height,
+                    profile.visual_perception.recognition_near_seconds,
+                    profile.visual_perception.recognition_far_seconds,
+                    profile.visual_perception.recognition_decay_seconds,
                     out string error))
             {
                 Debug.LogError(

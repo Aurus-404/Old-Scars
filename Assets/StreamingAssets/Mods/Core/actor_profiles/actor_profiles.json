@@ -211,7 +211,14 @@
       "initial_tags": ["human", "inspectable"],
       "health": { "max_health": 100, "current_health": 100 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
-      "visual_perception": { "visual_range": 90.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
+      "visual_perception": {
+        "visual_range": 90.0,
+        "horizontal_fov_degrees": 120.0,
+        "eye_height": 1.6,
+        "recognition_near_seconds": 0.20,
+        "recognition_far_seconds": 1.00,
+        "recognition_decay_seconds": 0.50
+      },
       "encounter_ai": {
         "response_policy": "fight",
         "alert_duration_seconds": 0.35,

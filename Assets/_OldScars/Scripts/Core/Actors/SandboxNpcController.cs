@@ -222,6 +222,7 @@ namespace OldScars.Core.Actors
             InventoryComponent inventory = LastSpawn.GetComponent<InventoryComponent>();
             ActorAffiliationComponent affiliation = LastSpawn.GetComponent<ActorAffiliationComponent>();
             HumanEncounterAIController encounter = LastSpawn.GetComponent<HumanEncounterAIController>();
+            ActorThreatAcquisitionController acquisition = LastSpawn.GetComponent<ActorThreatAcquisitionController>();
             GameDatabase database = GameDataManager.Instance?.Database;
             var lines = new List<string>
             {
@@ -232,6 +233,10 @@ namespace OldScars.Core.Actors
                 "Affiliation: " + (affiliation?.DebugDisplayName ?? "<NONE>"),
                 "Target: " + (encounter?.ThreatActorInstanceId ?? "<NONE>"),
                 "Perception: " + DescribePerception(encounter),
+                "Recognition: " + (acquisition != null
+                    ? acquisition.HighestRecognitionProgress.ToString("0.###") +
+                      " / " + (acquisition.HighestRecognitionTargetActorInstanceId ?? "<NONE>")
+                    : "<NONE>"),
                 "Distance: " + DescribeDistance(identity, encounter),
                 "Navigation: " + (navigation != null ? navigation.State.ToString() : "<NONE>"),
                 "Equipment:"
