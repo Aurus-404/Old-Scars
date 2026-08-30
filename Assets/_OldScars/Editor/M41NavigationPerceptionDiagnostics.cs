@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using OldScars.Core;
 using OldScars.Core.Actors;
@@ -23,7 +24,10 @@ namespace OldScars.Editor
         private const string Running = "running";
         private const string Finish = "finish";
         private const string ProfileId = "core:debug_navigation_npc_01";
+        private const int PerceptionStressIterations = 64;
+        private const int SaturationBlockerCount = 20;
 
+        private static readonly List<ActorRuntimeIdentity> registryDiscoveryBuffer = new List<ActorRuntimeIdentity>(8);
         private static ActorRuntimeIdentity navigator;
         private static ActorRuntimeIdentity observer;
         private static ActorRuntimeIdentity target;
@@ -366,6 +370,14 @@ namespace OldScars.Editor
             UnityEngine.Object.Destroy(child);
             rootCollider.enabled = true;
 
+            RunRepeatedPerceptionAndRegistryCases(sight);
+            RunLineOfSightSaturationCase(sight);
+
+            target.GetComponent<ActorHealthComponent>().Kill();
+            ActorVisualPerceptionResult deadTarget = sight.Evaluate(target);
+            Require(!deadTarget.Perceived && deadTarget.Reason == ActorVisualPerceptionReason.TargetDead,
+                "Dead target remained perceptible.");
+
             string restoredId = observer.ActorInstanceId;
             string restoredProfile = observer.ActorProfileId;
             Vector3 restoredPosition = observer.transform.position;
@@ -382,6 +394,124 @@ namespace OldScars.Editor
             restoredActor.GetComponent<ActorNavigationController>().ApplyPersistencePose(restoredPosition, restoredRotation);
             Require(restoredActor.GetComponent<ActorNavigationController>().State == ActorNavigationState.Idle,
                 "Persistence pose application resumed an ephemeral navigation order.");
+        }
+
+        private static void RunRepeatedPerceptionAndRegistryCases(ActorVisualPerceptionService sight)
+        {
+            VerifyRegistryDiscoverySeam();
+            var stressTargets = new List<ActorRuntimeIdentity>(3) { target };
+            Vector3 targetPosition = Marker(M41SampleSceneNavigationTools.TargetName).position;
+            try
+            {
+                stressTargets.Add(Spawn(targetPosition + Vector3.forward * 1.5f, Quaternion.identity,
+                    "M41 Diagnostic Perception Stress A"));
+                stressTargets.Add(Spawn(targetPosition - Vector3.forward * 1.5f, Quaternion.identity,
+                    "M41 Diagnostic Perception Stress B"));
+                VerifyRegistryDiscoverySeam();
+
+                EvaluateStressTargets(sight, stressTargets);
+                int expansionsAfterWarmup = sight.TargetColliderBufferExpansionCount;
+                int fallbacksAfterWarmup = sight.LineOfSightFallbackCount;
+                for (int index = 0; index < PerceptionStressIterations; index++)
+                    EvaluateStressTargets(sight, stressTargets);
+                Require(sight.TargetColliderBufferExpansionCount == expansionsAfterWarmup,
+                    "Repeated perception expanded the target collider buffer after warm-up.");
+                Require(sight.LineOfSightFallbackCount == fallbacksAfterWarmup,
+                    "Repeated clear perception unexpectedly saturated the LOS hit buffer.");
+            }
+            finally
+            {
+                for (int index = 1; index < stressTargets.Count; index++)
+                {
+                    ActorRuntimeIdentity stressTarget = stressTargets[index];
+                    if (stressTarget != null)
+                        ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(stressTarget.ActorInstanceId, out _);
+                }
+                ResetPerceptionPair(observer, target);
+                Physics.SyncTransforms();
+            }
+            VerifyRegistryDiscoverySeam();
+        }
+
+        private static void EvaluateStressTargets(
+            ActorVisualPerceptionService sight,
+            List<ActorRuntimeIdentity> stressTargets)
+        {
+            Vector3 observerPosition = Marker(M41SampleSceneNavigationTools.ObserverName).position;
+            for (int index = 0; index < stressTargets.Count; index++)
+            {
+                ActorRuntimeIdentity stressTarget = stressTargets[index];
+                Vector3 direction = Vector3.ProjectOnPlane(stressTarget.transform.position - observerPosition, Vector3.up);
+                Require(direction.sqrMagnitude > 0.0001f, "Perception stress target overlapped the observer.");
+                Place(observer, observerPosition, Quaternion.LookRotation(direction));
+                Physics.SyncTransforms();
+                ActorVisualPerceptionResult result = sight.Evaluate(stressTarget);
+                Require(result.Perceived && result.Reason == ActorVisualPerceptionReason.Perceived,
+                    "Repeated perception lost a clear stress target: " + result.Reason + ".");
+            }
+        }
+
+        private static void RunLineOfSightSaturationCase(ActorVisualPerceptionService sight)
+        {
+            ResetPerceptionPair(observer, target);
+            Physics.SyncTransforms();
+            Collider targetCollider = target.GetComponent<Collider>();
+            Require(targetCollider != null, "Perception saturation target has no root collider.");
+            Vector3 eye = observer.transform.position + Vector3.up * sight.EyeHeight;
+            Vector3 direction = targetCollider.bounds.center - eye;
+            float distance = direction.magnitude;
+            Require(distance > 1f, "Perception saturation fixture is too close to the observer.");
+            direction /= distance;
+
+            int fallbackCount = sight.LineOfSightFallbackCount;
+            var blockerRoot = new GameObject("M41 Perception Saturation Blockers");
+            try
+            {
+                for (int index = 0; index < SaturationBlockerCount; index++)
+                {
+                    GameObject blocker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    blocker.name = "M41 Perception Saturation Blocker " + index;
+                    blocker.transform.SetParent(blockerRoot.transform, false);
+                    float fraction = (index + 1f) / (SaturationBlockerCount + 1f);
+                    blocker.transform.position = eye + direction * Mathf.Lerp(0.35f, distance - 0.35f, fraction);
+                    blocker.transform.localScale = Vector3.one * 0.05f;
+                }
+                Physics.SyncTransforms();
+                ActorVisualPerceptionResult saturated = sight.Evaluate(target);
+                Require(!saturated.Perceived && saturated.Reason == ActorVisualPerceptionReason.Occluded &&
+                        saturated.Blocker != null,
+                    "Saturated LOS buffer did not preserve the nearest occlusion result.");
+                Require(sight.LineOfSightFallbackCount == fallbackCount + 1,
+                    "Saturated LOS buffer did not use the safe allocating fallback.");
+            }
+            finally
+            {
+                blockerRoot.SetActive(false);
+                UnityEngine.Object.Destroy(blockerRoot);
+                Physics.SyncTransforms();
+            }
+        }
+
+        private static void VerifyRegistryDiscoverySeam()
+        {
+            int copied = ActorRuntimeRegistry.CopyActiveRepresentationsTo(registryDiscoveryBuffer);
+            Require(copied == ActorRuntimeRegistry.ActiveCount,
+                "Actor registry discovery seam lost an active representation.");
+            int capacityAfterWarmup = registryDiscoveryBuffer.Capacity;
+            Require(ActorRuntimeRegistry.CopyActiveRepresentationsTo(registryDiscoveryBuffer) == copied &&
+                    registryDiscoveryBuffer.Capacity == capacityAfterWarmup,
+                "Actor registry discovery seam did not reuse the caller buffer.");
+            for (int index = 0; index < registryDiscoveryBuffer.Count; index++)
+            {
+                ActorRuntimeIdentity identity = registryDiscoveryBuffer[index];
+                Require(identity != null && identity.IsRegistered &&
+                        ActorRuntimeRegistry.TryGet(identity.ActorInstanceId, out ActorRuntimeIdentity registered) &&
+                        ReferenceEquals(identity, registered),
+                    "Actor registry discovery seam returned an invalid representation.");
+                for (int compare = 0; compare < index; compare++)
+                    Require(registryDiscoveryBuffer[compare].ActorInstanceId != identity.ActorInstanceId,
+                        "Actor registry discovery seam duplicated an ActorInstanceId.");
+            }
         }
 
         private static void CompletePlayRun()
@@ -402,6 +532,7 @@ namespace OldScars.Editor
                     "\n- reachable movement/Reached and invalid destination/Failed" +
                     "\n- Dead lifecycle stop/reject and player authority isolation" +
                     "\n- range, horizontal FOV, opaque LOS, restored LOS, self and child-collider ownership" +
+                    "\n- dead target, repeated multi-actor perception, safe saturated-LOS fallback and registry discovery seam" +
                     "\n- PersistenceRestore identity with ephemeral navigation reset to Idle" +
                     "\n- Navigation and Perception operate without Combat components");
             }
@@ -501,6 +632,7 @@ namespace OldScars.Editor
             observer = null;
             target = null;
             navigatorController = null;
+            registryDiscoveryBuffer.Clear();
             stage = 0;
             stableFrame = 0;
             deadline = 0d;

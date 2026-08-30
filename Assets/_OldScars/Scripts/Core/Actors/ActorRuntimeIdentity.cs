@@ -181,6 +181,17 @@ namespace OldScars.Core.Actors
         public static int ActiveCount => Active.Count;
         public static IReadOnlyCollection<ActorRuntimeIdentity> ActiveRepresentations => Active.Values.ToArray();
 
+        public static int CopyActiveRepresentationsTo(List<ActorRuntimeIdentity> destination)
+        {
+            if (destination == null)
+                throw new ArgumentNullException(nameof(destination));
+
+            destination.Clear();
+            foreach (ActorRuntimeIdentity identity in Active.Values)
+                destination.Add(identity);
+            return destination.Count;
+        }
+
         public static bool TryGet(string actorInstanceId, out ActorRuntimeIdentity identity)
         {
             return Active.TryGetValue(actorInstanceId ?? string.Empty, out identity) && identity != null;

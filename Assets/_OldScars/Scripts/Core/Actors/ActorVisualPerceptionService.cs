@@ -1,5 +1,4 @@
-using System;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace OldScars.Core.Actors
@@ -59,7 +58,12 @@ namespace OldScars.Core.Actors
     [DisallowMultipleComponent]
     public sealed class ActorVisualPerceptionService : MonoBehaviour
     {
+        private const int InitialColliderBufferCapacity = 8;
+        private const int InitialLineOfSightHitBufferCapacity = 16;
+
         private ActorRuntimeIdentity observer;
+        private readonly List<Collider> targetColliderBuffer = new List<Collider>(InitialColliderBufferCapacity);
+        private RaycastHit[] lineOfSightHitBuffer = new RaycastHit[InitialLineOfSightHitBufferCapacity];
         private bool configured;
         private float visualRange;
         private float horizontalFovDegrees;
@@ -69,6 +73,8 @@ namespace OldScars.Core.Actors
         public float VisualRange => visualRange;
         public float HorizontalFovDegrees => horizontalFovDegrees;
         public float EyeHeight => eyeHeight;
+        public int TargetColliderBufferExpansionCount { get; private set; }
+        public int LineOfSightFallbackCount { get; private set; }
 
         private void Awake()
         {
@@ -132,15 +138,24 @@ namespace OldScars.Core.Actors
             if (distance <= 0.0001f)
                 return Result(true, ActorVisualPerceptionReason.Perceived, observerId, targetId, observed, distance, angle, null, worldTime);
 
-            RaycastHit[] hits = Physics.RaycastAll(
-                eye, toTarget / distance, distance + 0.01f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
-            for (int index = 0; index < hits.Length; index++)
+            int hitCount = Physics.RaycastNonAlloc(
+                eye, toTarget / distance, lineOfSightHitBuffer, distance + 0.01f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            RaycastHit[] hits = lineOfSightHitBuffer;
+            if (hitCount >= lineOfSightHitBuffer.Length)
             {
-                Collider hit = hits[index].collider;
-                if (hit == null || hit.transform == transform || hit.transform.IsChildOf(transform))
-                    continue;
+                // NonAlloc cannot prove it captured the nearest relevant hit when full.
+                // Preserve LOS semantics by taking the exceptional allocating path instead.
+                hits = Physics.RaycastAll(
+                    eye, toTarget / distance, distance + 0.01f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                hitCount = hits.Length;
+                LineOfSightFallbackCount++;
+            }
 
+            if (TryGetNearestRelevantHit(hits, hitCount, out RaycastHit nearestHit))
+            {
+                Collider hit = nearestHit.collider;
                 ActorRuntimeIdentity hitActor = hit.GetComponentInParent<ActorRuntimeIdentity>();
                 if (ReferenceEquals(hitActor, target))
                     return Result(true, ActorVisualPerceptionReason.Perceived, observerId, targetId, observed, distance, angle, null, worldTime);
@@ -150,12 +165,48 @@ namespace OldScars.Core.Actors
             return Result(false, ActorVisualPerceptionReason.LineOfSightMiss, observerId, targetId, observed, distance, angle, null, worldTime);
         }
 
-        private static Collider SelectTargetCollider(ActorRuntimeIdentity target, Vector3 observerEye)
+        private Collider SelectTargetCollider(ActorRuntimeIdentity target, Vector3 observerEye)
         {
-            return target.GetComponentsInChildren<Collider>(false)
-                .Where(collider => collider != null && collider.enabled && !collider.isTrigger)
-                .OrderBy(collider => (collider.bounds.center - observerEye).sqrMagnitude)
-                .FirstOrDefault();
+            int previousCapacity = targetColliderBuffer.Capacity;
+            targetColliderBuffer.Clear();
+            target.GetComponentsInChildren(false, targetColliderBuffer);
+            if (targetColliderBuffer.Capacity > previousCapacity)
+                TargetColliderBufferExpansionCount++;
+
+            Collider selected = null;
+            float closestDistanceSquared = float.PositiveInfinity;
+            for (int index = 0; index < targetColliderBuffer.Count; index++)
+            {
+                Collider collider = targetColliderBuffer[index];
+                if (collider == null || !collider.enabled || collider.isTrigger)
+                    continue;
+
+                float distanceSquared = (collider.bounds.center - observerEye).sqrMagnitude;
+                if (distanceSquared >= closestDistanceSquared)
+                    continue;
+                selected = collider;
+                closestDistanceSquared = distanceSquared;
+            }
+            return selected;
+        }
+
+        private bool TryGetNearestRelevantHit(RaycastHit[] hits, int hitCount, out RaycastHit nearestHit)
+        {
+            nearestHit = default;
+            float nearestDistance = float.PositiveInfinity;
+            bool found = false;
+            for (int index = 0; index < hitCount; index++)
+            {
+                RaycastHit candidate = hits[index];
+                Collider collider = candidate.collider;
+                if (collider == null || collider.transform == transform || collider.transform.IsChildOf(transform) ||
+                    candidate.distance >= nearestDistance)
+                    continue;
+                nearestHit = candidate;
+                nearestDistance = candidate.distance;
+                found = true;
+            }
+            return found;
         }
 
         private static ActorVisualPerceptionResult Result(
