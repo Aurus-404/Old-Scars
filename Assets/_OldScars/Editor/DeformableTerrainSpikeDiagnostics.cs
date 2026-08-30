@@ -90,6 +90,9 @@ namespace OldScars.EditorTools
 
                 ValidateLocalizedMutations(controller, failures, evidence);
                 controller.TryReset(out _, out _);
+                ValidateRepeatedMutationResetCycles(
+                    controller, plan, "MarchingTetrahedra", failures, evidence);
+                controller.TryReset(out _, out _);
 
                 const float tunnelZ = -12f;
                 float surface = plan.HeightNormalizedAtLocal(0f, tunnelZ) *
@@ -213,6 +216,14 @@ namespace OldScars.EditorTools
             DeformableTerrainVolume volume,
             ICollection<string> failures)
         {
+            ValidateSharedBoundaries(volume, failures, true);
+        }
+
+        private static void ValidateSharedBoundaries(
+            DeformableTerrainVolume volume,
+            ICollection<string> failures,
+            bool includeCarvedFixture)
+        {
             foreach (DeformableTerrainMesherBackend backend in
                      (DeformableTerrainMesherBackend[])Enum.GetValues(
                          typeof(DeformableTerrainMesherBackend)))
@@ -248,6 +259,9 @@ namespace OldScars.EditorTools
                             volume, new DeformableTerrainChunkId(x, y, 1), backend),
                         2, boundaryZ, backend + " Z boundary x" + x + " y" + y, failures);
             }
+
+            if (!includeCarvedFixture)
+                return;
 
             string baselineEvidence = volume.ComputeDensityEvidence();
             Bounds lowerChunk = volume.ChunkBounds(new DeformableTerrainChunkId(0, 0, 0));
@@ -370,6 +384,70 @@ namespace OldScars.EditorTools
                 "corner mutation=" + (corner?.MutationMilliseconds ?? -1) + "ms, mesh=" +
                 (corner?.MeshingMilliseconds ?? -1) + "ms, collider=" +
                 (corner?.ColliderUpdateMilliseconds ?? -1) + "ms");
+        }
+
+        private static void ValidateRepeatedMutationResetCycles(
+            WorldDeformableTerrainSpikeController controller,
+            TerrainMaterializationPlan plan,
+            string backendLabel,
+            ICollection<string> failures,
+            ICollection<string> evidence)
+        {
+            string baselineDensity = controller.Volume.ComputeDensityEvidence();
+            long totalMutationMilliseconds = 0L;
+            long totalMeshingMilliseconds = 0L;
+            long totalColliderMilliseconds = 0L;
+            int totalAffectedChunks = 0;
+            const int cycles = 3;
+            for (int cycle = 0; cycle < cycles; cycle++)
+            {
+                float firstZ = -4f + cycle * 2.5f;
+                float secondZ = firstZ + 3f;
+                float firstSurface = plan.HeightNormalizedAtLocal(-4f, firstZ) *
+                                     plan.Configuration.VerticalRelief;
+                float secondSurface = plan.HeightNormalizedAtLocal(4f, secondZ) *
+                                      plan.Configuration.VerticalRelief;
+                Check(controller.TrySubtractSphere(
+                          new Vector3(-4f, firstSurface - 1.5f, firstZ), 2.5f,
+                          out DeformableTerrainMutationResult first, out string firstError),
+                    backendLabel + " repeated mutation first sphere failed: " + Safe(firstError), failures);
+                Check(controller.TrySubtractSphere(
+                          new Vector3(4f, secondSurface - 1.5f, secondZ), 2.5f,
+                          out DeformableTerrainMutationResult second, out string secondError),
+                    backendLabel + " repeated mutation second sphere failed: " + Safe(secondError), failures);
+                totalAffectedChunks += (first?.AffectedChunks.Count ?? 0) +
+                                       (second?.AffectedChunks.Count ?? 0);
+                totalMutationMilliseconds += (first?.MutationMilliseconds ?? 0L) +
+                                             (second?.MutationMilliseconds ?? 0L);
+                totalMeshingMilliseconds += (first?.MeshingMilliseconds ?? 0L) +
+                                             (second?.MeshingMilliseconds ?? 0L);
+                totalColliderMilliseconds += (first?.ColliderUpdateMilliseconds ?? 0L) +
+                                              (second?.ColliderUpdateMilliseconds ?? 0L);
+                Check(controller.MutationService.Mutations.Count == 2,
+                    backendLabel + " repeated mutation operation count drifted", failures);
+                // The current mutation authority rebuilds each operation immediately;
+                // validate the shared lattice in its current state without invoking
+                // the separate carved-fixture reset helper.
+                ValidateSharedBoundaries(controller.Volume, failures, false);
+
+                Check(controller.TryReset(
+                          out DeformableTerrainMutationResult reset, out string resetError),
+                    backendLabel + " repeated mutation reset failed: " + Safe(resetError), failures);
+                Check(controller.Volume.ComputeDensityEvidence() == baselineDensity &&
+                      controller.MutationService.Mutations.Count == 0,
+                    backendLabel + " reset did not restore exact baseline density/mutation state", failures);
+                totalMutationMilliseconds += reset?.MutationMilliseconds ?? 0L;
+                totalMeshingMilliseconds += reset?.MeshingMilliseconds ?? 0L;
+                totalColliderMilliseconds += reset?.ColliderUpdateMilliseconds ?? 0L;
+            }
+
+            evidence.Add(
+                backendLabel + " repeated mutate/reset: cycles=" + cycles +
+                ", operations=" + (cycles * 2) +
+                ", affectedChunksTotal=" + totalAffectedChunks +
+                ", mutation=" + totalMutationMilliseconds + "ms, mesh=" +
+                totalMeshingMilliseconds + "ms, collider=" + totalColliderMilliseconds +
+                "ms, exact baseline restored each cycle; batch mutation unsupported by current boundary");
         }
 
         private static bool AllOtherChunksUnchanged(
@@ -608,6 +686,9 @@ namespace OldScars.EditorTools
                 (tunnel?.MeshingMilliseconds ?? -1) + "ms, upload=" +
                 (tunnel?.MeshAssignmentMilliseconds ?? -1) + "ms, collider=" +
                 (tunnel?.ColliderUpdateMilliseconds ?? -1) + "ms");
+            controller.TryReset(out _, out _);
+            ValidateRepeatedMutationResetCycles(
+                controller, plan, "IndexedMarchingCubes", failures, evidence);
         }
 
         private static void ValidateLocalNavigationProbe(
