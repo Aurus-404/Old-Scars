@@ -8,6 +8,7 @@ using OldScars.Core.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace OldScars.EditorTools
 {
@@ -20,6 +21,7 @@ namespace OldScars.EditorTools
         private const long Seed = 8675309123456789L;
 
         private static WorldDeformableTerrainSpikeController terrain;
+        private static WorldRuntimeSceneController runtime;
         private static PlayerGameplayComposition player;
         private static PlayerMovementController movement;
         private static string persistenceRoot;
@@ -41,6 +43,8 @@ namespace OldScars.EditorTools
             SessionState.SetBool(PendingKey, true);
             SessionState.SetInt(StageKey, 0);
             SessionState.EraseString(FailureKey);
+            WorldRuntimeTerrainDevelopmentSettings.SetDiagnosticSelectionOverride(
+                WorldRuntimeTerrainDevelopmentSelection.VolumetricIndexedMarchingCubes);
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             new GameObject("GameDataManager").AddComponent<GameDataManager>();
             EditorApplication.EnterPlaymode();
@@ -52,6 +56,8 @@ namespace OldScars.EditorTools
                 return;
             try
             {
+                WorldRuntimeTerrainDevelopmentSettings.SetDiagnosticSelectionOverride(
+                    WorldRuntimeTerrainDevelopmentSelection.VolumetricIndexedMarchingCubes);
                 if (EditorApplication.isPlaying)
                 {
                     RunPlayStage();
@@ -60,6 +66,13 @@ namespace OldScars.EditorTools
                 if (!EditorApplication.isPlayingOrWillChangePlaymode &&
                     SessionState.GetInt(StageKey, 0) == 99)
                     Finish();
+                else if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                {
+                    SessionState.SetString(
+                        FailureKey,
+                        "Play Mode diagnostic was interrupted before completion; transient terrain selection was cleared.");
+                    Finish();
+                }
             }
             catch (Exception exception)
             {
@@ -79,15 +92,71 @@ namespace OldScars.EditorTools
                 if (Time.frameCount < 5 || GameDataManager.Instance?.IsReady != true ||
                     GameDataManager.Instance.LoadedContentSet == null)
                     return;
-                Setup();
+                SetupWorldSessionAndLoadRuntime();
                 SessionState.SetInt(StageKey, 1);
+                stageStartedAt = Time.time;
+                return;
+            }
+
+            if (stage == 1)
+            {
+                runtime = UnityEngine.Object.FindAnyObjectByType<WorldRuntimeSceneController>();
+                if (runtime == null || !runtime.GameplayStateReady)
+                {
+                    if (Time.time - stageStartedAt > 30f)
+                        throw new InvalidOperationException(
+                            "real WorldRuntime did not reach integrated gameplay readiness for volumetric opt-in.");
+                    return;
+                }
+                terrain = runtime.VolumetricTerrainController;
+                player = runtime.PlayerComposition;
+                movement = player?.MovementController;
+                if (terrain == null || !terrain.IsReady || player == null || movement == null)
+                    throw new InvalidOperationException(
+                        "WorldRuntime did not publish the selected volumetric terrain and shared player composition.");
+                if (runtime.MaterializationController != null && runtime.MaterializationController.IsReady)
+                    throw new InvalidOperationException(
+                        "WorldRuntime created both heightmap and volumetric physical terrain authorities.");
+                if (runtime.TerrainSelection !=
+                    WorldRuntimeTerrainDevelopmentSelection.VolumetricIndexedMarchingCubes)
+                    throw new InvalidOperationException("WorldRuntime ignored the selected indexed MC backend.");
+                WorldSession session = WorldSessionService.ActiveSession;
+                if (session == null || terrain.SourcePlan.GeographyHash !=
+                    session.MacroGeography.CanonicalHash)
+                    throw new InvalidOperationException(
+                        "volumetric active region was not derived from the active WorldSession MacroGeography.");
+
+                player.MovementInput.enabled = false;
+                movement.SetDebugMovementMultiplier(1f);
+                float surface = terrain.SourcePlan.HeightNormalizedAtLocal(0f, -12f) *
+                                terrain.SourcePlan.Configuration.VerticalRelief;
+                bool craterSucceeded = terrain.TrySubtractSphere(
+                    new Vector3(0f, surface - 1.5f, -12f), 6.5f, out _, out string craterError);
+                bool tunnelSucceeded = terrain.TrySubtractCapsule(
+                    new Vector3(0f, surface - 8f, -12f),
+                    new Vector3(28f, surface - 8f, -12f),
+                    3.75f, out _, out string tunnelError);
+                if (!craterSucceeded || !tunnelSucceeded)
+                    throw new InvalidOperationException(
+                        "WorldRuntime deformation fixture failed: " + craterError + " / " + tunnelError);
+                if (runtime.SaveGame(new PersistenceFileStore(persistenceRoot)))
+                    throw new InvalidOperationException(
+                        "WorldRuntime allowed a save while non-persistent volumetric mutations were active.");
+                Debug.Log("[WorldRuntime][SAVE_BLOCKED] volumetric spike mutations require RESET VOLUME before save");
+                if (!terrain.TryFindSurfacePoint(
+                        new Vector3(-20f, 0f, 12f), out Vector3 traversalStart))
+                    throw new InvalidOperationException(
+                        "WorldRuntime volumetric surface did not expose the controlled traversal start.");
+                player.PlacePlayerAtSurface(traversalStart, Quaternion.LookRotation(Vector3.right));
+                Physics.SyncTransforms();
+                SessionState.SetInt(StageKey, 2);
                 stageStartedAt = Time.time;
                 return;
             }
 
             if (player == null || terrain == null || movement == null)
                 throw new InvalidOperationException("Play Mode terrain/player fixture disappeared.");
-            if (stage == 1)
+            if (stage == 2)
             {
                 if (!GroundedOnSpike(player.PlayerTransform.position, out _))
                 {
@@ -99,11 +168,11 @@ namespace OldScars.EditorTools
                 stageStartPosition = player.PlayerTransform.position;
                 surfaceStartForLog = stageStartPosition;
                 movement.SetMovementDirection(Vector3.right);
-                SessionState.SetInt(StageKey, 2);
+                SessionState.SetInt(StageKey, 3);
                 stageStartedAt = Time.time;
                 return;
             }
-            if (stage == 2)
+            if (stage == 3)
             {
                 if (player.PlayerTransform.position.y < terrain.Volume.Origin.y - 2f)
                     throw new InvalidOperationException("player fell through untouched volumetric terrain.");
@@ -136,11 +205,11 @@ namespace OldScars.EditorTools
                 Physics.SyncTransforms();
                 stageStartPosition = player.PlayerTransform.position;
                 movement.SetMovementDirection(Vector3.right);
-                SessionState.SetInt(StageKey, 3);
+                SessionState.SetInt(StageKey, 4);
                 stageStartedAt = Time.time;
                 return;
             }
-            if (stage == 3)
+            if (stage == 4)
             {
                 if (player.PlayerTransform.position.y < terrain.Volume.Origin.y - 2f)
                     throw new InvalidOperationException("player fell through deformed terrain collider.");
@@ -167,6 +236,8 @@ namespace OldScars.EditorTools
 
                 Debug.Log(
                     "Deformable Volumetric Terrain Play Mode Diagnostics: PASS\n" +
+                    "- Runtime: real WorldRuntime / same active WorldSession / IndexedMarchingCubes\n" +
+                    "- GeographyHash: " + terrain.SourcePlan.GeographyHash + "\n" +
                     "- PlayerAuthority: PFB_PlayerGameplayComposition / PlayerMovementController / CharacterController\n" +
                     "- SurfaceChunkBoundaryTraversal: " + surfaceStartForLog + " -> " + surfaceEndForLog + "\n" +
                     "- CavityTraversal: " + stageStartPosition + " -> " + end + "\n" +
@@ -180,7 +251,7 @@ namespace OldScars.EditorTools
 
         private static Vector3 surfaceEndForLog;
 
-        private static void Setup()
+        private static void SetupWorldSessionAndLoadRuntime()
         {
             persistenceRoot = Path.Combine(
                 Path.GetTempPath(), "OldScars_DeformableTerrain_Play_" + Guid.NewGuid().ToString("N"));
@@ -191,36 +262,9 @@ namespace OldScars.EditorTools
                 LandCoveragePreset.High, GameDataManager.Instance.LoadedContentSet, store);
             if (!created.Success)
                 throw new InvalidOperationException("WorldSession fixture failed: " + created.Failure);
-
-            terrain = new GameObject("Deformable Terrain Play Probe")
-                .AddComponent<WorldDeformableTerrainSpikeController>();
-            if (!terrain.TryMaterializeActiveSession(
-                    created.Session,
-                    TerrainMaterializationConfiguration.CreateProvisionalBaseline(),
-                    DeformableTerrainSpikeConfiguration.CreateBaseline()))
-                throw new InvalidOperationException("terrain fixture failed: " + terrain.Failure);
-            float surface = terrain.SourcePlan.HeightNormalizedAtLocal(0f, -12f) *
-                            terrain.SourcePlan.Configuration.VerticalRelief;
-            bool craterSucceeded = terrain.TrySubtractSphere(
-                new Vector3(0f, surface - 1.5f, -12f), 6.5f, out _, out string craterError);
-            bool tunnelSucceeded = terrain.TrySubtractCapsule(
-                new Vector3(0f, surface - 8f, -12f),
-                new Vector3(28f, surface - 8f, -12f),
-                3.75f, out _, out string tunnelError);
-            if (!craterSucceeded || !tunnelSucceeded)
-                throw new InvalidOperationException(
-                    "deformation fixture failed: " + craterError + " / " + tunnelError);
-            if (!terrain.TryFindSurfacePoint(
-                    new Vector3(-20f, 0f, 12f), out Vector3 spawnSurface))
-                throw new InvalidOperationException("safe volumetric player spawn was unavailable.");
-            if (!PlayerGameplayComposition.TryInstantiateAtSurface(
-                    spawnSurface, terrain.transform, out player, out string playerError))
-                throw new InvalidOperationException("shared player composition failed: " + playerError);
-            player.MovementInput.enabled = false;
-            movement = player.MovementController;
-            movement.SetDebugMovementMultiplier(1f);
-            player.BindCameraToPlayer();
-            Physics.SyncTransforms();
+            WorldRuntimeTerrainDevelopmentSettings.SetDiagnosticSelectionOverride(
+                WorldRuntimeTerrainDevelopmentSelection.VolumetricIndexedMarchingCubes);
+            SceneManager.LoadScene(WorldApplicationScenes.WorldRuntimeSceneName, LoadSceneMode.Single);
         }
 
         private static bool GroundedOnSpike(Vector3 position, out RaycastHit hit)
@@ -255,10 +299,12 @@ namespace OldScars.EditorTools
             SessionState.SetBool(PendingKey, false);
             SessionState.SetInt(StageKey, 0);
             SessionState.EraseString(FailureKey);
+            WorldRuntimeTerrainDevelopmentSettings.ClearDiagnosticSelectionOverride();
             WorldSessionService.Close();
             if (!string.IsNullOrWhiteSpace(persistenceRoot) && Directory.Exists(persistenceRoot))
                 Directory.Delete(persistenceRoot, true);
             terrain = null;
+            runtime = null;
             player = null;
             movement = null;
             stableFrames = 0;

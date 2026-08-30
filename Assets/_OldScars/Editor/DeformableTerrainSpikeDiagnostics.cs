@@ -12,6 +12,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Profiling;
 
 namespace OldScars.EditorTools
 {
@@ -106,6 +107,14 @@ namespace OldScars.EditorTools
                           tunnelStart, tunnelEnd, 3.75f,
                           out DeformableTerrainMutationResult tunnel, out string tunnelError),
                     "tunnel failed: " + Safe(tunnelError), failures);
+                evidence.Add(
+                    "MarchingTetrahedra crater+tunnel dirty rebuild: craterChunks=" +
+                    (crater?.AffectedChunks.Count ?? -1) + ", tunnelChunks=" +
+                    (tunnel?.AffectedChunks.Count ?? -1) + ", tunnelMutation=" +
+                    (tunnel?.MutationMilliseconds ?? -1) + "ms, mesh=" +
+                    (tunnel?.MeshingMilliseconds ?? -1) + "ms, upload=" +
+                    (tunnel?.MeshAssignmentMilliseconds ?? -1) + "ms, collider=" +
+                    (tunnel?.ColliderUpdateMilliseconds ?? -1) + "ms");
                 ValidateCavity(controller, tunnelStart, tunnelEnd, 3.75f, failures);
                 ValidateLocalNavigationProbe(controller, "deformed", evidence, failures);
                 Capture(controller, captureRoot, "03_cavity_side",
@@ -118,10 +127,14 @@ namespace OldScars.EditorTools
                 ValidatePersistenceReplay(
                     controller, session, plan, persistenceRoot, failures, evidence);
                 ValidateConfigurationComparison(plan, evidence, failures);
+                ValidateIndexedMarchingCubesRuntime(
+                    controller, plan, baseline, captureRoot, failures, evidence);
 
-                Check(crater != null && crater.AffectedChunks.Count == 2,
-                    "border crater should rebuild exactly two adjacent chunks", failures);
-                Check(tunnel != null && tunnel.AffectedChunks.Count >= 2 && tunnel.AffectedChunks.Count < 4,
+                Check(crater != null && crater.AffectedChunks.Count > 0 &&
+                      crater.AffectedChunks.Count < baseline.ChunkCountX * baseline.ChunkCountY * baseline.ChunkCountZ,
+                    "border crater should rebuild a strict subset of the 3D chunk volume", failures);
+                Check(tunnel != null && tunnel.AffectedChunks.Count >= 2 &&
+                      tunnel.AffectedChunks.Count < baseline.ChunkCountX * baseline.ChunkCountY * baseline.ChunkCountZ,
                     "tunnel should rebuild intersected chunks without rebuilding the entire volume", failures);
             }
             catch (Exception exception)
@@ -159,7 +172,7 @@ namespace OldScars.EditorTools
         {
             DeformableTerrainSpikeMetrics metrics = controller.Metrics;
             Check(controller.IsReady && metrics != null, "controller was not ready", failures);
-            Check(metrics.ChunkCount == 4, "baseline must materialize four real chunks", failures);
+            Check(metrics.ChunkCount == 8, "baseline must materialize a real 2x2x2 chunk volume", failures);
             Check(metrics.DensitySamples == 79233,
                 "baseline density sample cardinality changed unexpectedly", failures);
             Check(metrics.ApproximateFieldBytes == metrics.DensitySamples * 9L,
@@ -170,12 +183,14 @@ namespace OldScars.EditorTools
             Check(controller.SpawnPosition.y > controller.Volume.Origin.y,
                 "collider-backed spawn did not resolve above volume floor", failures);
 
+            int nonEmptyChunks = 0;
             foreach (DeformableTerrainChunkId chunkId in controller.Volume.EnumerateChunks())
             {
                 DeformableTerrainChunkMeshData mesh =
-                    DeformableTerrainMesher.Build(controller.Volume, chunkId);
-                Check(mesh.Vertices.Count > 0 && mesh.TriangleCount > 0,
-                    chunkId + " unexpectedly produced an empty mesh", failures);
+                    DeformableTerrainMesher.Build(
+                        controller.Volume, chunkId, controller.MesherBackend);
+                if (mesh.Vertices.Count > 0 && mesh.TriangleCount > 0)
+                    nonEmptyChunks++;
                 Check(mesh.Vertices.Count == mesh.Normals.Count &&
                       mesh.Vertices.Count == mesh.UVs.Count,
                     chunkId + " vertex/normal/UV cardinality differs", failures);
@@ -190,41 +205,82 @@ namespace OldScars.EditorTools
                     }
                 }
             }
+            Check(nonEmptyChunks >= 2,
+                "the procedural surface did not span multiple technical chunks", failures);
         }
 
         private static void ValidateSharedBoundaries(
             DeformableTerrainVolume volume,
             ICollection<string> failures)
         {
-            ValidateBoundaryPair(
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(0, 0)),
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(1, 0)),
-                true, 0f, "X boundary south", failures);
-            ValidateBoundaryPair(
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(0, 1)),
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(1, 1)),
-                true, 0f, "X boundary north", failures);
-            ValidateBoundaryPair(
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(0, 0)),
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(0, 1)),
-                false, 0f, "Z boundary west", failures);
-            ValidateBoundaryPair(
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(1, 0)),
-                DeformableTerrainMesher.Build(volume, new DeformableTerrainChunkId(1, 1)),
-                false, 0f, "Z boundary east", failures);
+            foreach (DeformableTerrainMesherBackend backend in
+                     (DeformableTerrainMesherBackend[])Enum.GetValues(
+                         typeof(DeformableTerrainMesherBackend)))
+            {
+                float boundaryX = volume.Origin.x + volume.Configuration.CellsPerChunkX *
+                                  volume.Configuration.HorizontalCellSize;
+                float boundaryY = volume.Origin.y + volume.Configuration.CellsPerChunkY *
+                                  volume.VerticalCellSize;
+                float boundaryZ = volume.Origin.z + volume.Configuration.CellsPerChunkZ *
+                                  volume.Configuration.HorizontalCellSize;
+                for (int y = 0; y < volume.Configuration.ChunkCountY; y++)
+                for (int z = 0; z < volume.Configuration.ChunkCountZ; z++)
+                    ValidateBoundaryPair(
+                        DeformableTerrainMesher.Build(
+                            volume, new DeformableTerrainChunkId(0, y, z), backend),
+                        DeformableTerrainMesher.Build(
+                            volume, new DeformableTerrainChunkId(1, y, z), backend),
+                        0, boundaryX, backend + " X boundary y" + y + " z" + z, failures);
+                for (int x = 0; x < volume.Configuration.ChunkCountX; x++)
+                for (int z = 0; z < volume.Configuration.ChunkCountZ; z++)
+                    ValidateBoundaryPair(
+                        DeformableTerrainMesher.Build(
+                            volume, new DeformableTerrainChunkId(x, 0, z), backend),
+                        DeformableTerrainMesher.Build(
+                            volume, new DeformableTerrainChunkId(x, 1, z), backend),
+                        1, boundaryY, backend + " Y boundary x" + x + " z" + z, failures);
+                for (int x = 0; x < volume.Configuration.ChunkCountX; x++)
+                for (int y = 0; y < volume.Configuration.ChunkCountY; y++)
+                    ValidateBoundaryPair(
+                        DeformableTerrainMesher.Build(
+                            volume, new DeformableTerrainChunkId(x, y, 0), backend),
+                        DeformableTerrainMesher.Build(
+                            volume, new DeformableTerrainChunkId(x, y, 1), backend),
+                        2, boundaryZ, backend + " Z boundary x" + x + " y" + y, failures);
+            }
+
+            string baselineEvidence = volume.ComputeDensityEvidence();
+            Bounds lowerChunk = volume.ChunkBounds(new DeformableTerrainChunkId(0, 0, 0));
+            var mutationService = new DeformableTerrainMutationService(volume);
+            mutationService.SubtractSphere(
+                new Vector3(lowerChunk.center.x, lowerChunk.max.y, lowerChunk.center.z), 3f);
+            foreach (DeformableTerrainMesherBackend backend in
+                     (DeformableTerrainMesherBackend[])Enum.GetValues(
+                         typeof(DeformableTerrainMesherBackend)))
+            {
+                ValidateBoundaryPair(
+                    DeformableTerrainMesher.Build(
+                        volume, new DeformableTerrainChunkId(0, 0, 0), backend),
+                    DeformableTerrainMesher.Build(
+                        volume, new DeformableTerrainChunkId(0, 1, 0), backend),
+                    1, lowerChunk.max.y, backend + " carved Y boundary", failures);
+            }
+            mutationService.Reset();
+            Check(volume.ComputeDensityEvidence() == baselineEvidence,
+                "boundary seam fixture did not reset the shared density field", failures);
         }
 
         private static void ValidateBoundaryPair(
             DeformableTerrainChunkMeshData first,
             DeformableTerrainChunkMeshData second,
-            bool xAxis,
+            int axisIndex,
             float boundary,
             string label,
             ICollection<string> failures)
         {
-            HashSet<string> firstPoints = BoundaryPoints(first, xAxis, boundary);
-            HashSet<string> secondPoints = BoundaryPoints(second, xAxis, boundary);
-            if (firstPoints.Count == 0 || !firstPoints.SetEquals(secondPoints))
+            HashSet<string> firstPoints = BoundaryPoints(first, axisIndex, boundary);
+            HashSet<string> secondPoints = BoundaryPoints(second, axisIndex, boundary);
+            if (!firstPoints.SetEquals(secondPoints))
             {
                 string firstOnly = FirstDifference(firstPoints, secondPoints);
                 string secondOnly = FirstDifference(secondPoints, firstPoints);
@@ -236,19 +292,19 @@ namespace OldScars.EditorTools
 
         private static HashSet<string> BoundaryPoints(
             DeformableTerrainChunkMeshData data,
-            bool xAxis,
+            int axisIndex,
             float boundary)
         {
             var points = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < data.Vertices.Count; index++)
             {
                 Vector3 point = data.Vertices[index];
-                float axis = xAxis ? point.x : point.z;
+                float axis = axisIndex == 0 ? point.x : axisIndex == 1 ? point.y : point.z;
                 if (Mathf.Abs(axis - boundary) > 0.0001f)
                     continue;
                 points.Add(
-                    Quantize(xAxis ? point.y : point.x) + ":" +
-                    Quantize(xAxis ? point.z : point.y));
+                    Quantize(axisIndex == 0 ? point.y : point.x) + ":" +
+                    Quantize(axisIndex == 2 ? point.y : point.z));
             }
             return points;
         }
@@ -258,61 +314,74 @@ namespace OldScars.EditorTools
             ICollection<string> failures,
             ICollection<string> evidence)
         {
-            float surface = controller.SourcePlan.HeightNormalizedAtLocal(-24f, -24f) *
-                            controller.SourcePlan.Configuration.VerticalRelief;
+            Bounds containedBounds = controller.Volume.ChunkBounds(
+                new DeformableTerrainChunkId(0, 0, 0));
             Check(controller.TrySubtractSphere(
-                      new Vector3(-24f, surface - 1f, -24f), 3f,
+                      containedBounds.center, 3f,
                       out DeformableTerrainMutationResult contained, out string containedError) &&
                   contained.AffectedChunks.Count == 1,
                 "contained mutation must rebuild exactly one chunk: " + Safe(containedError), failures);
-            Check(controller.GetChunkRebuildCount(new DeformableTerrainChunkId(0, 0)) == 1 &&
-                  controller.GetChunkRebuildCount(new DeformableTerrainChunkId(1, 0)) == 0 &&
-                  controller.GetChunkRebuildCount(new DeformableTerrainChunkId(0, 1)) == 0 &&
-                  controller.GetChunkRebuildCount(new DeformableTerrainChunkId(1, 1)) == 0,
+            Check(controller.GetChunkRebuildCount(new DeformableTerrainChunkId(0, 0, 0)) == 1 &&
+                  AllOtherChunksUnchanged(controller, new DeformableTerrainChunkId(0, 0, 0)),
                 "contained mutation rebuilt an unrelated chunk", failures);
             controller.TryReset(out _, out _);
 
-            surface = controller.SourcePlan.HeightNormalizedAtLocal(-5.01f, -24f) *
-                      controller.SourcePlan.Configuration.VerticalRelief;
+            float xBoundary = controller.Volume.ChunkBounds(
+                new DeformableTerrainChunkId(0, 0, 0)).max.x;
             Check(controller.TrySubtractSphere(
-                      new Vector3(-5.01f, surface - 1f, -24f), 3f,
+                      new Vector3(xBoundary - 5.01f, containedBounds.center.y, containedBounds.center.z), 3f,
                       out DeformableTerrainMutationResult normalHalo, out string normalHaloError) &&
                   normalHalo.AffectedChunks.Count == 2,
                 "near-border normal halo must rebuild the neighboring chunk: " +
                 Safe(normalHaloError), failures);
             controller.TryReset(out _, out _);
 
-            surface = controller.SourcePlan.HeightNormalizedAtLocal(0f, -24f) *
-                      controller.SourcePlan.Configuration.VerticalRelief;
             Check(controller.TrySubtractSphere(
-                      new Vector3(0f, surface - 1f, -24f), 3f,
+                      new Vector3(xBoundary, containedBounds.center.y, containedBounds.center.z), 3f,
                       out DeformableTerrainMutationResult xBorder, out string xError) &&
                   xBorder.AffectedChunks.Count == 2,
                 "X-border mutation must rebuild two chunks: " + Safe(xError), failures);
             controller.TryReset(out _, out _);
 
-            surface = controller.SourcePlan.HeightNormalizedAtLocal(-24f, 0f) *
-                      controller.SourcePlan.Configuration.VerticalRelief;
+            float zBoundary = containedBounds.max.z;
             Check(controller.TrySubtractSphere(
-                      new Vector3(-24f, surface - 1f, 0f), 3f,
+                      new Vector3(containedBounds.center.x, containedBounds.center.y, zBoundary), 3f,
                       out DeformableTerrainMutationResult zBorder, out string zError) &&
                   zBorder.AffectedChunks.Count == 2,
                 "Z-border mutation must rebuild two chunks: " + Safe(zError), failures);
             controller.TryReset(out _, out _);
 
-            surface = controller.SourcePlan.HeightNormalizedAtLocal(0f, 0f) *
-                      controller.SourcePlan.Configuration.VerticalRelief;
+            float yBoundary = containedBounds.max.y;
             Check(controller.TrySubtractSphere(
-                      new Vector3(0f, surface - 1f, 0f), 3f,
+                      new Vector3(containedBounds.center.x, yBoundary, containedBounds.center.z), 3f,
+                      out DeformableTerrainMutationResult yBorder, out string yError) &&
+                  yBorder.AffectedChunks.Count == 2,
+                "Y-border mutation must rebuild two chunks: " + Safe(yError), failures);
+            controller.TryReset(out _, out _);
+
+            Check(controller.TrySubtractSphere(
+                      new Vector3(xBoundary, yBoundary, zBoundary), 3f,
                       out DeformableTerrainMutationResult corner, out string cornerError) &&
-                  corner.AffectedChunks.Count == 4,
-                "corner mutation must rebuild four chunks: " + Safe(cornerError), failures);
+                  corner.AffectedChunks.Count == 8,
+                "XYZ corner mutation must rebuild eight chunks: " + Safe(cornerError), failures);
             evidence.Add(
-                "mutation locality: contained=1, normal-halo=2, X-border=2, Z-border=2, " +
-                "corner=4 chunks; " +
+                "mutation locality: contained=1, normal-halo=2, X-border=2, Y-border=2, " +
+                "Z-border=2, XYZ-corner=8 chunks; " +
                 "corner mutation=" + (corner?.MutationMilliseconds ?? -1) + "ms, mesh=" +
                 (corner?.MeshingMilliseconds ?? -1) + "ms, collider=" +
                 (corner?.ColliderUpdateMilliseconds ?? -1) + "ms");
+        }
+
+        private static bool AllOtherChunksUnchanged(
+            WorldDeformableTerrainSpikeController controller,
+            DeformableTerrainChunkId expected)
+        {
+            foreach (DeformableTerrainChunkId chunkId in controller.Volume.EnumerateChunks())
+            {
+                if (chunkId != expected && controller.GetChunkRebuildCount(chunkId) != 0)
+                    return false;
+            }
+            return true;
         }
 
         private static void ValidateCavity(
@@ -448,28 +517,97 @@ namespace OldScars.EditorTools
                     "comparison volume failed: " + Safe(error), failures);
                 density.Stop();
                 if (volume == null) continue;
-                System.Diagnostics.Stopwatch mesh = System.Diagnostics.Stopwatch.StartNew();
-                int vertices = 0;
-                int triangles = 0;
-                foreach (DeformableTerrainChunkId chunkId in volume.EnumerateChunks())
+                string densityEvidence = volume.ComputeDensityEvidence();
+                foreach (DeformableTerrainMesherBackend backend in
+                         (DeformableTerrainMesherBackend[])Enum.GetValues(
+                             typeof(DeformableTerrainMesherBackend)))
                 {
-                    DeformableTerrainChunkMeshData data = DeformableTerrainMesher.Build(volume, chunkId);
-                    vertices += data.Vertices.Count;
-                    triangles += data.TriangleCount;
+                    long allocationStart = Profiler.GetMonoUsedSizeLong();
+                    System.Diagnostics.Stopwatch mesh = System.Diagnostics.Stopwatch.StartNew();
+                    int vertices = 0;
+                    int triangles = 0;
+                    int indices = 0;
+                    int reused = 0;
+                    foreach (DeformableTerrainChunkId chunkId in volume.EnumerateChunks())
+                    {
+                        DeformableTerrainChunkMeshData data =
+                            DeformableTerrainMesher.Build(volume, chunkId, backend);
+                        vertices += data.Vertices.Count;
+                        triangles += data.TriangleCount;
+                        indices += data.IndexCount;
+                        reused += data.ReusedVertexReferenceCount;
+                    }
+                    mesh.Stop();
+                    long allocated = Math.Max(
+                        0L, Profiler.GetMonoUsedSizeLong() - allocationStart);
+                    long meshBytes = vertices * 32L + indices * sizeof(int);
+                    Check(volume.ComputeDensityEvidence() == densityEvidence,
+                        backend + " meshing changed shared density truth", failures);
+                    if (backend == DeformableTerrainMesherBackend.IndexedMarchingCubes)
+                        Check(reused > 0 && vertices < indices,
+                            "indexed Marching Cubes did not demonstrate vertex reuse", failures);
+                    evidence.Add(
+                        (configurationIndex == 0 ? "coarse" : "baseline") + " " + backend +
+                        ": chunks=" + (configurations[configurationIndex].ChunkCountX *
+                                        configurations[configurationIndex].ChunkCountY *
+                                        configurations[configurationIndex].ChunkCountZ) +
+                        ", cells/chunk=" + configurations[configurationIndex].CellsPerChunkX +
+                        "x" + configurations[configurationIndex].CellsPerChunkY + "x" +
+                        configurations[configurationIndex].CellsPerChunkZ +
+                        ", horizontalCell=" + configurations[configurationIndex].HorizontalCellSize.ToString(
+                            "0.###", CultureInfo.InvariantCulture) +
+                        ", verticalCell=" + volume.VerticalCellSize.ToString("0.###", CultureInfo.InvariantCulture) +
+                        ", samples=" + volume.DensitySampleCount + ", field=" + volume.ApproximateFieldBytes +
+                        "B, vertices=" + vertices + ", triangles=" + triangles +
+                        ", reusedRefs=" + reused + ", meshApprox=" + meshBytes +
+                        "B, allocated=" + allocated + "B, density=" + density.ElapsedMilliseconds +
+                        "ms, mesh=" + mesh.ElapsedMilliseconds + "ms");
                 }
-                mesh.Stop();
-                evidence.Add(
-                    (configurationIndex == 0 ? "coarse" : "baseline") +
-                    ": chunks=4, cells/chunk=" + configurations[configurationIndex].CellsPerChunkX +
-                    "x" + configurations[configurationIndex].VerticalCells + "x" +
-                    configurations[configurationIndex].CellsPerChunkZ +
-                    ", horizontalCell=" + configurations[configurationIndex].HorizontalCellSize.ToString(
-                        "0.###", CultureInfo.InvariantCulture) +
-                    ", verticalCell=" + volume.VerticalCellSize.ToString("0.###", CultureInfo.InvariantCulture) +
-                    ", samples=" + volume.DensitySampleCount + ", field=" + volume.ApproximateFieldBytes +
-                    "B, vertices=" + vertices + ", triangles=" + triangles +
-                    ", density=" + density.ElapsedMilliseconds + "ms, mesh=" + mesh.ElapsedMilliseconds + "ms");
             }
+        }
+
+        private static void ValidateIndexedMarchingCubesRuntime(
+            WorldDeformableTerrainSpikeController controller,
+            TerrainMaterializationPlan plan,
+            DeformableTerrainSpikeConfiguration configuration,
+            string captureRoot,
+            ICollection<string> failures,
+            ICollection<string> evidence)
+        {
+            Check(controller.TryMaterializePlan(
+                      plan, configuration, DeformableTerrainMesherBackend.IndexedMarchingCubes),
+                "indexed MC runtime materialization failed: " + Safe(controller.Failure), failures);
+            if (!controller.IsReady) return;
+            ValidateBaseline(controller, failures);
+            Check(controller.Metrics.ReusedVertexReferences > 0,
+                "indexed MC runtime did not publish indexed vertex reuse", failures);
+            Capture(controller, captureRoot, "05_mc_near_surface",
+                new Vector3(-20f, 10f, -20f), controller.SpawnPosition, failures, evidence);
+
+            const float z = -12f;
+            float surface = plan.HeightNormalizedAtLocal(0f, z) * plan.Configuration.VerticalRelief;
+            Vector3 tunnelStart = new Vector3(0f, surface - 8f, z);
+            Vector3 tunnelEnd = new Vector3(28f, surface - 8f, z);
+            Check(controller.TrySubtractSphere(
+                      new Vector3(0f, surface - 1.5f, z), 6.5f, out _, out string craterError),
+                "indexed MC crater failed: " + Safe(craterError), failures);
+            Check(controller.TrySubtractCapsule(
+                      tunnelStart, tunnelEnd, 3.75f, out DeformableTerrainMutationResult tunnel,
+                      out string tunnelError),
+                "indexed MC tunnel failed: " + Safe(tunnelError), failures);
+            ValidateCavity(controller, tunnelStart, tunnelEnd, 3.75f, failures);
+            Capture(controller, captureRoot, "06_mc_cavity",
+                new Vector3(-15f, 0f, 0f), tunnelStart + Vector3.right * 20f,
+                failures, evidence);
+            evidence.Add(
+                "indexed MC Unity publication: vertices=" + controller.Metrics.Vertices +
+                ", triangles=" + controller.Metrics.Triangles +
+                ", reusedRefs=" + controller.Metrics.ReusedVertexReferences +
+                ", dirtyTunnelChunks=" + (tunnel?.AffectedChunks.Count ?? -1) +
+                ", mutation=" + (tunnel?.MutationMilliseconds ?? -1) + "ms, mesh=" +
+                (tunnel?.MeshingMilliseconds ?? -1) + "ms, upload=" +
+                (tunnel?.MeshAssignmentMilliseconds ?? -1) + "ms, collider=" +
+                (tunnel?.ColliderUpdateMilliseconds ?? -1) + "ms");
         }
 
         private static void ValidateLocalNavigationProbe(
@@ -478,25 +616,33 @@ namespace OldScars.EditorTools
             ICollection<string> evidence,
             ICollection<string> failures)
         {
-            NavMeshSurface surface = null;
+            NavMeshSurface surface = controller.NavMeshSurface;
+            bool ownsSurface = false;
             try
             {
-                surface = controller.GeneratedRoot.AddComponent<NavMeshSurface>();
-                surface.collectObjects = CollectObjects.Children;
-                surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
-                surface.layerMask = 1 << 3;
-                surface.overrideTileSize = true;
-                surface.tileSize = 64;
-                System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
-                surface.BuildNavMesh();
-                watch.Stop();
+                if (surface == null)
+                {
+                    surface = controller.GeneratedRoot.AddComponent<NavMeshSurface>();
+                    ownsSurface = true;
+                    surface.collectObjects = CollectObjects.Children;
+                    surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+                    surface.layerMask = 1 << 3;
+                    surface.overrideTileSize = true;
+                    surface.tileSize = 64;
+                    System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+                    surface.BuildNavMesh();
+                    watch.Stop();
+                }
                 NavMeshTriangulation triangulation = NavMesh.CalculateTriangulation();
                 Check(surface.navMeshData != null && triangulation.vertices.Length > 0,
                     label + " local NavMesh probe produced no data", failures);
+                string buildEvidence = ownsSurface
+                    ? "diagnostic build"
+                    : "controller build " + controller.NavigationBuildMilliseconds + "ms";
                 evidence.Add(
-                    label + " local NavMesh probe: " + watch.ElapsedMilliseconds +
-                    "ms, vertices=" + triangulation.vertices.Length +
-                    "; diagnostic only, ActorNavigationController unchanged");
+                    label + " local NavMesh probe: " + buildEvidence +
+                    ", vertices=" + triangulation.vertices.Length +
+                    "; local volumetric surface, ActorNavigationController unchanged");
             }
             catch (Exception exception)
             {
@@ -504,12 +650,11 @@ namespace OldScars.EditorTools
             }
             finally
             {
-                if (surface != null)
+                if (ownsSurface && surface != null)
                 {
                     surface.RemoveData();
                     UnityEngine.Object.DestroyImmediate(surface);
                 }
-                NavMesh.RemoveAllNavMeshData();
             }
         }
 

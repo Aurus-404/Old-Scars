@@ -33,6 +33,8 @@ namespace OldScars.Core.ApplicationShell
         private bool worldInfoVisible;
         private string statusMessage;
         private WorldTerrainMaterializationController materializationController;
+        private WorldDeformableTerrainSpikeController volumetricTerrainController;
+        private WorldRuntimeTerrainDevelopmentSelection terrainSelection;
         private PlayerGameplayComposition playerComposition;
         private GameplayRuntimeComposition gameplayRuntimeComposition;
         private DevelopmentGameplayIntegrationFixture developmentFixture;
@@ -47,6 +49,8 @@ namespace OldScars.Core.ApplicationShell
         public bool IsWorldInfoVisible => worldInfoVisible;
         public string StatusMessage => statusMessage;
         public WorldTerrainMaterializationController MaterializationController => materializationController;
+        public WorldDeformableTerrainSpikeController VolumetricTerrainController => volumetricTerrainController;
+        public WorldRuntimeTerrainDevelopmentSelection TerrainSelection => terrainSelection;
         public PlayerGameplayComposition PlayerComposition => playerComposition;
         public GameplayRuntimeComposition GameplayRuntimeComposition => gameplayRuntimeComposition;
         public DevelopmentGameplayIntegrationFixture DevelopmentFixture => developmentFixture;
@@ -55,6 +59,9 @@ namespace OldScars.Core.ApplicationShell
         public bool GameplayStateReady => gameplayStateReady;
         public WorldGameplayLoadResult GameplayLoadResult => gameplayLoadResult;
         public WorldRuntimePlayerBindSource PlayerBindSource => playerBindSource;
+        private bool IsTerrainReady =>
+            materializationController != null && materializationController.IsReady ||
+            volumetricTerrainController != null && volumetricTerrainController.IsReady;
 
         private IEnumerator Start()
         {
@@ -64,19 +71,42 @@ namespace OldScars.Core.ApplicationShell
                 WorldSessionObservability.LogRuntimeReady(session);
                 if (terrainMaterialization == null)
                     terrainMaterialization = TerrainMaterializationConfiguration.CreateProvisionalBaseline();
-                materializationController = GetComponent<WorldTerrainMaterializationController>();
-                if (materializationController == null)
-                    materializationController = gameObject.AddComponent<WorldTerrainMaterializationController>();
-                if (!materializationController.TryMaterializeActiveSession(
-                        session, terrainMaterialization))
+                terrainSelection = WorldRuntimeTerrainDevelopmentSettings.CurrentSelection;
+                Vector3 spawnPosition;
+                if (terrainSelection == WorldRuntimeTerrainDevelopmentSelection.UnityTerrain)
                 {
-                    statusMessage = "Terrain materialization failed: " + materializationController.Failure;
-                    yield break;
+                    materializationController = GetComponent<WorldTerrainMaterializationController>();
+                    if (materializationController == null)
+                        materializationController = gameObject.AddComponent<WorldTerrainMaterializationController>();
+                    if (!materializationController.TryMaterializeActiveSession(
+                            session, terrainMaterialization))
+                    {
+                        statusMessage = "Terrain materialization failed: " + materializationController.Failure;
+                        yield break;
+                    }
+                    spawnPosition = materializationController.Result.SpawnPosition;
+                }
+                else
+                {
+                    volumetricTerrainController = GetComponent<WorldDeformableTerrainSpikeController>();
+                    if (volumetricTerrainController == null)
+                        volumetricTerrainController = gameObject.AddComponent<WorldDeformableTerrainSpikeController>();
+                    if (!volumetricTerrainController.TryMaterializeActiveSession(
+                            session,
+                            terrainMaterialization,
+                            DeformableTerrainSpikeConfiguration.CreateBaseline(),
+                            WorldRuntimeTerrainDevelopmentSettings.SelectedMesher))
+                    {
+                        statusMessage = "Volumetric terrain materialization failed: " +
+                                        volumetricTerrainController.Failure;
+                        yield break;
+                    }
+                    spawnPosition = volumetricTerrainController.SpawnPosition;
                 }
 
                 EnsureWorldLighting();
                 if (!PlayerGameplayComposition.TryInstantiateAtSurface(
-                        materializationController.Result.SpawnPosition,
+                        spawnPosition,
                         transform,
                         out playerComposition,
                         out string playerFailure))
@@ -96,7 +126,8 @@ namespace OldScars.Core.ApplicationShell
                     yield break;
                 }
 
-                bool fixtureExpected = Application.isEditor || Debug.isDebugBuild;
+                bool fixtureExpected = (Application.isEditor || Debug.isDebugBuild) &&
+                                       terrainSelection == WorldRuntimeTerrainDevelopmentSelection.UnityTerrain;
                 if (fixtureExpected && !DevelopmentGameplayIntegrationFixture.TryInstantiateOnMaterializedLand(
                         materializationController.Result, transform, playerComposition,
                         out developmentFixture, out string fixtureFailure))
@@ -113,7 +144,7 @@ namespace OldScars.Core.ApplicationShell
                 if (WorldSessionService.ActiveSessionSource == WorldSessionActivationSource.Loaded)
                 {
                     gameplayRestoreAttempted = true;
-                    compositionReadyBeforeRestore = materializationController.IsReady &&
+                    compositionReadyBeforeRestore = IsTerrainReady &&
                                                     playerComposition.TryValidateRuntime(out _);
                     if (!compositionReadyBeforeRestore)
                     {
@@ -170,6 +201,7 @@ namespace OldScars.Core.ApplicationShell
             bool fixtureReady = developmentFixture != null && developmentFixture.TryValidate(out _);
             Debug.Log("[WorldRuntime][GAMEPLAY_RUNTIME_READY]\n" +
                       "WorldId: " + session.WorldId.Canonical + "\n" +
+                      "TerrainRepresentation: " + terrainSelection + "\n" +
                       gameplayRuntimeComposition.DescribeReadiness(fixtureReady) + "\n" +
                       "DevelopmentFixtureExpected: " + fixtureExpected +
                       (fixtureReady
@@ -212,7 +244,7 @@ namespace OldScars.Core.ApplicationShell
             }
             else
             {
-                float infoHeight = 292f;
+                float infoHeight = volumetricTerrainController != null ? 420f : 292f;
                 Rect infoRect = new Rect(
                     Mathf.Max(18f, (Screen.width - infoWidth) * 0.5f),
                     18f,
@@ -281,6 +313,21 @@ namespace OldScars.Core.ApplicationShell
                                 "  |  NavMesh vertices " + result.NavMeshVertexCount +
                                 "  |  roads " + result.Plan.IntersectingRoadCount);
             }
+            else if (volumetricTerrainController != null && volumetricTerrainController.IsReady)
+            {
+                DeformableTerrainSpikeMetrics metrics = volumetricTerrainController.Metrics;
+                GUILayout.Label("Terrain: VOLUMETRIC DEVELOPMENT OPT-IN  |  " + metrics.MesherBackend);
+                GUILayout.Label("Technical chunks: " + metrics.ChunkCount + " (" +
+                                volumetricTerrainController.Volume.Configuration.ChunkCountX + "x" +
+                                volumetricTerrainController.Volume.Configuration.ChunkCountY + "x" +
+                                volumetricTerrainController.Volume.Configuration.ChunkCountZ + ")" +
+                                "  |  vertices " + metrics.Vertices + "  |  triangles " + metrics.Triangles);
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("DEV CRATER")) ApplyVolumetricCrater();
+                if (GUILayout.Button("DEV TUNNEL")) ApplyVolumetricTunnel();
+                if (GUILayout.Button("RESET VOLUME")) ResetVolumetricTerrain();
+                GUILayout.EndHorizontal();
+            }
             if (playerComposition != null && gameplayStateReady)
             {
                 GUILayout.Label("Player: " + playerComposition.PlayerIdentity.ActorInstanceId +
@@ -289,6 +336,11 @@ namespace OldScars.Core.ApplicationShell
             else if (materializationController != null && !string.IsNullOrEmpty(materializationController.Failure))
             {
                 GUILayout.Label("Terrain spike: FAILED — " + materializationController.Failure);
+            }
+            else if (volumetricTerrainController != null &&
+                     !string.IsNullOrEmpty(volumetricTerrainController.Failure))
+            {
+                GUILayout.Label("Volumetric terrain: FAILED — " + volumetricTerrainController.Failure);
             }
             if (TryGetActiveSectorMacroSample(out MacroGeographySample geographySample))
             {
@@ -332,11 +384,64 @@ namespace OldScars.Core.ApplicationShell
             SetMenuOpen(false);
         }
 
+        private void ApplyVolumetricCrater()
+        {
+            if (volumetricTerrainController == null || !volumetricTerrainController.IsReady)
+                return;
+            const float z = -12f;
+            float surface = volumetricTerrainController.SourcePlan.HeightNormalizedAtLocal(0f, z) *
+                            volumetricTerrainController.SourcePlan.Configuration.VerticalRelief;
+            if (volumetricTerrainController.TrySubtractSphere(
+                    new Vector3(0f, surface - 1.5f, z), 6.5f,
+                    out DeformableTerrainMutationResult result, out string error))
+            {
+                statusMessage = "Development crater rebuilt " + result.AffectedChunks.Count + " chunks.";
+                return;
+            }
+            statusMessage = "Development crater failed: " + error;
+        }
+
+        private void ApplyVolumetricTunnel()
+        {
+            if (volumetricTerrainController == null || !volumetricTerrainController.IsReady)
+                return;
+            const float z = -12f;
+            float surface = volumetricTerrainController.SourcePlan.HeightNormalizedAtLocal(0f, z) *
+                            volumetricTerrainController.SourcePlan.Configuration.VerticalRelief;
+            if (volumetricTerrainController.TrySubtractCapsule(
+                    new Vector3(0f, surface - 8f, z),
+                    new Vector3(28f, surface - 8f, z),
+                    3.75f, out DeformableTerrainMutationResult result, out string error))
+            {
+                statusMessage = "Development tunnel rebuilt " + result.AffectedChunks.Count + " chunks.";
+                return;
+            }
+            statusMessage = "Development tunnel failed: " + error;
+        }
+
+        private void ResetVolumetricTerrain()
+        {
+            if (volumetricTerrainController == null || !volumetricTerrainController.IsReady)
+                return;
+            statusMessage = volumetricTerrainController.TryReset(out _, out string error)
+                ? "Development volumetric terrain reset to committed MacroGeography baseline."
+                : "Development terrain reset failed: " + error;
+        }
+
         public bool SaveGame(PersistenceFileStore store = null)
         {
             if (!gameplayStateReady || playerComposition == null)
             {
                 statusMessage = "Save failed: gameplay player/state is not ready.";
+                return false;
+            }
+
+            if (volumetricTerrainController != null && volumetricTerrainController.HasMutations)
+            {
+                statusMessage =
+                    "Save blocked: volumetric spike mutations are non-persistent in Stage 1. " +
+                    "Reset the development volume before saving.";
+                Debug.LogWarning("[WorldRuntime][SAVE_BLOCKED]\n" + statusMessage);
                 return false;
             }
 

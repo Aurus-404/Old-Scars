@@ -18,25 +18,30 @@ namespace OldScars.Core.World
     public readonly struct DeformableTerrainChunkId :
         IEquatable<DeformableTerrainChunkId>, IComparable<DeformableTerrainChunkId>
     {
-        public DeformableTerrainChunkId(int x, int z)
+        public DeformableTerrainChunkId(int x, int y, int z)
         {
             X = x;
+            Y = y;
             Z = z;
         }
 
         public int X { get; }
+        public int Y { get; }
         public int Z { get; }
 
         public int CompareTo(DeformableTerrainChunkId other)
         {
             int xComparison = X.CompareTo(other.X);
-            return xComparison != 0 ? xComparison : Z.CompareTo(other.Z);
+            if (xComparison != 0) return xComparison;
+            int yComparison = Y.CompareTo(other.Y);
+            return yComparison != 0 ? yComparison : Z.CompareTo(other.Z);
         }
 
-        public bool Equals(DeformableTerrainChunkId other) => X == other.X && Z == other.Z;
+        public bool Equals(DeformableTerrainChunkId other) =>
+            X == other.X && Y == other.Y && Z == other.Z;
         public override bool Equals(object obj) => obj is DeformableTerrainChunkId other && Equals(other);
-        public override int GetHashCode() => unchecked(X * 397 ^ Z);
-        public override string ToString() => "chunk_" + X + "_" + Z;
+        public override int GetHashCode() => unchecked((X * 397 ^ Y) * 397 ^ Z);
+        public override string ToString() => "chunk_" + X + "_" + Y + "_" + Z;
         public static bool operator ==(DeformableTerrainChunkId left, DeformableTerrainChunkId right) => left.Equals(right);
         public static bool operator !=(DeformableTerrainChunkId left, DeformableTerrainChunkId right) => !left.Equals(right);
     }
@@ -325,11 +330,11 @@ namespace OldScars.Core.World
             RequireChunk(chunkId);
             Vector3 minimum = new Vector3(
                 Origin.x + chunkId.X * Configuration.CellsPerChunkX * Configuration.HorizontalCellSize,
-                Origin.y,
+                Origin.y + chunkId.Y * Configuration.CellsPerChunkY * VerticalCellSize,
                 Origin.z + chunkId.Z * Configuration.CellsPerChunkZ * Configuration.HorizontalCellSize);
             Vector3 size = new Vector3(
                 Configuration.CellsPerChunkX * Configuration.HorizontalCellSize,
-                Configuration.VerticalCells * VerticalCellSize,
+                Configuration.CellsPerChunkY * VerticalCellSize,
                 Configuration.CellsPerChunkZ * Configuration.HorizontalCellSize);
             return new Bounds(minimum + size * 0.5f, size);
         }
@@ -337,8 +342,9 @@ namespace OldScars.Core.World
         public IEnumerable<DeformableTerrainChunkId> EnumerateChunks()
         {
             for (int x = 0; x < Configuration.ChunkCountX; x++)
+            for (int y = 0; y < Configuration.ChunkCountY; y++)
             for (int z = 0; z < Configuration.ChunkCountZ; z++)
-                yield return new DeformableTerrainChunkId(x, z);
+                yield return new DeformableTerrainChunkId(x, y, z);
         }
 
         public string ComputeDensityEvidence()
@@ -412,6 +418,7 @@ namespace OldScars.Core.World
         private void RequireChunk(DeformableTerrainChunkId chunkId)
         {
             if (chunkId.X < 0 || chunkId.X >= Configuration.ChunkCountX ||
+                chunkId.Y < 0 || chunkId.Y >= Configuration.ChunkCountY ||
                 chunkId.Z < 0 || chunkId.Z >= Configuration.ChunkCountZ)
                 throw new ArgumentOutOfRangeException(nameof(chunkId));
         }

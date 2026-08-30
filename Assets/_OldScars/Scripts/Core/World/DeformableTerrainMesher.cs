@@ -5,6 +5,12 @@ using UnityEngine;
 
 namespace OldScars.Core.World
 {
+    public enum DeformableTerrainMesherBackend
+    {
+        MarchingTetrahedra = 0,
+        IndexedMarchingCubes = 1
+    }
+
     public sealed class DeformableTerrainChunkMeshData
     {
         private readonly ReadOnlyCollection<Vector3> vertices;
@@ -35,6 +41,8 @@ namespace OldScars.Core.World
         public int SubMeshCount => triangles.Length;
         public int TriangleCount =>
             (triangles[0].Count + triangles[1].Count + triangles[2].Count) / 3;
+        public int IndexCount => TriangleCount * 3;
+        public int ReusedVertexReferenceCount => Math.Max(0, IndexCount - Vertices.Count);
         public IReadOnlyList<int> Triangles(int subMesh) => triangles[subMesh];
     }
 
@@ -67,8 +75,20 @@ namespace OldScars.Core.World
             DeformableTerrainVolume volume,
             DeformableTerrainChunkId chunkId)
         {
+            return Build(volume, chunkId, DeformableTerrainMesherBackend.MarchingTetrahedra);
+        }
+
+        public static DeformableTerrainChunkMeshData Build(
+            DeformableTerrainVolume volume,
+            DeformableTerrainChunkId chunkId,
+            DeformableTerrainMesherBackend backend)
+        {
             if (volume == null)
                 throw new ArgumentNullException(nameof(volume));
+            if (!Enum.IsDefined(typeof(DeformableTerrainMesherBackend), backend))
+                throw new ArgumentOutOfRangeException(nameof(backend));
+            if (backend == DeformableTerrainMesherBackend.IndexedMarchingCubes)
+                return IndexedMarchingCubesTerrainMesher.Build(volume, chunkId);
             volume.ChunkBounds(chunkId);
 
             var vertices = new List<Vector3>();
@@ -77,6 +97,8 @@ namespace OldScars.Core.World
             var triangles = new[] { new List<int>(), new List<int>(), new List<int>() };
             int startX = chunkId.X * volume.Configuration.CellsPerChunkX;
             int endX = startX + volume.Configuration.CellsPerChunkX;
+            int startY = chunkId.Y * volume.Configuration.CellsPerChunkY;
+            int endY = startY + volume.Configuration.CellsPerChunkY;
             int startZ = chunkId.Z * volume.Configuration.CellsPerChunkZ;
             int endZ = startZ + volume.Configuration.CellsPerChunkZ;
 
@@ -86,7 +108,7 @@ namespace OldScars.Core.World
             var tetraPositions = new Vector3[4];
             var tetraDensities = new float[4];
             for (int z = startZ; z < endZ; z++)
-            for (int y = 0; y < volume.Configuration.VerticalCells; y++)
+            for (int y = startY; y < endY; y++)
             for (int x = startX; x < endX; x++)
             {
                 bool hasSolid = false;

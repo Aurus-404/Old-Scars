@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Unity.AI.Navigation;
 using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using Debug = UnityEngine.Debug;
 
@@ -11,35 +14,47 @@ namespace OldScars.Core.World
     public sealed class DeformableTerrainSpikeMetrics
     {
         internal DeformableTerrainSpikeMetrics(
+            DeformableTerrainMesherBackend mesherBackend,
             int chunkCount,
             int densitySamples,
             long fieldBytes,
             int vertices,
             int triangles,
+            int indices,
+            int reusedVertexReferences,
             long meshBytes,
+            long meshingAllocatedBytes,
             long densityMilliseconds,
             long meshingMilliseconds,
             long meshAssignmentMilliseconds,
             long colliderMilliseconds)
         {
+            MesherBackend = mesherBackend;
             ChunkCount = chunkCount;
             DensitySamples = densitySamples;
             ApproximateFieldBytes = fieldBytes;
             Vertices = vertices;
             Triangles = triangles;
+            Indices = indices;
+            ReusedVertexReferences = reusedVertexReferences;
             ApproximateMeshBytes = meshBytes;
+            MeshingAllocatedBytes = meshingAllocatedBytes;
             DensityGenerationMilliseconds = densityMilliseconds;
             InitialMeshingMilliseconds = meshingMilliseconds;
             MeshAssignmentMilliseconds = meshAssignmentMilliseconds;
             ColliderUpdateMilliseconds = colliderMilliseconds;
         }
 
+        public DeformableTerrainMesherBackend MesherBackend { get; }
         public int ChunkCount { get; }
         public int DensitySamples { get; }
         public long ApproximateFieldBytes { get; }
         public int Vertices { get; }
         public int Triangles { get; }
+        public int Indices { get; }
+        public int ReusedVertexReferences { get; }
         public long ApproximateMeshBytes { get; }
+        public long MeshingAllocatedBytes { get; }
         public long DensityGenerationMilliseconds { get; }
         public long InitialMeshingMilliseconds { get; }
         public long MeshAssignmentMilliseconds { get; }
@@ -93,8 +108,10 @@ namespace OldScars.Core.World
         private readonly List<UnityEngine.Object> ownedAssets = new List<UnityEngine.Object>();
         private GameObject generatedRoot;
         private Material[] materials;
+        private NavMeshSurface navMeshSurface;
 
         public TerrainMaterializationPlan SourcePlan { get; private set; }
+        public DeformableTerrainMesherBackend MesherBackend { get; private set; }
         public DeformableTerrainVolume Volume { get; private set; }
         public DeformableTerrainMutationService MutationService { get; private set; }
         public DeformableTerrainSpikeMetrics Metrics { get; private set; }
@@ -102,26 +119,53 @@ namespace OldScars.Core.World
         public string Failure { get; private set; }
         public bool IsReady => Volume != null && chunks.Count > 1 && string.IsNullOrEmpty(Failure);
         public GameObject GeneratedRoot => generatedRoot;
+        public NavMeshSurface NavMeshSurface => navMeshSurface;
+        public int NavMeshVertexCount { get; private set; }
+        public long NavigationBuildMilliseconds { get; private set; }
+        public bool HasMutations => MutationService?.Mutations.Count > 0;
 
         public bool TryMaterializeActiveSession(
             WorldSession session,
             TerrainMaterializationConfiguration projectionConfiguration,
             DeformableTerrainSpikeConfiguration spikeConfiguration)
         {
+            return TryMaterializeActiveSession(
+                session, projectionConfiguration, spikeConfiguration,
+                DeformableTerrainMesherBackend.MarchingTetrahedra);
+        }
+
+        public bool TryMaterializeActiveSession(
+            WorldSession session,
+            TerrainMaterializationConfiguration projectionConfiguration,
+            DeformableTerrainSpikeConfiguration spikeConfiguration,
+            DeformableTerrainMesherBackend mesherBackend)
+        {
             if (!TerrainMaterializationPlanner.TryBuildActiveRegion(
                     session, projectionConfiguration, out TerrainMaterializationPlan plan, out string error))
                 return Fail(error);
-            return TryMaterializePlan(plan, spikeConfiguration);
+            return TryMaterializePlan(plan, spikeConfiguration, mesherBackend);
         }
 
         public bool TryMaterializePlan(
             TerrainMaterializationPlan plan,
             DeformableTerrainSpikeConfiguration spikeConfiguration)
         {
+            return TryMaterializePlan(
+                plan, spikeConfiguration, DeformableTerrainMesherBackend.MarchingTetrahedra);
+        }
+
+        public bool TryMaterializePlan(
+            TerrainMaterializationPlan plan,
+            DeformableTerrainSpikeConfiguration spikeConfiguration,
+            DeformableTerrainMesherBackend mesherBackend)
+        {
             ClearMaterialization();
             try
             {
+                if (!Enum.IsDefined(typeof(DeformableTerrainMesherBackend), mesherBackend))
+                    throw new ArgumentOutOfRangeException(nameof(mesherBackend));
                 SourcePlan = plan ?? throw new ArgumentNullException(nameof(plan));
+                MesherBackend = mesherBackend;
                 Stopwatch densityWatch = Stopwatch.StartNew();
                 if (!DeformableTerrainVolume.TryCreate(
                         plan, spikeConfiguration, out DeformableTerrainVolume volume, out string error))
@@ -130,16 +174,20 @@ namespace OldScars.Core.World
                 Volume = volume;
                 MutationService = new DeformableTerrainMutationService(volume);
 
-                generatedRoot = new GameObject("Generated Local Volume [Deformable Terrain Spike]");
+                generatedRoot = new GameObject(
+                    "Generated Local Volume [" + mesherBackend + "]");
                 generatedRoot.transform.SetParent(transform, false);
                 materials = CreateMaterials();
                 foreach (DeformableTerrainChunkId chunkId in volume.EnumerateChunks())
                     CreateChunk(chunkId);
 
                 Stopwatch meshingWatch = Stopwatch.StartNew();
+                long allocationStart = Profiler.GetMonoUsedSizeLong();
                 var meshData = new List<DeformableTerrainChunkMeshData>();
                 foreach (DeformableTerrainChunkId chunkId in volume.EnumerateChunks())
-                    meshData.Add(DeformableTerrainMesher.Build(volume, chunkId));
+                    meshData.Add(DeformableTerrainMesher.Build(volume, chunkId, mesherBackend));
+                long meshingAllocatedBytes = Math.Max(
+                    0L, Profiler.GetMonoUsedSizeLong() - allocationStart);
                 meshingWatch.Stop();
 
                 Stopwatch assignmentWatch = Stopwatch.StartNew();
@@ -153,31 +201,44 @@ namespace OldScars.Core.World
                 colliderWatch.Stop();
                 Physics.SyncTransforms();
 
+                RebuildLocalNavigation();
+
                 if (!TryFindSurfacePoint(Vector3.zero, out Vector3 spawn))
                     throw new InvalidOperationException("no collider-backed surface was found near the volume center");
                 SpawnPosition = spawn + Vector3.up * 0.2f;
 
                 int vertices = 0;
                 int triangles = 0;
+                int indices = 0;
+                int reusedVertexReferences = 0;
                 for (int index = 0; index < meshData.Count; index++)
                 {
                     vertices += meshData[index].Vertices.Count;
                     triangles += meshData[index].TriangleCount;
+                    indices += meshData[index].IndexCount;
+                    reusedVertexReferences += meshData[index].ReusedVertexReferenceCount;
                 }
                 long meshBytes = vertices * (3L * sizeof(float) + 3L * sizeof(float) + 2L * sizeof(float)) +
-                                 triangles * 3L * sizeof(int);
+                                 indices * sizeof(int);
                 Metrics = new DeformableTerrainSpikeMetrics(
+                    mesherBackend,
                     chunks.Count, volume.DensitySampleCount, volume.ApproximateFieldBytes,
-                    vertices, triangles, meshBytes, densityWatch.ElapsedMilliseconds,
+                    vertices, triangles, indices, reusedVertexReferences, meshBytes,
+                    meshingAllocatedBytes, densityWatch.ElapsedMilliseconds,
                     meshingWatch.ElapsedMilliseconds, assignmentWatch.ElapsedMilliseconds,
                     colliderWatch.ElapsedMilliseconds);
                 Debug.Log(
                     "[DeformableTerrainSpike][READY]\n" +
                     "Contract: " + DeformableTerrainSpikeConfiguration.Contract + "\n" +
+                    "Mesher: " + Metrics.MesherBackend + "\n" +
                     "Chunks: " + Metrics.ChunkCount + "\n" +
                     "DensitySamples: " + Metrics.DensitySamples + "\n" +
                     "Vertices: " + Metrics.Vertices + "\n" +
                     "Triangles: " + Metrics.Triangles + "\n" +
+                    "ReusedVertexReferences: " + Metrics.ReusedVertexReferences + "\n" +
+                    "NavMeshVertices: " + NavMeshVertexCount + "\n" +
+                    "NavigationBuildMs: " + NavigationBuildMilliseconds + "\n" +
+                    "MeshingManagedAllocationBytes: " + Metrics.MeshingAllocatedBytes + "\n" +
                     "FieldBytesApprox: " + Metrics.ApproximateFieldBytes + "\n" +
                     "MeshBytesApprox: " + Metrics.ApproximateMeshBytes);
                 return true;
@@ -257,9 +318,15 @@ namespace OldScars.Core.World
         public void ClearMaterialization()
         {
             Metrics = null;
+            if (navMeshSurface != null)
+                navMeshSurface.RemoveData();
+            navMeshSurface = null;
+            NavMeshVertexCount = 0;
+            NavigationBuildMilliseconds = 0L;
             MutationService = null;
             Volume = null;
             SourcePlan = null;
+            MesherBackend = DeformableTerrainMesherBackend.MarchingTetrahedra;
             SpawnPosition = default;
             Failure = null;
             chunks.Clear();
@@ -297,7 +364,8 @@ namespace OldScars.Core.World
                 Stopwatch meshingWatch = Stopwatch.StartNew();
                 var meshData = new List<DeformableTerrainChunkMeshData>(affected.Count);
                 for (int index = 0; index < affected.Count; index++)
-                    meshData.Add(DeformableTerrainMesher.Build(Volume, affected[index]));
+                    meshData.Add(DeformableTerrainMesher.Build(
+                        Volume, affected[index], MesherBackend));
                 meshingWatch.Stop();
 
                 Stopwatch assignmentWatch = Stopwatch.StartNew();
@@ -310,6 +378,10 @@ namespace OldScars.Core.World
                     AssignCollider(affected[index]);
                 colliderWatch.Stop();
                 Physics.SyncTransforms();
+                // Stage 1 keeps navigation deliberately local and synchronous. This
+                // preserves the existing ActorNavigationController consumer after a
+                // development deformation without claiming a production dynamic-nav system.
+                RebuildLocalNavigation();
 
                 result = new DeformableTerrainMutationResult(
                     new ReadOnlyCollection<DeformableTerrainChunkId>(
@@ -323,6 +395,35 @@ namespace OldScars.Core.World
                 error = exception.Message;
                 return false;
             }
+        }
+
+        private void RebuildLocalNavigation()
+        {
+            if (generatedRoot == null)
+                throw new InvalidOperationException("volumetric terrain root is unavailable for navigation");
+
+            if (navMeshSurface == null)
+            {
+                navMeshSurface = generatedRoot.AddComponent<NavMeshSurface>();
+                navMeshSurface.collectObjects = CollectObjects.Children;
+                navMeshSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+                navMeshSurface.layerMask = 1 << GroundLayer;
+                navMeshSurface.overrideTileSize = true;
+                navMeshSurface.tileSize = 64;
+            }
+            else
+            {
+                navMeshSurface.RemoveData();
+            }
+
+            Stopwatch watch = Stopwatch.StartNew();
+            navMeshSurface.BuildNavMesh();
+            watch.Stop();
+            NavigationBuildMilliseconds = watch.ElapsedMilliseconds;
+            NavMeshTriangulation triangulation = NavMesh.CalculateTriangulation();
+            NavMeshVertexCount = triangulation.vertices.Length;
+            if (navMeshSurface.navMeshData == null || NavMeshVertexCount < 1)
+                throw new InvalidOperationException("volumetric terrain local NavMesh build produced no data");
         }
 
         private void CreateChunk(DeformableTerrainChunkId chunkId)
@@ -381,7 +482,10 @@ namespace OldScars.Core.World
         {
             ChunkRepresentation representation = chunks[chunkId];
             representation.MeshCollider.sharedMesh = null;
-            representation.MeshCollider.sharedMesh = representation.Mesh;
+            if (representation.Mesh != null && representation.Mesh.vertexCount > 0 &&
+                representation.Mesh.GetIndexCount(0) + representation.Mesh.GetIndexCount(1) +
+                representation.Mesh.GetIndexCount(2) > 0)
+                representation.MeshCollider.sharedMesh = representation.Mesh;
         }
 
         private Material[] CreateMaterials()

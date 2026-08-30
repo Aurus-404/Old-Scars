@@ -50,8 +50,14 @@ namespace OldScars.Core.World
         }
 
         public int ChunkCountX => chunkCountX;
+        // Stage 1 deliberately proves real vertical partitioning without
+        // freezing production brick sizing or changing the spike persistence
+        // payload. Both measured configurations have an even vertical cell
+        // count and therefore resolve into two equally sized Y bricks.
+        public int ChunkCountY => 2;
         public int ChunkCountZ => chunkCountZ;
         public int CellsPerChunkX => cellsPerChunkX;
+        public int CellsPerChunkY => VerticalCells / ChunkCountY;
         public int CellsPerChunkZ => cellsPerChunkZ;
         public int VerticalCells => verticalCells;
         public float HorizontalCellSize => horizontalCellSize;
@@ -88,9 +94,10 @@ namespace OldScars.Core.World
             }
             if (CellsPerChunkX < 4 || CellsPerChunkX > 64 ||
                 CellsPerChunkZ < 4 || CellsPerChunkZ > 64 ||
-                VerticalCells < 8 || VerticalCells > 96)
+                VerticalCells < 16 || VerticalCells > 96 ||
+                VerticalCells % ChunkCountY != 0)
             {
-                error = "chunk cell counts are outside the bounded spike range";
+                error = "chunk cell counts are outside the bounded stage-1 range or cannot be partitioned evenly on Y";
                 return false;
             }
             if (!FinitePositive(HorizontalCellSize) || !FinitePositive(UndergroundDepth) ||
