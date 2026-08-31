@@ -3398,3 +3398,23 @@ Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
 La revisión independiente detectó y corrigió antes del cierre una restricción excesiva que habría rechazado profiles externos legacy con thresholds más cercanos que el default de hysteresis; el dead-band se acota a estabilidad 1 sin imponer separación retroactiva. También separó la recuperación runtime con hysteresis del restore/configuración determinista, evitando que cargar un snapshot válido heredase el peor estado vivo anterior.
 
 No se modificaron balance de armas/letalidad, familias de wounds, órganos, fracturas, infección, cirugía, alimentación/hidratación/rest modifiers, UI final ni schema de Current Slice. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.
+
+### Health & Damage Consolidation — Pass B
+
+Fecha: 2026-08-31.
+
+Estado: `VALIDATED — IMMEDIATE VITAL CONSEQUENCE INTEGRATED`.
+
+`CombatResolutionService` ahora conserva una sola cadena de consecuencia: resuelve armor, crea como máximo una wound final en `ActorMedicalStateComponent` y calcula una única consecuencia vital inmediata con severidad, tipo y región finales. `ActorConditionComponent` sigue recibiendo exclusivamente la consecuencia aguda de la wound; `ActorHealthComponent` sigue siendo la autoridad final de Vital Integrity, muerte, lifecycle y corpse. No se agregó daño paralelo a `WeaponCombatService`, un manager global ni un segundo pool vital.
+
+`health.vital_integrity` es configuración data-driven de actor profile: escala y factores positivos para tipo de wound y región. Core usa blunt `0.35`, puncture `1.0`, laceration `0.60`, head `1.80`, torso `1.0` y limb `0.25`; los profiles legacy sin el bloque conservan defaults compatibles. Current Slice ya persiste el scalar Health existente, por lo que no cambian schema/envelope ni se inventa estado adicional.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
+
+- Runtime compile y Editor compile: `PASS` (warnings preexistentes separados);
+- `M40.1 Armor & Penetration Diagnostics: PASS`: blunt limb `5.69`, blunt head `50.40`, `.303` limb `16.25`, torso `65.00`, head `117.00`, dos limb `.303` acumulados `32.50`; cubre armor stop/penetration, una wound/una consecuencia vital, muerte inmediata vital y Current Slice fresh-session;
+- `Actor Consciousness & Incapacitation Diagnostics: PASS`: bleeding fatal continúa cerrando mediante Health/Lifecycle y restore de Condition conserva su contrato;
+- `M41 Sandbox Preparation Diagnostics: PASS`: regresión AI P0, afiliaciones, roaming y `Inactive` estable con acquisition habilitado;
+- `git diff --check`: `PASS`.
+
+No se modificaron la recuperación fisiológica, WorldClock, balance adicional, trauma persistence, familias de wound, órganos, fracturas, infección, UI final ni el schema de Current Slice. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.

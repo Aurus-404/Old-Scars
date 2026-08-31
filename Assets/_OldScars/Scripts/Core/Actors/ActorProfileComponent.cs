@@ -69,6 +69,7 @@ namespace OldScars.Core.Actors
             WarnIfDebugSeederExists();
             ApplyDisplayName(profile);
             ApplyInitialTags(profile);
+            ApplyVitalIntegrity(profile);
             ApplyVisualRigProfile(profile);
             ApplyRuntimeCapabilities(profile);
             GetComponent<InventoryComponent>()?.PreparePersistenceRestore();
@@ -200,6 +201,29 @@ namespace OldScars.Core.Actors
             }
 
             health.ApplyInitialHealth(profile.health.max_health, profile.health.current_health);
+            ConfigureVitalIntegrity(health, profile.health);
+        }
+
+        private void ApplyVitalIntegrity(ActorProfileDefinition profile)
+        {
+            if (profile.health == null)
+                return;
+
+            ActorHealthComponent health = GetComponent<ActorHealthComponent>();
+            if (health == null)
+                return;
+
+            ConfigureVitalIntegrity(health, profile.health);
+        }
+
+        private void ConfigureVitalIntegrity(ActorHealthComponent health, ActorProfileHealth profileHealth)
+        {
+            if (!health.TryConfigureVitalIntegrity(profileHealth.vital_integrity, out string vitalFailure))
+            {
+                Debug.LogError(
+                    $"[ActorProfileComponent] '{name}' cannot apply vital_integrity from actor profile " +
+                    $"'{actorProfileId}': {vitalFailure}");
+            }
         }
 
         private void ApplyInitialInventory(ActorProfileDefinition profile)

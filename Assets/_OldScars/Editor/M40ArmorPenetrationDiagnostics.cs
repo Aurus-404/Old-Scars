@@ -214,6 +214,7 @@ namespace OldScars.Editor
             target.transform.rotation = Quaternion.LookRotation(player.transform.position - target.transform.position, Vector3.up);
             Physics.SyncTransforms();
             torso = Point(targetCollider.bounds, 0f, .65f);
+            AssertVitalDamageMatrix(playerOwnership, rifle, target, targetCollider);
             Reset(target);
             PhysicalShotResolution clear = Trace(input, torso, .65f, out Vector3 origin);
             Require(clear.Termination == PhysicalShotTermination.Impact && IsTarget(clear.HitCollider, target) &&
@@ -300,6 +301,11 @@ namespace OldScars.Editor
                 "P/Q. M39/M38 death or corpse equipment continuity failed.");
             EquipWeapon(playerEquipment, playerInventory, rifle.InstanceId);
             Require(rifle.TrySetFirearmState(AmmoProfileId, 5, out string firearmFailure), "R. Save firearm fixture failed: " + firearmFailure);
+            Reset(target);
+            WeaponCombatResult persistenceVital = FireDirect(playerOwnership, rifle, targetCollider, Point(targetCollider.bounds, 0f, .65f), 1f);
+            Require(persistenceVital.Combat.WoundApplied && persistenceVital.Combat.VitalDamage > 0f &&
+                    target.GetComponent<ActorHealthComponent>().VitalIntegrity < target.GetComponent<ActorHealthComponent>().MaxVitalIntegrity,
+                "R. Vital Integrity consequence was not present before Current Slice capture.");
             CurrentSliceSaveData targetSave = Capture("M40.1 target");
             JObject payload = (JObject)CurrentSliceSnapshotService.ToPayload(targetSave);
             Require(targetSave.items.Any(item => item.instanceId == armor.InstanceId && item.condition == armor.Condition) &&
@@ -465,6 +471,62 @@ namespace OldScars.Editor
                     result.Combat.Armor.Outcome == outcome && result.Combat.Armor.Coverage == coverage &&
                     (!severity.HasValue || Near(wounds[0].severity, severity.Value)),
                 label + " failed: " + result.Message);
+            ActorHealthComponent health = medical.GetComponent<ActorHealthComponent>();
+            Require(health != null && result.Combat.VitalDamage > 0f &&
+                    result.Combat.VitalIntegrityBefore > result.Combat.VitalIntegrityAfter &&
+                    Near(result.Combat.VitalIntegrityAfter, health.VitalIntegrity),
+                label + " did not report one Vital Integrity consequence from the resolved wound.");
+        }
+
+        private static void AssertVitalDamageMatrix(ActorItemOwnershipComponent shooter, ItemInstance rifle,
+            ActorRuntimeIdentity target, Collider collider)
+        {
+            ActorMedicalStateComponent medical = target.GetComponent<ActorMedicalStateComponent>();
+            ActorHealthComponent health = target.GetComponent<ActorHealthComponent>();
+            Vector3 leftArm = RegionPoint(target.transform, collider.bounds, -.9f, .65f);
+            Vector3 torso = RegionPoint(target.transform, collider.bounds, 0f, .65f);
+            Vector3 head = RegionPoint(target.transform, collider.bounds, 0f, .9f);
+
+            Reset(target);
+            CombatResolutionResult bluntLimb = CombatResolutionService.ResolveImpact(collider, leftArm,
+                new CombatImpact(null, null, CombatAttackKind.Melee, WoundType.Blunt, .65f, .1f, .1f, 0f, 0f));
+            Require(bluntLimb.WoundApplied && bluntLimb.Region == BodyRegion.LeftArm &&
+                    Near(bluntLimb.VitalDamage, 5.6875f) && !health.IsDead,
+                $"Vital blunt limb behavior was not low and non-fatal (code={bluntLimb.Code}, region={bluntLimb.Region}, damage={bluntLimb.VitalDamage:F4}, health={health.VitalIntegrity:F4}).");
+
+            Reset(target);
+            CombatResolutionResult bluntHead = CombatResolutionService.ResolveImpact(collider, head,
+                new CombatImpact(null, null, CombatAttackKind.Melee, WoundType.Blunt, .8f, .1f, .1f, 0f, 0f));
+            Require(bluntHead.WoundApplied && bluntHead.Region == BodyRegion.Head &&
+                    Near(bluntHead.VitalDamage, 50.4f) && !health.IsDead,
+                "Vital blunt head behavior was not materially stronger than a limb impact.");
+
+            Reset(target);
+            WeaponCombatResult limb = FireDirect(shooter, rifle, collider, leftArm, null);
+            Require(limb.Combat.Region == BodyRegion.LeftArm && limb.Combat.FinalWoundType == WoundType.Puncture &&
+                    Near(limb.Combat.VitalDamage, 16.25f) && !health.IsDead,
+                "Vital limb .303 behavior was not low, non-fatal, and data-derived.");
+
+            Reset(target);
+            WeaponCombatResult torsoShot = FireDirect(shooter, rifle, collider, torso, null);
+            Require(torsoShot.Combat.Region == BodyRegion.Torso && Near(torsoShot.Combat.VitalDamage, 65f) && !health.IsDead,
+                "Vital torso .303 behavior was not high and survivable.");
+
+            Reset(target);
+            WeaponCombatResult headShot = FireDirect(shooter, rifle, collider, head, null);
+            Require(headShot.Combat.Code == CombatResolutionCode.TargetKilled && headShot.Combat.Region == BodyRegion.Head &&
+                    headShot.Combat.VitalDamage > health.MaxVitalIntegrity && health.IsDead,
+                "Vital head .303 behavior was not catastrophic and lethal.");
+
+            Reset(target);
+            WeaponCombatResult firstLimb = FireDirect(shooter, rifle, collider, leftArm, null);
+            WeaponCombatResult secondLimb = FireDirect(shooter, rifle, collider, leftArm, null);
+            Require(medical.WoundCount == 2 && Near(firstLimb.Combat.VitalDamage, secondLimb.Combat.VitalDamage) &&
+                    Near(health.VitalIntegrity, health.MaxVitalIntegrity - firstLimb.Combat.VitalDamage - secondLimb.Combat.VitalDamage),
+                "Two resolved wounds did not produce exactly two accumulated Vital Integrity consequences.");
+            Debug.Log($"[M41.4 Vital] bluntLimb={bluntLimb.VitalDamage:F2}; bluntHead={bluntHead.VitalDamage:F2}; " +
+                      $"limb303={limb.Combat.VitalDamage:F2}; torso303={torsoShot.Combat.VitalDamage:F2}; " +
+                      $"head303={headShot.Combat.VitalDamage:F2}; accumulated={firstLimb.Combat.VitalDamage + secondLimb.Combat.VitalDamage:F2}.");
         }
         private static void Reset(ActorRuntimeIdentity actor)
         {
@@ -521,6 +583,9 @@ namespace OldScars.Editor
         private static bool Near(float actual, float expected) => Mathf.Abs(actual - expected) <= Epsilon;
         private static Vector3 Point(Bounds bounds, float x, float y) =>
             new Vector3(bounds.center.x + bounds.extents.x * x, bounds.min.y + bounds.size.y * y, bounds.center.z);
+        private static Vector3 RegionPoint(Transform actor, Bounds bounds, float localX, float normalizedY) =>
+            new Vector3(bounds.center.x, bounds.min.y + bounds.size.y * normalizedY, bounds.center.z) +
+            actor.TransformDirection(Vector3.right) * bounds.extents.x * localX;
         private static bool IsTarget(Collider collider, ActorRuntimeIdentity target) => collider != null &&
             (collider.transform == target.transform || collider.transform.IsChildOf(target.transform));
         private static int Quantity(ActorItemOwnershipComponent ownership, string definitionId) =>

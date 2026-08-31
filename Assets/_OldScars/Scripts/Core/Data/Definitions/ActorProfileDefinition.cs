@@ -32,6 +32,19 @@ namespace OldScars.Core.Data.Definitions
     {
         public float max_health;
         public float current_health;
+        public ActorProfileVitalIntegrity vital_integrity = new ActorProfileVitalIntegrity();
+    }
+
+    [System.Serializable]
+    public sealed class ActorProfileVitalIntegrity
+    {
+        public float damage_scale = 1f;
+        public float blunt_factor = 0.35f;
+        public float puncture_factor = 1f;
+        public float laceration_factor = 0.6f;
+        public float head_factor = 1.8f;
+        public float torso_factor = 1f;
+        public float limb_factor = 0.25f;
     }
 
     [System.Serializable]

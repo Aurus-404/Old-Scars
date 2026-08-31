@@ -792,6 +792,9 @@ namespace OldScars.Core.Data.Validation
 
             if (health.current_health > health.max_health)
                 report.Error($"{context}: 'current_health' ({health.current_health}) must be <= 'max_health' ({health.max_health}).");
+
+            if (!ActorHealthComponent.TryValidateVitalIntegrity(health.vital_integrity, out string vitalFailure))
+                report.Error($"{context}: {vitalFailure}");
         }
 
         private void ValidateActorProfileInventory(ActorProfileInventoryEntry[] initialInventory, string context)

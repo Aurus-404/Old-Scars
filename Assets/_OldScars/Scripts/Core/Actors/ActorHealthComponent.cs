@@ -1,3 +1,4 @@
+using OldScars.Core.Data.Definitions;
 using OldScars.Core.Interactions;
 using UnityEngine;
 
@@ -20,9 +21,18 @@ namespace OldScars.Core.Actors
         [SerializeField] private bool canHealFromZero;
 
         private bool deathProcessed;
+        private float vitalDamageScale = 1f;
+        private float bluntVitalDamageFactor = 0.35f;
+        private float punctureVitalDamageFactor = 1f;
+        private float lacerationVitalDamageFactor = 0.6f;
+        private float headVitalDamageFactor = 1.8f;
+        private float torsoVitalDamageFactor = 1f;
+        private float limbVitalDamageFactor = 0.25f;
 
         public float MaxHealth => maxHealth;
         public float CurrentHealth => currentHealth;
+        public float MaxVitalIntegrity => maxHealth;
+        public float VitalIntegrity => currentHealth;
         public float LowHealthThreshold => lowHealthThreshold;
         public bool IsDead => currentHealth <= 0f;
 
@@ -41,7 +51,9 @@ namespace OldScars.Core.Actors
                 SyncLivingTags();
         }
 
-        public bool ApplyDamage(float amount)
+        public bool ApplyDamage(float amount) => ApplyVitalDamage(amount);
+
+        public bool ApplyVitalDamage(float amount)
         {
             if (!Finite(amount) || amount <= 0f || IsDead)
                 return false;
@@ -55,6 +67,61 @@ namespace OldScars.Core.Actors
                 SyncLivingTags();
 
             return currentHealth < previousHealth;
+        }
+
+        public bool TryConfigureVitalIntegrity(ActorProfileVitalIntegrity profile, out string failure)
+        {
+            if (!TryValidateVitalIntegrity(profile, out failure))
+                return false;
+
+            vitalDamageScale = profile.damage_scale;
+            bluntVitalDamageFactor = profile.blunt_factor;
+            punctureVitalDamageFactor = profile.puncture_factor;
+            lacerationVitalDamageFactor = profile.laceration_factor;
+            headVitalDamageFactor = profile.head_factor;
+            torsoVitalDamageFactor = profile.torso_factor;
+            limbVitalDamageFactor = profile.limb_factor;
+            return true;
+        }
+
+        public float CalculateVitalDamage(BodyRegion region, WoundType woundType, float finalSeverity)
+        {
+            if (!Finite(finalSeverity) || finalSeverity <= 0f)
+                return 0f;
+
+            float woundFactor = woundType switch
+            {
+                WoundType.Blunt => bluntVitalDamageFactor,
+                WoundType.Puncture => punctureVitalDamageFactor,
+                WoundType.Laceration => lacerationVitalDamageFactor,
+                _ => 0f
+            };
+            float regionFactor = region switch
+            {
+                BodyRegion.Head => headVitalDamageFactor,
+                BodyRegion.Torso => torsoVitalDamageFactor,
+                _ => limbVitalDamageFactor
+            };
+            return Mathf.Max(0f, Mathf.Clamp01(finalSeverity) * woundFactor * regionFactor * vitalDamageScale * maxHealth);
+        }
+
+        public static bool TryValidateVitalIntegrity(ActorProfileVitalIntegrity profile, out string failure)
+        {
+            if (profile == null ||
+                !FinitePositive(profile.damage_scale) ||
+                !FinitePositive(profile.blunt_factor) ||
+                !FinitePositive(profile.puncture_factor) ||
+                !FinitePositive(profile.laceration_factor) ||
+                !FinitePositive(profile.head_factor) ||
+                !FinitePositive(profile.torso_factor) ||
+                !FinitePositive(profile.limb_factor))
+            {
+                failure = "Vital Integrity tuning must use finite positive damage scale, wound, and region factors.";
+                return false;
+            }
+
+            failure = null;
+            return true;
         }
 
         public bool Heal(float amount)
@@ -142,6 +209,8 @@ namespace OldScars.Core.Actors
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
+
+        private static bool FinitePositive(float value) => Finite(value) && value > 0f;
 
         private void ProcessDeath()
         {

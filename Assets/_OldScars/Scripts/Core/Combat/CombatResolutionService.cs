@@ -312,7 +312,10 @@ namespace OldScars.Core.Combat
             string woundId = null,
             ArmorResolution armor = default,
             WoundType? finalWoundType = null,
-            float finalSeverity = 0f)
+            float finalSeverity = 0f,
+            float vitalDamage = 0f,
+            float vitalIntegrityBefore = 0f,
+            float vitalIntegrityAfter = 0f)
         {
             Code = code;
             Message = message;
@@ -321,6 +324,9 @@ namespace OldScars.Core.Combat
             Armor = armor;
             FinalWoundType = finalWoundType;
             FinalSeverity = finalSeverity;
+            VitalDamage = vitalDamage;
+            VitalIntegrityBefore = vitalIntegrityBefore;
+            VitalIntegrityAfter = vitalIntegrityAfter;
         }
 
         public CombatResolutionCode Code { get; }
@@ -330,6 +336,9 @@ namespace OldScars.Core.Combat
         public ArmorResolution Armor { get; }
         public WoundType? FinalWoundType { get; }
         public float FinalSeverity { get; }
+        public float VitalDamage { get; }
+        public float VitalIntegrityBefore { get; }
+        public float VitalIntegrityAfter { get; }
         public bool WoundApplied => Code == CombatResolutionCode.WoundApplied || Code == CombatResolutionCode.TargetKilled;
         public bool Resolved => Code == CombatResolutionCode.ResolvedNoWound || WoundApplied;
     }
@@ -430,6 +439,10 @@ namespace OldScars.Core.Combat
                     finalWoundType: finalType,
                     finalSeverity: finalSeverity);
 
+            float vitalIntegrityBefore = health.VitalIntegrity;
+            float vitalDamage = health.CalculateVitalDamage(region, finalType, finalSeverity);
+            health.ApplyVitalDamage(vitalDamage);
+
             return new CombatResolutionResult(
                 health.IsDead ? CombatResolutionCode.TargetKilled : CombatResolutionCode.WoundApplied,
                 BuildWoundMessage(region, impact.AttackKind, armor, finalType, woundId),
@@ -437,7 +450,10 @@ namespace OldScars.Core.Combat
                 woundId,
                 armor,
                 finalType,
-                finalSeverity);
+                finalSeverity,
+                vitalDamage,
+                vitalIntegrityBefore,
+                health.VitalIntegrity);
         }
 
         public static ArmorResolution ResolveArmorLayers(

@@ -10,7 +10,8 @@
       "initial_tags": ["player", "human"],
       "health": {
         "max_health": 100,
-        "current_health": 100
+        "current_health": 100,
+        "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 }
       },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "initial_inventory": [
@@ -26,7 +27,8 @@
       "initial_tags": ["human", "inspectable"],
       "health": {
         "max_health": 100,
-        "current_health": 100
+        "current_health": 100,
+        "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 }
       },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "visual_perception": {
@@ -51,7 +53,8 @@
       "initial_tags": ["human", "inspectable"],
       "health": {
         "max_health": 100,
-        "current_health": 100
+        "current_health": 100,
+        "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 }
       },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "visual_perception": {
@@ -73,7 +76,8 @@
       "initial_tags": ["human", "inspectable"],
       "health": {
         "max_health": 100,
-        "current_health": 100
+        "current_health": 100,
+        "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 }
       },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "visual_perception": {
@@ -97,7 +101,8 @@
       "initial_tags": ["human", "inspectable"],
       "health": {
         "max_health": 100,
-        "current_health": 100
+        "current_health": 100,
+        "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 }
       },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": {
@@ -118,7 +123,7 @@
       "id": "core:debug_encounter_avoid_01",
       "display_name": "Debug Encounter Avoid NPC",
       "initial_tags": ["human", "inspectable"],
-      "health": { "max_health": 100, "current_health": 100 },
+      "health": { "max_health": 100, "current_health": 100, "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 } },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 20.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
@@ -139,7 +144,7 @@
       "id": "core:debug_encounter_flee_01",
       "display_name": "Debug Encounter Flee NPC",
       "initial_tags": ["human", "inspectable"],
-      "health": { "max_health": 100, "current_health": 100 },
+      "health": { "max_health": 100, "current_health": 100, "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 } },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 4.0, "acceleration": 9.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 20.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
@@ -161,7 +166,7 @@
       "display_name": "Debug Encounter Fight NPC",
       "equipment_layout_id": "core:human_standard_01",
       "initial_tags": ["human", "inspectable"],
-      "health": { "max_health": 100, "current_health": 100 },
+      "health": { "max_health": 100, "current_health": 100, "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 } },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 30.0, "horizontal_fov_degrees": 180.0, "eye_height": 1.6 },
@@ -188,7 +193,7 @@
       "display_name": "Debug Encounter Armored Target",
       "equipment_layout_id": "core:human_standard_01",
       "initial_tags": ["human", "inspectable"],
-      "health": { "max_health": 100, "current_health": 100 },
+      "health": { "max_health": 100, "current_health": 100, "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 } },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "initial_inventory": [],
@@ -204,7 +209,7 @@
       "equipment_layout_id": "core:human_standard_01",
       "visual_rig_profile_id": "core:human_standard_visual_rig",
       "initial_tags": ["human", "inspectable"],
-      "health": { "max_health": 100, "current_health": 100 },
+      "health": { "max_health": 100, "current_health": 100, "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 } },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 15.0, "horizontal_fov_degrees": 120.0, "eye_height": 1.6 },
@@ -219,7 +224,7 @@
       "equipment_layout_id": "core:human_standard_01",
       "visual_rig_profile_id": "core:human_standard_visual_rig",
       "initial_tags": ["human", "inspectable"],
-      "health": { "max_health": 100, "current_health": 100 },
+      "health": { "max_health": 100, "current_health": 100, "vital_integrity": { "damage_scale": 1.0, "blunt_factor": 0.35, "puncture_factor": 1.0, "laceration_factor": 0.60, "head_factor": 1.80, "torso_factor": 1.0, "limb_factor": 0.25 } },
       "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": {

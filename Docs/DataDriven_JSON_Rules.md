@@ -551,7 +551,7 @@ Ejemplo de apertura posterior de storage:
 - La cadena vigente es item con `firearm_profile_id` → firearm profile → `accepted_ammo_profile_ids` → item de municion con `ammo_profile_id`.
 - `fire_mode` es obligatorio y usa exactamente `manual_cycle`, `semi_automatic` o `automatic`. Declara sólo la política genérica de trigger del adaptador de input; no crea clases ni branches por `Definition.id`.
 - `magazine_capacity` debe ser mayor que cero; `reload_duration`, `cycle_time`, `range`, `muzzle_offset` y `debug_accuracy_spread` son valores finitos validados del profile. En V1, `range` es el máximo físico temporal del hitscan, no el alcance del camera ray usado únicamente para escoger dirección bajo el mouse. `WeaponProfileDefinition.melee_range` cumple el mismo límite físico para melee.
-- `AmmoProfileDefinition` declara impacto médico determinista mediante `wound_type`, `wound_severity`, `bleeding_rate_per_game_hour` y `pain_contribution`, más `penetration_power` finito y estrictamente mayor que cero para el proyectil. El runtime lo traduce a M39/M40.1; no declara scripts ni daño directo a HP.
+- `AmmoProfileDefinition` declara impacto médico determinista mediante `wound_type`, `wound_severity`, `bleeding_rate_per_game_hour` y `pain_contribution`, más `penetration_power` finito y estrictamente mayor que cero para el proyectil. El runtime lo traduce a M39/M40.1 y, una vez resuelta la herida final tras armor, a su consecuencia vital; no declara scripts ni un daño paralelo por arma.
 - No existen flags `IsAP`, `CanPenetrate` ni branches por FMJ/AP/HP/tracer/anti-materiel. Toda munición usa el mismo resolver: futuras AP tenderán a mayor `penetration_power` y menor efecto blando, HP al caso inverso y FMJ a un baseline intermedio, siempre como datos y no como clases lógicas.
 - `WeaponProfileDefinition` reutiliza el mismo contrato médico para melee y agrega `melee_range`, `attack_duration` y `attack_cooldown`.
 - El estado cargado no vive en JSON de definitions: cada `ItemInstance` firearm mantiene ammo profile y rounds en runtime/save; capacity siempre deriva del profile.
@@ -588,6 +588,8 @@ Ejemplo de apertura posterior de storage:
 - `layer_priority >= 0`, con desempates canónicos en runtime; el orden del JSON o de componentes no decide el resultado.
 
 Un mod agrega item → `armor_profile_id` → regions/resistance/trauma sin C# nuevo. Sólo Equipment real protege; estas Definitions no guardan owner, slots ocupados, `Condition`, wounds ni outcome. M40.1 no agrega estado de save ni mutable durability.
+
+Cada `actor_profiles` puede declarar `health.vital_integrity`: `damage_scale`, factores positivos finitos para `blunt`/`puncture`/`laceration` y factores positivos finitos para `head`/`torso`/`limb`. Tras armor, el resolver usa exclusivamente la severidad, tipo y región finales de la única herida para calcular `severity × type × region × scale × max_health`. Es configuración de Definition, no estado durable, y los perfiles previos sin bloque usan los defaults compatibles del runtime.
 
 ## Fuera Del Contrato JSON Actual
 
