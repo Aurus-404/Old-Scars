@@ -329,6 +329,34 @@ Ejemplo de item-owned storage profile:
 
 `required_sockets` no forma parte del contrato actual.
 
+### Actor Profiles: condición y consciencia
+
+`ActorProfileDefinition.consciousness` parametriza la autoridad runtime compartida `ActorConditionComponent`:
+
+```json
+{
+  "consciousness": {
+    "consciousness_resilience": 1.0,
+    "pain_tolerance": 0.35,
+    "blunt_trauma_resistance": 1.0,
+    "dazed_threshold": 0.75,
+    "incapacitated_threshold": 0.45,
+    "unconscious_threshold": 0.20,
+    "blood_pressure_start_fraction": 0.65,
+    "fatal_blood_fraction": 0.08,
+    "trauma_recovery_per_game_hour": 0.60,
+    "blood_recovery_per_game_hour": 0.02,
+    "recovery_hysteresis": 0.05
+  }
+}
+```
+
+- los thresholds deben ser finitos y ordenarse `unconscious < incapacitated < dazed`; `fatal_blood_fraction` debe ser menor que `blood_pressure_start_fraction`;
+- `recovery_hysteresis` es finito y positivo; eleva la frontera de recuperación de cada estado y el runtime la acota a estabilidad 1, sin exigir separación nueva entre thresholds legacy;
+- las tasas de recuperación de trauma y Blood son finitas y estrictamente positivas; se expresan por game hour y consumen exclusivamente avances de `WorldClock`;
+- `blood_recovery_per_game_hour` y `recovery_hysteresis` conservan defaults compatibles para profiles externos anteriores que omitan sólo esos campos; Core los declara explícitamente;
+- estas Definitions no guardan blood, trauma ni estado funcional runtime. Current Slice persiste ese estado de instancia por su contrato existente.
+
 ### Actor Profiles: inventario y Equipment inicial
 
 `ActorProfileDefinition` puede declarar dos listas independientes:

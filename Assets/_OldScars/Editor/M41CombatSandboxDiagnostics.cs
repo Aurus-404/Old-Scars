@@ -279,7 +279,9 @@ namespace OldScars.Editor
                 unconscious_threshold = source.unconscious_threshold,
                 blood_pressure_start_fraction = source.blood_pressure_start_fraction,
                 fatal_blood_fraction = source.fatal_blood_fraction,
-                trauma_recovery_per_game_hour = source.trauma_recovery_per_game_hour
+                trauma_recovery_per_game_hour = source.trauma_recovery_per_game_hour,
+                blood_recovery_per_game_hour = source.blood_recovery_per_game_hour,
+                recovery_hysteresis = source.recovery_hysteresis
             };
             Require(actor.GetComponent<ActorConditionComponent>().TryConfigure(diagnostic, out string failure),
                 "Could not configure diagnostic combat-target resilience: " + failure);

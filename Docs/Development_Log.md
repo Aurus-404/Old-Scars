@@ -3377,3 +3377,24 @@ Validación autónoma en Unity `6000.4.6f1`, batchmode D3D11:
 - `git diff --check`: `PASS`; no schema, JSON, scene, ProjectSettings, M41.4 ni combat-lethality changes.
 
 La confirmación visual manual de la ausencia del scrollbar, el click `Give X` sobre `.303` y la lectura del panel F3 queda pendiente de Mauro; la validación automatizada no se presenta como sustituto de esa aceptación manual.
+
+### Health & Damage Consolidation — Pass A
+
+Fecha: 2026-08-31.
+
+Estado: `VALIDATED — CONDITION / CONSCIOUSNESS AUTHORITIES STABILIZED`.
+
+La escritura histórica `transientTrauma 0 → ~0.97` quedó aislada como restore legítimo: el diagnóstico de consciencia guardaba un NPC inconsciente, demostraba recuperación y después cargaba deliberadamente el snapshot traumático anterior. Las únicas rutas productivas permanecen consecuencia aguda de una wound nueva, recuperación temporal, restore exacto de `ActorConditionStateData` y reset de inicialización. Restaurar wounds no reaplica trauma.
+
+`ActorMedicalStateComponent` conserva wounds/bleeding/pain/treatment y entrega una sola consecuencia inmediata interna a `ActorConditionComponent`. Condition conserva Blood/trauma/estabilidad/`FunctionalState`; bleeding y recuperación de trauma progresan independientemente en el mismo avance de `WorldClock`, Blood se recupera lentamente sólo después de estabilizar bleeding y nunca desde/de vuelta a Dead. La recuperación funcional usa hysteresis data-driven y puede cruzar varios estados sin flapping. La pérdida fatal de Blood llama `ActorHealthComponent.Kill`, manteniendo Health/Lifecycle como única autoridad de muerte.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
+
+- Runtime compile y Editor compile: `PASS`;
+- `Actor Consciousness & Incapacitation Diagnostics: PASS`: healthy baseline; una sola contribución inmediata; wound restore sin duplicación; trauma/bleeding independientes y combinados; hysteresis y recuperación multiestado; Blood recovery acotada; snapshot traumático restaurado intencionalmente; muerte única vía Health/Lifecycle;
+- `M41 Sandbox Preparation Diagnostics: PASS`: Blue↔Red hostile, Red→Player hostile, Blue→Player neutral; roaming Blue/Red/White con home anchor, cancelación por threat y reanudación Idle; incapacidad estable en `Inactive` con acquisition habilitado y sin ping-pong, threat, navegación ni ataques;
+- `git diff --check`: `PASS`.
+
+La revisión independiente detectó y corrigió antes del cierre una restricción excesiva que habría rechazado profiles externos legacy con thresholds más cercanos que el default de hysteresis; el dead-band se acota a estabilidad 1 sin imponer separación retroactiva. También separó la recuperación runtime con hysteresis del restore/configuración determinista, evitando que cargar un snapshot válido heredase el peor estado vivo anterior.
+
+No se modificaron balance de armas/letalidad, familias de wounds, órganos, fracturas, infección, cirugía, alimentación/hidratación/rest modifiers, UI final ni schema de Current Slice. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.

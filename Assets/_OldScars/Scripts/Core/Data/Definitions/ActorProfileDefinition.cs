@@ -46,6 +46,8 @@ namespace OldScars.Core.Data.Definitions
         public float blood_pressure_start_fraction;
         public float fatal_blood_fraction;
         public float trauma_recovery_per_game_hour;
+        public float blood_recovery_per_game_hour = 0.02f;
+        public float recovery_hysteresis = 0.05f;
     }
 
     [System.Serializable]

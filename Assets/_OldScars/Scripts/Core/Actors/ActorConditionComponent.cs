@@ -48,6 +48,8 @@ namespace OldScars.Core.Actors
         private float bloodPressureStartFraction = 0.65f;
         private float fatalBloodFraction = 0.08f;
         private float traumaRecoveryPerGameHour = 0.6f;
+        private float bloodRecoveryPerGameHour = 0.02f;
+        private float recoveryHysteresis = 0.05f;
 
         private ActorHealthComponent health;
         private ActorMedicalStateComponent medical;
@@ -65,6 +67,8 @@ namespace OldScars.Core.Actors
         public bool IsUnconscious => !IsDead() && FunctionalState == ActorFunctionalState.Unconscious;
         public string ObservableState => IsDead() ? "Dead" : FunctionalState.ToString();
         public float FatalBloodFraction => fatalBloodFraction;
+        public float BloodRecoveryPerGameHour => bloodRecoveryPerGameHour;
+        public float RecoveryHysteresis => recoveryHysteresis;
         public int Revision { get; private set; }
 
         public event Action<ActorFunctionalState, ActorFunctionalState> FunctionalStateChanged;
@@ -106,12 +110,14 @@ namespace OldScars.Core.Actors
             bloodPressureStartFraction = profile.blood_pressure_start_fraction;
             fatalBloodFraction = profile.fatal_blood_fraction;
             traumaRecoveryPerGameHour = profile.trauma_recovery_per_game_hour;
+            bloodRecoveryPerGameHour = profile.blood_recovery_per_game_hour;
+            recoveryHysteresis = profile.recovery_hysteresis;
             configured = true;
-            RecalculateConsciousness();
+            RecalculateConsciousness(false);
             return true;
         }
 
-        public bool ApplyImmediateTrauma(BodyRegion region, WoundType woundType, float severity)
+        internal bool ApplyImmediateTraumaForNewWound(BodyRegion region, WoundType woundType, float severity)
         {
             ResolveReferences();
             if (IsDead() || !Finite(severity) || severity <= 0f)
@@ -148,8 +154,9 @@ namespace OldScars.Core.Actors
             float previousTrauma = transientTrauma;
             if (bleedingRate > 0f)
                 bloodFraction = Mathf.Clamp01(bloodFraction - bleedingRate * elapsedHours);
-            else if (bloodFraction > fatalBloodFraction)
-                transientTrauma = Mathf.Max(0f, transientTrauma - traumaRecoveryPerGameHour * elapsedHours);
+            else if (bloodFraction > fatalBloodFraction && bloodFraction < 1f)
+                bloodFraction = Mathf.Min(1f, bloodFraction + bloodRecoveryPerGameHour * elapsedHours);
+            transientTrauma = Mathf.Max(0f, transientTrauma - traumaRecoveryPerGameHour * elapsedHours);
 
             bool changed = !Mathf.Approximately(previousBlood, bloodFraction) ||
                            !Mathf.Approximately(previousTrauma, transientTrauma);
@@ -158,7 +165,7 @@ namespace OldScars.Core.Actors
             RecalculateConsciousness();
 
             if (bloodFraction <= fatalBloodFraction && health != null && !health.IsDead)
-                health.ApplyDamage(health.CurrentHealth);
+                health.Kill();
             return changed;
         }
 
@@ -178,7 +185,7 @@ namespace OldScars.Core.Actors
             bloodFraction = state.bloodFraction;
             transientTrauma = state.transientTrauma;
             Revision++;
-            RecalculateConsciousness();
+            RecalculateConsciousness(false);
             return true;
         }
 
@@ -226,9 +233,11 @@ namespace OldScars.Core.Actors
                 !FiniteUnitPositive(profile.blood_pressure_start_fraction) ||
                 !FiniteUnit(profile.fatal_blood_fraction) ||
                 profile.fatal_blood_fraction >= profile.blood_pressure_start_fraction ||
-                !FinitePositive(profile.trauma_recovery_per_game_hour))
+                !FinitePositive(profile.trauma_recovery_per_game_hour) ||
+                !FinitePositive(profile.blood_recovery_per_game_hour) ||
+                !FiniteUnitPositive(profile.recovery_hysteresis))
             {
-                failure = "Consciousness tuning must be finite and ordered: unconscious < incapacitated < dazed, and fatal blood < blood-pressure start.";
+                failure = "Consciousness tuning must be finite and ordered; recovery hysteresis and blood/trauma recovery rates must be positive.";
                 return false;
             }
             failure = null;
@@ -271,7 +280,7 @@ namespace OldScars.Core.Actors
             AdvancePhysiology(elapsedGameSeconds);
         }
 
-        private void RecalculateConsciousness()
+        private void RecalculateConsciousness(bool applyRecoveryHysteresis = true)
         {
             ResolveReferences();
             ClampState();
@@ -287,18 +296,50 @@ namespace OldScars.Core.Actors
                 ? 0f
                 : Mathf.Clamp01(1f - totalPressure / Mathf.Max(0.01f, consciousnessResilience));
 
-            ActorFunctionalState next = ConsciousnessStability < unconsciousThreshold
+            ActorFunctionalState next = IsDead()
                 ? ActorFunctionalState.Unconscious
-                : ConsciousnessStability < incapacitatedThreshold
-                    ? ActorFunctionalState.Incapacitated
-                    : ConsciousnessStability < dazedThreshold
-                        ? ActorFunctionalState.Dazed
-                        : ActorFunctionalState.Conscious;
+                : applyRecoveryHysteresis
+                    ? ResolveFunctionalState(ConsciousnessStability)
+                    : ResolveThresholdState(ConsciousnessStability);
             if (next == FunctionalState)
                 return;
             ActorFunctionalState previous = FunctionalState;
             FunctionalState = next;
             FunctionalStateChanged?.Invoke(previous, next);
+        }
+
+        private ActorFunctionalState ResolveFunctionalState(float stability)
+        {
+            ActorFunctionalState thresholdState = ResolveThresholdState(stability);
+            if (thresholdState >= FunctionalState)
+                return thresholdState;
+
+            ActorFunctionalState recovered = FunctionalState;
+            while (recovered > thresholdState && stability >= RecoveryThreshold(recovered))
+                recovered = (ActorFunctionalState)((int)recovered - 1);
+            return recovered;
+        }
+
+        private ActorFunctionalState ResolveThresholdState(float stability)
+        {
+            return stability < unconsciousThreshold
+                ? ActorFunctionalState.Unconscious
+                : stability < incapacitatedThreshold
+                    ? ActorFunctionalState.Incapacitated
+                    : stability < dazedThreshold
+                        ? ActorFunctionalState.Dazed
+                        : ActorFunctionalState.Conscious;
+        }
+
+        private float RecoveryThreshold(ActorFunctionalState state)
+        {
+            return state switch
+            {
+                ActorFunctionalState.Unconscious => Mathf.Min(1f, unconsciousThreshold + recoveryHysteresis),
+                ActorFunctionalState.Incapacitated => Mathf.Min(1f, incapacitatedThreshold + recoveryHysteresis),
+                ActorFunctionalState.Dazed => Mathf.Min(1f, dazedThreshold + recoveryHysteresis),
+                _ => 1f
+            };
         }
 
         private bool IsDead()

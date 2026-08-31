@@ -5,6 +5,7 @@ using System.Linq;
 using OldScars.Core;
 using OldScars.Core.Actors;
 using OldScars.Core.Combat;
+using OldScars.Core.Data.Definitions;
 using OldScars.Core.Interactions;
 using OldScars.Core.Items;
 using OldScars.Core.Persistence;
@@ -29,6 +30,9 @@ namespace OldScars.Editor
         private const string KnockoutWound = "wound_c3333333333333333333333333333333";
         private const string PlayerWound = "wound_d4444444444444444444444444444444";
         private const string BleedingWound = "wound_e5555555555555555555555555555555";
+        private const string FatalWound = "wound_f6666666666666666666666666666666";
+        private const string HysteresisWoundA = "wound_a7777777777777777777777777777777";
+        private const string HysteresisWoundB = "wound_b8888888888888888888888888888888";
 
         private static ActorRuntimeIdentity limbActor;
         private static ActorRuntimeIdentity headActor;
@@ -40,8 +44,14 @@ namespace OldScars.Editor
         private static float recoveredStability;
         private static float persistedBlood;
         private static float persistedTrauma;
+        private static float recoveredTrauma;
+        private static float immediateTraumaContribution;
+        private static float combinedBloodBefore;
+        private static float combinedBloodAfter;
+        private static float combinedTraumaBefore;
+        private static float combinedTraumaAfter;
         private static float bleedingUnconsciousBlood;
-        private static float bleedingAfterBandage;
+        private static float recoveredBlood;
 
         static ActorConsciousnessIncapacitationDiagnostics()
         {
@@ -122,7 +132,8 @@ namespace OldScars.Editor
             ActorMedicalStateComponent playerMedical = player.GetComponent<ActorMedicalStateComponent>();
             ActorConditionComponent playerCondition = player.GetComponent<ActorConditionComponent>();
             Require(playerHealth != null && playerMedical != null && playerCondition != null &&
-                    playerCondition.IsConfigured && Near(playerCondition.ConsciousnessStability, 1f) &&
+                    playerCondition.IsConfigured && Near(playerCondition.BloodFraction, 1f) &&
+                    Near(playerCondition.TransientTrauma, 0f) && Near(playerCondition.ConsciousnessStability, 1f) &&
                     playerCondition.FunctionalState == ActorFunctionalState.Conscious,
                 "Healthy Player did not start fully conscious through the shared condition authority.");
 
@@ -141,9 +152,15 @@ namespace OldScars.Editor
                     headActor.GetComponents<ActorConditionComponent>().Length == 1,
                 "Player/NPC did not share exactly one ActorConditionComponent authority.");
 
+            float limbTraumaBefore = limbCondition.TransientTrauma;
+            int limbConditionRevisionBefore = limbCondition.Revision;
             Require(limbMedical.TryApplyWound(
                     LimbWound, BodyRegion.LeftArm, WoundType.Blunt, 0.4f, 0f, 0.3f, out string failure),
                 "Equivalent limb blunt wound failed: " + failure);
+            immediateTraumaContribution = limbCondition.TransientTrauma - limbTraumaBefore;
+            Require(Near(immediateTraumaContribution, 0.4f * 0.65f * 0.65f) &&
+                    limbCondition.Revision == limbConditionRevisionBefore + 1,
+                "One durable wound did not produce exactly one immediate trauma contribution.");
             Require(headMedical.TryApplyWound(
                     HeadWound, BodyRegion.Head, WoundType.Blunt, 0.4f, 0f, 0.3f, out failure),
                 "Equivalent Head blunt wound failed: " + failure);
@@ -154,6 +171,16 @@ namespace OldScars.Editor
                 "Moderate limb pain/trauma did not affect stability without automatic KO.");
             Require(headStability < limbStability - 0.2f && !headCondition.IsUnconscious,
                 "Equivalent Head blunt trauma was not materially stronger than limb trauma.");
+
+            ActorMedicalStateData limbWounds = limbMedical.CaptureState();
+            ActorConditionStateData limbConditionAfterInjury = limbCondition.CaptureState();
+            Require(limbCondition.TryApplyPersistenceState(ActorConditionComponent.HealthyBaseline(), out failure) &&
+                    limbMedical.TryApplyPersistenceState(limbWounds, out failure) &&
+                    Near(limbCondition.TransientTrauma, 0f),
+                "Restoring an existing wound reapplied its immediate trauma consequence: " + failure);
+            Require(limbCondition.TryApplyPersistenceState(limbConditionAfterInjury, out failure) &&
+                    Near(limbCondition.TransientTrauma, immediateTraumaContribution),
+                "Condition persistence did not restore the separately persisted trauma consequence: " + failure);
 
             Require(headMedical.TryApplyWound(
                     KnockoutWound, BodyRegion.Head, WoundType.Blunt, 0.5f, 0f, 0.05f, out failure),
@@ -209,8 +236,9 @@ namespace OldScars.Editor
                 "Transient trauma recovery clock advance failed: " + failure);
             ActorConditionComponent recovered = headActor.GetComponent<ActorConditionComponent>();
             recoveredStability = recovered.ConsciousnessStability;
+            recoveredTrauma = recovered.TransientTrauma;
             Require(recovered.FunctionalState == ActorFunctionalState.Conscious &&
-                    recoveredStability > unconsciousStability + 0.5f &&
+                    recoveredStability > unconsciousStability + 0.5f && recoveredTrauma < persistedTrauma &&
                     headActor.LifecycleState == ActorLifecycleState.Alive,
                 "Transient non-bleeding trauma did not recover conditionally.");
 
@@ -220,9 +248,12 @@ namespace OldScars.Editor
             ActorConditionComponent restored = headActor.GetComponent<ActorConditionComponent>();
             Require(restored.IsUnconscious && Near(restored.BloodFraction, persistedBlood) &&
                     Near(restored.TransientTrauma, persistedTrauma) &&
+                    restored.TransientTrauma > recoveredTrauma &&
                     headActor.LifecycleState == ActorLifecycleState.Alive &&
                     headBelongingIds.SequenceEqual(BelongingIds(headActor), StringComparer.Ordinal),
-                "Current Slice did not preserve unconscious state, identity and belongings exactly.");
+                "Current Slice did not intentionally restore the older traumatic state, identity and belongings exactly.");
+
+            ProveFunctionalStateHysteresis(headActor.transform.position + new Vector3(9f, 0f, 0f));
 
             ActorRuntimeIdentity bleedingActor = Spawn(ProfileId, headActor.transform.position + new Vector3(6f, 0f, 0f));
             DisableAcquisition(bleedingActor);
@@ -233,38 +264,55 @@ namespace OldScars.Editor
                     BleedingWound, BodyRegion.Torso, WoundType.Puncture, 0.4f, 0.4f, 0.2f, out failure),
                 "Bleeding deterioration wound failed: " + failure);
             float healthBeforeBleeding = bleedingHealth.CurrentHealth;
-            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 2d, out failure),
+            combinedBloodBefore = bleedingCondition.BloodFraction;
+            combinedTraumaBefore = bleedingCondition.TransientTrauma;
+            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 0.1d, out failure),
+                "Combined blood/trauma advance failed: " + failure);
+            combinedBloodAfter = bleedingCondition.BloodFraction;
+            combinedTraumaAfter = bleedingCondition.TransientTrauma;
+            Require(combinedBloodAfter < combinedBloodBefore && combinedTraumaAfter < combinedTraumaBefore,
+                "Blood loss and transient trauma recovery did not progress independently in the same WorldClock advance.");
+            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 2.1875d, out failure),
                 "Bleeding-to-unconscious advance failed: " + failure);
             bleedingUnconsciousBlood = bleedingCondition.BloodFraction;
             float stabilityBeforeFurtherBleeding = bleedingCondition.ConsciousnessStability;
             Require(bleedingCondition.IsUnconscious && !bleedingHealth.IsDead &&
-                    Near(bleedingUnconsciousBlood, 0.2f) && Near(bleedingHealth.CurrentHealth, healthBeforeBleeding),
+                    bleedingUnconsciousBlood > bleedingCondition.FatalBloodFraction &&
+                    Near(bleedingHealth.CurrentHealth, healthBeforeBleeding),
                 "Blood loss did not produce unconscious-but-alive state without parallel HP drain.");
 
-            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 0.15d, out failure) &&
+            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 0.005d, out failure) &&
                     bleedingCondition.BloodFraction < bleedingUnconsciousBlood &&
                     bleedingCondition.ConsciousnessStability < stabilityBeforeFurtherBleeding,
                 "Continuing bleeding did not worsen the unconscious actor.");
-            float bloodBeforeBandage = bleedingCondition.BloodFraction;
-            float rateBeforeBandage = bleedingMedical.EffectiveBleedingRatePerGameHour;
-            Require(bleedingMedical.TryApplyBandage(BleedingWound, 0.1f, out failure),
-                "Bandaging deterioration fixture failed: " + failure);
-            float rateAfterBandage = bleedingMedical.EffectiveBleedingRatePerGameHour;
-            Require(rateAfterBandage < rateBeforeBandage &&
+            float bloodBeforeRecovery = bleedingCondition.BloodFraction;
+            Require(bleedingMedical.TryApplyBandage(BleedingWound, 0f, out failure) &&
+                    Near(bleedingMedical.EffectiveBleedingRatePerGameHour, 0f) &&
                     WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 0.5d, out failure),
-                "Bandaging did not reduce future bleeding flow: " + failure);
-            bleedingAfterBandage = bleedingCondition.BloodFraction;
-            Require(Near(bloodBeforeBandage - bleedingAfterBandage, rateAfterBandage * 0.5f) &&
-                    bloodBeforeBandage - bleedingAfterBandage < rateBeforeBandage * 0.5f,
-                "Post-bandage blood progression did not use reduced EffectiveBleedingRate.");
+                "Stabilizing the wound did not stop future bleeding: " + failure);
+            recoveredBlood = bleedingCondition.BloodFraction;
+            Require(recoveredBlood > bloodBeforeRecovery && recoveredBlood <= 1f &&
+                    Near(recoveredBlood - bloodBeforeRecovery, bleedingCondition.BloodRecoveryPerGameHour * 0.5f),
+                "Blood did not recover slowly after bleeding reached zero.");
 
-            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 1.1d, out failure),
+            ActorRuntimeIdentity fatalActor = Spawn(ProfileId, headActor.transform.position + new Vector3(12f, 0f, 0f));
+            DisableAcquisition(fatalActor);
+            ActorMedicalStateComponent fatalMedical = fatalActor.GetComponent<ActorMedicalStateComponent>();
+            ActorConditionComponent fatalCondition = fatalActor.GetComponent<ActorConditionComponent>();
+            ActorHealthComponent fatalHealth = fatalActor.GetComponent<ActorHealthComponent>();
+            Require(fatalMedical.TryApplyWound(
+                    FatalWound, BodyRegion.Torso, WoundType.Puncture, 0.2f, 1f, 0f, out failure) &&
+                    WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour * 0.95d, out failure),
                 "Terminal circulatory collapse advance failed: " + failure);
-            WorldObjectTags deathTags = bleedingActor.GetComponent<WorldObjectTags>();
-            Require(bleedingHealth.IsDead && bleedingActor.LifecycleState == ActorLifecycleState.Dead &&
+            WorldObjectTags deathTags = fatalActor.GetComponent<WorldObjectTags>();
+            int fatalRevision = fatalCondition.Revision;
+            Require(fatalHealth.IsDead && fatalActor.LifecycleState == ActorLifecycleState.Dead &&
                     deathTags.HasTag(ActorHealthComponent.DeadActorTag) &&
                     deathTags.HasTag(ActorHealthComponent.LootableActorTag),
                 "Severe blood loss did not terminate through existing health/lifecycle/corpse authority.");
+            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour, out failure) &&
+                    fatalCondition.Revision == fatalRevision && fatalHealth.IsDead && fatalHealth.CurrentHealth == 0f,
+                "Fatal blood loss repeated condition/death mutation after Health/Lifecycle reached Dead.");
 
             Require(UnityEngine.Object.FindObjectsByType<ActorConditionComponent>(FindObjectsInactive.Exclude)
                     .All(component => component.GetComponents<ActorConditionComponent>().Length == 1) &&
@@ -278,12 +326,85 @@ namespace OldScars.Editor
                 "- Trauma: limb stability=" + limbStability.ToString("0.###") +
                 " Head=" + headStability.ToString("0.###") +
                 " accumulated=" + unconsciousStability.ToString("0.###") +
-                " recovered=" + recoveredStability.ToString("0.###") + "\n" +
+                " immediate=" + immediateTraumaContribution.ToString("0.###") +
+                " recovered=" + recoveredTrauma.ToString("0.###") +
+                " restored=" + persistedTrauma.ToString("0.###") + "\n" +
+                "- Combined progression: blood " + combinedBloodBefore.ToString("0.###") + "->" + combinedBloodAfter.ToString("0.###") +
+                " trauma " + combinedTraumaBefore.ToString("0.###") + "->" + combinedTraumaAfter.ToString("0.###") + "\n" +
                 "- Blood: unconscious=" + bleedingUnconsciousBlood.ToString("0.###") +
-                " post-bandage=" + bleedingAfterBandage.ToString("0.###") +
+                " recovered=" + recoveredBlood.ToString("0.###") +
                 " terminal lifecycle=Dead\n" +
-                "- Current Slice: unconscious state, ActorInstanceId and belongings restored exactly");
+                "- Hysteresis: threshold jitter stable; large recovery crossed multiple states\n" +
+                "- Current Slice: recovered trauma stayed low until the older traumatic snapshot was intentionally loaded");
         }
+
+        private static void ProveFunctionalStateHysteresis(Vector3 position)
+        {
+            var legacyCloseThresholds = new ActorProfileConsciousness
+            {
+                consciousness_resilience = 1f,
+                pain_tolerance = 0.35f,
+                blunt_trauma_resistance = 1f,
+                dazed_threshold = 0.75f,
+                incapacitated_threshold = 0.23f,
+                unconscious_threshold = 0.2f,
+                blood_pressure_start_fraction = 0.65f,
+                fatal_blood_fraction = 0.08f,
+                trauma_recovery_per_game_hour = 0.6f
+            };
+            Require(ActorConditionComponent.TryValidateProfile(legacyCloseThresholds, out string legacyFailure),
+                "A legacy consciousness profile with close thresholds was rejected by default hysteresis: " + legacyFailure);
+
+            ActorRuntimeIdentity actor = Spawn(ProfileId, position);
+            DisableAcquisition(actor);
+            ActorConditionComponent condition = actor.GetComponent<ActorConditionComponent>();
+            ActorMedicalStateComponent medical = actor.GetComponent<ActorMedicalStateComponent>();
+            Require(condition.TryApplyPersistenceState(StateForStability(0.19f), out string failure) &&
+                    condition.FunctionalState == ActorFunctionalState.Unconscious,
+                "Hysteresis fixture did not enter Unconscious: " + failure);
+            Require(AdvanceToStability(condition, 0.201f) &&
+                    condition.FunctionalState == ActorFunctionalState.Unconscious &&
+                    medical.TryApplyWound(HysteresisWoundA, BodyRegion.LeftArm, WoundType.Laceration,
+                        0.002f / (0.25f * 0.65f), 0f, 0f, out failure) &&
+                    Near(condition.ConsciousnessStability, 0.199f) &&
+                    condition.FunctionalState == ActorFunctionalState.Unconscious,
+                "Unconscious state flapped around its deterioration threshold.");
+            Require(AdvanceToStability(condition, 0.26f) &&
+                    condition.FunctionalState == ActorFunctionalState.Incapacitated &&
+                    AdvanceToStability(condition, 0.451f) &&
+                    condition.FunctionalState == ActorFunctionalState.Incapacitated &&
+                    medical.TryApplyWound(HysteresisWoundB, BodyRegion.LeftArm, WoundType.Laceration,
+                        0.002f / (0.25f * 0.65f), 0f, 0f, out failure) &&
+                    Near(condition.ConsciousnessStability, 0.449f) &&
+                    condition.FunctionalState == ActorFunctionalState.Incapacitated,
+                "Incapacitated state flapped around its deterioration threshold.");
+            Require(AdvanceToStability(condition, 0.51f) &&
+                    condition.FunctionalState == ActorFunctionalState.Dazed &&
+                    AdvanceToStability(condition, 0.81f) &&
+                    condition.FunctionalState == ActorFunctionalState.Conscious,
+                "Recovery did not cross the explicit hysteresis boundaries or traverse multiple states.");
+            Require(condition.TryApplyPersistenceState(StateForStability(0.19f), out failure) &&
+                    condition.FunctionalState == ActorFunctionalState.Unconscious &&
+                    condition.TryApplyPersistenceState(StateForStability(0.21f), out failure) &&
+                    condition.FunctionalState == ActorFunctionalState.Incapacitated,
+                "Persistence restore inherited the worse pre-load state through runtime hysteresis.");
+        }
+
+        private static bool AdvanceToStability(ActorConditionComponent condition, float targetStability)
+        {
+            const float CoreTraumaRecoveryPerGameHour = 0.6f;
+            float stabilityDelta = targetStability - condition.ConsciousnessStability;
+            return stabilityDelta > 0f &&
+                   condition.AdvancePhysiology(
+                       WorldClock.SecondsPerHour * stabilityDelta / CoreTraumaRecoveryPerGameHour) &&
+                   Near(condition.ConsciousnessStability, targetStability);
+        }
+
+        private static ActorConditionStateData StateForStability(float stability) => new ActorConditionStateData
+        {
+            bloodFraction = 1f,
+            transientTrauma = 1f - stability
+        };
 
         private static ActorRuntimeIdentity Spawn(string profileId, Vector3 position)
         {

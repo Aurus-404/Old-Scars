@@ -147,7 +147,7 @@ namespace OldScars.Core.Actors
             wounds.Add(Clone(candidate));
             revision++;
             ResolveActor();
-            actorCondition?.ApplyImmediateTrauma(region, woundType, severity);
+            actorCondition?.ApplyImmediateTraumaForNewWound(region, woundType, severity);
             failure = null;
             return true;
         }

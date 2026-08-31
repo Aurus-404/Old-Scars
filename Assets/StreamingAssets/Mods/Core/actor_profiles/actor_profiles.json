@@ -12,7 +12,7 @@
         "max_health": 100,
         "current_health": 100
       },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "initial_inventory": [
         { "item_id": "core:small_backpack_01", "quantity": 1 }
       ]
@@ -28,7 +28,7 @@
         "max_health": 100,
         "current_health": 100
       },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "visual_perception": {
         "visual_range": 15.0,
         "horizontal_fov_degrees": 120.0,
@@ -53,7 +53,7 @@
         "max_health": 100,
         "current_health": 100
       },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "visual_perception": {
         "visual_range": 15.0,
         "horizontal_fov_degrees": 120.0,
@@ -75,7 +75,7 @@
         "max_health": 100,
         "current_health": 100
       },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "visual_perception": {
         "visual_range": 15.0,
         "horizontal_fov_degrees": 120.0,
@@ -99,7 +99,7 @@
         "max_health": 100,
         "current_health": 100
       },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": {
         "speed": 3.5,
         "acceleration": 8.0,
@@ -119,7 +119,7 @@
       "display_name": "Debug Encounter Avoid NPC",
       "initial_tags": ["human", "inspectable"],
       "health": { "max_health": 100, "current_health": 100 },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 20.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
       "encounter_ai": {
@@ -140,7 +140,7 @@
       "display_name": "Debug Encounter Flee NPC",
       "initial_tags": ["human", "inspectable"],
       "health": { "max_health": 100, "current_health": 100 },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 4.0, "acceleration": 9.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 20.0, "horizontal_fov_degrees": 360.0, "eye_height": 1.6 },
       "encounter_ai": {
@@ -162,7 +162,7 @@
       "equipment_layout_id": "core:human_standard_01",
       "initial_tags": ["human", "inspectable"],
       "health": { "max_health": 100, "current_health": 100 },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 30.0, "horizontal_fov_degrees": 180.0, "eye_height": 1.6 },
       "encounter_ai": {
@@ -189,7 +189,7 @@
       "equipment_layout_id": "core:human_standard_01",
       "initial_tags": ["human", "inspectable"],
       "health": { "max_health": 100, "current_health": 100 },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "initial_inventory": [],
       "initial_equipment": [
@@ -205,7 +205,7 @@
       "visual_rig_profile_id": "core:human_standard_visual_rig",
       "initial_tags": ["human", "inspectable"],
       "health": { "max_health": 100, "current_health": 100 },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": { "visual_range": 15.0, "horizontal_fov_degrees": 120.0, "eye_height": 1.6 },
       "initial_inventory": [],
@@ -220,7 +220,7 @@
       "visual_rig_profile_id": "core:human_standard_visual_rig",
       "initial_tags": ["human", "inspectable"],
       "health": { "max_health": 100, "current_health": 100 },
-      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60 },
+      "consciousness": { "consciousness_resilience": 1.0, "pain_tolerance": 0.35, "blunt_trauma_resistance": 1.0, "dazed_threshold": 0.75, "incapacitated_threshold": 0.45, "unconscious_threshold": 0.20, "blood_pressure_start_fraction": 0.65, "fatal_blood_fraction": 0.08, "trauma_recovery_per_game_hour": 0.60, "blood_recovery_per_game_hour": 0.02, "recovery_hysteresis": 0.05 },
       "navigation": { "speed": 3.5, "acceleration": 8.0, "angular_speed": 360.0, "stopping_distance": 0.2 },
       "visual_perception": {
         "visual_range": 90.0,
