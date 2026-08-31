@@ -8,7 +8,7 @@
       "wound_type": "Puncture",
       "wound_severity": 0.65,
       "bleeding_rate_per_game_hour": 0.1,
-      "pain_contribution": 0.55,
+      "pain_contribution": 0.85,
       "penetration_power": 0.65,
       "tags": ["ammo", "rifle_ammo", "caliber_303"]
     }

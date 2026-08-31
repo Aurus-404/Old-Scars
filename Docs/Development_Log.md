@@ -3418,3 +3418,19 @@ Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
 - `git diff --check`: `PASS`.
 
 No se modificaron la recuperación fisiológica, WorldClock, balance adicional, trauma persistence, familias de wound, órganos, fracturas, infección, UI final ni el schema de Current Slice. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.
+
+### Health & Damage Consolidation — Pass C
+
+Fecha: 2026-08-31.
+
+Estado: `VALIDATED — BASELINE BALANCE CALIBRATED`.
+
+La calibración mantiene las autoridades de Pass B: Combat resuelve armor y la herida final una sola vez; Medical entrega el trauma inmediato una sola vez; Condition conserva pain, Blood, trauma y FunctionalState; Health conserva Vital Integrity, lifecycle y muerte. Persistence restaura los estados capturados sin reaplicar impactos. No se modificaron penetration math, Health/Medical/Condition architecture ni el schema de Current Slice.
+
+El único ajuste de contenido fue `core:ammo_303_british_01_profile.pain_contribution: 0.55 → 0.85`. Vital Integrity permanece en los multiplicadores Pass B (`blunt 0.35`, `puncture 1.0`, `head 1.8`, `torso 1.0`, `limb 0.25`). Esto deja la .303 limpia en limb como lesión grave pero no letal (`100 → 83.75`, Dazed), torso como extremadamente peligrosa (`100 → 35`, Incapacitated) y head como catastrófica (`100 → 0`, Dead), sin cambiar su penetración ni severity.
+
+El diagnóstico M40.1 ahora emite un resumen compacto por caso con región, wound final, severity, armor, attack/residual power, Vital Integrity, Blood, trauma, pain, stability, FunctionalState y lifecycle. Verificó armor stop (`100 → 98.03`, Conscious), armor penetrated (`100 → 56.13`, Dazed), blunt head fuerte (`100 → 49.60`, Unconscious) y deterioro .303 torso: Blood baja `0.100/h` sin tratar y `0.010/h` después de venda.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`: Runtime/Editor compile `PASS`; `M40.1 Armor & Penetration Diagnostics: PASS`; `Actor Consciousness & Incapacitation Diagnostics: PASS`; `M41 Sandbox Preparation Diagnostics: PASS`; `git diff --check: PASS`.
+
+Quedan diferidos órganos, fracturas, infección, cirugía, painkillers, long-term healing, balance final, UI final y cualquier cambio de recuperación fisiológica/WorldClock. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.

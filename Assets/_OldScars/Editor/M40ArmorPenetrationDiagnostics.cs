@@ -157,11 +157,13 @@ namespace OldScars.Editor
             WeaponCombatResult inventoryOnly = FireDirect(playerOwnership, rifle, targetCollider, torso, null);
             AssertSingleWound(inventoryOnly, medical, BodyRegion.Torso, WoundType.Puncture, .65f, ArmorResolutionOutcome.Unarmored,
                 ArmorCoverageStatus.NoArmorEquipped, "B/D inventory-only armor");
+            LogBalanceCase("303-torso-unarmored", inventoryOnly.Combat, target);
             EquipArmor(targetOwnership, armor);
             Reset(target);
             WeaponCombatResult stopped = FireDirect(playerOwnership, rifle, targetCollider, torso, .25f);
             AssertSingleWound(stopped, medical, BodyRegion.Torso, WoundType.Blunt, null, ArmorResolutionOutcome.Stopped,
                 ArmorCoverageStatus.Covered, "E/F stopped blunt transfer");
+            LogBalanceCase("303-torso-armor-stopped", stopped.Combat, target);
             Require(stopped.Combat.Armor.ArmorItemInstanceId == armor.InstanceId && stopped.Combat.Armor.ArmorProfileId == ArmorProfileId &&
                     stopped.Combat.Armor.Penetration.DecisiveProfileId == ArmorPenetrationId,
                 "E/F. Typed armor metadata did not identify the equipped ItemInstance/profile.");
@@ -179,6 +181,7 @@ namespace OldScars.Editor
             WeaponCombatResult penetrated = FireDirect(playerOwnership, rifle, targetCollider, torso, 1f);
             AssertSingleWound(penetrated, medical, BodyRegion.Torso, WoundType.Puncture, .43875f,
                 ArmorResolutionOutcome.Penetrated, ArmorCoverageStatus.Covered, "I/J residual penetration");
+            LogBalanceCase("303-torso-armor-penetrated", penetrated.Combat, target);
             Require(Near(penetrated.Combat.Armor.ResidualPower, .675f) && penetrated.Combat.FinalSeverity <= .65f,
                 "I/J. Penetrated armor residual/severity was not bounded and explainable.");
             AssertUncovered(playerOwnership, rifle, target, armor, BodyRegion.Head, Point(targetCollider.bounds, 0f, .9f));
@@ -215,6 +218,7 @@ namespace OldScars.Editor
             Physics.SyncTransforms();
             torso = Point(targetCollider.bounds, 0f, .65f);
             AssertVitalDamageMatrix(playerOwnership, rifle, target, targetCollider);
+            AssertBalanceDeterioration(playerOwnership, rifle, target, targetCollider);
             Reset(target);
             PhysicalShotResolution clear = Trace(input, torso, .65f, out Vector3 origin);
             Require(clear.Termination == PhysicalShotTermination.Impact && IsTarget(clear.HitCollider, target) &&
@@ -493,6 +497,7 @@ namespace OldScars.Editor
             Require(bluntLimb.WoundApplied && bluntLimb.Region == BodyRegion.LeftArm &&
                     Near(bluntLimb.VitalDamage, 5.6875f) && !health.IsDead,
                 $"Vital blunt limb behavior was not low and non-fatal (code={bluntLimb.Code}, region={bluntLimb.Region}, damage={bluntLimb.VitalDamage:F4}, health={health.VitalIntegrity:F4}).");
+            LogBalanceCase("blunt-limb-unarmored", bluntLimb, target);
 
             Reset(target);
             CombatResolutionResult bluntHead = CombatResolutionService.ResolveImpact(collider, head,
@@ -500,23 +505,27 @@ namespace OldScars.Editor
             Require(bluntHead.WoundApplied && bluntHead.Region == BodyRegion.Head &&
                     Near(bluntHead.VitalDamage, 50.4f) && !health.IsDead,
                 "Vital blunt head behavior was not materially stronger than a limb impact.");
+            LogBalanceCase("blunt-head-unarmored", bluntHead, target);
 
             Reset(target);
             WeaponCombatResult limb = FireDirect(shooter, rifle, collider, leftArm, null);
             Require(limb.Combat.Region == BodyRegion.LeftArm && limb.Combat.FinalWoundType == WoundType.Puncture &&
                     Near(limb.Combat.VitalDamage, 16.25f) && !health.IsDead,
                 "Vital limb .303 behavior was not low, non-fatal, and data-derived.");
+            LogBalanceCase("303-limb-unarmored", limb.Combat, target);
 
             Reset(target);
             WeaponCombatResult torsoShot = FireDirect(shooter, rifle, collider, torso, null);
             Require(torsoShot.Combat.Region == BodyRegion.Torso && Near(torsoShot.Combat.VitalDamage, 65f) && !health.IsDead,
                 "Vital torso .303 behavior was not high and survivable.");
+            LogBalanceCase("303-torso-unarmored", torsoShot.Combat, target);
 
             Reset(target);
             WeaponCombatResult headShot = FireDirect(shooter, rifle, collider, head, null);
             Require(headShot.Combat.Code == CombatResolutionCode.TargetKilled && headShot.Combat.Region == BodyRegion.Head &&
                     headShot.Combat.VitalDamage > health.MaxVitalIntegrity && health.IsDead,
                 "Vital head .303 behavior was not catastrophic and lethal.");
+            LogBalanceCase("303-head-unarmored", headShot.Combat, target);
 
             Reset(target);
             WeaponCombatResult firstLimb = FireDirect(shooter, rifle, collider, leftArm, null);
@@ -524,9 +533,46 @@ namespace OldScars.Editor
             Require(medical.WoundCount == 2 && Near(firstLimb.Combat.VitalDamage, secondLimb.Combat.VitalDamage) &&
                     Near(health.VitalIntegrity, health.MaxVitalIntegrity - firstLimb.Combat.VitalDamage - secondLimb.Combat.VitalDamage),
                 "Two resolved wounds did not produce exactly two accumulated Vital Integrity consequences.");
+            LogBalanceCase("303-limb-accumulated", secondLimb.Combat, target);
             Debug.Log($"[M41.4 Vital] bluntLimb={bluntLimb.VitalDamage:F2}; bluntHead={bluntHead.VitalDamage:F2}; " +
                       $"limb303={limb.Combat.VitalDamage:F2}; torso303={torsoShot.Combat.VitalDamage:F2}; " +
                       $"head303={headShot.Combat.VitalDamage:F2}; accumulated={firstLimb.Combat.VitalDamage + secondLimb.Combat.VitalDamage:F2}.");
+        }
+
+        private static void AssertBalanceDeterioration(ActorItemOwnershipComponent shooter, ItemInstance rifle,
+            ActorRuntimeIdentity target, Collider collider)
+        {
+            Reset(target);
+            ActorMedicalStateComponent medical = target.GetComponent<ActorMedicalStateComponent>();
+            ActorConditionComponent condition = target.GetComponent<ActorConditionComponent>();
+            WeaponCombatResult result = FireDirect(shooter, rifle, collider, RegionPoint(target.transform, collider.bounds, 0f, .65f), null);
+            float bloodBefore = condition.BloodFraction;
+            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour, out string clockFailure),
+                "Balance deterioration clock advance failed: " + clockFailure);
+            float untreatedDrop = bloodBefore - condition.BloodFraction;
+            string woundId = result.Combat.WoundId;
+            Require(medical.TryApplyBandage(woundId, .1f, out string bandageFailure),
+                "Balance deterioration bandage failed: " + bandageFailure);
+            float bloodAfterBandage = condition.BloodFraction;
+            Require(WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour, out clockFailure),
+                "Balance bandaged clock advance failed: " + clockFailure);
+            float bandagedDrop = bloodAfterBandage - condition.BloodFraction;
+            Require(untreatedDrop > 0f && bandagedDrop > 0f && bandagedDrop < untreatedDrop,
+                "Bandage did not reduce the future Blood loss rate.");
+            Debug.Log($"[HealthDamageBalance] case=303-torso-deterioration; untreatedBloodDrop={untreatedDrop:F3}; " +
+                      $"bandagedBloodDrop={bandagedDrop:F3}; blood={condition.BloodFraction:F3}; trauma={condition.TransientTrauma:F3}; " +
+                      $"pain={medical.TotalPain:F3}; stability={condition.ConsciousnessStability:F3}; state={condition.FunctionalState}; lifecycle={target.LifecycleState}.");
+        }
+
+        private static void LogBalanceCase(string label, CombatResolutionResult combat, ActorRuntimeIdentity actor)
+        {
+            ActorMedicalStateComponent medical = actor.GetComponent<ActorMedicalStateComponent>();
+            ActorConditionComponent condition = actor.GetComponent<ActorConditionComponent>();
+            Debug.Log($"[HealthDamageBalance] case={label}; region={combat.Region}; woundType={combat.FinalWoundType}; " +
+                      $"severity={combat.FinalSeverity:F3}; armor={combat.Armor.Outcome}; attackPower={combat.Armor.AttackPower:F3}; " +
+                      $"residual={combat.Armor.ResidualPower:F3}; vital={combat.VitalIntegrityBefore:F2}->{combat.VitalIntegrityAfter:F2}; " +
+                      $"damage={combat.VitalDamage:F2}; blood={condition.BloodFraction:F3}; trauma={condition.TransientTrauma:F3}; " +
+                      $"pain={medical.TotalPain:F3}; stability={condition.ConsciousnessStability:F3}; state={condition.FunctionalState}; lifecycle={actor.LifecycleState}.");
         }
         private static void Reset(ActorRuntimeIdentity actor)
         {
