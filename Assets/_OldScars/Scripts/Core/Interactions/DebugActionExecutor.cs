@@ -416,9 +416,34 @@ namespace OldScars.Core.Interactions
 
             string title = debugInfo.GetDisplayNameOrFallback(targetName, target);
             string body = debugInfo.GetInspectTextOrFallback(target);
+            body = AppendActorStateSummary(body, target);
             body = AppendContainerDebugStorageSummary(body, target);
             Debug.Log($"[DebugActionExecutor] {effectContext}: {ActionEffectTypes.ShowTargetInfo} for '{title}'.");
             return DebugActionExecutionResult.Info(title, body);
+        }
+
+        private static string AppendActorStateSummary(string body, WorldObjectTags target)
+        {
+            ActorRuntimeIdentity identity = target != null ? target.GetComponent<ActorRuntimeIdentity>() : null;
+            ActorHealthComponent health = target != null ? target.GetComponent<ActorHealthComponent>() : null;
+            ActorConditionComponent condition = target != null ? target.GetComponent<ActorConditionComponent>() : null;
+            if (identity == null && health == null && condition == null)
+                return body;
+
+            bool dead = identity != null
+                ? identity.LifecycleState == ActorLifecycleState.Dead
+                : health != null && health.IsDead;
+            string state = dead
+                ? "Muerto"
+                : condition != null && condition.FunctionalState == ActorFunctionalState.Unconscious
+                    ? "Noqueado"
+                    : condition?.FunctionalState switch
+                    {
+                        ActorFunctionalState.Dazed => "Aturdido",
+                        ActorFunctionalState.Incapacitated => "Incapacitado",
+                        _ => "Consciente"
+                    };
+            return SafeText(body) + "\n\nEstado: " + state;
         }
 
         private static string AppendContainerDebugStorageSummary(string body, WorldObjectTags target)

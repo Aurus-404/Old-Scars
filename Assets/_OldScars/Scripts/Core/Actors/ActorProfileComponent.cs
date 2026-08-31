@@ -355,10 +355,23 @@ namespace OldScars.Core.Actors
                 // Runtime actors are positioned immediately before their profile is applied.
                 // Ensure collider bounds reflect that pose before deriving NavMeshAgent geometry.
                 Physics.SyncTransforms();
-                Bounds bounds = bodyCollider.bounds;
-                agent.baseOffset = Mathf.Max(0f, transform.position.y - bounds.min.y);
-                agent.height = Mathf.Max(0.1f, bounds.size.y);
-                agent.radius = Mathf.Max(0.05f, Mathf.Min(bounds.extents.x, bounds.extents.z));
+                if (bodyCollider is CapsuleCollider capsule && capsule.direction == 1)
+                {
+                    Vector3 scale = transform.lossyScale;
+                    float radius = capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                    float height = Mathf.Max(capsule.height * Mathf.Abs(scale.y), radius * 2f);
+                    float centerY = capsule.center.y * Mathf.Abs(scale.y);
+                    agent.baseOffset = Mathf.Max(0f, height * 0.5f - centerY);
+                    agent.height = Mathf.Max(0.1f, height);
+                    agent.radius = Mathf.Max(0.05f, radius);
+                }
+                else
+                {
+                    Bounds bounds = bodyCollider.bounds;
+                    agent.baseOffset = Mathf.Max(0f, transform.position.y - bounds.min.y);
+                    agent.height = Mathf.Max(0.1f, bounds.size.y);
+                    agent.radius = Mathf.Max(0.05f, Mathf.Min(bounds.extents.x, bounds.extents.z));
+                }
             }
             ActorNavigationController navigation = GetComponent<ActorNavigationController>();
             if (navigation == null)
@@ -377,6 +390,11 @@ namespace OldScars.Core.Actors
                     $"\n  Failure: {error ?? "<UNKNOWN>"}" +
                     "\n  ActionTaken: navigation capability remains unavailable");
             }
+
+            if (GetComponent<Rigidbody>() == null)
+                gameObject.AddComponent<Rigidbody>();
+            if (GetComponent<ActorPhysicalCollapseController>() == null)
+                gameObject.AddComponent<ActorPhysicalCollapseController>();
         }
 
         private void ApplyVisualPerception(ActorProfileDefinition profile)
