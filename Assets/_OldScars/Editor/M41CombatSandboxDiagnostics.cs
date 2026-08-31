@@ -198,6 +198,7 @@ namespace OldScars.Editor
                 "Player/Blue/Red runtime affiliations were not configured.");
             Require(red.GetDispositionToward(blue) == ActorDisposition.Hostile &&
                     red.GetDispositionToward(playerAffiliation) == ActorDisposition.Hostile &&
+                    blue.GetDispositionToward(red) == ActorDisposition.Hostile &&
                     blue.GetDispositionToward(playerAffiliation) == ActorDisposition.Neutral &&
                     blue.GetDispositionToward(otherBlue) == ActorDisposition.Neutral &&
                     red.GetDispositionToward(otherRed) == ActorDisposition.Neutral,

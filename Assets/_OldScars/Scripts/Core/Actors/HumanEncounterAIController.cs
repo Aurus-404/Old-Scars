@@ -203,6 +203,11 @@ namespace OldScars.Core.Actors
                 error = "Encounter AI is not configured.";
                 return false;
             }
+            if (condition != null && !condition.CanPerformActiveActions)
+            {
+                error = "Functionally incapacitated actors cannot acquire threats.";
+                return false;
+            }
             if (target == null || !target.IsRegistered || target == identity || target.LifecycleState == ActorLifecycleState.Dead)
             {
                 error = "Threat must be a distinct registered living actor.";
@@ -583,7 +588,8 @@ namespace OldScars.Core.Actors
             nextDecisionTime = 0d;
             nextAttackTime = 0d;
             ResetAimTracking();
-            Transition(identity != null && identity.LifecycleState == ActorLifecycleState.Dead
+            Transition(identity != null && (identity.LifecycleState == ActorLifecycleState.Dead ||
+                                            condition != null && !condition.CanPerformActiveActions)
                 ? HumanEncounterAIState.Inactive : HumanEncounterAIState.Idle, reason);
         }
 

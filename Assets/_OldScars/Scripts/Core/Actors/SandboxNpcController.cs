@@ -169,7 +169,7 @@ namespace OldScars.Core.Actors
                     : RedAffiliationId;
                 string[] hostileAffiliations = requestedAffiliation == SandboxCombatAffiliation.Red
                     ? new[] { BlueAffiliationId, PlayerAffiliationId }
-                    : Array.Empty<string>();
+                    : new[] { RedAffiliationId };
                 ActorAffiliationComponent affiliation = identity.gameObject.AddComponent<ActorAffiliationComponent>();
                 if (!affiliation.TryConfigure(
                         affiliationId, requestedAffiliation.ToString(), hostileAffiliations, out error))
@@ -187,6 +187,8 @@ namespace OldScars.Core.Actors
                     ActorSpawnService.TryRemoveRuntimeRepresentationForRestore(identity.ActorInstanceId, out _);
                     return Fail(error);
                 }
+                SandboxActorRoamingController roaming = identity.gameObject.AddComponent<SandboxActorRoamingController>();
+                roaming.Configure(derivedSeed);
 
                 metadata = identity.gameObject.AddComponent<SandboxNpcMetadata>();
                 metadata.Configure(baseSeed, sequence, derivedSeed, loadout, requestedAffiliation.ToString());
@@ -392,31 +394,59 @@ namespace OldScars.Core.Actors
     {
         private const float MinimumRadius = 2.5f;
         private const float MaximumRadius = 14f;
+        private const float MinimumPauseSeconds = 1.25f;
+        private const float MaximumPauseSeconds = 3f;
         private const float RetryDelay = 1.5f;
+        private const int CandidateCount = 6;
+        private const float CandidateSampleDistance = 3f;
         private ActorRuntimeIdentity identity;
+        private ActorConditionComponent condition;
         private ActorNavigationController navigation;
+        private HumanEncounterAIController encounter;
         private long seed;
         private long decisionSequence;
         private float nextDecisionTime;
+        private Vector3 homeAnchor;
 
         public int AcceptedOrderCount { get; private set; }
         public int FailedDecisionCount { get; private set; }
         public string LastDecisionFailure { get; private set; }
+        public Vector3 HomeAnchor => homeAnchor;
+        public float MaximumRoamRadius => MaximumRadius;
 
         internal void Configure(long derivedSpawnSeed)
         {
             seed = derivedSpawnSeed;
             identity = GetComponent<ActorRuntimeIdentity>();
+            condition = GetComponent<ActorConditionComponent>();
             navigation = GetComponent<ActorNavigationController>();
+            encounter = GetComponent<HumanEncounterAIController>();
+            homeAnchor = transform.position;
             nextDecisionTime = Time.time + 0.5f;
         }
 
         private void Update()
         {
+            ResolveReferences();
             if (identity == null || identity.LifecycleState == ActorLifecycleState.Dead)
             {
                 navigation?.Stop();
                 enabled = false;
+                return;
+            }
+            if (condition != null && !condition.CanPerformActiveActions)
+            {
+                navigation?.Stop();
+                return;
+            }
+            if (encounter != null && (encounter.Threat != null || encounter.State != HumanEncounterAIState.Idle))
+            {
+                // Threat assignment already stops navigation in the encounter authority. If this
+                // frame observes the new threat first, clear only the prior ambient order.
+                if (encounter.Threat != null && encounter.State == HumanEncounterAIState.Idle &&
+                    navigation?.State == ActorNavigationState.Moving)
+                    navigation.Stop();
+                nextDecisionTime = Time.time + MinimumPauseSeconds;
                 return;
             }
             if (navigation == null || Time.time < nextDecisionTime || navigation.State == ActorNavigationState.Moving) return;
@@ -424,18 +454,17 @@ namespace OldScars.Core.Actors
             long currentDecision = decisionSequence++;
             bool accepted = false;
             NavMeshAgent agent = navigation.Agent;
-            Vector3 navOrigin = agent.nextPosition;
-            string failure = "No local NavMesh candidate was accepted. NavOrigin=" + navOrigin +
+            string failure = "No bounded home-anchor NavMesh candidate was accepted. Home=" + homeAnchor +
                              "; Transform=" + transform.position + "; BaseOffset=" + agent.baseOffset.ToString("0.###") + ".";
-            for (int candidateIndex = 0; candidateIndex < 8 && !accepted; candidateIndex++)
+            for (int candidateIndex = 0; candidateIndex < CandidateCount && !accepted; candidateIndex++)
             {
                 long domain = ActorLoadoutService.DeriveSandboxSpawnSeed(
-                    seed, currentDecision * 8 + candidateIndex, identity.ActorProfileId, "roam");
+                    seed, currentDecision * CandidateCount + candidateIndex, identity.ActorProfileId, "roam");
                 ulong mixed = unchecked((ulong)domain);
                 float angle = (mixed & 0xffffUL) / 65535f * Mathf.PI * 2f;
                 float radius = Mathf.Lerp(MinimumRadius, MaximumRadius, ((mixed >> 16) & 0xffffUL) / 65535f);
-                Vector3 candidate = navOrigin + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 12f, NavMesh.AllAreas)) continue;
+                Vector3 candidate = homeAnchor + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, CandidateSampleDistance, agent.areaMask)) continue;
                 accepted = navigation.TryNavigate(hit.position, out ActorNavigationResult result);
                 failure = result.Failure + ": " + result.Detail;
             }
@@ -449,7 +478,19 @@ namespace OldScars.Core.Actors
                 FailedDecisionCount++;
                 LastDecisionFailure = failure;
             }
-            nextDecisionTime = Time.time + RetryDelay;
+            ulong pauseSample = unchecked((ulong)ActorLoadoutService.DeriveSandboxSpawnSeed(
+                seed, currentDecision, identity.ActorProfileId, "roam_pause"));
+            float pause = Mathf.Lerp(MinimumPauseSeconds, MaximumPauseSeconds,
+                (pauseSample & 0xffffUL) / 65535f);
+            nextDecisionTime = Time.time + (accepted ? pause : RetryDelay);
+        }
+
+        private void ResolveReferences()
+        {
+            if (identity == null) identity = GetComponent<ActorRuntimeIdentity>();
+            if (condition == null) condition = GetComponent<ActorConditionComponent>();
+            if (navigation == null) navigation = GetComponent<ActorNavigationController>();
+            if (encounter == null) encounter = GetComponent<HumanEncounterAIController>();
         }
     }
 }
