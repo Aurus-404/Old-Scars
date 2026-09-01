@@ -221,18 +221,31 @@ namespace OldScars.Editor
                     ",onNavMesh:" + actor.GetComponent<ActorNavigationController>().Agent.isOnNavMesh +
                     ",detail:" + actor.GetComponent<ActorBehaviorController>().LastAmbientDecisionFailure)));
 
-            ActorRuntimeIdentity target = actors.First(actor => !actor.GetComponent<ActorEquipmentComponent>().Entries.Any(entry =>
+            ActorRuntimeIdentity[] unarmoredTargets = actors.Where(actor => !actor.GetComponent<ActorEquipmentComponent>().Entries.Any(entry =>
             {
                 ItemDefinition definition = GameDataManager.Instance.Database.GetItem(entry.DefinitionId);
                 return definition != null && !string.IsNullOrWhiteSpace(definition.armor_profile_id);
-            }));
-            target.GetComponent<ActorNavigationController>().Stop();
-            target.transform.rotation = Quaternion.identity;
+            })).Take(2).ToArray();
+            Require(unarmoredTargets.Length == 2,
+                "Sandbox NPC corpus did not provide two independent unarmored combat targets.");
+            ActorRuntimeIdentity headTarget = unarmoredTargets[0];
+            ActorRuntimeIdentity leftLegTarget = unarmoredTargets[1];
+            headTarget.GetComponent<ActorNavigationController>().Stop();
+            leftLegTarget.GetComponent<ActorNavigationController>().Stop();
+            headTarget.transform.rotation = Quaternion.identity;
+            leftLegTarget.transform.rotation = Quaternion.identity;
             Physics.SyncTransforms();
-            Collider collider = target.GetComponent<Collider>();
-            Require(collider != null, "Sandbox NPC lacks its generic physical/body-region receiver collider.");
-            AssertSixRegions(target.transform, collider);
-            preDeathBelongings = Belongings(target);
+            Collider headCollider = headTarget.GetComponent<Collider>();
+            Collider leftLegCollider = leftLegTarget.GetComponent<Collider>();
+            Require(headCollider != null && leftLegCollider != null,
+                "Sandbox NPC lacks its generic physical/body-region receiver collider.");
+            AssertSixRegions(headTarget.transform, headCollider);
+            AssertSixRegions(leftLegTarget.transform, leftLegCollider);
+            ActorMedicalStateComponent headMedical = headTarget.GetComponent<ActorMedicalStateComponent>();
+            ActorMedicalStateComponent leftLegMedical = leftLegTarget.GetComponent<ActorMedicalStateComponent>();
+            Require(headMedical != null && leftLegMedical != null,
+                "Independent combat targets lack the shared medical state authority.");
+            preDeathBelongings = Belongings(headTarget);
 
             PlayerGameplayComposition player = runtime.PlayerComposition;
             ActorItemOwnershipComponent playerOwnership = player.PlayerContext.GetComponent<ActorItemOwnershipComponent>();
@@ -247,31 +260,37 @@ namespace OldScars.Editor
                     WeaponCombatService.ReloadEquipped(playerOwnership, firearm.InstanceId).Success,
                 "Could not load the player's real firearm from owned compatible ammo.");
 
-            Vector3 head = RegionPoint(collider.bounds, 0f, 0.9f);
-            Vector3 leftLeg = RegionPoint(collider.bounds, -0.65f, 0.25f);
-            WeaponCombatResult headShot = WeaponCombatService.FireEquipped(playerOwnership, firearm.InstanceId, collider, head);
-            Require(headShot.Success && headShot.Combat.Region == BodyRegion.Head,
+            Vector3 head = RegionPoint(headCollider.bounds, 0f, 0.9f);
+            WeaponCombatResult headShot = WeaponCombatService.FireEquipped(playerOwnership, firearm.InstanceId, headCollider, head);
+            Require(headShot.Success && headShot.Combat.Region == BodyRegion.Head && headShot.Combat.WoundApplied &&
+                    !string.IsNullOrWhiteSpace(headShot.Combat.WoundId) &&
+                    headMedical.GetWounds(BodyRegion.Head).Any(wound => wound.woundId == headShot.Combat.WoundId) &&
+                    headShot.Combat.VitalIntegrityAfter < headShot.Combat.VitalIntegrityBefore,
                 "Player firearm did not resolve localized Head damage: " + headShot.Message);
-            WeaponCombatResult legShot = WeaponCombatService.FireEquipped(playerOwnership, firearm.InstanceId, collider, leftLeg);
-            Require(legShot.Success && legShot.Combat.Region == BodyRegion.LeftLeg,
+            Vector3 leftLeg = RegionPoint(leftLegCollider.bounds, -0.65f, 0.25f);
+            WeaponCombatResult legShot = WeaponCombatService.FireEquipped(playerOwnership, firearm.InstanceId, leftLegCollider, leftLeg);
+            Require(legShot.Success && legShot.Combat.Region == BodyRegion.LeftLeg && legShot.Combat.WoundApplied &&
+                    !string.IsNullOrWhiteSpace(legShot.Combat.WoundId) &&
+                    leftLegMedical.GetWounds(BodyRegion.LeftLeg).Any(wound => wound.woundId == legShot.Combat.WoundId) &&
+                    legShot.Combat.VitalIntegrityAfter < legShot.Combat.VitalIntegrityBefore,
                 "Player firearm did not resolve localized LeftLeg damage: " + legShot.Message);
-            ActorHealthComponent health = target.GetComponent<ActorHealthComponent>();
-            while (!health.IsDead && firearm.LoadedRounds > 0)
+            ActorHealthComponent headHealth = headTarget.GetComponent<ActorHealthComponent>();
+            while (!headHealth.IsDead && firearm.LoadedRounds > 0)
             {
                 WeaponCombatResult finishingShot = WeaponCombatService.FireEquipped(
-                    playerOwnership, firearm.InstanceId, collider, RegionPoint(collider.bounds, 0f, 0.65f));
+                    playerOwnership, firearm.InstanceId, headCollider, RegionPoint(headCollider.bounds, 0f, 0.65f));
                 Require(finishingShot.Success, "Player firearm could not complete normal health/lifecycle death: " + finishingShot.Message);
             }
-            if (!health.IsDead)
+            if (!headHealth.IsDead)
             {
                 string clockFailure = WorldClock.Current == null ? "WorldClock authority is unavailable." : null;
                 Require(WorldClock.Current != null &&
                         WorldClock.Current.TryAdvanceGameTime(WorldClock.SecondsPerHour, out clockFailure),
                     "Could not advance the existing WorldClock to resolve firearm wound bleeding: " + clockFailure);
             }
-            Require(health.IsDead && target.LifecycleState == ActorLifecycleState.Dead,
+            Require(headHealth.IsDead && headTarget.LifecycleState == ActorLifecycleState.Dead,
                 "Sandbox NPC did not die through the existing M39/M40 health/lifecycle path.");
-            deadActorId = target.ActorInstanceId;
+            deadActorId = headTarget.ActorInstanceId;
         }
 
         private static void CompleteCorpseAndPersistenceEvidence()
