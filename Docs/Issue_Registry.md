@@ -54,13 +54,13 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Prueba / origen:** Prueba 2 manual integrada
 - **Momento de descubrimiento:** observación previa al combate y durante períodos sin target
 - **Síntoma observado:** el NPC random White se desplaza de forma ambiental, mientras Blue y Red permanecen quietos y sólo comienzan a moverse cuando adquieren un target.
-- **Evidencia:** observación manual repetida; contradice el comportamiento esperado tras la corrección que pretendía componer roaming para White/Blue/Red.
-- **Causa confirmada o hipótesis:** pendiente de auditoría. Debe contrastarse `SandboxActorRoamingController`, `HumanEncounterAIController`, threat acquisition y ownership de `ActorNavigationController`.
+- **Evidencia:** observación manual repetida y flujo confirmado por código. `TrySpawnCombatNpc` sí añade y configura `SandboxActorRoamingController` para Blue/Red, y éste puede aceptar un destino. Sin embargo, `HumanEncounterAIController.EvaluateEncounter` trata `threat == null` como "Threat became unavailable", llama `ClearThreat` y termina en `ResetEncounter`; ese reset ejecuta `navigation.Stop()` y vuelve a poner `nextDecisionTime = 0`, por lo que el mismo camino vuelve a evaluarse en el frame siguiente. White usa el perfil sin `encounter_ai`, no recibe `HumanEncounterAIController` y su orden ambiental no sufre esa cancelación.
+- **Causa confirmada o hipótesis:** `CONFIRMADO POR CÓDIGO`: Blue/Red sí reciben roaming, pero Encounter cancela repetidamente sus órdenes cuando no existe threat. No es una ausencia de `SandboxActorRoamingController`, un fallo demostrado de NavMesh, una deshabilitación del componente ni un problema demostrado del home anchor.
 - **Sistemas afectados:** sandbox NPC, ambient behavior, encounter AI, navigation.
 - **Solución prevista:** Fases 1–2 de `NPC_AI_Sanitation_Plan.md`: auditar writers/owners y dejar un único dueño de navegación por frame; todos los humanos deben compartir Ambient roaming cuando estén realmente Idle.
 - **Commit de corrección:** pendiente.
 - **Validación:** debe demostrar desplazamiento real, no sólo órdenes aceptadas.
-- **Notas:** White es referencia observable del comportamiento ambiental deseado, no una IA separada a copiar ciegamente.
+- **Notas:** White es referencia observable del comportamiento ambiental deseado, no una IA separada a copiar ciegamente. La corrección previa compuso roaming para Blue/Red, pero no eliminó el writer Idle de Encounter que lo invalida.
 
 ## ISSUE-0002 — El gate de roaming puede aceptar órdenes sin demostrar desplazamiento real
 
@@ -71,8 +71,8 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Prueba / origen:** revisión del diagnóstico posterior a Prueba 2
 - **Momento de descubrimiento:** contraste entre diagnóstico automatizado y comportamiento visible
 - **Síntoma observado:** una señal como `AcceptedOrderCount > 0` puede pasar aunque Blue/Red continúen visualmente inmóviles.
-- **Evidencia:** el comportamiento manual contradice la garantía que parecía ofrecer el diagnóstico.
-- **Causa confirmada o hipótesis:** el test valida una señal indirecta en vez del resultado observable.
+- **Evidencia:** el comportamiento manual contradice la garantía que parecía ofrecer el diagnóstico. En `M41SandboxPreparationDiagnostics.ObserveInitialRoaming`, Blue/Red/White superan el primer gate con `AcceptedOrderCount >= 1`; la comprobación de posición sólo impone un límite máximo respecto del home anchor y no exige distancia recorrida. El gate de resume también exige únicamente que aumente el contador. `M41NpcSandboxDiagnostics` es algo más fuerte, pero acepta `Moving` como alternativa a desplazamiento y sólo exige que un actor de doce cumpla la condición, no que White/Blue/Red demuestren movimiento individual.
+- **Causa confirmada o hipótesis:** `CONFIRMADO POR CÓDIGO`: los tests principales pueden observar una orden aceptada antes de que exista desplazamiento y pueden pasar aunque Encounter la cancele inmediatamente después.
 - **Sistemas afectados:** diagnostics/QA de AI y navigation.
 - **Solución prevista:** validar posición inicial/final, distancia recorrida real, cambios de destino y límites de home radius.
 - **Commit de corrección:** pendiente.
@@ -82,19 +82,19 @@ Cada entrada debe conservar, cuando exista información suficiente:
 ## ISSUE-0003 — Posible competencia Ambient/Encounter sobre Navigation
 
 - **Tipo:** `DESIGN_DEBT`
-- **Estado:** `SUSPECTED`
+- **Estado:** `CONFIRMED`
 - **Severidad:** `P0 / RED`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** análisis arquitectónico posterior a Prueba 2
 - **Momento de descubrimiento:** investigación conceptual del roaming Blue/Red
 - **Síntoma observado:** el patrón White-mueve / Blue-Red-no-mueven sugiere que composición, resets o ownership entre roaming, encounter y acquisition pueden estar compitiendo o anulándose.
-- **Evidencia:** síntoma de ISSUE-0001; la causa exacta aún no está confirmada.
-- **Causa confirmada o hipótesis:** múltiples controladores podrían escribir/invalidar órdenes sobre `ActorNavigationController` o el estado AI.
+- **Evidencia:** `SandboxActorRoamingController` llama `TryNavigate` y `Stop`; `HumanEncounterAIController` llama `TryNavigate` para retreat/engagement y `Stop` desde assignment, override, pérdida de percepción, fight tactics, inactive y reset; `ActorPhysicalCollapseController` también fuerza `Stop` por incapacidad física/death; persistence aplica pose mediante el mismo controller. No existe token/lease/owner enum ni orden de ejecución explícito entre Ambient, Acquisition y Encounter. El caso concreto de ISSUE-0001 demuestra la colisión: Ambient acepta una orden y Encounter la cancela desde el flujo sin threat.
+- **Causa confirmada o hipótesis:** `CONFIRMADO POR CÓDIGO`: la capa alta distribuye ownership implícito entre componentes independientes que escriben el mismo `ActorNavigationController`. `ActorThreatAcquisitionController` además controla parte del lifecycle del target mediante `ClearThreat`, mientras `HumanEncounterAIController` mantiene la otra parte y resetea navegación/estado.
 - **Sistemas afectados:** roaming, encounter AI, threat acquisition, navigation.
-- **Solución prevista:** Fase 1: mapa completo de writers, estados y transiciones. Fase 2: una única decisión de alto nivel controla movimiento en cada frame.
+- **Solución prevista:** decisión de Fase 1: **B — reemplazar/simplificar la capa de decisión**, conservando `ActorNavigationController`, `ActorVisualPerceptionService`, combat, health/medical/condition, equipment, affiliation y persistence. Fase 2 debe introducir una única decisión de behavior ownership por actor/frame para Ambient, Encounter, Search e Inactive, sin proliferar flags entre controladores actuales.
 - **Commit de corrección:** pendiente.
 - **Validación:** debe poder responder inequívocamente quién posee navegación en Ambient, Encounter, Search e Inactive.
-- **Notas:** si la solución exige muchas banderas de ownership/parches, considerar reemplazar la capa de decisión en vez de conservarla por inercia.
+- **Notas:** Physical collapse/death puede conservar precedencia de cancelación como autoridad válida de incapacidad; el problema es que Ambient/Encounter/Search no poseen una concesión explícita y estable de las piernas.
 
 ## ISSUE-0004 — La percepción inicial depende demasiado de la orientación corporal de spawn
 
