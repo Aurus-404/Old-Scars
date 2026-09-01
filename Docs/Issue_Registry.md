@@ -320,7 +320,7 @@ Cada entrada debe conservar, cuando exista información suficiente:
 ## ISSUE-0017 — El fixture M41NpcSandbox puede matar el target antes de validar la segunda región
 
 - **Tipo:** `TOOLING`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** regresión adicional de Fase 2, `M41NpcSandboxDiagnostics.RunBatchWorldRuntime`
@@ -330,9 +330,9 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Causa confirmada o hipótesis:** `CONFIRMADO POR EJECUCIÓN Y CÓDIGO`: la fixture selecciona un actor sin armor, dispara primero a Head con el balance letal actual y asume que seguirá vivo para comprobar LeftLeg. Es una expectativa diagnóstica incompatible con el balance vigente, no evidencia de una regresión de behavior ownership.
 - **Sistemas afectados:** diagnostics M41 sandbox, fixture de combat/medical localizada.
 - **Solución prevista:** en una tarea de diagnostics/combat autorizada, usar objetivos separados o un orden/fixture no letal que valide regiones sin depender de que el target sobreviva un headshot.
-- **Commit de corrección:** pendiente; fuera de Fase 2.
-- **Validación:** el diagnóstico completo debe poder probar Head y LeftLeg con el balance actual y continuar hasta corpse/persistence sin relajar los contratos productivos.
-- **Notas:** no se modificó combat, medical, balance ni el fixture en Fase 2.
+- **Commit de corrección:** `e0d5fb9c40fba6b62fe8c1ffa60a24cb9cfeb06f` — `Fix M41 NPC sandbox anatomy fixture`.
+- **Validación:** Unity `6000.4.6f1` batchmode `-nographics`: Runtime compile `PASS`; Editor compile `PASS`; `M41.3 NPC Sandbox Spawn & Randomized Loadouts Diagnostics: PASS` con dos objetivos sin armadura independientes, Head/LeftLeg resueltos por combat y medical reales, death/corpse/persistence `Result: Success`; `git diff --check: PASS`.
+- **Notas:** el diagnostic conserva el gate de roaming físico de Fase 2. Sólo se corrigió su fixture; no se modificó combat, medical, balance, .303, Vital Integrity, AI, behavior ownership, navigation, perception ni perfiles productivos.
 
 ---
 
