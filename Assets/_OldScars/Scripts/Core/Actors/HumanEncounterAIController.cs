@@ -43,6 +43,7 @@ namespace OldScars.Core.Actors
         private ActorHealthComponent health;
         private ActorConditionComponent condition;
         private ActorNavigationController navigation;
+        private ActorBehaviorController behavior;
         private ActorVisualPerceptionService perception;
         private ActorItemOwnershipComponent ownership;
         private ActorRuntimeIdentity threat;
@@ -134,7 +135,7 @@ namespace OldScars.Core.Actors
                 return;
             }
             if (State == HumanEncounterAIState.Inactive)
-                ResetEncounter("Actor recovered functional capacity");
+                ReleaseEncounter("Actor recovered functional capacity");
 
             double now = Time.timeAsDouble;
             if (now >= nextDecisionTime)
@@ -150,7 +151,7 @@ namespace OldScars.Core.Actors
         private void OnDisable()
         {
             CancelActiveAction();
-            navigation?.Stop();
+            behavior?.ExitEncounter("Encounter controller disabled");
             threat = null;
             responseOverride = null;
             ClearEncounterMemory();
@@ -171,9 +172,10 @@ namespace OldScars.Core.Actors
                 error = "Encounter AI requires a canonical response policy and finite positive tuning; flee_distance must exceed avoid_distance.";
                 return false;
             }
-            if (identity == null || health == null || navigation?.IsConfigured != true || perception?.IsConfigured != true || ownership == null)
+            if (identity == null || health == null || navigation?.IsConfigured != true || behavior == null ||
+                perception?.IsConfigured != true || ownership == null)
             {
-                error = "Encounter AI requires identity, health, configured Navigation and Perception, and item ownership.";
+                error = "Encounter AI requires identity, health, Behavior ownership, configured Navigation and Perception, and item ownership.";
                 return false;
             }
 
@@ -188,7 +190,7 @@ namespace OldScars.Core.Actors
             if (!deterministicAimSeedConfigured)
                 deterministicAimSeed = StableHash(identity.ActorProfileId);
             configured = true;
-            ResetEncounter("Profile configured");
+            ReleaseEncounter("Profile configured");
             return true;
         }
 
@@ -219,12 +221,16 @@ namespace OldScars.Core.Actors
             }
             if (threat == target)
                 return true;
+            if (!behavior.EnterEncounter("Threat assigned"))
+            {
+                error = "Behavior ownership rejected Encounter while the actor cannot act.";
+                return false;
+            }
             threat = target;
             responseOverride = null;
             ClearEncounterMemory();
             ResetAimTracking();
             CancelActiveAction();
-            navigation.Stop();
             Transition(HumanEncounterAIState.Idle, "Threat assigned; awaiting perception");
             nextDecisionTime = 0d;
             Debug.Log($"[AI][THREAT_ASSIGNED]\n  Actor: {identity.ActorInstanceId}\n  Threat: {target.ActorInstanceId}");
@@ -233,9 +239,7 @@ namespace OldScars.Core.Actors
 
         public void ClearThreat(string reason)
         {
-            threat = null;
-            responseOverride = null;
-            ResetEncounter(string.IsNullOrWhiteSpace(reason) ? "Threat cleared" : reason);
+            ReleaseEncounter(string.IsNullOrWhiteSpace(reason) ? "Threat cleared" : reason);
         }
 
         public bool TryOverrideResponse(HumanEncounterResponse response, out string error)
@@ -248,7 +252,7 @@ namespace OldScars.Core.Actors
             }
             responseOverride = response;
             CancelActiveAction();
-            navigation.Stop();
+            behavior.StopEncounterNavigation();
             ResetPlanLatch();
             if (hasLastKnownPosition)
                 Transition(HumanEncounterAIState.Alerted, "Encounter response changed");
@@ -260,7 +264,7 @@ namespace OldScars.Core.Actors
         {
             responseOverride = null;
             CancelActiveAction();
-            navigation?.Stop();
+            behavior?.StopEncounterNavigation();
             ResetPlanLatch();
             if (hasLastKnownPosition)
                 Transition(HumanEncounterAIState.Alerted, "Encounter response override cleared");
@@ -269,7 +273,9 @@ namespace OldScars.Core.Actors
 
         private void EvaluateEncounter(double now)
         {
-            if (threat == null || !threat.IsRegistered || threat.LifecycleState == ActorLifecycleState.Dead)
+            if (threat == null)
+                return;
+            if (!threat.IsRegistered || threat.LifecycleState == ActorLifecycleState.Dead)
             {
                 ClearThreat("Threat became unavailable");
                 return;
@@ -294,14 +300,11 @@ namespace OldScars.Core.Actors
                     IsClosingDistance = false;
                     CancelActiveAction();
                     if (State != HumanEncounterAIState.Avoiding && State != HumanEncounterAIState.Fleeing)
-                        navigation.Stop();
+                        behavior.StopEncounterNavigation();
                     Transition(HumanEncounterAIState.LostContact, $"Perception lost: {LastPerception.Reason}");
                 }
                 if (now - lastSeenTime >= lostContactTimeout)
-                {
-                    threat = null;
-                    ResetEncounter("Lost-contact timeout elapsed");
-                }
+                    ClearThreat("Lost-contact timeout elapsed");
                 return;
             }
 
@@ -331,7 +334,7 @@ namespace OldScars.Core.Actors
             float currentDistance = FlatDistance(transform.position, lastKnownPosition);
             if (currentDistance >= desiredDistance)
             {
-                navigation.Stop();
+                behavior.StopEncounterNavigation();
                 hasPlan = false;
                 return;
             }
@@ -356,7 +359,7 @@ namespace OldScars.Core.Actors
             {
                 Vector3 candidate = transform.position + directions[index] * travel;
                 if (NavMesh.SamplePosition(candidate, out NavMeshHit resolved, DestinationProjectionDistance, NavMesh.AllAreas) &&
-                    navigation.TryNavigate(resolved.position, out _))
+                    behavior.TryNavigateEncounter(resolved.position))
                 {
                     navigationFailureLatched = false;
                     hasPlan = true;
@@ -386,7 +389,7 @@ namespace OldScars.Core.Actors
                     out FirearmProfileDefinition firearm, out WeaponProfileDefinition melee))
             {
                 CancelActiveAction();
-                navigation.Stop();
+                behavior.StopEncounterNavigation();
                 IsClosingDistance = false;
                 CurrentWeaponRange = 0f;
                 return;
@@ -414,7 +417,7 @@ namespace OldScars.Core.Actors
                 IsClosingDistance = true;
                 return;
             }
-            navigation.Stop();
+            behavior.StopEncounterNavigation();
             IsClosingDistance = false;
         }
 
@@ -520,7 +523,7 @@ namespace OldScars.Core.Actors
             Vector3 candidate = transform.position + toward * Mathf.Max(0f, distance - desiredDistance);
             NavigationPlanAttemptCount++;
             if (NavMesh.SamplePosition(candidate, out NavMeshHit resolved, DestinationProjectionDistance, NavMesh.AllAreas) &&
-                navigation.TryNavigate(resolved.position, out _))
+                behavior.TryNavigateEncounter(resolved.position))
             {
                 navigationFailureLatched = false;
                 hasPlan = true;
@@ -578,17 +581,16 @@ namespace OldScars.Core.Actors
             if (State == HumanEncounterAIState.Inactive)
                 return;
             CancelActiveAction();
-            navigation?.Stop();
+            behavior?.EnterInactive(reason);
             threat = null;
             ClearEncounterMemory();
             ResetAimTracking();
             Transition(HumanEncounterAIState.Inactive, reason);
         }
 
-        private void ResetEncounter(string reason)
+        private void ReleaseEncounter(string reason)
         {
             CancelActiveAction();
-            navigation?.Stop();
             threat = null;
             responseOverride = null;
             ClearEncounterMemory();
@@ -596,6 +598,7 @@ namespace OldScars.Core.Actors
             nextDecisionTime = 0d;
             nextAttackTime = 0d;
             ResetAimTracking();
+            behavior?.ExitEncounter(reason);
             Transition(identity != null && (identity.LifecycleState == ActorLifecycleState.Dead ||
                                             condition != null && !condition.CanPerformActiveActions)
                 ? HumanEncounterAIState.Inactive : HumanEncounterAIState.Idle, reason);
@@ -777,6 +780,7 @@ namespace OldScars.Core.Actors
             if (health == null) health = GetComponent<ActorHealthComponent>();
             if (condition == null) condition = GetComponent<ActorConditionComponent>();
             if (navigation == null) navigation = GetComponent<ActorNavigationController>();
+            if (behavior == null) behavior = GetComponent<ActorBehaviorController>();
             if (perception == null) perception = GetComponent<ActorVisualPerceptionService>();
             if (ownership == null) ownership = GetComponent<ActorItemOwnershipComponent>();
         }

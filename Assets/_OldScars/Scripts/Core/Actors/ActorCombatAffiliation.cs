@@ -157,7 +157,8 @@ namespace OldScars.Core.Actors
             }
             if (condition != null && !condition.CanPerformActiveActions)
             {
-                encounter?.ClearThreat("Acquirer is functionally incapacitated");
+                if (encounter?.Threat != null)
+                    encounter.ClearThreat("Acquirer is functionally incapacitated");
                 ClearRecognitionStates();
                 return;
             }

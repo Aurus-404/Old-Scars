@@ -26,6 +26,26 @@ namespace OldScars.Editor
         private const string IncapacitatedAffiliationId = "diagnostic_incapacitated";
         private const string IncapacitatedWoundA = "wound_f6666666666666666666666666666666";
         private const string IncapacitatedWoundB = "wound_f7777777777777777777777777777777";
+        private const float RequiredTravelDistance = 0.75f;
+
+        private struct TravelObservation
+        {
+            public Vector3 PreviousPosition;
+            public float Distance;
+
+            public void Reset(ActorRuntimeIdentity actor)
+            {
+                PreviousPosition = actor.transform.position;
+                Distance = 0f;
+            }
+
+            public void Sample(ActorRuntimeIdentity actor)
+            {
+                Vector3 current = actor.transform.position;
+                Distance += Vector3.ProjectOnPlane(current - PreviousPosition, Vector3.up).magnitude;
+                PreviousPosition = current;
+            }
+        }
 
         private static WorldRuntimeSceneController runtime;
         private static SandboxNpcController sandbox;
@@ -34,10 +54,17 @@ namespace OldScars.Editor
         private static ActorRuntimeIdentity red;
         private static ActorRuntimeIdentity white;
         private static float stageStartedAt;
-        private static int redRoamOrdersAtThreat;
+        private static TravelObservation blueInitialTravel;
+        private static TravelObservation redInitialTravel;
+        private static TravelObservation whiteInitialTravel;
+        private static TravelObservation redResumeTravel;
+        private static TravelObservation inactiveTravel;
+        private static int redAmbientOrdersAtThreat;
+        private static int inactiveOwnerRevision;
         private static int inactiveTransitionRevision;
         private static int inactiveAttackCount;
         private static int inactiveScanCount;
+        private static int inactiveAmbientOrderCount;
 
         static M41SandboxPreparationDiagnostics()
         {
@@ -125,10 +152,10 @@ namespace OldScars.Editor
                     ObserveThreatInterruption();
                     break;
                 case 4:
-                    ObserveIdleRoamingResume();
+                    ObserveEncounterOwnership();
                     break;
                 case 5:
-                    SetupIncapacityWithAcquisitionEnabled();
+                    ObserveAmbientResumeAndSetupIncapacity();
                     break;
                 case 6:
                     EstablishStableInactive();
@@ -183,31 +210,47 @@ namespace OldScars.Editor
                     redAffiliation.GetDispositionToward(playerAffiliation) == ActorDisposition.Hostile &&
                     blueAffiliation.GetDispositionToward(playerAffiliation) == ActorDisposition.Neutral,
                 "Blue/Red/Player affiliation matrix is incorrect.");
-            Require(blue.GetComponent<SandboxActorRoamingController>() != null &&
-                    red.GetComponent<SandboxActorRoamingController>() != null &&
-                    white.GetComponent<SandboxActorRoamingController>() != null,
-                "Blue/Red/White sandbox spawns did not receive the existing ambient roaming controller.");
+            Require(blue.GetComponent<ActorBehaviorController>()?.IsAmbientConfigured == true &&
+                    red.GetComponent<ActorBehaviorController>()?.IsAmbientConfigured == true &&
+                    white.GetComponent<ActorBehaviorController>()?.IsAmbientConfigured == true,
+                "Blue/Red/White sandbox spawns did not receive configured behavior ownership.");
+            Require(blue.GetComponent<ActorBehaviorController>().Owner == ActorBehaviorOwner.Ambient &&
+                    red.GetComponent<ActorBehaviorController>().Owner == ActorBehaviorOwner.Ambient &&
+                    white.GetComponent<ActorBehaviorController>().Owner == ActorBehaviorOwner.Ambient,
+                "Blue/Red/White did not begin with Ambient behavior ownership.");
+            blueInitialTravel.Reset(blue);
+            redInitialTravel.Reset(red);
+            whiteInitialTravel.Reset(white);
             SetStage(2);
         }
 
         private static void ObserveInitialRoaming()
         {
-            SandboxActorRoamingController blueRoaming = blue.GetComponent<SandboxActorRoamingController>();
-            SandboxActorRoamingController redRoaming = red.GetComponent<SandboxActorRoamingController>();
-            SandboxActorRoamingController whiteRoaming = white.GetComponent<SandboxActorRoamingController>();
-            if (blueRoaming.AcceptedOrderCount < 1 || redRoaming.AcceptedOrderCount < 1 || whiteRoaming.AcceptedOrderCount < 1)
+            blueInitialTravel.Sample(blue);
+            redInitialTravel.Sample(red);
+            whiteInitialTravel.Sample(white);
+            if (blueInitialTravel.Distance < RequiredTravelDistance ||
+                redInitialTravel.Distance < RequiredTravelDistance ||
+                whiteInitialTravel.Distance < RequiredTravelDistance)
             {
-                Require(Time.time - stageStartedAt <= 8f,
-                    "Blue/Red/White did not accept bounded idle roaming through ActorNavigationController.");
+                Require(Time.time - stageStartedAt <= 12f,
+                    "Blue/Red/White did not each travel the required physical Ambient distance. " +
+                    $"Blue={blueInitialTravel.Distance:0.###}; Red={redInitialTravel.Distance:0.###}; " +
+                    $"White={whiteInitialTravel.Distance:0.###}.");
                 return;
             }
-            Require(Vector3.Distance(blue.transform.position, blueRoaming.HomeAnchor) <= blueRoaming.MaximumRoamRadius + 3.5f &&
-                    Vector3.Distance(red.transform.position, redRoaming.HomeAnchor) <= redRoaming.MaximumRoamRadius + 3.5f &&
-                    Vector3.Distance(white.transform.position, whiteRoaming.HomeAnchor) <= whiteRoaming.MaximumRoamRadius + 3.5f,
+            ActorBehaviorController blueBehavior = blue.GetComponent<ActorBehaviorController>();
+            ActorBehaviorController redBehavior = red.GetComponent<ActorBehaviorController>();
+            ActorBehaviorController whiteBehavior = white.GetComponent<ActorBehaviorController>();
+            Require(Vector3.Distance(blue.transform.position, blueBehavior.HomeAnchor) <= blueBehavior.MaximumRoamRadius + 3.5f &&
+                    Vector3.Distance(red.transform.position, redBehavior.HomeAnchor) <= redBehavior.MaximumRoamRadius + 3.5f &&
+                    Vector3.Distance(white.transform.position, whiteBehavior.HomeAnchor) <= whiteBehavior.MaximumRoamRadius + 3.5f,
                 "Idle roaming drifted beyond its bounded spawn/home anchor radius.");
 
             Require(TryPlacePairWithClearPerception(red, blue, 6f, out string placementError),
                 "Could not place Blue/Red acquisition pair: " + placementError);
+            Require(blueBehavior.EnterEncounter("Stationary diagnostic encounter target"),
+                "Blue diagnostic target could not hold explicit Encounter ownership.");
             ActorAffiliationComponent redAffiliation = red.GetComponent<ActorAffiliationComponent>();
             Require(redAffiliation.TryConfigure(SandboxNpcController.RedAffiliationId, "Red",
                     new[] { SandboxNpcController.BlueAffiliationId }, out string affiliationError),
@@ -225,45 +268,45 @@ namespace OldScars.Editor
                     "Blue/Red hostility did not acquire through the existing perception/acquisition chain.");
                 return;
             }
-            Require(red.GetComponent<ActorNavigationController>().State != ActorNavigationState.Moving,
-                "Threat assignment did not immediately cancel the ambient roaming navigation order.");
-            redRoamOrdersAtThreat = red.GetComponent<SandboxActorRoamingController>().AcceptedOrderCount;
+            ActorBehaviorController behavior = red.GetComponent<ActorBehaviorController>();
+            Require(behavior.Owner == ActorBehaviorOwner.Encounter,
+                "Recognized threat did not explicitly transfer behavior ownership to Encounter.");
+            Require(encounter.TryOverrideResponse(HumanEncounterResponse.Avoid, out string overrideError),
+                "Could not keep the ownership diagnostic non-lethal: " + overrideError);
+            redAmbientOrdersAtThreat = behavior.AmbientAcceptedOrderCount;
             SetStage(4);
         }
 
-        private static void ObserveIdleRoamingResume()
+        private static void ObserveEncounterOwnership()
         {
             HumanEncounterAIController encounter = red.GetComponent<HumanEncounterAIController>();
-            SandboxActorRoamingController roaming = red.GetComponent<SandboxActorRoamingController>();
-            if (encounter.Threat != null)
-            {
-                Require(roaming.AcceptedOrderCount == redRoamOrdersAtThreat &&
-                        red.GetComponent<ActorNavigationController>().State != ActorNavigationState.Moving,
-                    "Roaming issued a competing navigation order while encounter ownership was active.");
-                red.GetComponent<ActorThreatAcquisitionController>().enabled = false;
-                encounter.ClearThreat("Sandbox preparation interruption complete");
-                SetStage(5);
+            ActorBehaviorController behavior = red.GetComponent<ActorBehaviorController>();
+            Require(encounter.Threat == blue && behavior.Owner == ActorBehaviorOwner.Encounter &&
+                    behavior.AmbientAcceptedOrderCount == redAmbientOrdersAtThreat,
+                "Ambient emitted an order or lost ownership while Encounter remained active.");
+            if (Time.time - stageStartedAt < 0.75f)
                 return;
-            }
-
-            if (roaming.AcceptedOrderCount <= redRoamOrdersAtThreat)
-            {
-                Require(Time.time - stageStartedAt <= 8f,
-                    "Idle Red did not resume the existing ambient roaming controller after threat clear.");
-                return;
-            }
+            red.GetComponent<ActorThreatAcquisitionController>().enabled = false;
+            encounter.ClearThreat("Sandbox preparation interruption complete");
+            Require(behavior.Owner == ActorBehaviorOwner.Ambient,
+                "Releasing Encounter did not explicitly return ownership to Ambient.");
+            redResumeTravel.Reset(red);
             SetStage(5);
         }
 
-        private static void SetupIncapacityWithAcquisitionEnabled()
+        private static void ObserveAmbientResumeAndSetupIncapacity()
         {
-            SandboxActorRoamingController roaming = red.GetComponent<SandboxActorRoamingController>();
-            if (roaming.AcceptedOrderCount <= redRoamOrdersAtThreat)
+            redResumeTravel.Sample(red);
+            ActorBehaviorController behavior = red.GetComponent<ActorBehaviorController>();
+            if (redResumeTravel.Distance < RequiredTravelDistance)
             {
-                Require(Time.time - stageStartedAt <= 8f,
-                    "Idle Red did not resume the existing ambient roaming controller after threat clear.");
+                Require(Time.time - stageStartedAt <= 12f,
+                    $"Red did not resume physical Ambient travel after Encounter release. Travel={redResumeTravel.Distance:0.###}.");
                 return;
             }
+            Require(behavior.Owner == ActorBehaviorOwner.Ambient &&
+                    behavior.AmbientAcceptedOrderCount > redAmbientOrdersAtThreat,
+                "Red moved after release without a new Ambient-owned order.");
             ActorAffiliationComponent affiliation = red.GetComponent<ActorAffiliationComponent>();
             Require(affiliation.TryConfigure(IncapacitatedAffiliationId, "Incapacity Diagnostic",
                     new[] { "diagnostic_absent" }, out string affiliationError),
@@ -291,9 +334,19 @@ namespace OldScars.Editor
                     "Functionally incapacitated actor did not enter Inactive.");
                 return;
             }
+            ActorBehaviorController behavior = red.GetComponent<ActorBehaviorController>();
+            if (behavior.Owner != ActorBehaviorOwner.Inactive)
+            {
+                Require(Time.time - stageStartedAt <= 5f,
+                    "Incapacitated actor did not settle with Inactive behavior ownership.");
+                return;
+            }
+            inactiveOwnerRevision = behavior.OwnerRevision;
             inactiveTransitionRevision = encounter.TransitionRevision;
             inactiveAttackCount = encounter.AttackCount;
             inactiveScanCount = red.GetComponent<ActorThreatAcquisitionController>().AcquisitionScanCount;
+            inactiveAmbientOrderCount = behavior.AmbientAcceptedOrderCount;
+            inactiveTravel.Reset(red);
             SetStage(7);
         }
 
@@ -301,18 +354,24 @@ namespace OldScars.Editor
         {
             if (Time.time - stageStartedAt < 0.5f)
                 return;
+            inactiveTravel.Sample(red);
             HumanEncounterAIController encounter = red.GetComponent<HumanEncounterAIController>();
             ActorThreatAcquisitionController acquisition = red.GetComponent<ActorThreatAcquisitionController>();
+            ActorBehaviorController behavior = red.GetComponent<ActorBehaviorController>();
             Require(acquisition.enabled && encounter.State == HumanEncounterAIState.Inactive && encounter.Threat == null &&
                     encounter.TransitionRevision == inactiveTransitionRevision && encounter.AttackCount == inactiveAttackCount &&
                     acquisition.AcquisitionScanCount == inactiveScanCount &&
+                    behavior.Owner == ActorBehaviorOwner.Inactive && behavior.OwnerRevision == inactiveOwnerRevision &&
+                    behavior.AmbientAcceptedOrderCount == inactiveAmbientOrderCount && inactiveTravel.Distance < 0.05f &&
                     red.GetComponent<ActorNavigationController>().State != ActorNavigationState.Moving,
-                "Inactive actor ping-ponged, acquired, navigated or attacked while acquisition remained enabled.");
+                "Inactive actor changed owner, travelled, acquired, navigated or attacked while acquisition remained enabled.");
             Debug.Log(
                 "M41 Sandbox Preparation Diagnostics: PASS\n" +
                 "- Relations: Blue<->Red hostile; Red->Player hostile; Blue->Player neutral\n" +
-                "- Roaming: Blue/Red/White use bounded home-anchor idle orders; threat interrupted and Idle resumed them\n" +
-                "- Incapacity: acquisition stayed enabled while Inactive remained stable with no threat/navigation/attack");
+                $"- Ambient physical travel: Blue={blueInitialTravel.Distance:0.###}m; " +
+                $"Red={redInitialTravel.Distance:0.###}m; White={whiteInitialTravel.Distance:0.###}m\n" +
+                $"- Ownership: Ambient -> Encounter -> Ambient; resumed Red travel={redResumeTravel.Distance:0.###}m\n" +
+                $"- Incapacity: Inactive stable; physical travel={inactiveTravel.Distance:0.###}m; no threat/navigation/attack");
             SessionState.SetInt(StageKey, 99);
             EditorApplication.ExitPlaymode();
         }

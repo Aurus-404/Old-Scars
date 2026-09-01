@@ -191,8 +191,8 @@ namespace OldScars.Editor
                 foreach (ItemStorageEntry entry in ownership.GetAllOwnedEntries())
                     Require(itemIds.Add(entry.Item.InstanceId), "Duplicate ItemInstanceId across sandbox NPCs: " + entry.Item.InstanceId);
                 Require(identity.GetComponent<ActorNavigationController>() != null &&
-                        identity.GetComponent<SandboxActorRoamingController>() != null,
-                    "Spawned actor lacks existing navigation authority plus the small sandbox roaming decision layer.");
+                        identity.GetComponent<ActorBehaviorController>()?.IsAmbientConfigured == true,
+                    "Spawned actor lacks navigation plus configured behavior ownership.");
                 observedNone |= equipment.Entries.Count == 0 || inventory.Entries.Count == 0;
             }
             Require(signatures.Count >= 5, "Controlled repeated spawns did not produce useful loadout variation.");
@@ -206,20 +206,20 @@ namespace OldScars.Editor
             ActorRuntimeIdentity[] actors = spawnedActorIds.Select(id =>
                 ActorRuntimeRegistry.TryGet(id, out ActorRuntimeIdentity actor) ? actor : null).Where(actor => actor != null).ToArray();
             Require(actors.Length == 12, "One or more simultaneous sandbox actors disappeared before validation.");
-            Require(actors.Any(actor => actor.GetComponent<SandboxActorRoamingController>().AcceptedOrderCount > 0 &&
-                                       (actor.GetComponent<ActorNavigationController>().State == ActorNavigationState.Moving ||
-                                        Vector3.Distance(initialPositions[actor.ActorInstanceId], actor.transform.position) > 0.05f)),
-                "Sandbox roaming did not produce an accepted/moving NPC through ActorNavigationController. " +
+            Require(actors.Any(actor => actor.GetComponent<ActorBehaviorController>().AmbientDistanceTravelled > 0.5f &&
+                                       Vector3.Distance(initialPositions[actor.ActorInstanceId], actor.transform.position) > 0.05f),
+                "Sandbox roaming did not produce physically travelled distance through behavior ownership. " +
                 "NavMeshVertices=" + UnityEngine.AI.NavMesh.CalculateTriangulation().vertices.Length + "; " +
                 string.Join("; ", actors.Select(actor => actor.ActorInstanceId + "=" +
-                    "enabled:" + actor.GetComponent<SandboxActorRoamingController>().enabled +
+                    "owner:" + actor.GetComponent<ActorBehaviorController>().Owner +
                     ",lifecycle:" + actor.LifecycleState +
-                    ",accepted:" + actor.GetComponent<SandboxActorRoamingController>().AcceptedOrderCount +
-                    ",failed:" + actor.GetComponent<SandboxActorRoamingController>().FailedDecisionCount +
+                    ",accepted:" + actor.GetComponent<ActorBehaviorController>().AmbientAcceptedOrderCount +
+                    ",travel:" + actor.GetComponent<ActorBehaviorController>().AmbientDistanceTravelled.ToString("0.###") +
+                    ",failed:" + actor.GetComponent<ActorBehaviorController>().AmbientFailedDecisionCount +
                     ",initial:" + initialPositions[actor.ActorInstanceId].ToString("F2") +
                     ",current:" + actor.transform.position.ToString("F2") +
                     ",onNavMesh:" + actor.GetComponent<ActorNavigationController>().Agent.isOnNavMesh +
-                    ",detail:" + actor.GetComponent<SandboxActorRoamingController>().LastDecisionFailure)));
+                    ",detail:" + actor.GetComponent<ActorBehaviorController>().LastAmbientDecisionFailure)));
 
             ActorRuntimeIdentity target = actors.First(actor => !actor.GetComponent<ActorEquipmentComponent>().Entries.Any(entry =>
             {
@@ -278,9 +278,8 @@ namespace OldScars.Editor
         {
             Require(ActorRuntimeRegistry.TryGet(deadActorId, out ActorRuntimeIdentity target),
                 "Dead sandbox actor representation disappeared before corpse validation.");
-            Require(target.GetComponent<SandboxActorRoamingController>() == null ||
-                    !target.GetComponent<SandboxActorRoamingController>().enabled,
-                "Dead sandbox actor continued its roaming decision layer.");
+            Require(target.GetComponent<ActorBehaviorController>()?.Owner == ActorBehaviorOwner.Inactive,
+                "Dead sandbox actor retained active behavior ownership.");
             LootableActorInventoryComponent corpse = target.GetComponent<LootableActorInventoryComponent>();
             corpse.RefreshLootableState();
             Require(corpse.CanOpenStorage(out string corpseError), "Dead sandbox actor is not lootable: " + corpseError);

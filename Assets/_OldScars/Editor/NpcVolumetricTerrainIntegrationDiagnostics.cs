@@ -379,11 +379,11 @@ namespace OldScars.Editor
                 NpcSnapshot snapshot = snapshots[index];
                 ActorRuntimeIdentity identity = ResolveSnapshot(snapshot);
                 ActorNavigationController navigation = identity.GetComponent<ActorNavigationController>();
-                SandboxActorRoamingController roaming = identity.GetComponent<SandboxActorRoamingController>();
+                ActorBehaviorController behavior = identity.GetComponent<ActorBehaviorController>();
                 Vector3 origin = fromSpawn ? snapshot.SpawnPosition : snapshot.OrderedPosition;
                 bool moved = Vector3.Distance(origin, identity.transform.position) > 0.2f;
                 bool accepted = fromSpawn
-                    ? roaming != null && roaming.AcceptedOrderCount > snapshot.AcceptedOrdersBefore
+                    ? behavior != null && behavior.AmbientAcceptedOrderCount > snapshot.AcceptedOrdersBefore
                     : navigation.State == ActorNavigationState.Moving || navigation.State == ActorNavigationState.Reached;
                 if (accepted && (moved || navigation.State == ActorNavigationState.Moving))
                     count++;
@@ -395,7 +395,7 @@ namespace OldScars.Editor
         {
             Require(identity != null && identity.IsRegistered &&
                     identity.GetComponent<ActorNavigationController>() != null &&
-                    identity.GetComponent<SandboxActorRoamingController>() != null,
+                    identity.GetComponent<ActorBehaviorController>()?.IsAmbientConfigured == true,
                 "Sandbox spawn did not use the existing actor/navigation/roaming authorities.");
             return new NpcSnapshot
             {
@@ -404,7 +404,7 @@ namespace OldScars.Editor
                 Lifecycle = identity.LifecycleState,
                 Health = identity.GetComponent<ActorHealthComponent>().CurrentHealth,
                 SpawnPosition = identity.transform.position,
-                AcceptedOrdersBefore = identity.GetComponent<SandboxActorRoamingController>().AcceptedOrderCount
+                AcceptedOrdersBefore = identity.GetComponent<ActorBehaviorController>().AmbientAcceptedOrderCount
             };
         }
 

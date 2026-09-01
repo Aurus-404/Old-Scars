@@ -85,7 +85,7 @@ namespace OldScars.Core.Actors
             HumanEncounterAIController ai = selected.GetComponent<HumanEncounterAIController>();
             ActorThreatAcquisitionController acquisition = selected.GetComponent<ActorThreatAcquisitionController>();
             ActorNavigationController navigation = selected.GetComponent<ActorNavigationController>();
-            SandboxActorRoamingController roaming = selected.GetComponent<SandboxActorRoamingController>();
+            ActorBehaviorController behavior = selected.GetComponent<ActorBehaviorController>();
 
             GUILayout.Label("IDENTITY", GUI.skin.box);
             GUILayout.Label("Instance: " + Text(identity?.ActorInstanceId));
@@ -105,8 +105,8 @@ namespace OldScars.Core.Actors
 
             GUILayout.Label("NAVIGATION / ROAMING", GUI.skin.box);
             GUILayout.Label($"Nav: {Text(navigation?.State.ToString())} | Destination: {(navigation?.HasDestination == true ? navigation.Destination.ToString("F2") : "<NONE>")}");
-            GUILayout.Label($"Roaming: {YesNo(roaming != null && roaming.enabled)} | Orders: {roaming?.AcceptedOrderCount.ToString() ?? "<NONE>"} | Home: {(roaming != null ? roaming.HomeAnchor.ToString("F2") : "<NONE>")} | Radius: {Value(roaming?.MaximumRoamRadius)}");
-            GUILayout.Label("Encounter ownership: " + (ai != null && ai.Threat != null ? "Encounter" : "Ambient roaming / Idle"));
+            GUILayout.Label($"Owner: {Text(behavior?.Owner.ToString())} | Ambient orders: {behavior?.AmbientAcceptedOrderCount.ToString() ?? "<NONE>"} | Ambient travel: {Value(behavior?.AmbientDistanceTravelled)}");
+            GUILayout.Label($"Home: {(behavior != null ? behavior.HomeAnchor.ToString("F2") : "<NONE>")} | Radius: {Value(behavior?.MaximumRoamRadius)} | Owner revision: {behavior?.OwnerRevision.ToString() ?? "<NONE>"}");
 
             GUILayout.Label("COMBAT", GUI.skin.box);
             DrawCombat(ai);

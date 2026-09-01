@@ -415,6 +415,9 @@ namespace OldScars.Core.Actors
                     "\n  ActionTaken: navigation capability remains unavailable");
             }
 
+            if (GetComponent<ActorBehaviorController>() == null)
+                gameObject.AddComponent<ActorBehaviorController>();
+
             if (GetComponent<Rigidbody>() == null)
                 gameObject.AddComponent<Rigidbody>();
             if (GetComponent<ActorPhysicalCollapseController>() == null)
