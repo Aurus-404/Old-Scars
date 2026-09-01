@@ -111,6 +111,10 @@ namespace OldScars.Core.Actors
         public int PhysicalObstacleImpactCount { get; private set; }
         public int ArmoredActorHitCount { get; private set; }
         public ulong AimSampleSequence => aimSampleSequence;
+        public double LastShotTime { get; private set; } = double.NegativeInfinity;
+        public Vector3 LastShotOrigin { get; private set; }
+        public Vector3 LastShotDirection { get; private set; }
+        public string LastShotIntentTargetActorInstanceId { get; private set; }
 
         private void Awake() => ResolveReferences();
 
@@ -475,6 +479,10 @@ namespace OldScars.Core.Actors
                         transform, origin, direction, firearm.range, penetrationPower));
                 if (LastCombatResult.Quantity == 1)
                 {
+                    LastShotTime = now;
+                    LastShotOrigin = origin;
+                    LastShotDirection = direction;
+                    LastShotIntentTargetActorInstanceId = threat != null ? threat.ActorInstanceId : null;
                     AttackCount++;
                     nextAttackTime = now + firearm.cycle_time;
                     if (firearm.fire_mode == "automatic")
@@ -711,6 +719,10 @@ namespace OldScars.Core.Actors
             CurrentWeaponRange = 0f;
             CurrentAimPoint = default;
             CurrentShotDirection = default;
+            LastShotTime = double.NegativeInfinity;
+            LastShotOrigin = default;
+            LastShotDirection = default;
+            LastShotIntentTargetActorInstanceId = null;
             IsClosingDistance = false;
             hasPreviousObservedPosition = false;
             observedTargetSpeed = 0f;

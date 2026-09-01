@@ -32,6 +32,7 @@ namespace OldScars.Core.ApplicationShell
         private WorldInteractionDebugTester worldInteraction;
         private FirearmDebugController firearmController;
         private SandboxNpcController sandboxNpcController;
+        private SandboxNpcObservabilityPanel sandboxNpcObservabilityPanel;
 
         public PlayerGameplayComposition Player => player;
         public InventoryUISessionController InventorySession => inventorySession;
@@ -43,6 +44,7 @@ namespace OldScars.Core.ApplicationShell
         public WorldInteractionDebugTester WorldInteraction => worldInteraction;
         public FirearmDebugController FirearmController => firearmController;
         public SandboxNpcController SandboxNpcController => sandboxNpcController;
+        public SandboxNpcObservabilityPanel SandboxNpcObservability => sandboxNpcObservabilityPanel;
 
         public static bool TryCreateAndBind(
             Transform parent,
@@ -118,6 +120,7 @@ namespace OldScars.Core.ApplicationShell
                 inputBlocker,
                 sandboxNpcController);
             sandboxNpcController.BindRuntime(player.PlayerTransform);
+            sandboxNpcObservabilityPanel.BindRuntime(sandboxNpcController, player.GameplayCamera);
             inputBlocker.BindRuntime(
                 actionPanel, actionResultPanel, inventoryPanel, storagePanel,
                 needsPanel, healthWindow, inventorySession);
@@ -148,6 +151,8 @@ namespace OldScars.Core.ApplicationShell
                 return Fail("Existing firearm/combat input surface is missing.", out failure);
             if (sandboxNpcController == null)
                 return Fail("Sandbox NPC spawn adapter is missing from the shared runtime.", out failure);
+            if (sandboxNpcObservabilityPanel == null)
+                return Fail("Sandbox NPC observability surface is missing from the shared runtime.", out failure);
             if (player.Stamina == null)
                 return Fail("Player stamina authority is missing.", out failure);
 
@@ -198,6 +203,7 @@ namespace OldScars.Core.ApplicationShell
             inputBlocker = GetOrAdd(inputBlocker);
             worldInteraction = GetOrAdd(worldInteraction);
             sandboxNpcController = GetOrAdd(sandboxNpcController);
+            sandboxNpcObservabilityPanel = GetOrAdd(sandboxNpcObservabilityPanel);
         }
 
         private T GetOrAdd<T>(T current) where T : Component

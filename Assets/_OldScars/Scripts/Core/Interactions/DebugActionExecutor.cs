@@ -427,6 +427,7 @@ namespace OldScars.Core.Interactions
             ActorRuntimeIdentity identity = target != null ? target.GetComponent<ActorRuntimeIdentity>() : null;
             ActorHealthComponent health = target != null ? target.GetComponent<ActorHealthComponent>() : null;
             ActorConditionComponent condition = target != null ? target.GetComponent<ActorConditionComponent>() : null;
+            ActorMedicalStateComponent medical = target != null ? target.GetComponent<ActorMedicalStateComponent>() : null;
             if (identity == null && health == null && condition == null)
                 return body;
 
@@ -443,7 +444,16 @@ namespace OldScars.Core.Interactions
                         ActorFunctionalState.Incapacitated => "Incapacitado",
                         _ => "Consciente"
                     };
-            return SafeText(body) + "\n\nEstado: " + state;
+            string summary = SafeText(body) + "\n\nEstado: " + state;
+            if (condition != null)
+                summary += "\nCondición funcional: " + condition.ObservableState;
+            if (medical != null)
+            {
+                summary += "\nHeridas visibles: " + medical.WoundCount +
+                           " · Dolor: " + medical.TotalPain.ToString("0.##") +
+                           " · Sangrado: " + medical.EffectiveBleedingRatePerGameHour.ToString("0.##");
+            }
+            return summary;
         }
 
         private static string AppendContainerDebugStorageSummary(string body, WorldObjectTags target)

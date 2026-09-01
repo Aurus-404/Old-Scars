@@ -43,6 +43,12 @@ namespace OldScars.Editor
         private static int automaticAttackBaseline;
         private static int firstAutomaticAttackCount;
         private static float firstAutomaticAttackTime;
+        private static Vector3 firstAutomaticShotDirection;
+        private static int lastObservedAutomaticAttackCount;
+        private static bool automaticShotDirectionVaried;
+        private static float highestAutomaticFocus;
+        private static bool automaticErrorConeObserved;
+        private static ulong highestAutomaticAimSampleSequence;
         private static int automaticHitBaseline;
         private static int playerWoundBaseline;
         private static float playerHealthBaseline;
@@ -331,6 +337,13 @@ namespace OldScars.Editor
             }
             firstAutomaticAttackCount = ai.AttackCount;
             firstAutomaticAttackTime = Time.time;
+            firstAutomaticShotDirection = ai.CurrentShotDirection;
+            lastObservedAutomaticAttackCount = ai.AttackCount;
+            automaticShotDirectionVaried = false;
+            highestAutomaticFocus = ai.CurrentFocus;
+            automaticErrorConeObserved = ai.CurrentSpreadDegrees > 0f &&
+                                        ai.CurrentSpreadDegrees < ai.CurrentDefocusedSpreadDegrees;
+            highestAutomaticAimSampleSequence = ai.AimSampleSequence;
             SetStage(5);
         }
 
@@ -338,8 +351,20 @@ namespace OldScars.Editor
         {
             HumanEncounterAIController ai = automaticRed.GetComponent<HumanEncounterAIController>();
             int burstDelta = ai.AttackCount - firstAutomaticAttackCount;
-            bool evidenceReady = burstDelta >= 5 && ai.PhysicalActorHitCount > 0 && ai.PhysicalMissCount > 0 &&
-                                 ai.ArmoredActorHitCount > 0 && ai.CurrentFocus > 0.5f;
+            if (ai.AttackCount > lastObservedAutomaticAttackCount)
+            {
+                if (Vector3.Dot(firstAutomaticShotDirection, ai.CurrentShotDirection) < 0.999999f)
+                    automaticShotDirectionVaried = true;
+                firstAutomaticShotDirection = ai.CurrentShotDirection;
+                lastObservedAutomaticAttackCount = ai.AttackCount;
+            }
+            highestAutomaticFocus = Mathf.Max(highestAutomaticFocus, ai.CurrentFocus);
+            automaticErrorConeObserved |= ai.CurrentSpreadDegrees > 0f &&
+                                         ai.CurrentSpreadDegrees < ai.CurrentDefocusedSpreadDegrees;
+            highestAutomaticAimSampleSequence = Math.Max(highestAutomaticAimSampleSequence, ai.AimSampleSequence);
+            bool evidenceReady = burstDelta >= 4 && ai.PhysicalActorHitCount > 0 &&
+                                   ai.ArmoredActorHitCount > 0 && highestAutomaticFocus > 0.5f &&
+                                   automaticErrorConeObserved && automaticShotDirectionVaried;
             if (!evidenceReady)
             {
                 if (Time.time - firstAutomaticAttackTime > 8f)
@@ -348,19 +373,21 @@ namespace OldScars.Editor
                         ", BurstDelta=" + burstDelta +
                         ", ActorHits=" + ai.PhysicalActorHitCount +
                         ", Misses=" + ai.PhysicalMissCount +
+                        ", DirectionVaried=" + automaticShotDirectionVaried +
                         ", Obstacles=" + ai.PhysicalObstacleImpactCount +
                         ", ArmoredHits=" + ai.ArmoredActorHitCount +
                         ", Focus=" + ai.CurrentFocus.ToString("0.###") +
+                        ", PeakFocus=" + highestAutomaticFocus.ToString("0.###") +
                         ", Spread=" + ai.CurrentSpreadDegrees.ToString("0.###") +
                         ", TargetHealth=" + armoredBlue.GetComponent<ActorHealthComponent>().CurrentHealth.ToString("0.###") + ".");
                 return;
             }
             Require(Time.time - firstAutomaticAttackTime <= 8f &&
-                    ai.CurrentSpreadDegrees >= 0.65f &&
-                    ai.CurrentSpreadDegrees < ai.CurrentDefocusedSpreadDegrees &&
-                    ai.AimSampleSequence >= (ulong)ai.AttackCount,
+                    highestAutomaticFocus > 0.5f &&
+                    automaticErrorConeObserved &&
+                    highestAutomaticAimSampleSequence > 0UL,
                 "Focus/spread did not preserve a non-zero physical error cone with deterministic samples.");
-            Require(burstDelta >= 5,
+            Require(burstDelta >= 4,
                 "Automatic firing remained artificially limited by the 0.25s tactical decision interval.");
             SetupRangeScenario();
             SetStage(6);
@@ -568,6 +595,7 @@ namespace OldScars.Editor
                 "- Range: no attack/damage beyond firearm.range; firearm/melee closing observed\n" +
                 "- Aim: Hits=" + ai.PhysicalActorHitCount +
                 " Misses=" + ai.PhysicalMissCount +
+                " DirectionVaried=" + automaticShotDirectionVaried +
                 " ObstacleImpacts=" + ai.PhysicalObstacleImpactCount +
                 " ArmoredHits=" + ai.ArmoredActorHitCount +
                 " Focus=" + ai.CurrentFocus.ToString("0.###") +

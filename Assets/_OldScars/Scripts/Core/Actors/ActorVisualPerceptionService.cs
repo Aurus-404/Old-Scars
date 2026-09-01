@@ -30,7 +30,9 @@ namespace OldScars.Core.Actors
             float distance,
             float horizontalAngle,
             Collider blocker,
-            double worldTimeSeconds)
+            double worldTimeSeconds,
+            Vector3 observerOrigin,
+            Collider targetCollider)
         {
             Perceived = perceived;
             Reason = reason;
@@ -41,6 +43,8 @@ namespace OldScars.Core.Actors
             HorizontalAngle = horizontalAngle;
             Blocker = blocker;
             WorldTimeSeconds = worldTimeSeconds;
+            ObserverOrigin = observerOrigin;
+            TargetCollider = targetCollider;
         }
 
         public bool Perceived { get; }
@@ -53,6 +57,9 @@ namespace OldScars.Core.Actors
         public Collider Blocker { get; }
         public double WorldTimeSeconds { get; }
         public bool HasWorldTime => !double.IsNaN(WorldTimeSeconds);
+        /// <summary>Exact origin and target collider used by the evaluated query.</summary>
+        public Vector3 ObserverOrigin { get; }
+        public Collider TargetCollider { get; }
     }
 
     [DisallowMultipleComponent]
@@ -130,22 +137,22 @@ namespace OldScars.Core.Actors
             string targetId = target != null ? target.ActorInstanceId : null;
             double worldTime = WorldClock.Current != null ? WorldClock.Current.ElapsedGameSeconds : double.NaN;
             if (!configured)
-                return Result(false, ActorVisualPerceptionReason.NotConfigured, observerId, targetId, default, 0f, 0f, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.NotConfigured, observerId, targetId, default, 0f, 0f, null, worldTime, default, null);
             if (observer == null || !observer.IsRegistered || !ActorRuntimeIdentity.IsValidFormat(observerId))
-                return Result(false, ActorVisualPerceptionReason.InvalidObserver, observerId, targetId, default, 0f, 0f, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.InvalidObserver, observerId, targetId, default, 0f, 0f, null, worldTime, default, null);
             if (target == null || !target.IsRegistered || !ActorRuntimeIdentity.IsValidFormat(targetId))
-                return Result(false, ActorVisualPerceptionReason.InvalidTarget, observerId, targetId, default, 0f, 0f, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.InvalidTarget, observerId, targetId, default, 0f, 0f, null, worldTime, default, null);
             if (ReferenceEquals(observer, target) || observerId == targetId)
-                return Result(false, ActorVisualPerceptionReason.Self, observerId, targetId, transform.position, 0f, 0f, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.Self, observerId, targetId, transform.position, 0f, 0f, null, worldTime, transform.position, null);
             if (observer.LifecycleState == ActorLifecycleState.Dead)
-                return Result(false, ActorVisualPerceptionReason.ObserverDead, observerId, targetId, default, 0f, 0f, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.ObserverDead, observerId, targetId, default, 0f, 0f, null, worldTime, default, null);
             if (target.LifecycleState == ActorLifecycleState.Dead)
-                return Result(false, ActorVisualPerceptionReason.TargetDead, observerId, targetId, target.transform.position, 0f, 0f, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.TargetDead, observerId, targetId, target.transform.position, 0f, 0f, null, worldTime, default, null);
 
             Vector3 eye = transform.position + Vector3.up * eyeHeight;
             Collider targetCollider = SelectTargetCollider(target, eye);
             if (targetCollider == null)
-                return Result(false, ActorVisualPerceptionReason.MissingTargetCollider, observerId, targetId, target.transform.position, 0f, 0f, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.MissingTargetCollider, observerId, targetId, target.transform.position, 0f, 0f, null, worldTime, eye, null);
 
             Vector3 observed = targetCollider.bounds.center;
             Vector3 toTarget = observed - eye;
@@ -156,11 +163,11 @@ namespace OldScars.Core.Actors
                 ? 0f
                 : Vector3.Angle(flatForward, flatDirection);
             if (distance > visualRange)
-                return Result(false, ActorVisualPerceptionReason.OutOfRange, observerId, targetId, observed, distance, angle, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.OutOfRange, observerId, targetId, observed, distance, angle, null, worldTime, eye, targetCollider);
             if (angle > horizontalFovDegrees * 0.5f)
-                return Result(false, ActorVisualPerceptionReason.OutsideFov, observerId, targetId, observed, distance, angle, null, worldTime);
+                return Result(false, ActorVisualPerceptionReason.OutsideFov, observerId, targetId, observed, distance, angle, null, worldTime, eye, targetCollider);
             if (distance <= 0.0001f)
-                return Result(true, ActorVisualPerceptionReason.Perceived, observerId, targetId, observed, distance, angle, null, worldTime);
+                return Result(true, ActorVisualPerceptionReason.Perceived, observerId, targetId, observed, distance, angle, null, worldTime, eye, targetCollider);
 
             int hitCount = Physics.RaycastNonAlloc(
                 eye, toTarget / distance, lineOfSightHitBuffer, distance + 0.01f,
@@ -182,11 +189,11 @@ namespace OldScars.Core.Actors
                 Collider hit = nearestHit.collider;
                 ActorRuntimeIdentity hitActor = hit.GetComponentInParent<ActorRuntimeIdentity>();
                 if (ReferenceEquals(hitActor, target))
-                    return Result(true, ActorVisualPerceptionReason.Perceived, observerId, targetId, observed, distance, angle, null, worldTime);
-                return Result(false, ActorVisualPerceptionReason.Occluded, observerId, targetId, observed, distance, angle, hit, worldTime);
+                    return Result(true, ActorVisualPerceptionReason.Perceived, observerId, targetId, observed, distance, angle, null, worldTime, eye, targetCollider);
+                return Result(false, ActorVisualPerceptionReason.Occluded, observerId, targetId, observed, distance, angle, hit, worldTime, eye, targetCollider);
             }
 
-            return Result(false, ActorVisualPerceptionReason.LineOfSightMiss, observerId, targetId, observed, distance, angle, null, worldTime);
+            return Result(false, ActorVisualPerceptionReason.LineOfSightMiss, observerId, targetId, observed, distance, angle, null, worldTime, eye, targetCollider);
         }
 
         private Collider SelectTargetCollider(ActorRuntimeIdentity target, Vector3 observerEye)
@@ -242,10 +249,13 @@ namespace OldScars.Core.Actors
             float distance,
             float angle,
             Collider blocker,
-            double worldTime)
+            double worldTime,
+            Vector3 observerOrigin,
+            Collider targetCollider)
         {
             return new ActorVisualPerceptionResult(
-                perceived, reason, observerId, targetId, observedPosition, distance, angle, blocker, worldTime);
+                perceived, reason, observerId, targetId, observedPosition, distance, angle, blocker, worldTime,
+                observerOrigin, targetCollider);
         }
 
         private static bool FinitePositive(float value) =>

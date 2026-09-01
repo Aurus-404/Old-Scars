@@ -282,10 +282,14 @@ namespace OldScars.Editor
             if (stage == 4 && Time.frameCount >= stableFrame)
             {
                 Require(navigator.LifecycleState == ActorLifecycleState.Dead &&
-                        navigatorController.State == ActorNavigationState.Failed &&
-                         navigatorController.Failure == ActorNavigationFailure.Dead &&
-                         navigatorController.Agent.isStopped && !navigatorController.Agent.hasPath,
-                    "Dead lifecycle did not terminate active navigation.");
+                        navigatorController.State == ActorNavigationState.Idle &&
+                         navigatorController.Failure == ActorNavigationFailure.None &&
+                         !navigatorController.Agent.enabled && !navigatorController.Agent.hasPath,
+                    "Dead lifecycle did not cancel active navigation through the physical-collapse stop contract. " +
+                    "State=" + navigatorController.State + ", Failure=" + navigatorController.Failure +
+                    ", AgentEnabled=" + navigatorController.Agent.enabled +
+                    ", Stopped=" + navigatorController.Agent.isStopped +
+                    ", HasPath=" + navigatorController.Agent.hasPath + ".");
                 Require(Vector3.ProjectOnPlane(navigator.transform.position - deadPosition, Vector3.up).sqrMagnitude <= 0.0001f,
                     "Dead navigator continued moving after lifecycle terminated its path.");
                 Require(!navigatorController.TryNavigate(navigationGoal, out ActorNavigationResult deadOrder) &&

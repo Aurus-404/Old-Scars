@@ -3434,3 +3434,19 @@ El diagnóstico M40.1 ahora emite un resumen compacto por caso con región, woun
 Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`: Runtime/Editor compile `PASS`; `M40.1 Armor & Penetration Diagnostics: PASS`; `Actor Consciousness & Incapacitation Diagnostics: PASS`; `M41 Sandbox Preparation Diagnostics: PASS`; `git diff --check: PASS`.
 
 Quedan diferidos órganos, fracturas, infección, cirugía, painkillers, long-term healing, balance final, UI final y cualquier cambio de recuperación fisiológica/WorldClock. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.
+
+### M41 Combat/NPC Observability — Pass D
+
+Fecha: 2026-08-31.
+
+Estado: `VALIDATED — PREPARACIÓN PARA PRUEBA 2 MANUAL`.
+
+El runtime compartido incorpora `SandboxNpcObservabilityPanel` como tooling de desarrollo, activable con `F6`. Permite recorrer los NPC sandbox ya existentes sin respawn, conserva la selección mientras la representación exista y marca el actor seleccionado. El panel lee, sin crear autoridades, identidad/profile/affiliation/lifecycle; Vital, Blood, trauma, pain, bleeding, FunctionalState, capacidad activa y wounds; Encounter AI, threat, LastKnown/contact age, reconocimiento y percepción; Navigation, roaming/home anchor y ownership de encounter; arma, munición, rango, distancia, focus, spread, reload y attacks. La traza visible sólo registra transiciones semánticas observadas de AI, threat, reconocimiento, condición y combat/wound/armor.
+
+`ActorVisualPerceptionResult` expone para observabilidad el origin, target point y collider exactamente usados por el query productivo. El overlay representa el LOS real, blocker, razón y límites FOV sin raycasts alternativos. `HumanEncounterAIController` conserva el último disparo físico real (origin, direction, intent target y timestamp); el overlay de corta vida representa el `PhysicalShotResolution` ya calculado y distingue miss, impacto, actor y armor. Examine mantiene su separación player-facing y añade condición funcional con wounds/dolor/sangrado realmente registrados; belongings de cadáver continúa usando el loot existente.
+
+Dos gates M41 fueron actualizados sólo como expectativas diagnósticas obsoletas. M41.4 ya no exige que una ráfaga concreta produzca necesariamente un miss antes de matar un objetivo con el balance Pass C: exige cuatro disparos posteriores en cadencia, actor hit físico, armor hit, focus máximo, cono de error activo, sample de aim y direcciones de disparo distintas. M41.0 valida el contrato runtime actual de muerte: `ActorPhysicalCollapseController` cancela navegación mediante `Stop`, deja Navigation `Idle/None`, elimina path y deshabilita el agent; no es un `Failed/Dead` productivo.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`: Runtime compile y Editor compile `PASS`; `M41 Sandbox Preparation Diagnostics: PASS`; `M41.4 Affiliation, Range-Aware Combat & Imperfect Aim Diagnostics: PASS`; `M41.0 Navigation & Perception Diagnostics: PASS`; `git diff --check: PASS`. La aceptación visual/manual de New Game, F3/F6, selección y overlays permanece a cargo de Mauro; no se declara sustituida por automatización.
+
+No se modificaron balance Pass C, Navigation, Health, Condition, AI gameplay, Perception query, persistence, schemas ni ProjectSettings. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.
