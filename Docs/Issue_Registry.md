@@ -48,7 +48,7 @@ Cada entrada debe conservar, cuando exista información suficiente:
 ## ISSUE-0001 — Blue/Red no realizan roaming efectivo mientras están Idle
 
 - **Tipo:** `BUG`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P0 / RED`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** Prueba 2 manual integrada
@@ -58,14 +58,14 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Causa confirmada o hipótesis:** `CONFIRMADO POR CÓDIGO`: Blue/Red sí reciben roaming, pero Encounter cancela repetidamente sus órdenes cuando no existe threat. No es una ausencia de `SandboxActorRoamingController`, un fallo demostrado de NavMesh, una deshabilitación del componente ni un problema demostrado del home anchor.
 - **Sistemas afectados:** sandbox NPC, ambient behavior, encounter AI, navigation.
 - **Solución prevista:** Fases 1–2 de `NPC_AI_Sanitation_Plan.md`: auditar writers/owners y dejar un único dueño de navegación por frame; todos los humanos deben compartir Ambient roaming cuando estén realmente Idle.
-- **Commit de corrección:** pendiente.
-- **Validación:** debe demostrar desplazamiento real, no sólo órdenes aceptadas.
-- **Notas:** White es referencia observable del comportamiento ambiental deseado, no una IA separada a copiar ciegamente. La corrección previa compuso roaming para Blue/Red, pero no eliminó el writer Idle de Encounter que lo invalida.
+- **Commit de corrección:** `7fa47c59d8bbe1df61b598f01875e91b2b51c089`.
+- **Validación:** Runtime/Editor compile `PASS`; `M41 Sandbox Preparation Diagnostics: PASS` con desplazamiento físico individual Blue `0,75 m`, Red `0,75 m`, White `0,75 m`; `M41.1 Human Encounter AI Diagnostics: PASS`; `M41.0 Navigation & Perception Diagnostics: PASS`; `Actor Consciousness & Incapacitation Diagnostics: PASS`.
+- **Notas:** White sigue siendo referencia del mismo contrato Ambient, no una IA separada. Fase 2 reemplazó la coordinación competidora por `ActorBehaviorController`; ausencia de threat ya no ejecuta un reset destructivo por frame.
 
 ## ISSUE-0002 — El gate de roaming puede aceptar órdenes sin demostrar desplazamiento real
 
 - **Tipo:** `BUG`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P0 / RED`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** revisión del diagnóstico posterior a Prueba 2
@@ -75,14 +75,14 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Causa confirmada o hipótesis:** `CONFIRMADO POR CÓDIGO`: los tests principales pueden observar una orden aceptada antes de que exista desplazamiento y pueden pasar aunque Encounter la cancele inmediatamente después.
 - **Sistemas afectados:** diagnostics/QA de AI y navigation.
 - **Solución prevista:** validar posición inicial/final, distancia recorrida real, cambios de destino y límites de home radius.
-- **Commit de corrección:** pendiente.
-- **Validación:** White/Blue/Red deben recorrer una distancia mínima verificable durante una ventana sin amenaza.
-- **Notas:** principio general: los gates importantes validan contratos observables, no sólo que una función haya sido llamada.
+- **Commit de corrección:** `7fa47c59d8bbe1df61b598f01875e91b2b51c089`.
+- **Validación:** `M41SandboxPreparationDiagnostics` acumuló recorrido horizontal real por frame y exigió al menos `0,75 m` individual para White/Blue/Red, home radius acotado, `0,751 m` de reanudación Red y menos de `0,05 m` durante Inactive; resultado `PASS`. `M41NpcSandboxDiagnostics` ya no acepta `Moving` como sustituto de recorrido en su gate de roaming.
+- **Notas:** se eliminaron las aserciones engañosas basadas únicamente en accepted orders. Principio permanente: los gates importantes validan contratos observables, no sólo que una función haya sido llamada.
 
 ## ISSUE-0003 — Posible competencia Ambient/Encounter sobre Navigation
 
 - **Tipo:** `DESIGN_DEBT`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P0 / RED`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** análisis arquitectónico posterior a Prueba 2
@@ -92,9 +92,9 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Causa confirmada o hipótesis:** `CONFIRMADO POR CÓDIGO`: la capa alta distribuye ownership implícito entre componentes independientes que escriben el mismo `ActorNavigationController`. `ActorThreatAcquisitionController` además controla parte del lifecycle del target mediante `ClearThreat`, mientras `HumanEncounterAIController` mantiene la otra parte y resetea navegación/estado.
 - **Sistemas afectados:** roaming, encounter AI, threat acquisition, navigation.
 - **Solución prevista:** decisión de Fase 1: **B — reemplazar/simplificar la capa de decisión**, conservando `ActorNavigationController`, `ActorVisualPerceptionService`, combat, health/medical/condition, equipment, affiliation y persistence. Fase 2 debe introducir una única decisión de behavior ownership por actor/frame para Ambient, Encounter, Search e Inactive, sin proliferar flags entre controladores actuales.
-- **Commit de corrección:** pendiente.
-- **Validación:** debe poder responder inequívocamente quién posee navegación en Ambient, Encounter, Search e Inactive.
-- **Notas:** Physical collapse/death puede conservar precedencia de cancelación como autoridad válida de incapacidad; el problema es que Ambient/Encounter/Search no poseen una concesión explícita y estable de las piernas.
+- **Commit de corrección:** `7fa47c59d8bbe1df61b598f01875e91b2b51c089`.
+- **Validación:** `M41 Sandbox Preparation Diagnostics: PASS` demostró `Ambient → Encounter → Ambient`, cero nuevas órdenes Ambient durante Encounter, reanudación física y ownership Inactive sin oscilación; búsqueda está reservada como valor `Search` sin implementación. Búsqueda de writers confirma que las órdenes normales pasan por `ActorBehaviorController`; collapse conserva sus interrupciones técnicas.
+- **Notas:** `ActorBehaviorController` es la única capa alta que posee navegación normal. `ActorNavigationController` sigue siendo la autoridad inferior; Physical collapse/death y persistence conservan precedencia técnica legítima.
 
 ## ISSUE-0004 — La percepción inicial depende demasiado de la orientación corporal de spawn
 
@@ -316,6 +316,23 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Commit de corrección:** pendiente hasta cerrar reconciliación documental.
 - **Validación:** `Current_Milestone`, `Next_Sprints` y autoridad canónica deben dejar de afirmar que el próximo paso es implementar M41.4 desde cero.
 - **Notas:** no alterar estados históricos sin evidencia.
+
+## ISSUE-0017 — El fixture M41NpcSandbox puede matar el target antes de validar la segunda región
+
+- **Tipo:** `TOOLING`
+- **Estado:** `CONFIRMED`
+- **Severidad:** `P1 / ORANGE`
+- **Fecha de descubrimiento:** 2026-09-01
+- **Prueba / origen:** regresión adicional de Fase 2, `M41NpcSandboxDiagnostics.RunBatchWorldRuntime`
+- **Momento de descubrimiento:** evidencia de combate localizada posterior al gate de roaming
+- **Síntoma observado:** el diagnóstico termina con exit code `1` después de que el disparo inicial a Head mata al NPC; el disparo siguiente a LeftLeg es rechazado con `Dead actors cannot receive new M40 wounds`.
+- **Evidencia:** log `Phase2_regression_sandbox.log`: `ActorPhysicalCollapseController` registra lifecycle `Dead` tras el primer disparo y `M41NpcSandboxDiagnostics.BeginCombatAndDeathEvidence` falla al exigir éxito del segundo disparo. El gate de behavior/roaming ya había sido superado y el fallo ocurre en la fixture de combat/medical no modificada por Fase 2.
+- **Causa confirmada o hipótesis:** `CONFIRMADO POR EJECUCIÓN Y CÓDIGO`: la fixture selecciona un actor sin armor, dispara primero a Head con el balance letal actual y asume que seguirá vivo para comprobar LeftLeg. Es una expectativa diagnóstica incompatible con el balance vigente, no evidencia de una regresión de behavior ownership.
+- **Sistemas afectados:** diagnostics M41 sandbox, fixture de combat/medical localizada.
+- **Solución prevista:** en una tarea de diagnostics/combat autorizada, usar objetivos separados o un orden/fixture no letal que valide regiones sin depender de que el target sobreviva un headshot.
+- **Commit de corrección:** pendiente; fuera de Fase 2.
+- **Validación:** el diagnóstico completo debe poder probar Head y LeftLeg con el balance actual y continuar hasta corpse/persistence sin relajar los contratos productivos.
+- **Notas:** no se modificó combat, medical, balance ni el fixture en Fase 2.
 
 ---
 

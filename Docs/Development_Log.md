@@ -3450,3 +3450,24 @@ Dos gates M41 fueron actualizados sólo como expectativas diagnósticas obsoleta
 Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`: Runtime compile y Editor compile `PASS`; `M41 Sandbox Preparation Diagnostics: PASS`; `M41.4 Affiliation, Range-Aware Combat & Imperfect Aim Diagnostics: PASS`; `M41.0 Navigation & Perception Diagnostics: PASS`; `git diff --check: PASS`. La aceptación visual/manual de New Game, F3/F6, selección y overlays permanece a cargo de Mauro; no se declara sustituida por automatización.
 
 No se modificaron balance Pass C, Navigation, Health, Condition, AI gameplay, Perception query, persistence, schemas ni ProjectSettings. `ProjectSettings.runInBackground` permanece como cambio local ajeno y fuera del commit.
+
+### NPC AI Sanitation — Fase 2 Behavior Ownership + Ambient Roaming Real
+
+Fecha: 2026-09-01.
+
+Estado: `VALIDATED — PHASE 2 COMPLETE`.
+
+`ActorBehaviorController` reemplaza la coordinación implícita de `SandboxActorRoamingController` como única capa alta propietaria de las piernas normales del NPC. Expone `Ambient`, `Encounter`, `Search` reservado e `Inactive`; Ambient conserva el home anchor y destinos acotados, Encounter presenta sus solicitudes a esa capa, e incapacidad/death fijan Inactive. `ActorNavigationController`, perception, combat, Health/Medical/Condition, affiliation, identity/lifecycle y persistence conservan sus autoridades. No se implementó Search, gaze, tracking ni Fase 3.
+
+El lifecycle de threat ya trata `threat == null` como estado normal: no ejecuta `ClearThreat → ResetEncounter → Stop` cada frame. Asignar una amenaza transfiere `Ambient → Encounter`; liberarla transfiere `Encounter → Ambient`; Ambient no emite órdenes mientras Encounter posee behavior. Acquisition evita clears repetidos sobre un actor incapacitado, y el diagnóstico confirma ownership y estado Inactive estables sin adquisición útil, ataques ni navegación normal.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
+
+- Runtime compile y Editor compile: `PASS`; sólo warnings preexistentes de APIs obsoletas/campos no usados;
+- `M41 Sandbox Preparation Diagnostics: PASS`: Blue `0,75 m`, Red `0,75 m`, White `0,75 m`; `Ambient → Encounter → Ambient`; reanudación Red `0,751 m`; Inactive `0,038 m`, sin threat/navigation/attack;
+- `M41.1 Human Encounter AI Diagnostics: PASS`;
+- `M41.0 Navigation & Perception Diagnostics: PASS`;
+- `Actor Consciousness & Incapacitation Diagnostics: PASS`;
+- `git diff --check`: `PASS`.
+
+Una regresión adicional de `M41NpcSandboxDiagnostics` llegó más allá del gate de roaming y falló en su fixture preexistente de combate: el headshot inicial mató al actor y el segundo disparo LeftLeg fue correctamente rechazado por estar Dead. Se registró como `ISSUE-0017`, fuera del alcance de Fase 2; no se cambió combat, medical ni balance. `ProjectSettings.runInBackground` permanece como cambio local user-owned, unstaged y fuera de los commits.

@@ -74,13 +74,15 @@ No aceptar una solución basada en proliferación de flags de ownership.
 
 ## Fase 2 — Behavior ownership + Ambient roaming real
 
+**Estado:** `COMPLETADA — 2026-09-01` (`7fa47c59d8bbe1df61b598f01875e91b2b51c089`).
+
 - White/Blue/Red comparten comportamiento Ambient cuando están realmente Idle.
 - Threat/Encounter interrumpe Ambient limpiamente.
 - Al terminar encounter se libera ownership y Ambient vuelve.
 - Incapacitado/muerto no navega ni combate.
 - Diagnostics de roaming miden desplazamiento real, no sólo accepted orders.
 
-**Gate:** White/Blue/Red recorren distancia verificable sin amenaza; encounter toma y libera navigation sin competencia.
+**Gate cerrado:** White/Blue/Red recorrieron `0,75 m` físicos individualmente sin amenaza; Encounter tomó ownership sin nuevas órdenes Ambient, lo liberó y Red reanudó `0,751 m`; Inactive permaneció estable. Search continúa reservado y Fase 3 no se inició.
 
 ## Fase 3 — Orientación inicial + Gaze/Attention V1
 
