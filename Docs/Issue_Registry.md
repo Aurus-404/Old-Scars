@@ -150,19 +150,19 @@ Cada entrada debe conservar, cuando exista información suficiente:
 ## ISSUE-0007 — LostContact no ejecuta una búsqueda real
 
 - **Tipo:** `BUG`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-08-31
 - **Prueba / origen:** Prueba 1
 - **Momento de descubrimiento:** pérdida de LOS durante encounter
 - **Síntoma observado:** al perder contacto, la IA conserva el estado/memoria durante un timeout pero no investiga físicamente la última posición conocida.
 - **Evidencia:** Prueba 1 y revisión del flujo LostContact.
-- **Causa confirmada o hipótesis:** Search V1 aún no fue implementado.
+- **Causa confirmada o hipótesis:** `CONFIRMADO Y CORREGIDO`: LostContact retenía información legítima pero sólo esperaba el timeout; `ActorBehaviorOwner.Search` estaba reservado sin API ni conducta productiva.
 - **Sistemas afectados:** encounter AI, navigation, perception memory.
-- **Solución prevista:** Fase 6: LKP → navegar → inspección breve → reacquire o release → Ambient.
-- **Commit de corrección:** pendiente.
-- **Validación:** timeline observable `Fighting → LostContact → Searching → Reacquired` o `Released → Idle/Ambient`.
-- **Notas:** no agregar cover, flanking, hearing, squad search ni room clearing en V1.
+- **Solución prevista:** aplicada en Fase 6: Fight congela `SearchObservedPosition`/`SearchAnchor` desde LKP, transfiere ownership real a Search, emite una orden, inspecciona al llegar y reacquire a Encounter o release a Ambient. Avoid/Flee conservan LostContact sin persecución Search.
+- **Commit de corrección:** `7590ec6f868da89a72a5514a85f7c042fb89e36f` — `Add bounded LostContact search`.
+- **Validación:** Runtime/Editor compile `PASS`; `M41 LostContact / Search V1 Diagnostics: PASS`. Reacquire: states `Idle → Alerted → Fighting → LostContact → Searching → Alerted`, owners `Encounter → Search → Encounter`, `0,642 m`, mismo threat y sin Ambient/ataque. Release: `Idle → Alerted → Fighting → LostContact → Searching → Idle`, owners `Encounter → Search → Ambient`, `8 m`, error de llegada `0 m`, inspección `0,8 s`, Ambient posterior `0,501 m`. Anchor observado `(26,000, 1,050, 34,000)` y proyectado `(26,000, 0,050, 34,000)` permanecieron congelados con una sola orden pese al movimiento oculto. Avoid `0` búsquedas; incapacidad → Inactive; target inválido → Aborted. Regresiones Human Encounter, Sandbox Preparation, Gaze/Attention, Gaze-Centered Perception, Progressive Recognition y Navigation/Perception `PASS`.
+- **Notas:** Search V1 no agrega controller/planner/blackboard ni lee la posición oculta. Reutiliza `lost_contact_timeout_seconds` como ventana post-arrival. No incluye cover, flanking, hearing, squad search, grids ni room clearing.
 
 ## ISSUE-0008 — Posible sesgo de impactos hacia piernas/pies
 

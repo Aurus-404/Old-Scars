@@ -3538,3 +3538,29 @@ Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
 - `git diff --check`: `PASS`.
 
 `ISSUE-0004` e `ISSUE-0006` quedan `RESOLVED` por evidencia productiva integrada. No aparecieron issues nuevos. Aim, spread, `CurrentAimPoint`, `PhysicalShotPathResolver`, `WeaponCombatService`, profiles, content, Navigation, Behavior ownership y persistence no cambiaron. Fase 6 no fue iniciada: Search V1 y navegación/inspección de `LastKnownPosition` continúan pendientes. No se ejecutó aceptación visual/manual ni se declara sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.
+
+### NPC AI Sanitation — Fase 6 LostContact / Search V1
+
+Fecha: 2026-09-02.
+
+Estado: `VALIDATED — PHASE 6 COMPLETE`.
+
+`ActorBehaviorController` activa el owner reservado `Search` mediante cinco operaciones acotadas: entrar desde Encounter, emitir navegación Search, detenerla, volver directamente a Encounter o salir a Ambient. Sigue siendo la única capa alta que llama `ActorNavigationController.TryNavigate`; las transiciones cancelan una orden activa una sola vez. No existe SearchController, planner, blackboard, Behavior Tree, GOAP ni nueva capa de navegación.
+
+Para policy Fight, `HumanEncounterAIController` conserva un estado explícito `Searching`, un source observado, un anchor proyectado, tiempos de inicio/deadline/inspección y outcome/revisions. `Fighting → LostContact` cancela acción/ataque; en el siguiente decision tick congela LKP, transfiere `Encounter → Search`, proyecta al NavMesh y emite una sola orden. `Moving` no replantea. `Reached` inicia una inspección inmóvil cuya duración reutiliza `lost_contact_timeout_seconds`. Percepción positiva durante viaje o inspección conserva threat, actualiza LKP mediante observación real y devuelve `Search → Encounter/Alerted` sin Ambient ni recognition nuevo. Expiry/path failure libera a `Idle/Ambient`; incapacidad/death fija `Inactive`; target inválido aborta. Avoid/Flee mantienen su LostContact anterior y no persiguen LKP.
+
+El diagnostic focalizado demostró ambas timelines productivas. Reacquire registró states `Idle → Alerted → Fighting → LostContact → Searching → Alerted`, owners `Encounter → Search → Encounter`, `0,642 m` físicos y el mismo threat. Release registró `Idle → Alerted → Fighting → LostContact → Searching → Idle`, owners `Encounter → Search → Ambient`, `8 m`, error de llegada `0 m`, inspección `0,8 s` y `0,501 m` Ambient posteriores. Tras congelar source `(26,000, 1,050, 34,000)` y anchor `(26,000, 0,050, 34,000)`, mover el target oculto no alteró anchor, destino ni plan attempts. Avoid produjo `0` Search; incapacidad terminó Inactive; target muerto terminó Aborted; `AttackCount` permaneció estable sin percepción fresca.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
+
+- Runtime compile y Editor compile: `PASS`; warnings preexistentes separados;
+- `M41 LostContact / Search V1 Diagnostics: PASS`;
+- `M41.1 Human Encounter AI Diagnostics: PASS`;
+- `M41 Sandbox Preparation Diagnostics: PASS`;
+- `M41 Gaze & Attention Diagnostics: PASS`;
+- `M41 Gaze-Centered Production Perception Diagnostics: PASS`;
+- `M41 Progressive Visual Recognition Diagnostics: PASS`: Near `0,334 s`, Far `1,103 s`, hidden motion `4,01 m` sin contaminar LKP;
+- `M41.0 Navigation & Perception Diagnostics: PASS`;
+- `git diff --check`: `PASS`.
+
+`ISSUE-0007` queda `RESOLVED`. No aparecieron issues nuevos. F6 añade sólo una línea proporcional de Search/outcome/anchor/inspection. Gaze/FOV/prediction, aim, spread, `CurrentAimPoint`, `WeaponCombatService`, `PhysicalShotPathResolver`, combat balance, health/medical, profiles, persistence y worldgen no cambiaron. Fase 7 no fue iniciada; modelo humano/hitboxes anatómicos continúan pendientes. No se ejecutó aceptación visual/manual ni se declara sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.

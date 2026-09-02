@@ -126,13 +126,15 @@ Tests mínimos:
 
 ## Fase 6 — LostContact / Search V1
 
+**Estado:** `COMPLETADA — 2026-09-02` (`7590ec6f868da89a72a5514a85f7c042fb89e36f`).
+
 Flujo mínimo:
 
 `Seen → LOS lost → retain LastKnownPosition/recent motion hint → navigate to information → inspect briefly → reacquire OR release → Ambient`.
 
 No agregar cover, flanking, hearing, squad search ni room clearing.
 
-**Gate:** timeline observable termina en reacquire o release, no en memoria pasiva hasta timeout.
+**Gate cerrado:** Fight ejecuta `Fighting → LostContact → Searching` con owner `Encounter → Search`, un `SearchAnchor` proyectado y congelado desde `LastKnownPosition`, una sola orden y percepción activa durante movimiento/inspección. Reacquire recorrió `0,642 m` y volvió `Search → Encounter` con el mismo threat y sin Ambient intermedio. Release recorrió `8 m`, llegó con error `0 m`, inspeccionó `0,8 s`, terminó `Idle/Ambient` y reanudó `0,501 m` físicos Ambient. Movimiento oculto no cambió anchor/destino; Avoid abrió `0` búsquedas; incapacidad dejó `Inactive`; target inválido abortó; `AttackCount` no avanzó sin percepción fresca.
 
 ## Fase 7 — Human debug actor + hitboxes anatómicos
 
