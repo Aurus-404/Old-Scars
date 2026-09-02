@@ -299,7 +299,7 @@ namespace OldScars.Core.Actors
             {
                 if (!hasLastKnownPosition)
                     return;
-                gaze.TryAttendLostContact(lastKnownPosition);
+                gaze.TryAttendLostContact(threat.ActorInstanceId, lastKnownPosition);
                 if (State != HumanEncounterAIState.LostContact)
                 {
                     IsClosingDistance = false;

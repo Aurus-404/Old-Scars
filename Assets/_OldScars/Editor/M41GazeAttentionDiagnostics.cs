@@ -26,6 +26,7 @@ namespace OldScars.Editor
         private static readonly List<Vector3> ambientDirections = new List<Vector3>(4);
         private static ActorRuntimeIdentity observer;
         private static ActorRuntimeIdentity target;
+        private static ActorRuntimeIdentity alternateTarget;
         private static ActorGazeController gaze;
         private static ActorBehaviorController behavior;
         private static ActorVisualPerceptionService perception;
@@ -40,8 +41,6 @@ namespace OldScars.Editor
         private static float candidateFinalError;
         private static float encounterInitialError;
         private static float encounterFinalError;
-        private static Vector3 lostKnownPosition;
-        private static Vector3 lostDesiredDirection;
         private static Vector3 inactiveDirection;
         private static int inactiveRevision;
         private static double deadline;
@@ -49,6 +48,24 @@ namespace OldScars.Editor
         private static int stage;
         private static float sameSeedYaw;
         private static float alternateSeedYaw;
+        private static Vector3 trackingDirection;
+        private static Vector3 candidatePredictionAtSample;
+        private static Vector3 candidatePredictionBetweenSamples;
+        private static Vector3 encounterPredictionAtSample;
+        private static Vector3 lostObservedPosition;
+        private static Vector3 lostObservedVelocity;
+        private static Vector3 expiredPredictionPoint;
+        private static Vector3 expiredDesiredDirection;
+        private static float trackingSampleDelta;
+        private static float trackingEstimatedSpeed;
+        private static float trackingInitialError;
+        private static float trackingFinalError;
+        private static float trackingRealTargetError;
+        private static float trackingMaximumAngularStep;
+        private static float trackingMaximumHorizon;
+        private static float trackingMaximumLead;
+        private static float predictionExpiryTravel;
+        private static bool targetSwitchReset;
 
         static M41GazeAttentionDiagnostics()
         {
@@ -126,6 +143,24 @@ namespace OldScars.Editor
             maximumAmbientBodyYaw = 0f;
             maximumAmbientAngularStep = 0f;
             maximumAmbientGazeChange = 0f;
+            trackingDirection = default;
+            candidatePredictionAtSample = default;
+            candidatePredictionBetweenSamples = default;
+            encounterPredictionAtSample = default;
+            lostObservedPosition = default;
+            lostObservedVelocity = default;
+            expiredPredictionPoint = default;
+            expiredDesiredDirection = default;
+            trackingSampleDelta = 0f;
+            trackingEstimatedSpeed = 0f;
+            trackingInitialError = 0f;
+            trackingFinalError = 0f;
+            trackingRealTargetError = 0f;
+            trackingMaximumAngularStep = 0f;
+            trackingMaximumHorizon = 0f;
+            trackingMaximumLead = 0f;
+            predictionExpiryTravel = 0f;
+            targetSwitchReset = false;
             initialPosition = observer.transform.position;
             initialBodyRotation = observer.transform.rotation;
             initialGaze = gaze.CurrentGazeDirection;
@@ -140,10 +175,13 @@ namespace OldScars.Editor
             {
                 case 1: ObserveIndependentAmbientGaze(); break;
                 case 2: ObserveCandidateConvergence(); break;
-                case 3: ObserveEncounterConvergence(); break;
-                case 4: ObserveLostContact(); break;
-                case 5: WaitForInactive(); break;
-                case 6: VerifyInactiveStability(); break;
+                case 3: ObserveCandidateTrackingBetweenSamples(); break;
+                case 4: CreateEncounterTrackingVelocity(); break;
+                case 5: ObserveEncounterTrackingBetweenSamples(); break;
+                case 6: ObserveLostContactPrediction(); break;
+                case 7: VerifyPredictionExpiry(); break;
+                case 8: WaitForInactive(); break;
+                case 9: VerifyInactiveStability(); break;
             }
         }
 
@@ -187,6 +225,12 @@ namespace OldScars.Editor
             Require(!gaze.TryAttendCandidate(rejected) && gaze.AttentionRevision == revisionBeforeRejected &&
                     Vector3.Angle(gaze.DesiredGazeDirection, desiredBeforeRejected) < 0.001f,
                 "Unperceived registry candidate changed gaze attention.");
+            ActorVisualPerceptionResult nonFinite = new ActorVisualPerceptionResult(
+                true, ActorVisualPerceptionReason.Perceived, observer.ActorInstanceId, target.ActorInstanceId,
+                new Vector3(float.NaN, 0f, 0f), 0f, 0f, null, double.NaN, default, null);
+            Require(!gaze.TryAttendCandidate(nonFinite) && gaze.TrackedTargetId == null &&
+                    gaze.AttentionRevision == revisionBeforeRejected,
+                "A non-finite perceived observation entered Candidate tracking history.");
 
             float candidateYaw = gaze.CurrentBodyRelativeYaw >= 0f ? -50f : 50f;
             Vector3 candidateDirection = Quaternion.AngleAxis(candidateYaw, Vector3.up) * bodyForward;
@@ -227,51 +271,155 @@ namespace OldScars.Editor
                 "Candidate gaze did not converge progressively toward the perceived observation.");
             candidateFinalError = gaze.AngularError;
 
-            Require(behavior.EnterEncounter("Gaze diagnostic Encounter"),
-                "Behavior rejected diagnostic Encounter ownership.");
             Vector3 bodyForward = FlatForward(observer.transform);
-            float encounterYaw = gaze.CurrentBodyRelativeYaw >= 0f ? -55f : 55f;
-            Vector3 encounterDirection = Quaternion.AngleAxis(encounterYaw, Vector3.up) * bodyForward;
-            Place(target, observer.transform.position + encounterDirection * 5f, Quaternion.identity);
+            trackingDirection = Vector3.Cross(Vector3.up, bodyForward).normalized;
+            Place(target, target.transform.position + trackingDirection * 0.8f, Quaternion.identity);
             Physics.SyncTransforms();
-            ActorVisualPerceptionResult perceived = perception.Evaluate(target);
-            Require(perceived.Perceived && gaze.TryAttendEncounter(perceived) &&
-                    gaze.Mode == ActorAttentionMode.Encounter,
-                "Encounter gaze did not accept a fresh legitimate observation.");
-            encounterInitialError = gaze.AngularError;
-            Require(encounterInitialError > 5f, "Encounter gaze snapped or lacked a useful convergence angle.");
-            lostKnownPosition = perceived.ObservedPosition;
+            ActorVisualPerceptionResult movedCandidate = perception.Evaluate(target);
+            Require(movedCandidate.Perceived && gaze.TryAttendCandidate(movedCandidate) &&
+                    gaze.TrackedTargetId == target.ActorInstanceId && gaze.HasObservedVelocity &&
+                    gaze.TrackedObservationSampleCount >= 2,
+                "Candidate tracking did not accept two real observations for the same TargetId.");
+            trackingSampleDelta = gaze.LastObservationDeltaSeconds;
+            trackingEstimatedSpeed = gaze.EstimatedObservedVelocity.magnitude;
+            trackingInitialError = gaze.AngularError;
+            candidatePredictionAtSample = gaze.PredictedAttentionPoint;
+            Require(Vector3.Dot(gaze.EstimatedObservedVelocity, trackingDirection) > 0f,
+                "Candidate observed velocity did not preserve lateral movement direction.");
+            Require(trackingSampleDelta >= gaze.MinimumValidObservationDelta &&
+                    trackingSampleDelta <= gaze.MaximumValidObservationDelta,
+                "Candidate observation delta escaped its accepted interval.");
+            Require(trackingEstimatedSpeed <= gaze.MaximumEstimatedSpeed + 0.001f,
+                "Candidate observed speed exceeded its configured cap.");
             SetStage(3, 1d);
         }
 
-        private static void ObserveEncounterConvergence()
+        private static void ObserveCandidateTrackingBetweenSamples()
         {
-            Require(gaze.Mode == ActorAttentionMode.Encounter,
-                "Encounter attention changed source unexpectedly.");
-            if (Time.timeAsDouble - stageStartedAt < 0.3d)
+            CaptureTrackingBounds();
+            if (Time.timeAsDouble - stageStartedAt < 0.15d)
                 return;
-            Require(gaze.AngularError < encounterInitialError - 8f,
-                "Encounter gaze did not converge progressively toward observed position.");
-            encounterFinalError = gaze.AngularError;
-            Require(gaze.TryAttendLostContact(lostKnownPosition) &&
-                    gaze.Mode == ActorAttentionMode.LostContact,
-                "LostContact gaze rejected legitimate LastKnownPosition.");
-            lostDesiredDirection = gaze.DesiredGazeDirection;
-            Place(target, observer.transform.position - FlatForward(observer.transform) * 6f, Quaternion.identity);
+            candidatePredictionBetweenSamples = gaze.PredictedAttentionPoint;
+            Require(Vector3.Dot(candidatePredictionBetweenSamples - candidatePredictionAtSample,
+                                gaze.EstimatedObservedVelocity.normalized) > 0.05f,
+                "Candidate predicted attention did not advance between perception samples.");
+            trackingFinalError = gaze.AngularError;
+            Require(trackingFinalError < trackingInitialError,
+                "Candidate gaze did not converge while predicted attention advanced between samples.");
+            Vector3 realTargetDirection = Vector3.ProjectOnPlane(
+                target.GetComponent<Collider>().bounds.center - observer.transform.position, Vector3.up).normalized;
+            trackingRealTargetError = Vector3.Angle(gaze.CurrentGazeDirection, realTargetDirection);
+
+            Vector3 bodyForward = FlatForward(observer.transform);
+            Vector3 switchPosition = target.transform.position;
+            Place(target, observer.transform.position - bodyForward * 8f, Quaternion.identity);
+            alternateTarget = Spawn(TargetProfile,
+                switchPosition,
+                Quaternion.identity, "M41.4 Diagnostic Alternate Tracking Target");
+            alternateTarget.GetComponent<ActorNavigationController>().Stop();
             Physics.SyncTransforms();
+            ActorVisualPerceptionResult switched = perception.Evaluate(alternateTarget);
+            Require(switched.Perceived && gaze.TryAttendCandidate(switched),
+                "Target-switch fixture did not produce a legitimate Candidate observation. " +
+                $"Reason={switched.Reason}; Angle={switched.HorizontalAngle:0.###}; " +
+                $"Observer={observer.transform.position}; Target={alternateTarget.transform.position}.");
+            targetSwitchReset = gaze.TrackedTargetId == alternateTarget.ActorInstanceId &&
+                                !gaze.HasObservedVelocity &&
+                                gaze.TrackedObservationSampleCount == 1 &&
+                                gaze.EstimatedObservedVelocity.sqrMagnitude < 0.000001f;
+            Require(targetSwitchReset,
+                "A new TargetId inherited temporal tracking state from the previous target.");
+
+            Require(behavior.EnterEncounter("Gaze diagnostic Encounter"),
+                "Behavior rejected diagnostic Encounter ownership.");
+            Require(gaze.TryAttendEncounter(switched) &&
+                    gaze.Mode == ActorAttentionMode.Encounter,
+                "Encounter gaze did not accept the switched target's legitimate observation.");
             SetStage(4, 1d);
         }
 
-        private static void ObserveLostContact()
+        private static void CreateEncounterTrackingVelocity()
         {
-            if (Time.timeAsDouble - stageStartedAt < 0.3d)
+            Require(gaze.Mode == ActorAttentionMode.Encounter,
+                "Encounter attention changed source unexpectedly.");
+            CaptureTrackingBounds();
+            if (Time.timeAsDouble - stageStartedAt < 0.2d)
                 return;
-            Vector3 hiddenActualDirection = Vector3.ProjectOnPlane(
-                target.GetComponent<Collider>().bounds.center - observer.transform.position, Vector3.up).normalized;
+
+            Place(alternateTarget, alternateTarget.transform.position + trackingDirection * 0.9f, Quaternion.identity);
+            Physics.SyncTransforms();
+            ActorVisualPerceptionResult movedEncounter = perception.Evaluate(alternateTarget);
+            Require(movedEncounter.Perceived && gaze.TryAttendEncounter(movedEncounter) &&
+                    gaze.TrackedTargetId == alternateTarget.ActorInstanceId && gaze.HasObservedVelocity &&
+                    gaze.TrackedObservationSampleCount >= 2,
+                "Encounter tracking did not estimate motion from legitimate same-target observations.");
+            trackingSampleDelta = gaze.LastObservationDeltaSeconds;
+            trackingEstimatedSpeed = gaze.EstimatedObservedVelocity.magnitude;
+            lostObservedPosition = gaze.LastObservedPosition;
+            lostObservedVelocity = gaze.EstimatedObservedVelocity;
+            encounterPredictionAtSample = gaze.PredictedAttentionPoint;
+            encounterInitialError = gaze.AngularError;
+            Require(Vector3.Dot(lostObservedVelocity, trackingDirection) > 0f,
+                "Encounter observed velocity did not preserve lateral movement direction.");
+            SetStage(5, 1d);
+        }
+
+        private static void ObserveEncounterTrackingBetweenSamples()
+        {
+            CaptureTrackingBounds();
+            if (Time.timeAsDouble - stageStartedAt < 0.15d)
+                return;
+            Require(Vector3.Dot(gaze.PredictedAttentionPoint - encounterPredictionAtSample,
+                                lostObservedVelocity.normalized) > 0.05f,
+                "Encounter predicted attention did not continue between perception samples.");
+            encounterFinalError = gaze.AngularError;
+            Require(encounterFinalError < encounterInitialError,
+                "Encounter gaze did not converge progressively during continuous tracking.");
+            Require(gaze.TryAttendLostContact(alternateTarget.ActorInstanceId, lostObservedPosition) &&
+                    gaze.Mode == ActorAttentionMode.LostContact,
+                "LostContact gaze rejected retained observed history.");
+            Place(alternateTarget,
+                observer.transform.position - FlatForward(observer.transform) * 8f - trackingDirection * 4f,
+                Quaternion.identity);
+            Physics.SyncTransforms();
+            SetStage(6, 1d);
+        }
+
+        private static void ObserveLostContactPrediction()
+        {
+            CaptureTrackingBounds();
+            if (Time.timeAsDouble - gaze.LastObservationTime <= gaze.MaximumPredictionHorizon + 0.05d)
+                return;
+            Vector3 expectedLead = Vector3.ClampMagnitude(
+                lostObservedVelocity * gaze.MaximumPredictionHorizon, gaze.MaximumPredictionLead);
+            Vector3 expectedPoint = lostObservedPosition + expectedLead;
             Require(gaze.Mode == ActorAttentionMode.LostContact &&
-                    Vector3.Angle(gaze.DesiredGazeDirection, lostDesiredDirection) < 0.001f &&
-                    Vector3.Angle(gaze.DesiredGazeDirection, hiddenActualDirection) > 20f,
-                "LostContact gaze followed hidden target position instead of retained LastKnownPosition.");
+                    !gaze.IsPredictionActive &&
+                    Mathf.Abs(gaze.CurrentPredictionHorizonSeconds - gaze.MaximumPredictionHorizon) < 0.001f &&
+                    Vector3.Distance(gaze.PredictedAttentionPoint, expectedPoint) < 0.01f,
+                "LostContact prediction did not expire at the bounded observed-history point.");
+            Require(Vector3.Distance(gaze.PredictedAttentionPoint,
+                        alternateTarget.GetComponent<Collider>().bounds.center) > 2f,
+                "LostContact prediction followed the target's hidden real position.");
+            expiredPredictionPoint = gaze.PredictedAttentionPoint;
+            expiredDesiredDirection = gaze.DesiredGazeDirection;
+            Place(alternateTarget,
+                observer.transform.position - FlatForward(observer.transform) * 10f + trackingDirection * 6f,
+                Quaternion.identity);
+            Physics.SyncTransforms();
+            SetStage(7, 1d);
+        }
+
+        private static void VerifyPredictionExpiry()
+        {
+            CaptureTrackingBounds();
+            if (Time.timeAsDouble - stageStartedAt < 0.2d)
+                return;
+            predictionExpiryTravel = Vector3.Distance(expiredPredictionPoint, gaze.PredictedAttentionPoint);
+            Require(predictionExpiryTravel < 0.001f &&
+                    Vector3.Angle(expiredDesiredDirection, gaze.DesiredGazeDirection) < 0.001f &&
+                    !gaze.IsPredictionActive,
+                "Expired LostContact prediction continued extrapolating or followed hidden motion.");
 
             ActorMedicalStateComponent medical = observer.GetComponent<ActorMedicalStateComponent>();
             Require(medical.TryApplyWound(IncapacitatedWoundA, BodyRegion.Head, WoundType.Blunt,
@@ -281,7 +429,7 @@ namespace OldScars.Editor
                 "Could not create diagnostic incapacity: " + failure);
             Require(observer.GetComponent<ActorConditionComponent>().IsUnconscious,
                 "Gaze incapacity fixture did not become Unconscious.");
-            SetStage(5, 2d);
+            SetStage(8, 2d);
         }
 
         private static void WaitForInactive()
@@ -290,7 +438,9 @@ namespace OldScars.Editor
                 return;
             inactiveDirection = gaze.CurrentGazeDirection;
             inactiveRevision = gaze.AttentionRevision;
-            SetStage(6, 1d);
+            Require(!gaze.IsPredictionActive && gaze.TrackedTargetId == null && !gaze.HasObservedVelocity,
+                "Inactive gaze retained active temporal tracking state.");
+            SetStage(9, 1d);
         }
 
         private static void VerifyInactiveStability()
@@ -300,7 +450,8 @@ namespace OldScars.Editor
             Require(gaze.Mode == ActorAttentionMode.Inactive && behavior.Owner == ActorBehaviorOwner.Inactive &&
                     gaze.AttentionRevision == inactiveRevision &&
                     Vector3.Angle(gaze.CurrentGazeDirection, inactiveDirection) < 0.001f &&
-                    gaze.LastAngularStepDegrees == 0f,
+                    gaze.LastAngularStepDegrees == 0f && !gaze.IsPredictionActive &&
+                    gaze.TrackedTargetId == null && !gaze.HasObservedVelocity,
                 "Inactive gaze changed direction/source or disturbed Behavior ownership.");
             Debug.Log(
                 "M41 Gaze & Attention Diagnostics: PASS\n" +
@@ -310,10 +461,33 @@ namespace OldScars.Editor
                 $"- Initial facing determinism: same seed yaw={sameSeedYaw:0.###}deg; alternate seed yaw={alternateSeedYaw:0.###}deg\n" +
                 $"- Candidate convergence: {candidateInitialError:0.###} -> {candidateFinalError:0.###}deg; " +
                 $"Encounter convergence: {encounterInitialError:0.###} -> {encounterFinalError:0.###}deg\n" +
+                $"- Continuous tracking: sample delta={trackingSampleDelta:0.###}s; " +
+                $"velocity={lostObservedVelocity}; speed={trackingEstimatedSpeed:0.###}m/s; " +
+                $"horizon={trackingMaximumHorizon:0.###}/{gaze.MaximumPredictionHorizon:0.###}s; " +
+                $"lead={trackingMaximumLead:0.###}/{gaze.MaximumPredictionLead:0.###}m\n" +
+                $"- Tracking error: {trackingInitialError:0.###} -> {trackingFinalError:0.###}deg; " +
+                $"real-target diagnostic error={trackingRealTargetError:0.###}deg; " +
+                $"max angular step={trackingMaximumAngularStep:0.###}deg\n" +
+                $"- Target switch reset={targetSwitchReset}; prediction expiry travel={predictionExpiryTravel:0.######}m\n" +
                 "- Candidate/Encounter rejected cross-observer results; Encounter used own Perceived observation\n" +
-                "- LostContact retained LastKnownPosition; Inactive remained stable\n" +
+                "- LostContact used only bounded observed history; hidden target motion was ignored; Inactive cleared tracking\n" +
                 "- Production ActorVisualPerceptionService remained body-forward");
             CompleteRun();
+        }
+
+        private static void CaptureTrackingBounds()
+        {
+            trackingMaximumAngularStep = Mathf.Max(trackingMaximumAngularStep, gaze.LastAngularStepDegrees);
+            trackingMaximumHorizon = Mathf.Max(trackingMaximumHorizon, gaze.CurrentPredictionHorizonSeconds);
+            trackingMaximumLead = Mathf.Max(trackingMaximumLead, gaze.CurrentPredictionLeadDistance);
+            Require(gaze.LastAngularStepDegrees <= gaze.AngularSpeed * Time.deltaTime + 0.15f,
+                "Continuous tracking exceeded the gaze angular-step limit.");
+            Require(gaze.CurrentPredictionHorizonSeconds <= gaze.MaximumPredictionHorizon + 0.001f,
+                "Prediction horizon exceeded its explicit cap.");
+            Require(gaze.CurrentPredictionLeadDistance <= gaze.MaximumPredictionLead + 0.001f,
+                "Prediction lead exceeded its explicit cap.");
+            Require(gaze.EstimatedObservedVelocity.magnitude <= gaze.MaximumEstimatedSpeed + 0.001f,
+                "Observed velocity exceeded its explicit cap.");
         }
 
         private static ActorRuntimeIdentity Spawn(string profile, Vector3 position, Quaternion rotation, string name)
@@ -381,6 +555,7 @@ namespace OldScars.Editor
             SessionState.EraseString(ErrorKey);
             observer = null;
             target = null;
+            alternateTarget = null;
             gaze = null;
             behavior = null;
             perception = null;

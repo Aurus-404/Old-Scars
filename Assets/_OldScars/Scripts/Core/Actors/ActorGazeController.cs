@@ -27,6 +27,13 @@ namespace OldScars.Core.Actors
         private const float MaximumAmbientHoldSeconds = 2.4f;
         private const float CandidateHoldSeconds = 0.75f;
         private const float InitialAmbientDelaySeconds = 0.35f;
+        private const float MinimumObservationDeltaSeconds = 0.04f;
+        private const float MaximumObservationDeltaSeconds = 0.75f;
+        private const float MaximumEstimatedObservedSpeed = 8f;
+        private const float MaximumAcceptedRawObservedSpeed = 16f;
+        private const float PredictionLookAheadSeconds = 0.12f;
+        private const float MaximumPredictionHorizonSeconds = 0.35f;
+        private const float MaximumPredictionLeadDistance = 1.5f;
 
         private ActorRuntimeIdentity identity;
         private ActorConditionComponent condition;
@@ -36,6 +43,12 @@ namespace OldScars.Core.Actors
         private long ambientSequence;
         private float nextAmbientDecisionTime;
         private float candidateExpiresAt;
+        private string trackedTargetId;
+        private Vector3 lastObservedPosition;
+        private Vector3 estimatedObservedVelocity;
+        private double lastObservationTime = double.NegativeInfinity;
+        private bool hasObservedVelocity;
+        private int trackedObservationSampleCount;
 
         public ActorAttentionMode Mode { get; private set; } = ActorAttentionMode.Inactive;
         public Vector3 CurrentGazeDirection { get; private set; } = Vector3.forward;
@@ -48,6 +61,25 @@ namespace OldScars.Core.Actors
         public int AttentionRevision { get; private set; }
         public int AmbientDecisionCount { get; private set; }
         public bool IsConfigured => configured;
+        public string TrackedTargetId => trackedTargetId;
+        public Vector3 LastObservedPosition => lastObservedPosition;
+        public Vector3 EstimatedObservedVelocity => estimatedObservedVelocity;
+        public Vector3 PredictedAttentionPoint { get; private set; }
+        public bool HasObservedVelocity => hasObservedVelocity;
+        public bool IsPredictionActive { get; private set; }
+        public double LastObservationTime => lastObservationTime;
+        public float LastObservationDeltaSeconds { get; private set; }
+        public float CurrentPredictionHorizonSeconds { get; private set; }
+        public float CurrentPredictionLeadDistance { get; private set; }
+        public int TrackedObservationSampleCount => trackedObservationSampleCount;
+        public int TrackingRevision { get; private set; }
+        public float MinimumValidObservationDelta => MinimumObservationDeltaSeconds;
+        public float MaximumValidObservationDelta => MaximumObservationDeltaSeconds;
+        public float MaximumEstimatedSpeed => MaximumEstimatedObservedSpeed;
+        public float MaximumAcceptedRawSpeed => MaximumAcceptedRawObservedSpeed;
+        public float PredictionLookAhead => PredictionLookAheadSeconds;
+        public float MaximumPredictionHorizon => MaximumPredictionHorizonSeconds;
+        public float MaximumPredictionLead => MaximumPredictionLeadDistance;
 
         private void Awake()
         {
@@ -80,6 +112,10 @@ namespace OldScars.Core.Actors
                     SelectNextAmbientDirection();
             }
 
+            if (Mode == ActorAttentionMode.Candidate || Mode == ActorAttentionMode.Encounter ||
+                Mode == ActorAttentionMode.LostContact)
+                UpdatePredictedAttention(Time.timeAsDouble);
+
             DesiredGazeDirection = ClampToBody(DesiredGazeDirection);
             CurrentGazeDirection = ClampToBody(CurrentGazeDirection);
             Vector3 previous = CurrentGazeDirection;
@@ -101,6 +137,7 @@ namespace OldScars.Core.Actors
             DesiredGazeDirection = forward;
             candidateExpiresAt = 0f;
             nextAmbientDecisionTime = Time.time + InitialAmbientDelaySeconds;
+            ClearTrackingHistory();
             SetMode(CanAct() ? ActorAttentionMode.Ambient : ActorAttentionMode.Inactive);
         }
 
@@ -116,7 +153,8 @@ namespace OldScars.Core.Actors
             if (!CanAct() || behavior?.Owner != ActorBehaviorOwner.Ambient ||
                 !IsOwnPerceivedObservation(observation))
                 return false;
-            if (!TrySetObservedDirection(observation.ObservedPosition, ActorAttentionMode.Candidate))
+            if (!AcceptObservedTrackingSample(observation, Time.timeAsDouble) ||
+                !TrySetAttentionPoint(PredictedAttentionPoint, ActorAttentionMode.Candidate))
                 return false;
             candidateExpiresAt = Time.time + CandidateHoldSeconds;
             return true;
@@ -127,14 +165,22 @@ namespace OldScars.Core.Actors
             ResolveReferences();
             return CanAct() && behavior?.Owner == ActorBehaviorOwner.Encounter &&
                    IsOwnPerceivedObservation(observation) &&
-                   TrySetObservedDirection(observation.ObservedPosition, ActorAttentionMode.Encounter);
+                   AcceptObservedTrackingSample(observation, Time.timeAsDouble) &&
+                   TrySetAttentionPoint(PredictedAttentionPoint, ActorAttentionMode.Encounter);
         }
 
-        public bool TryAttendLostContact(Vector3 lastKnownPosition)
+        public bool TryAttendLostContact(string targetId, Vector3 lastKnownPosition)
         {
             ResolveReferences();
-            return CanAct() && behavior?.Owner == ActorBehaviorOwner.Encounter &&
-                   TrySetObservedDirection(lastKnownPosition, ActorAttentionMode.LostContact);
+            if (!CanAct() || behavior?.Owner != ActorBehaviorOwner.Encounter ||
+                string.IsNullOrWhiteSpace(targetId) || !Finite(lastKnownPosition))
+                return false;
+            if (!string.Equals(trackedTargetId, targetId, System.StringComparison.Ordinal))
+                ResetTrackingToRetainedPosition(targetId, lastKnownPosition);
+            else
+                lastObservedPosition = lastKnownPosition;
+            UpdatePredictedAttention(Time.timeAsDouble);
+            return TrySetAttentionPoint(PredictedAttentionPoint, ActorAttentionMode.LostContact);
         }
 
         public void ReleaseEncounterAttention()
@@ -153,13 +199,16 @@ namespace OldScars.Core.Actors
         {
             if (Mode == ActorAttentionMode.Inactive)
                 return;
+            ClearTrackingHistory();
             SetMode(ActorAttentionMode.Inactive);
             LastAngularStepDegrees = 0f;
         }
 
-        private bool TrySetObservedDirection(Vector3 observedPosition, ActorAttentionMode mode)
+        private bool TrySetAttentionPoint(Vector3 attentionPoint, ActorAttentionMode mode)
         {
-            Vector3 direction = Vector3.ProjectOnPlane(observedPosition - transform.position, Vector3.up);
+            if (!Finite(attentionPoint))
+                return false;
+            Vector3 direction = Vector3.ProjectOnPlane(attentionPoint - transform.position, Vector3.up);
             if (direction.sqrMagnitude <= 0.000001f)
                 return false;
             DesiredGazeDirection = ClampToBody(direction.normalized);
@@ -171,8 +220,139 @@ namespace OldScars.Core.Actors
         {
             return observation.Perceived && identity != null &&
                    observation.ObserverId == identity.ActorInstanceId &&
+                   !string.IsNullOrWhiteSpace(observation.TargetId) &&
                    Finite(observation.ObservedPosition);
         }
+
+        private bool AcceptObservedTrackingSample(ActorVisualPerceptionResult observation, double receivedTime)
+        {
+            if (!Finite(receivedTime))
+                return false;
+            if (!string.Equals(trackedTargetId, observation.TargetId, System.StringComparison.Ordinal))
+            {
+                ResetTrackingToObservation(observation.TargetId, observation.ObservedPosition, receivedTime);
+                return true;
+            }
+
+            double elapsed = receivedTime - lastObservationTime;
+            if (elapsed < MinimumObservationDeltaSeconds)
+            {
+                if ((observation.ObservedPosition - lastObservedPosition).sqrMagnitude > 0.000001f)
+                    ResetTrackingToObservation(observation.TargetId, observation.ObservedPosition, receivedTime);
+                else
+                    UpdatePredictedAttention(receivedTime);
+                return true;
+            }
+            if (elapsed > MaximumObservationDeltaSeconds || double.IsNaN(elapsed) || double.IsInfinity(elapsed))
+            {
+                ResetTrackingToObservation(observation.TargetId, observation.ObservedPosition, receivedTime);
+                return true;
+            }
+
+            Vector3 displacement = Vector3.ProjectOnPlane(
+                observation.ObservedPosition - lastObservedPosition, Vector3.up);
+            float deltaSeconds = (float)elapsed;
+            Vector3 rawVelocity = displacement / deltaSeconds;
+            if (!Finite(rawVelocity) || rawVelocity.magnitude > MaximumAcceptedRawObservedSpeed)
+            {
+                ResetTrackingToObservation(observation.TargetId, observation.ObservedPosition, receivedTime);
+                return true;
+            }
+
+            estimatedObservedVelocity = Vector3.ClampMagnitude(rawVelocity, MaximumEstimatedObservedSpeed);
+            hasObservedVelocity = true;
+            lastObservedPosition = observation.ObservedPosition;
+            lastObservationTime = receivedTime;
+            LastObservationDeltaSeconds = deltaSeconds;
+            trackedObservationSampleCount++;
+            TrackingRevision++;
+            UpdatePredictedAttention(receivedTime);
+            return true;
+        }
+
+        private void UpdatePredictedAttention(double now)
+        {
+            if (string.IsNullOrWhiteSpace(trackedTargetId))
+                return;
+            if (!hasObservedVelocity || double.IsNegativeInfinity(lastObservationTime))
+            {
+                PredictedAttentionPoint = lastObservedPosition;
+                CurrentPredictionHorizonSeconds = 0f;
+                CurrentPredictionLeadDistance = 0f;
+                IsPredictionActive = false;
+                SetDesiredDirectionFromAttentionPoint(PredictedAttentionPoint);
+                return;
+            }
+
+            float observationAge = Mathf.Max(0f, (float)(now - lastObservationTime));
+            float requestedHorizon = observationAge + PredictionLookAheadSeconds;
+            float horizon = Mathf.Min(requestedHorizon, MaximumPredictionHorizonSeconds);
+            Vector3 lead = Vector3.ClampMagnitude(
+                estimatedObservedVelocity * horizon, MaximumPredictionLeadDistance);
+            PredictedAttentionPoint = lastObservedPosition + lead;
+            CurrentPredictionHorizonSeconds = horizon;
+            CurrentPredictionLeadDistance = lead.magnitude;
+            IsPredictionActive = requestedHorizon < MaximumPredictionHorizonSeconds &&
+                                 lead.sqrMagnitude > 0.000001f;
+            SetDesiredDirectionFromAttentionPoint(PredictedAttentionPoint);
+        }
+
+        private void SetDesiredDirectionFromAttentionPoint(Vector3 attentionPoint)
+        {
+            Vector3 direction = Vector3.ProjectOnPlane(attentionPoint - transform.position, Vector3.up);
+            if (direction.sqrMagnitude > 0.000001f)
+                DesiredGazeDirection = ClampToBody(direction.normalized);
+        }
+
+        private void ResetTrackingToObservation(string targetId, Vector3 observedPosition, double receivedTime)
+        {
+            trackedTargetId = targetId;
+            lastObservedPosition = observedPosition;
+            estimatedObservedVelocity = Vector3.zero;
+            lastObservationTime = receivedTime;
+            hasObservedVelocity = false;
+            trackedObservationSampleCount = 1;
+            LastObservationDeltaSeconds = 0f;
+            PredictedAttentionPoint = observedPosition;
+            CurrentPredictionHorizonSeconds = 0f;
+            CurrentPredictionLeadDistance = 0f;
+            IsPredictionActive = false;
+            TrackingRevision++;
+        }
+
+        private void ResetTrackingToRetainedPosition(string targetId, Vector3 retainedPosition)
+        {
+            trackedTargetId = targetId;
+            lastObservedPosition = retainedPosition;
+            estimatedObservedVelocity = Vector3.zero;
+            lastObservationTime = double.NegativeInfinity;
+            hasObservedVelocity = false;
+            trackedObservationSampleCount = 0;
+            LastObservationDeltaSeconds = 0f;
+            PredictedAttentionPoint = retainedPosition;
+            CurrentPredictionHorizonSeconds = 0f;
+            CurrentPredictionLeadDistance = 0f;
+            IsPredictionActive = false;
+            TrackingRevision++;
+        }
+
+        private void ClearTrackingHistory()
+        {
+            trackedTargetId = null;
+            lastObservedPosition = default;
+            estimatedObservedVelocity = Vector3.zero;
+            lastObservationTime = double.NegativeInfinity;
+            hasObservedVelocity = false;
+            trackedObservationSampleCount = 0;
+            LastObservationDeltaSeconds = 0f;
+            PredictedAttentionPoint = default;
+            CurrentPredictionHorizonSeconds = 0f;
+            CurrentPredictionLeadDistance = 0f;
+            IsPredictionActive = false;
+            TrackingRevision++;
+        }
+
+        private static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
 
         private static bool Finite(Vector3 value) =>
             !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
@@ -181,6 +361,7 @@ namespace OldScars.Core.Actors
 
         private void EnterAmbient(bool delayNextDecision)
         {
+            ClearTrackingHistory();
             SetMode(ActorAttentionMode.Ambient);
             candidateExpiresAt = 0f;
             if (delayNextDecision)
