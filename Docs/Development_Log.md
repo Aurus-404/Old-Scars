@@ -3492,3 +3492,24 @@ Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
 - `git diff --check`: `PASS`.
 
 La revisión final corrigió `ISSUE-0018`: el gate Inactive confundía desplazamiento permitido del physical collapse con locomoción de Behavior. Ahora prueba el delta de recorrido Ambient junto con ownership, revisions, acquisition, attack y Navigation, y conserva el desplazamiento físico como dato informativo. `ISSUE-0005` queda resuelto; `ISSUE-0004` permanece abierto hasta Fase 5 e `ISSUE-0006` hasta Fase 4. La aceptación visual/manual de F6 no fue ejecutada ni sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.
+
+### NPC AI Sanitation — Fase 4 Continuous Visual Tracking
+
+Fecha: 2026-09-02.
+
+Estado: `VALIDATED — PHASE 4 LOGICAL TRACKING COMPLETE`.
+
+`ActorGazeController` conserva memoria efímera por `TargetId` exclusivamente desde `ActorVisualPerceptionResult.Perceived` del mismo observer y posición finita. Dos observaciones entre `0,04–0,75 s` estiman velocidad horizontal; se limita a `8 m/s` y una velocidad cruda superior a `16 m/s` resetea la muestra. El punto de atención usa look-ahead base `0,12 s`, horizonte total máximo `0,35 s` y lead máximo `1,5 m`; continúa avanzando brevemente en `Update` sin consultar el target entre samples. Cambiar `TargetId`, timing inválido, Ambient o Inactive limpia la historia correspondiente.
+
+Candidate y Encounter reutilizan el mismo historial. LostContact recibe el `TargetId` y `LastKnownPosition`, conserva únicamente la última velocidad observada, alcanza el límite predictivo y se congela; mover dos veces el actor oculto no altera el resultado. `HumanEncounterAIController` sólo cambió esa entrega de identidad temporal. No se modificaron `ActorVisualPerceptionService`, aim/spread/`CurrentAimPoint`, `WeaponCombatService`, `PhysicalShotPathResolver`, Navigation, acquisition, Behavior ownership ni persistence. Production perception sigue evaluando FOV con `transform.forward`; Fase 5 permanece separada.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
+
+- Runtime compile y Editor compile: `PASS`; warnings preexistentes separados;
+- `M41 Gaze & Attention Diagnostics: PASS`: sample `0,2 s`, velocity `(0,00, 0,00, -4,49)` / `4,491 m/s`, horizonte `0,35/0,35 s`, lead `1,5/1,5 m`, error Candidate tracking `52,993° → 41,476°`, error al target real diagnóstico `37,703°`, step máximo `0,177°`, target-switch reset `True`, expiry travel `0 m`, cross-observer/non-finite rejection, hidden motion ignorado e Inactive sin tracking;
+- `M41 Sandbox Preparation Diagnostics: PASS`: Blue/Red/White `0,751 m`, `Ambient → Encounter → Ambient`, Inactive estable sin threat/navigation/attack;
+- `M41 Progressive Visual Recognition Diagnostics: PASS`: Near `0,329 s`, Far `1,102 s`, target oculto movido `4,005 m` sin alterar `LastKnownPosition`;
+- `M41.1 Human Encounter AI Diagnostics: PASS`;
+- `git diff --check`: `PASS`.
+
+`ISSUE-0006` permanece `CONFIRMED`: la capacidad lógica de tracking está implementada, pero el síntoma productivo lateral no puede cerrarse hasta que Fase 5 conecte perception con gaze y pase la regresión integrada. No aparecieron issues nuevos de runtime; dos fallos iniciales del diagnostic fueron una oclusión de la segunda fixture y se corrigieron sólo en el harness. No se ejecutó aceptación visual/manual ni se declara sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.

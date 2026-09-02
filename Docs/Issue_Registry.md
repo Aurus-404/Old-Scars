@@ -140,12 +140,12 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Momento de descubrimiento:** jugador desplazándose lateralmente frente a NPC hostil
 - **Síntoma observado:** al moverse el objetivo hacia un costado, el NPC puede perderlo y tardar en reencontrarlo en vez de tratar de mantenerlo dentro de la mirada.
 - **Evidencia:** observación manual.
-- **Causa confirmada o hipótesis:** atención/percepción centrada en el forward corporal sin tracking visual continuo.
+- **Causa confirmada o hipótesis:** Fase 4 corrigió la ausencia de tracking lógico continuo: Gaze ya estima movimiento observado por `TargetId` y predice brevemente. El síntoma productivo permanece porque perception todavía decide visibilidad desde el forward corporal y puede dejar de entregar samples antes de que gaze ayude a conservar el target.
 - **Sistemas afectados:** gaze, perception, combat targeting.
-- **Solución prevista:** Fase 4: seguimiento visual continuo y predicción corta basada en movimiento observado, con velocidad angular limitada.
+- **Solución prevista:** completar Fase 5 conectando el FOV productivo con gaze y ejecutar una regresión integrada de movimiento lateral, occlusion y pérdida física de contacto.
 - **Commit de corrección:** pendiente.
-- **Validación:** un objetivo móvil visible debe ser seguido de forma continua; movimientos extremos aún pueden romper contacto.
-- **Notas:** Fase 3 agregó gaze lógico con velocidad angular limitada, pero no tracking continuo, predicción ni intercepción. ISSUE permanece abierto para Fase 4; no confundir con intercepción balística completa.
+- **Validación:** avance Fase 4 en `e72feeb67edfe9b208eefa4d4c6c13f488df62cc`: Runtime/Editor compile `PASS`; `M41 Gaze & Attention Diagnostics: PASS` con sample `0,2 s`, velocidad lateral `4,491 m/s`, horizonte `0,35 s`, lead `1,5 m`, error `52,993° → 41,476°`, target-switch reset, hidden motion ignorado y expiry `0 m`; Sandbox Preparation, Progressive Recognition y Human Encounter AI `PASS`. Falta validación productiva FOV→Gaze de Fase 5.
+- **Notas:** ISSUE permanece `CONFIRMED`; Fase 4 implementó capacidad lógica sin modificar aim, disparos ni percepción. No confundir gaze prediction con ballistic lead o intercepción.
 
 ## ISSUE-0007 — LostContact no ejecuta una búsqueda real
 

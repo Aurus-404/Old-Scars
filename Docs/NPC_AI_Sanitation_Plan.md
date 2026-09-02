@@ -103,9 +103,11 @@ Gaze no duplica LOS/perception ni crea un segundo sistema de raycasts.
 
 ## Fase 4 — Tracking visual continuo
 
+**Estado:** `COMPLETADA — 2026-09-02` (`e72feeb67edfe9b208eefa4d4c6c13f488df62cc`).
+
 Usar movimiento observado reciente para una predicción visual corta, limitada y humana. El objetivo es mantener la mirada sobre un target que se desplaza, especialmente lateralmente, sin snap instantáneo ni conocimiento mágico.
 
-**Gate:** target visible móvil es seguido de forma continua; movimientos rápidos, obstáculos o cruce por detrás todavía pueden romper contacto.
+**Gate cerrado:** dos observaciones legítimas del mismo `TargetId` producen velocidad horizontal acotada y un punto de atención que avanza entre samples durante un horizonte máximo de `0,35 s`, con lead máximo `1,5 m`. Cambiar target o recibir timing/movimiento absurdo resetea la historia; LostContact sólo extrapola la última historia observada y luego se congela; Inactive la elimina. El diagnostic midió `4,491 m/s`, error `52,993° → 41,476°`, step máximo `0,177°`, target-switch reset y `0 m` de deriva después de expiry. Production FOV continúa body-forward y el cierre productivo de tracking permanece en Fase 5.
 
 ## Fase 5 — Perception integrada con Gaze
 
