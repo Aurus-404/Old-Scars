@@ -86,6 +86,8 @@ No aceptar una solución basada en proliferación de flags de ownership.
 
 ## Fase 3 — Orientación inicial + Gaze/Attention V1
 
+**Estado:** `COMPLETADA — 2026-09-02` (`e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509`).
+
 Separar locomotion/body facing de atención visual.
 
 Una autoridad mínima de gaze debe permitir:
@@ -97,7 +99,7 @@ Una autoridad mínima de gaze debe permitir:
 
 Gaze no duplica LOS/perception ni crea un segundo sistema de raycasts.
 
-**Gate:** un NPC quieto no funciona como tanque inmóvil ni radar 360°.
+**Gate cerrado:** `ActorGazeController` mantiene dirección lógica acotada a `65°` respecto del cuerpo y `90°/s`; Ambient recorrió dos direcciones sin mover ni rotar el root, Candidate/Encounter aceptaron sólo observaciones `Perceived` del mismo observer, LostContact conservó `LastKnownPosition` e Inactive quedó estable. El yaw inicial del sandbox es determinista por seed. `ActorVisualPerceptionService` continúa usando body facing; su integración con gaze permanece reservada para Fase 5.
 
 ## Fase 4 — Tracking visual continuo
 

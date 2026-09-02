@@ -3471,3 +3471,24 @@ Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
 - `git diff --check`: `PASS`.
 
 Una regresión adicional de `M41NpcSandboxDiagnostics` llegó más allá del gate de roaming y falló en su fixture preexistente de combate: el headshot inicial mató al actor y el segundo disparo LeftLeg fue correctamente rechazado por estar Dead. Se registró como `ISSUE-0017`, fuera del alcance de Fase 2; no se cambió combat, medical ni balance. `ProjectSettings.runInBackground` permanece como cambio local user-owned, unstaged y fuera de los commits.
+
+### NPC AI Sanitation — Fase 3 Orientación Inicial + Gaze/Attention V1
+
+Fecha: 2026-09-02.
+
+Estado: `VALIDATED — PHASE 3 COMPLETE`.
+
+`ActorGazeController` introduce una autoridad lógica efímera por actor separada de Navigation, body facing, perception, target acquisition, combat y behavior ownership. Mantiene gaze actual/deseado con yaw corporal máximo `65°` y velocidad angular `90°/s`. Ambient elige direcciones y pausas deterministas/acotadas; Candidate y Encounter consumen sólo `ActorVisualPerceptionResult.Perceived` del mismo `ObserverId` con posición finita; LostContact consume el `LastKnownPosition` retenido; incapacidad/death congela el modo `Inactive`. El sandbox deriva yaw inicial determinista por seed en vez de usar `Quaternion.identity` común. F6 sólo lee modo/yaw/error y representa la dirección lógica.
+
+La percepción productiva no cambió: `ActorVisualPerceptionService` continúa evaluando FOV con `transform.forward`. No se implementaron Fase 4 (tracking/predicción/intercepción) ni Fase 5 (FOV→Gaze). La regresión cross-observer demuestra que una percepción legítima de NPC A no puede orientar Candidate ni Encounter de NPC B.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
+
+- Runtime compile y Editor compile: `PASS`; sólo warnings preexistentes de APIs obsoletas/campos no usados;
+- `M41 Gaze & Attention Diagnostics: PASS`: dos direcciones Ambient, cambio/yaw máximo `22,996°`, step máximo `0,136°`, yaw inicial reproducible `113,58°` y alterno `130,847°`, convergencia Candidate `72,959° → 45,92°` y Encounter `59,08° → 32,071°`, rechazo cross-observer, LostContact por posición conocida e Inactive estable;
+- `M41 Sandbox Preparation Diagnostics: PASS`: Blue/Red/White `0,751 m`, reanudación Red `0,751 m`, Inactive con delta Ambient `0 m` y physical collapse `0,026 m` sin navegación/ataque;
+- `M41 Progressive Visual Recognition Diagnostics: PASS`;
+- `M41.1 Human Encounter AI Diagnostics: PASS`;
+- `git diff --check`: `PASS`.
+
+La revisión final corrigió `ISSUE-0018`: el gate Inactive confundía desplazamiento permitido del physical collapse con locomoción de Behavior. Ahora prueba el delta de recorrido Ambient junto con ownership, revisions, acquisition, attack y Navigation, y conserva el desplazamiento físico como dato informativo. `ISSUE-0005` queda resuelto; `ISSUE-0004` permanece abierto hasta Fase 5 e `ISSUE-0006` hasta Fase 4. La aceptación visual/manual de F6 no fue ejecutada ni sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.

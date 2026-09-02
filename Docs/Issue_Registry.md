@@ -106,29 +106,29 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Momento de descubrimiento:** observación de NPCs recién spawneados
 - **Síntoma observado:** un NPC que aparece orientado en dirección contraria puede no detectar actores cercanos porque permanece mirando al frente hasta que otra conducta lo hace moverse.
 - **Evidencia:** observación manual.
-- **Causa confirmada o hipótesis:** la percepción usa el facing/forward actual y no existe todavía una capa autónoma de gaze/attention/idle scanning.
+- **Causa confirmada o hipótesis:** la percepción productiva usa el facing/forward corporal actual. Fase 3 ya agregó gaze/attention/idle scanning lógico e inicialización de yaw, pero todavía no conectó ese gaze al FOV productivo.
 - **Sistemas afectados:** perception, spawn presentation, AI attention.
-- **Solución prevista:** Fases 3–5: orientación inicial razonable más `Gaze/Attention V1`; no resolver dando visión 360°.
+- **Solución prevista:** Fase 5: integrar `ActorVisualPerceptionService` con la dirección de gaze apropiada y conservar límites humanos; no resolver dando visión 360°.
 - **Commit de corrección:** pendiente.
 - **Validación:** un NPC Idle debe explorar visualmente su entorno con límites humanos sin necesitar movimiento locomotor.
-- **Notas:** la orientación aleatoria de spawn no es por sí sola un bug; el defecto es quedar funcionalmente ciego por depender exclusivamente de ella.
+- **Notas:** Fase 3 (`e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509`) reemplazó `Quaternion.identity` común por yaw determinista por seed y agregó scanning lógico, pero el defecto productivo permanece abierto hasta Fase 5 porque perception sigue usando `transform.forward`.
 
 ## ISSUE-0005 — Falta una autoridad de Gaze/Attention humana
 
 - **Tipo:** `DESIGN_DEBT`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** Prueba 2 manual integrada
 - **Momento de descubrimiento:** observación de NPC quieto
 - **Síntoma observado:** el NPC se comporta como un tanque: si está quieto no gira cabeza/mirada ni inspecciona direcciones; su visión sólo cambia cuando cambia el cuerpo/movimiento.
 - **Evidencia:** observación manual.
-- **Causa confirmada o hipótesis:** no existe todavía un seam explícito de atención visual separado de locomotion/body facing.
+- **Causa confirmada o hipótesis:** `CONFIRMADO Y CORREGIDO`: faltaba un seam explícito de atención visual separado de locomotion/body facing.
 - **Sistemas afectados:** perception, encounter AI, ambient behavior, presentation.
-- **Solución prevista:** Fase 3: agregar una autoridad mínima de gaze que no duplique percepción ni haga raycasts propios.
-- **Commit de corrección:** pendiente.
-- **Validación:** estados Ambient/Candidate/Combat/LostContact deben orientar atención de forma observable y limitada.
-- **Notas:** no introducir Behavior Trees/GOAP por esta necesidad.
+- **Solución prevista:** aplicada en Fase 3 mediante `ActorGazeController`, autoridad lógica por actor que consume atención legítima y produce desired/current gaze acotado sin adquirir targets, evaluar LOS, navegar, combatir ni poseer behavior.
+- **Commit de corrección:** `e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509` — `Add NPC gaze and attention V1`.
+- **Validación:** Runtime/Editor compile `PASS`; `M41 Gaze & Attention Diagnostics: PASS` con dos direcciones Ambient, cambio `22,996°`, yaw máximo `22,996°`, step máximo `0,136°`, convergencia Candidate `72,959° → 45,92°`, Encounter `59,08° → 32,071°`, rechazo Candidate/Encounter cross-observer, LostContact por `LastKnownPosition` e Inactive estable; regresiones Sandbox Preparation, Progressive Recognition y Human Encounter AI `PASS`; `git diff --check: PASS`.
+- **Notas:** los modos son `Ambient`, `Candidate`, `Encounter`, `LostContact` e `Inactive`. No se introdujeron Behavior Trees/GOAP. La integración del FOV productivo pertenece a Fase 5.
 
 ## ISSUE-0006 — Tracking visual lateral deficiente
 
@@ -145,7 +145,7 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Solución prevista:** Fase 4: seguimiento visual continuo y predicción corta basada en movimiento observado, con velocidad angular limitada.
 - **Commit de corrección:** pendiente.
 - **Validación:** un objetivo móvil visible debe ser seguido de forma continua; movimientos extremos aún pueden romper contacto.
-- **Notas:** no confundir con intercepción balística completa.
+- **Notas:** Fase 3 agregó gaze lógico con velocidad angular limitada, pero no tracking continuo, predicción ni intercepción. ISSUE permanece abierto para Fase 4; no confundir con intercepción balística completa.
 
 ## ISSUE-0007 — LostContact no ejecuta una búsqueda real
 
@@ -333,6 +333,23 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Commit de corrección:** `e0d5fb9c40fba6b62fe8c1ffa60a24cb9cfeb06f` — `Fix M41 NPC sandbox anatomy fixture`.
 - **Validación:** Unity `6000.4.6f1` batchmode `-nographics`: Runtime compile `PASS`; Editor compile `PASS`; `M41.3 NPC Sandbox Spawn & Randomized Loadouts Diagnostics: PASS` con dos objetivos sin armadura independientes, Head/LeftLeg resueltos por combat y medical reales, death/corpse/persistence `Result: Success`; `git diff --check: PASS`.
 - **Notas:** el diagnostic conserva el gate de roaming físico de Fase 2. Sólo se corrigió su fixture; no se modificó combat, medical, balance, .303, Vital Integrity, AI, behavior ownership, navigation, perception ni perfiles productivos.
+
+## ISSUE-0018 — El gate Inactive confundía physical collapse con locomoción de Behavior
+
+- **Tipo:** `TOOLING`
+- **Estado:** `RESOLVED`
+- **Severidad:** `P1 / ORANGE`
+- **Fecha de descubrimiento:** 2026-09-02
+- **Prueba / origen:** regresión final de Fase 3, `M41SandboxPreparationDiagnostics`
+- **Momento de descubrimiento:** revalidación de incapacidad después de variar el yaw inicial determinista del sandbox
+- **Síntoma observado:** el diagnostic falló su umbral de desplazamiento Inactive aunque ownership, estado, scans, ataques, órdenes Ambient y Navigation permanecieron estables.
+- **Evidencia:** el actor registró sólo desplazamiento físico pequeño durante collapse (`0,026 m` en la corrida final), con `ActorBehaviorOwner.Inactive`, delta de `AmbientDistanceTravelled=0 m`, cero nuevas órdenes y Navigation no `Moving`.
+- **Causa confirmada o hipótesis:** `CONFIRMADO POR EJECUCIÓN Y CÓDIGO`: el gate usaba movimiento del root como sustituto de locomoción normal y podía atribuir al Behavior el movimiento permitido de `ActorPhysicalCollapseController`.
+- **Sistemas afectados:** diagnostics de AI behavior ownership e incapacidad.
+- **Solución prevista:** aplicada: el gate exige estabilidad de ownership/revisiones/acquisition/attack, cero delta de recorrido Ambient y Navigation no `Moving`; conserva el desplazamiento físico de collapse como evidencia informativa y failure context accionable.
+- **Commit de corrección:** `e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509` — `Add NPC gaze and attention V1`.
+- **Validación:** `M41 Sandbox Preparation Diagnostics: PASS`: Blue/Red/White `0,751 m`, ownership `Ambient → Encounter → Ambient`, reanudación Red `0,751 m`, Inactive con delta Ambient `0 m`, physical collapse `0,026 m` y sin threat/navigation/attack.
+- **Notas:** no se cambió `ActorPhysicalCollapseController`, gameplay de incapacidad ni el contrato de Behavior; sólo se corrigió la semántica y observabilidad del gate.
 
 ---
 
