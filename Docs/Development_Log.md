@@ -3513,3 +3513,28 @@ Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
 - `git diff --check`: `PASS`.
 
 `ISSUE-0006` permanece `CONFIRMED`: la capacidad lógica de tracking está implementada, pero el síntoma productivo lateral no puede cerrarse hasta que Fase 5 conecte perception con gaze y pase la regresión integrada. No aparecieron issues nuevos de runtime; dos fallos iniciales del diagnostic fueron una oclusión de la segunda fixture y se corrigieron sólo en el harness. No se ejecutó aceptación visual/manual ni se declara sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.
+
+### NPC AI Sanitation — Fase 5 Production Perception Uses Gaze
+
+Fecha: 2026-09-02.
+
+Estado: `VALIDATED — PHASE 5 COMPLETE`.
+
+`ActorVisualPerceptionService` conserva una sola evaluación de rango, FOV horizontal y LOS físico, pero el centro instantáneo del cono ahora es `ActorGazeController.CurrentGazeDirection` cuando el componente cacheado está configurado y entrega una dirección horizontal finita. Un actor sin Gaze configurado conserva `transform.forward` como fallback. El servicio nunca usa `DesiredGazeDirection`, no combina body+gaze, no amplía el ángulo del profile y no agrega raycasts ni allocations por candidato. `SandboxNpcObservabilityPanel` dibuja el FOV desde el mismo `CurrentPerceptionForward`, por lo que el overlay existente coincide con gameplay.
+
+El diagnostic focalizado probó la cadena real de producción sin orientar al target antes de percibirlo: con half-FOV `60°`, Desired ya estaba a `10°` del target mientras Current/body seguían a `65°` y el resultado permaneció `OutsideFov`; sólo al llegar Current a `59,957°` pasó a `Perceived`. Un target a `55°` del body pero `75,03°` del gaze quedó fuera, descartando un OR de conos. Ambient descubrió un target quieto situado a `70°` del body cuando Current llegó a `59,991°`, y recién entonces creó Candidate. El tracking lateral, desde dos observaciones legítimas separadas `0,2 s`, estimó `(-4,02, 0,00, -1,15)` / `4,183 m/s` y conservó `Perceived` con target a `82°` del body / `40,457°` del gaze; el máximo step observado fue `2,383°`. Un salto al lado opuesto produjo `96,543°` respecto del gaze y `OutsideFov`, preservando límites humanos.
+
+La barrera física produjo `Occluded` aun con Gaze/Encounter orientado, LostContact retuvo sólo historia observada y retirar la barrera permitió `Perceived` otra vez. Un observer sin Gaze pasó por el fallback body-forward. `M41 Gaze & Attention Diagnostics` mantuvo caps de tracking `0,35 s` / `1,5 m`, target-switch reset, expiry, rechazo cross-observer y hidden-motion no-wallhack. El diagnostic Progressive Recognition fue actualizado para alinear explícitamente Current Gaze al body al preparar sus poses controladas; no cambió recognition productiva.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
+
+- Runtime compile y Editor compile: `PASS`; warnings preexistentes separados;
+- `M41 Gaze-Centered Production Perception Diagnostics: PASS`;
+- `M41 Gaze & Attention Diagnostics: PASS`;
+- `M41 Progressive Visual Recognition Diagnostics: PASS`: Near `0,33 s`, Far `1,102 s`, occlusion/decay/recovery y LostContact intactos;
+- `M41.1 Human Encounter AI Diagnostics: PASS`;
+- `M41 Sandbox Preparation Diagnostics: PASS`: Blue/Red/White `0,751 m`, `Ambient → Encounter → Ambient`, Inactive estable;
+- `M41.0 Navigation & Perception Diagnostics: PASS`;
+- `git diff --check`: `PASS`.
+
+`ISSUE-0004` e `ISSUE-0006` quedan `RESOLVED` por evidencia productiva integrada. No aparecieron issues nuevos. Aim, spread, `CurrentAimPoint`, `PhysicalShotPathResolver`, `WeaponCombatService`, profiles, content, Navigation, Behavior ownership y persistence no cambiaron. Fase 6 no fue iniciada: Search V1 y navegación/inspección de `LastKnownPosition` continúan pendientes. No se ejecutó aceptación visual/manual ni se declara sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.

@@ -99,19 +99,19 @@ Cada entrada debe conservar, cuando exista información suficiente:
 ## ISSUE-0004 — La percepción inicial depende demasiado de la orientación corporal de spawn
 
 - **Tipo:** `BUG`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** Prueba 2 manual integrada
 - **Momento de descubrimiento:** observación de NPCs recién spawneados
 - **Síntoma observado:** un NPC que aparece orientado en dirección contraria puede no detectar actores cercanos porque permanece mirando al frente hasta que otra conducta lo hace moverse.
 - **Evidencia:** observación manual.
-- **Causa confirmada o hipótesis:** la percepción productiva usa el facing/forward corporal actual. Fase 3 ya agregó gaze/attention/idle scanning lógico e inicialización de yaw, pero todavía no conectó ese gaze al FOV productivo.
+- **Causa confirmada o hipótesis:** `CONFIRMADO Y CORREGIDO`: el FOV productivo estaba centrado exclusivamente en body-forward aunque Fase 3 ya exponía una mirada lógica acotada.
 - **Sistemas afectados:** perception, spawn presentation, AI attention.
-- **Solución prevista:** Fase 5: integrar `ActorVisualPerceptionService` con la dirección de gaze apropiada y conservar límites humanos; no resolver dando visión 360°.
-- **Commit de corrección:** pendiente.
-- **Validación:** un NPC Idle debe explorar visualmente su entorno con límites humanos sin necesitar movimiento locomotor.
-- **Notas:** Fase 3 (`e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509`) reemplazó `Quaternion.identity` común por yaw determinista por seed y agregó scanning lógico, pero el defecto productivo permanece abierto hasta Fase 5 porque perception sigue usando `transform.forward`.
+- **Solución prevista:** aplicada en Fase 5: `ActorVisualPerceptionService` usa `CurrentGazeDirection` como único forward del FOV cuando el Gaze está configurado/válido, con fallback explícito a body-forward.
+- **Commit de corrección:** `2fc27d946f5a807abd4f046d2dee85331490b7c2` — `Center production perception on current gaze`.
+- **Validación:** Runtime/Editor compile `PASS`; `M41 Gaze-Centered Production Perception Diagnostics: PASS`: half-FOV `60°`, Current-vs-Desired `65°/65°/10° → OutsideFov` hasta que Current llegó a `59,957°`, body-only `55°` pero gaze `75,03° → OutsideFov`, y Ambient `70°` body / `59,991°` gaze → `Perceived → Candidate`; fallback sin Gaze `Perceived` desde body-forward. LOS con barrera permaneció `Occluded`. Regresiones Gaze/Attention, Progressive Recognition, Human Encounter AI, Sandbox Preparation y Navigation/Perception `PASS`.
+- **Notas:** no existe body-FOV OR gaze-FOV ni uso de `DesiredGazeDirection`. El scanning Ambient cambia percepción real sin target previo; F6 dibuja el mismo `CurrentPerceptionForward` productivo.
 
 ## ISSUE-0005 — Falta una autoridad de Gaze/Attention humana
 
@@ -133,19 +133,19 @@ Cada entrada debe conservar, cuando exista información suficiente:
 ## ISSUE-0006 — Tracking visual lateral deficiente
 
 - **Tipo:** `BUG`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** Prueba 2 manual integrada
 - **Momento de descubrimiento:** jugador desplazándose lateralmente frente a NPC hostil
 - **Síntoma observado:** al moverse el objetivo hacia un costado, el NPC puede perderlo y tardar en reencontrarlo en vez de tratar de mantenerlo dentro de la mirada.
 - **Evidencia:** observación manual.
-- **Causa confirmada o hipótesis:** Fase 4 corrigió la ausencia de tracking lógico continuo: Gaze ya estima movimiento observado por `TargetId` y predice brevemente. El síntoma productivo permanece porque perception todavía decide visibilidad desde el forward corporal y puede dejar de entregar samples antes de que gaze ayude a conservar el target.
+- **Causa confirmada o hipótesis:** `CONFIRMADO Y CORREGIDO`: Fase 4 implementó tracking lógico, pero el FOV body-forward impedía que ese tracking conservara percepción productiva lateral.
 - **Sistemas afectados:** gaze, perception, combat targeting.
-- **Solución prevista:** completar Fase 5 conectando el FOV productivo con gaze y ejecutar una regresión integrada de movimiento lateral, occlusion y pérdida física de contacto.
-- **Commit de corrección:** pendiente.
-- **Validación:** avance Fase 4 en `e72feeb67edfe9b208eefa4d4c6c13f488df62cc`: Runtime/Editor compile `PASS`; `M41 Gaze & Attention Diagnostics: PASS` con sample `0,2 s`, velocidad lateral `4,491 m/s`, horizonte `0,35 s`, lead `1,5 m`, error `52,993° → 41,476°`, target-switch reset, hidden motion ignorado y expiry `0 m`; Sandbox Preparation, Progressive Recognition y Human Encounter AI `PASS`. Falta validación productiva FOV→Gaze de Fase 5.
-- **Notas:** ISSUE permanece `CONFIRMED`; Fase 4 implementó capacidad lógica sin modificar aim, disparos ni percepción. No confundir gaze prediction con ballistic lead o intercepción.
+- **Solución prevista:** completada en Fase 5 conectando el FOV productivo al Current Gaze y verificando tracking lateral integrado, límites humanos y occlusion física.
+- **Commit de corrección:** `2fc27d946f5a807abd4f046d2dee85331490b7c2` — `Center production perception on current gaze` (sobre tracking lógico Fase 4 `e72feeb67edfe9b208eefa4d4c6c13f488df62cc`).
+- **Validación:** `M41 Gaze-Centered Production Perception Diagnostics: PASS`: segunda muestra `0,2 s`, velocidad `(-4,02, 0,00, -1,15)` / `4,183 m/s`; el target lateral quedó a `82°` del body, `40,457°` del gaze y siguió `Perceived` con half-FOV `60°`. El caso humano extremo quedó a `96,543°` del gaze y devolvió `OutsideFov`; la barrera devolvió `Occluded` y, al retirarla, `Perceived`. `M41 Gaze & Attention Diagnostics: PASS` conservó caps `0,35 s` / `1,5 m`, target-switch reset, expiry y no-wallhack. Regresiones Progressive Recognition, Human Encounter AI, Sandbox Preparation y Navigation/Perception `PASS`.
+- **Notas:** tracking no es infalible y no alimenta aim, spread, shots ni ballistic lead. El cierre resuelve el síntoma productivo de FOV lateral sin cambiar combat.
 
 ## ISSUE-0007 — LostContact no ejecuta una búsqueda real
 

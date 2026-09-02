@@ -111,6 +111,8 @@ Usar movimiento observado reciente para una predicción visual corta, limitada y
 
 ## Fase 5 — Perception integrada con Gaze
 
+**Estado:** `COMPLETADA — 2026-09-02` (`2fc27d946f5a807abd4f046d2dee85331490b7c2`).
+
 El FOV/LOS de producción debe usar la dirección de mirada apropiada, con fallback explícito donde corresponda.
 
 Tests mínimos:
@@ -120,7 +122,7 @@ Tests mínimos:
 - obstáculo → occluded aunque gaze sea correcto;
 - actor detrás y nunca observado → no detección mágica.
 
-**Gate:** overlay de percepción y decisión real coinciden.
+**Gate cerrado:** `ActorVisualPerceptionService` usa un único forward horizontal: `CurrentGazeDirection` cuando existe Gaze configurado/válido y `transform.forward` como fallback. Con half-FOV `60°`, Ambient descubrió un target a `70°` del cuerpo cuando el ángulo de gaze llegó a `59,991°`; tracking lateral conservó `Perceived` a `82°` del cuerpo / `40,457°` del gaze; un target extremo quedó `OutsideFov`; la barrera mantuvo `Occluded`; y el overlay F6 consume la misma dirección read-only del servicio. LOS, recognition, aim/combat y los límites humanos no cambiaron.
 
 ## Fase 6 — LostContact / Search V1
 
