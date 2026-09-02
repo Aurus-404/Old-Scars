@@ -101,6 +101,7 @@ namespace OldScars.Core.Actors
             GUILayout.Label("AI / PERCEPTION", GUI.skin.box);
             GUILayout.Label($"State: {Text(ai?.State.ToString())} | Policy: {Text(ai?.Response.ToString())} | Threat: {Text(ai?.ThreatActorInstanceId)}");
             GUILayout.Label($"LastKnown: {(ai?.HasLastKnownPosition == true ? ai.LastKnownPosition.ToString("F2") : "<NONE>")} | Contact age: {ContactAge(ai)}");
+            GUILayout.Label($"Search: {Text(ai?.LastSearchOutcome.ToString())} | Anchor: {(ai?.HasSearchAnchor == true ? ai.SearchAnchor.ToString("F2") : "<NONE>")} | Inspect remaining: {(ai?.IsSearchInspecting == true ? ai.SearchInspectionRemainingSeconds.ToString("0.00") + "s" : "<NONE>")}");
             GUILayout.Label($"Recognition: {Value(acquisition?.HighestRecognitionProgress)} / {Text(acquisition?.HighestRecognitionTargetActorInstanceId)} | Candidate: {Text(acquisition?.HighestRecognitionTargetActorInstanceId)}");
             GUILayout.Label($"Attention: {Text(gaze?.Mode.ToString())} | Gaze yaw: {Value(gaze?.CurrentBodyRelativeYaw)} | Angular error: {Value(gaze?.AngularError)}");
             DrawPerception(ai, acquisition);

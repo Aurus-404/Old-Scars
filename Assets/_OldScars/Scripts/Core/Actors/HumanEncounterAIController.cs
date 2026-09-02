@@ -16,7 +16,19 @@ namespace OldScars.Core.Actors
         Fleeing,
         Fighting,
         LostContact,
+        Searching,
         Inactive
+    }
+
+    public enum HumanEncounterSearchOutcome
+    {
+        None,
+        Navigating,
+        Inspecting,
+        Reacquired,
+        Released,
+        Failed,
+        Aborted
     }
 
     public enum HumanEncounterResponse
@@ -66,6 +78,12 @@ namespace OldScars.Core.Actors
         private HumanEncounterResponse failedPlanResponse;
         private Vector3 lastPlannedThreatPosition;
         private bool hasPlan;
+        private bool hasSearchAnchor;
+        private Vector3 searchObservedPosition;
+        private Vector3 searchAnchor;
+        private double searchStartedTime;
+        private double searchNavigationDeadline;
+        private double searchInspectionStartedTime;
         private bool deterministicAimSeedConfigured;
         private long deterministicAimSeed;
         private ulong aimSampleSequence;
@@ -98,6 +116,19 @@ namespace OldScars.Core.Actors
         public int AttackCount { get; private set; }
         public int ReloadCount { get; private set; }
         public int NavigationPlanAttemptCount { get; private set; }
+        public bool HasSearchAnchor => hasSearchAnchor;
+        public Vector3 SearchObservedPosition => searchObservedPosition;
+        public Vector3 SearchAnchor => searchAnchor;
+        public double SearchStartedTime => searchStartedTime;
+        public bool IsSearchInspecting => State == HumanEncounterAIState.Searching &&
+                                          !double.IsNaN(searchInspectionStartedTime);
+        public float SearchInspectionDurationSeconds => lostContactTimeout;
+        public float SearchInspectionRemainingSeconds => IsSearchInspecting
+            ? Mathf.Max(0f, lostContactTimeout - (float)(Time.timeAsDouble - searchInspectionStartedTime))
+            : 0f;
+        public int SearchCount { get; private set; }
+        public int SearchRevision { get; private set; }
+        public HumanEncounterSearchOutcome LastSearchOutcome { get; private set; }
         public ActorVisualPerceptionResult LastPerception { get; private set; }
         public WeaponCombatResult LastCombatResult { get; private set; }
         public float CurrentFocus { get; private set; }
@@ -152,11 +183,12 @@ namespace OldScars.Core.Actors
         private void OnDisable()
         {
             CancelActiveAction();
-            behavior?.ExitEncounter("Encounter controller disabled");
+            behavior?.EnterInactive("Encounter controller disabled");
             gaze?.ReleaseEncounterAttention();
             threat = null;
             responseOverride = null;
             ClearEncounterMemory();
+            ClearSearchMemory(false);
             ResetPlanLatch();
             State = HumanEncounterAIState.Inactive;
         }
@@ -232,6 +264,7 @@ namespace OldScars.Core.Actors
             threat = target;
             responseOverride = null;
             ClearEncounterMemory();
+            ClearSearchMemory(true);
             ResetAimTracking();
             CancelActiveAction();
             Transition(HumanEncounterAIState.Idle, "Threat assigned; awaiting perception");
@@ -255,6 +288,13 @@ namespace OldScars.Core.Actors
             }
             responseOverride = response;
             CancelActiveAction();
+            if (State == HumanEncounterAIState.Searching)
+            {
+                if (AbortSearchToEncounter("Encounter response changed during Search"))
+                    return true;
+                error = "Search could not restore Encounter ownership for the response change.";
+                return false;
+            }
             behavior.StopEncounterNavigation();
             ResetPlanLatch();
             if (hasLastKnownPosition)
@@ -267,6 +307,12 @@ namespace OldScars.Core.Actors
         {
             responseOverride = null;
             CancelActiveAction();
+            if (State == HumanEncounterAIState.Searching)
+            {
+                if (!AbortSearchToEncounter("Encounter response override cleared during Search"))
+                    ReleaseEncounter("Search could not restore Encounter ownership after clearing response override");
+                return;
+            }
             behavior?.StopEncounterNavigation();
             ResetPlanLatch();
             if (hasLastKnownPosition)
@@ -278,15 +324,31 @@ namespace OldScars.Core.Actors
         {
             if (threat == null)
                 return;
-            if (!threat.IsRegistered || threat.LifecycleState == ActorLifecycleState.Dead)
+            if (!ThreatRemainsValid())
             {
-                ClearThreat("Threat became unavailable");
+                if (State == HumanEncounterAIState.Searching)
+                    FinishSearch(HumanEncounterSearchOutcome.Aborted, "Search threat became unavailable");
+                else
+                    ClearThreat("Threat became unavailable");
                 return;
             }
 
             LastPerception = perception.Evaluate(threat);
             if (LastPerception.Perceived)
             {
+                if (State == HumanEncounterAIState.Searching)
+                {
+                    if (!behavior.ReturnSearchToEncounter("Search reacquired perceived threat"))
+                    {
+                        ReleaseEncounter("Search could not restore Encounter ownership");
+                        return;
+                    }
+                    LastSearchOutcome = HumanEncounterSearchOutcome.Reacquired;
+                    SearchRevision++;
+                    ClearSearchMemory(false);
+                    ResetPlanLatch();
+                    Transition(HumanEncounterAIState.Alerted, "Threat reacquired during Search");
+                }
                 gaze.TryAttendEncounter(LastPerception);
                 UpdateObservedMotion(LastPerception.ObservedPosition, now);
                 lastKnownPosition = LastPerception.ObservedPosition;
@@ -300,6 +362,11 @@ namespace OldScars.Core.Actors
                 if (!hasLastKnownPosition)
                     return;
                 gaze.TryAttendLostContact(threat.ActorInstanceId, lastKnownPosition);
+                if (State == HumanEncounterAIState.Searching)
+                {
+                    UpdateSearch(now);
+                    return;
+                }
                 if (State != HumanEncounterAIState.LostContact)
                 {
                     IsClosingDistance = false;
@@ -307,6 +374,12 @@ namespace OldScars.Core.Actors
                     if (State != HumanEncounterAIState.Avoiding && State != HumanEncounterAIState.Fleeing)
                         behavior.StopEncounterNavigation();
                     Transition(HumanEncounterAIState.LostContact, $"Perception lost: {LastPerception.Reason}");
+                    return;
+                }
+                if (Response == HumanEncounterResponse.Fight)
+                {
+                    BeginSearch(now);
+                    return;
                 }
                 if (now - lastSeenTime >= lostContactTimeout)
                     ClearThreat("Lost-contact timeout elapsed");
@@ -332,6 +405,124 @@ namespace OldScars.Core.Actors
                     EvaluateFightTactics();
                     break;
             }
+        }
+
+        private void BeginSearch(double now)
+        {
+            CancelActiveAction();
+            ResetPlanLatch();
+            if (!behavior.EnterSearch("Fight lost contact with observed threat"))
+            {
+                ReleaseEncounter("Behavior ownership rejected Search");
+                return;
+            }
+
+            searchObservedPosition = lastKnownPosition;
+            hasSearchAnchor = false;
+            searchStartedTime = now;
+            searchInspectionStartedTime = double.NaN;
+            SearchCount++;
+            SearchRevision++;
+            Transition(HumanEncounterAIState.Searching, "Investigating frozen last-known information");
+
+            int areaMask = navigation.Agent != null ? navigation.Agent.areaMask : NavMesh.AllAreas;
+            NavigationPlanAttemptCount++;
+            if (!NavMesh.SamplePosition(searchObservedPosition, out NavMeshHit resolved,
+                    DestinationProjectionDistance, areaMask))
+            {
+                FinishSearch(HumanEncounterSearchOutcome.Failed,
+                    "Search anchor could not be projected onto NavMesh");
+                return;
+            }
+
+            searchAnchor = resolved.position;
+            hasSearchAnchor = true;
+            float distance = FlatDistance(transform.position, searchAnchor);
+            float speed = navigation.Agent != null ? Mathf.Max(0.1f, navigation.Agent.speed) : 0.1f;
+            searchNavigationDeadline = now + Math.Max(lostContactTimeout, distance / speed * 2f + lostContactTimeout);
+            if (!behavior.TryNavigateSearch(searchAnchor))
+            {
+                FinishSearch(HumanEncounterSearchOutcome.Failed,
+                    "Search navigation rejected the frozen anchor");
+                return;
+            }
+
+            LastSearchOutcome = HumanEncounterSearchOutcome.Navigating;
+            SearchRevision++;
+        }
+
+        private void UpdateSearch(double now)
+        {
+            if (behavior.Owner != ActorBehaviorOwner.Search || !hasSearchAnchor)
+            {
+                FinishSearch(HumanEncounterSearchOutcome.Aborted,
+                    "Search lost its owner, anchor or navigation order");
+                return;
+            }
+
+            if (!IsSearchInspecting && now >= searchNavigationDeadline)
+            {
+                FinishSearch(HumanEncounterSearchOutcome.Failed,
+                    "Search navigation exceeded its bounded travel deadline");
+                return;
+            }
+
+            if (!IsSearchInspecting)
+            {
+                if (navigation.State == ActorNavigationState.Moving)
+                    return;
+                if (navigation.State == ActorNavigationState.Reached)
+                {
+                    behavior.StopSearchNavigation();
+                    searchInspectionStartedTime = now;
+                    LastSearchOutcome = HumanEncounterSearchOutcome.Inspecting;
+                    SearchRevision++;
+                    return;
+                }
+
+                FinishSearch(HumanEncounterSearchOutcome.Failed,
+                    "Search navigation stopped before reaching its anchor");
+                return;
+            }
+
+            if (now - searchInspectionStartedTime >= lostContactTimeout)
+                FinishSearch(HumanEncounterSearchOutcome.Released,
+                    "Search inspection elapsed without reacquisition");
+        }
+
+        private void FinishSearch(HumanEncounterSearchOutcome outcome, string reason)
+        {
+            LastSearchOutcome = outcome;
+            SearchRevision++;
+            ReleaseEncounter(reason);
+        }
+
+        private bool AbortSearchToEncounter(string reason)
+        {
+            if (!behavior.ReturnSearchToEncounter(reason))
+                return false;
+            LastSearchOutcome = HumanEncounterSearchOutcome.Aborted;
+            SearchRevision++;
+            ClearSearchMemory(false);
+            ResetPlanLatch();
+            Transition(HumanEncounterAIState.Alerted, reason);
+            nextDecisionTime = 0d;
+            return true;
+        }
+
+        private bool ThreatRemainsValid()
+        {
+            if (threat == null || !threat.IsRegistered || threat.LifecycleState == ActorLifecycleState.Dead)
+                return false;
+            ActorConditionComponent threatCondition = threat.GetComponent<ActorConditionComponent>();
+            if (threatCondition != null && !threatCondition.CanPerformActiveActions)
+                return false;
+            if (State != HumanEncounterAIState.Searching)
+                return true;
+            ActorAffiliationComponent observerAffiliation = GetComponent<ActorAffiliationComponent>();
+            ActorAffiliationComponent threatAffiliation = threat.GetComponent<ActorAffiliationComponent>();
+            return observerAffiliation?.IsConfigured != true || threatAffiliation?.IsConfigured != true ||
+                   observerAffiliation.IsHostileToward(threat);
         }
 
         private void ExecuteRetreat(float desiredDistance, bool decisive)
@@ -585,26 +776,44 @@ namespace OldScars.Core.Actors
         {
             if (State == HumanEncounterAIState.Inactive)
                 return;
+            if (State == HumanEncounterAIState.Searching)
+            {
+                LastSearchOutcome = HumanEncounterSearchOutcome.Aborted;
+                SearchRevision++;
+            }
             CancelActiveAction();
             behavior?.EnterInactive(reason);
             gaze?.EnterInactive();
             threat = null;
             ClearEncounterMemory();
+            ClearSearchMemory(false);
             ResetAimTracking();
             Transition(HumanEncounterAIState.Inactive, reason);
         }
 
         private void ReleaseEncounter(string reason)
         {
+            bool wasSearching = behavior?.Owner == ActorBehaviorOwner.Search ||
+                                State == HumanEncounterAIState.Searching;
+            if (wasSearching && (LastSearchOutcome == HumanEncounterSearchOutcome.Navigating ||
+                                 LastSearchOutcome == HumanEncounterSearchOutcome.Inspecting))
+            {
+                LastSearchOutcome = HumanEncounterSearchOutcome.Aborted;
+                SearchRevision++;
+            }
             CancelActiveAction();
             threat = null;
             responseOverride = null;
             ClearEncounterMemory();
+            ClearSearchMemory(false);
             ResetPlanLatch();
             nextDecisionTime = 0d;
             nextAttackTime = 0d;
             ResetAimTracking();
-            behavior?.ExitEncounter(reason);
+            if (behavior?.Owner == ActorBehaviorOwner.Search)
+                behavior.ExitSearchToAmbient(reason);
+            else
+                behavior?.ExitEncounter(reason);
             gaze?.ReleaseEncounterAttention();
             Transition(identity != null && (identity.LifecycleState == ActorLifecycleState.Dead ||
                                             condition != null && !condition.CanPerformActiveActions)
@@ -618,6 +827,18 @@ namespace OldScars.Core.Actors
             lastSeenTime = double.NaN;
             LastPerception = default;
             IsClosingDistance = false;
+        }
+
+        private void ClearSearchMemory(bool resetOutcome)
+        {
+            hasSearchAnchor = false;
+            searchObservedPosition = default;
+            searchAnchor = default;
+            searchStartedTime = double.NaN;
+            searchNavigationDeadline = double.NaN;
+            searchInspectionStartedTime = double.NaN;
+            if (resetOutcome)
+                LastSearchOutcome = HumanEncounterSearchOutcome.None;
         }
 
         private void CancelActiveAction()

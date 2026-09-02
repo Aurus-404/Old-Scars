@@ -309,15 +309,22 @@ namespace OldScars.Editor
                     Require(Near(controller.LastKnownPosition, frozenLastKnown, 0.01f),
                         "Occluded perception leaked the threat's current position into last-known memory.");
                     Require(CombatInvariantsHold(), "Combat mutated after LOS was lost.");
-                    deadline = Now + 2d;
+                    PlaceThreatOutsidePerception();
+                    deadline = Now + 8d;
                     stage = 12;
                     break;
                 case 12:
                     if (controller.State != HumanEncounterAIState.Idle)
+                    {
+                        Require(CombatInvariantsHold(), "Combat mutated during LostContact/Search.");
                         return;
-                    Require(controller.Threat == null, "Lost-contact timeout did not clear the encounter.");
-                    Require(CombatInvariantsHold(), "Combat mutated during lost-contact timeout.");
+                    }
+                    Require(controller.Threat == null &&
+                            controller.LastSearchOutcome == HumanEncounterSearchOutcome.Released,
+                        "Search navigation/inspection did not release the encounter.");
+                    Require(CombatInvariantsHold(), "Combat mutated during LostContact/Search.");
                     barrier.SetActive(false);
+                    PlaceThreatForReacquisition();
                     Physics.SyncTransforms();
                     Require(controller.TryAssignThreat(threat, out string reacquireError), "Explicit reacquisition failed: " + reacquireError);
                     deadline = Now + 2d;
@@ -393,6 +400,23 @@ namespace OldScars.Editor
             Physics.SyncTransforms();
             deadline = Now + 2d;
             stage = 10;
+        }
+
+        private static void PlaceThreatOutsidePerception()
+        {
+            NavMeshAgent agent = threat.GetComponent<NavMeshAgent>();
+            if (agent != null && agent.enabled)
+                agent.enabled = false;
+            threat.transform.SetPositionAndRotation(
+                RequireFixtureRoot().TransformPoint(new Vector3(0f, 0f, 60f)), Quaternion.identity);
+            Physics.SyncTransforms();
+        }
+
+        private static void PlaceThreatForReacquisition()
+        {
+            Vector3 position = Marker(M41SampleSceneNavigationTools.TargetName).position + Vector3.forward;
+            threat.transform.SetPositionAndRotation(position, Quaternion.identity);
+            Physics.SyncTransforms();
         }
 
         private static void ValidateProfiles()

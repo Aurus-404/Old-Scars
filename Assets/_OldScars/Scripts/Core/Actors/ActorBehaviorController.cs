@@ -118,6 +118,48 @@ namespace OldScars.Core.Actors
             nextAmbientDecisionTime = Time.time + MinimumPauseSeconds;
         }
 
+        public bool EnterSearch(string reason)
+        {
+            ResolveReferences();
+            if (!CanAct())
+            {
+                EnterInactive(reason);
+                return false;
+            }
+            if (Owner != ActorBehaviorOwner.Encounter)
+                return false;
+            SetOwner(ActorBehaviorOwner.Search, reason);
+            return true;
+        }
+
+        public bool ReturnSearchToEncounter(string reason)
+        {
+            ResolveReferences();
+            if (!CanAct())
+            {
+                EnterInactive(reason);
+                return false;
+            }
+            if (Owner != ActorBehaviorOwner.Search)
+                return false;
+            SetOwner(ActorBehaviorOwner.Encounter, reason);
+            return true;
+        }
+
+        public void ExitSearchToAmbient(string reason)
+        {
+            ResolveReferences();
+            if (!CanAct())
+            {
+                EnterInactive(reason);
+                return;
+            }
+            if (Owner != ActorBehaviorOwner.Search)
+                return;
+            SetOwner(ActorBehaviorOwner.Ambient, reason);
+            nextAmbientDecisionTime = Time.time + MinimumPauseSeconds;
+        }
+
         public void EnterInactive(string reason)
         {
             SetOwner(ActorBehaviorOwner.Inactive, reason);
@@ -134,6 +176,20 @@ namespace OldScars.Core.Actors
         {
             ResolveReferences();
             if (Owner == ActorBehaviorOwner.Encounter)
+                navigation?.Stop();
+        }
+
+        public bool TryNavigateSearch(Vector3 destination)
+        {
+            ResolveReferences();
+            return Owner == ActorBehaviorOwner.Search && CanAct() &&
+                   navigation != null && navigation.TryNavigate(destination, out _);
+        }
+
+        public void StopSearchNavigation()
+        {
+            ResolveReferences();
+            if (Owner == ActorBehaviorOwner.Search)
                 navigation?.Stop();
         }
 
@@ -198,7 +254,9 @@ namespace OldScars.Core.Actors
             if (Owner == next)
                 return;
             ActorBehaviorOwner previous = Owner;
-            navigation?.Stop();
+            if (navigation != null &&
+                (navigation.State != ActorNavigationState.Idle || navigation.HasDestination))
+                navigation.Stop();
             Owner = next;
             OwnerRevision++;
             Debug.Log(
