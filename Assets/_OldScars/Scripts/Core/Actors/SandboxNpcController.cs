@@ -91,14 +91,16 @@ namespace OldScars.Core.Actors
             if (!TryResolveSpawnPosition(player.position, derivedSeed, out Vector3 position, out error))
                 return Fail(error);
 
+            Quaternion initialFacing = DeriveInitialFacing(derivedSeed);
             if (!ActorSpawnService.TrySpawnWithLoadoutSeed(
-                    actorProfile.id, position, Quaternion.identity, derivedSeed,
+                    actorProfile.id, position, initialFacing, derivedSeed,
                     out ActorRuntimeIdentity identity, out ActorLoadoutResult loadout, out error))
                 return Fail(error);
 
             metadata = identity.gameObject.AddComponent<SandboxNpcMetadata>();
             metadata.Configure(baseSeed, sequence, derivedSeed, loadout);
             identity.GetComponent<ActorBehaviorController>().ConfigureAmbient(derivedSeed);
+            identity.GetComponent<ActorGazeController>().Configure(derivedSeed);
             spawned.RemoveAll(value => value == null);
             spawned.Add(metadata);
             LastSpawn = metadata;
@@ -151,8 +153,9 @@ namespace OldScars.Core.Actors
                     baseSeed, sequence, actorProfile.id, actorProfile.loadout_profile_id);
                 if (!TryResolveSpawnPosition(player.position, derivedSeed, out Vector3 position, out error))
                     continue;
+                Quaternion initialFacing = DeriveInitialFacing(derivedSeed);
                 if (!ActorSpawnService.TrySpawnWithLoadoutSeed(
-                        actorProfile.id, position, Quaternion.identity, derivedSeed,
+                        actorProfile.id, position, initialFacing, derivedSeed,
                         out ActorRuntimeIdentity identity, out ActorLoadoutResult loadout, out error))
                     continue;
 
@@ -179,6 +182,7 @@ namespace OldScars.Core.Actors
 
                 HumanEncounterAIController encounter = identity.GetComponent<HumanEncounterAIController>();
                 encounter.ConfigureDeterministicAimSeed(derivedSeed);
+                identity.GetComponent<ActorGazeController>().Configure(derivedSeed);
                 ActorThreatAcquisitionController acquisition =
                     identity.gameObject.AddComponent<ActorThreatAcquisitionController>();
                 if (!acquisition.TryConfigure(derivedSeed, out error))
@@ -325,6 +329,13 @@ namespace OldScars.Core.Actors
             position = default;
             error = "No valid nearby NavMesh position with actor clearance was found; no actor was created.";
             return false;
+        }
+
+        public static Quaternion DeriveInitialFacing(long derivedSpawnSeed)
+        {
+            ulong mixed = Mix(unchecked((ulong)derivedSpawnSeed) ^ 0xD1B54A32D192ED03UL);
+            float yaw = (mixed & 0xffffffUL) / 16777215f * 360f;
+            return Quaternion.Euler(0f, yaw, 0f);
         }
 
         private bool Fail(string error)

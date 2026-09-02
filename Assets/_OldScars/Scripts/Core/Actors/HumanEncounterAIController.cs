@@ -44,6 +44,7 @@ namespace OldScars.Core.Actors
         private ActorConditionComponent condition;
         private ActorNavigationController navigation;
         private ActorBehaviorController behavior;
+        private ActorGazeController gaze;
         private ActorVisualPerceptionService perception;
         private ActorItemOwnershipComponent ownership;
         private ActorRuntimeIdentity threat;
@@ -152,6 +153,7 @@ namespace OldScars.Core.Actors
         {
             CancelActiveAction();
             behavior?.ExitEncounter("Encounter controller disabled");
+            gaze?.ReleaseEncounterAttention();
             threat = null;
             responseOverride = null;
             ClearEncounterMemory();
@@ -173,9 +175,10 @@ namespace OldScars.Core.Actors
                 return false;
             }
             if (identity == null || health == null || navigation?.IsConfigured != true || behavior == null ||
+                gaze?.IsConfigured != true ||
                 perception?.IsConfigured != true || ownership == null)
             {
-                error = "Encounter AI requires identity, health, Behavior ownership, configured Navigation and Perception, and item ownership.";
+                error = "Encounter AI requires identity, health, Behavior and Gaze ownership, configured Navigation and Perception, and item ownership.";
                 return false;
             }
 
@@ -284,6 +287,7 @@ namespace OldScars.Core.Actors
             LastPerception = perception.Evaluate(threat);
             if (LastPerception.Perceived)
             {
+                gaze.TryAttendEncounter(LastPerception);
                 UpdateObservedMotion(LastPerception.ObservedPosition, now);
                 lastKnownPosition = LastPerception.ObservedPosition;
                 hasLastKnownPosition = true;
@@ -295,6 +299,7 @@ namespace OldScars.Core.Actors
             {
                 if (!hasLastKnownPosition)
                     return;
+                gaze.TryAttendLostContact(lastKnownPosition);
                 if (State != HumanEncounterAIState.LostContact)
                 {
                     IsClosingDistance = false;
@@ -582,6 +587,7 @@ namespace OldScars.Core.Actors
                 return;
             CancelActiveAction();
             behavior?.EnterInactive(reason);
+            gaze?.EnterInactive();
             threat = null;
             ClearEncounterMemory();
             ResetAimTracking();
@@ -599,6 +605,7 @@ namespace OldScars.Core.Actors
             nextAttackTime = 0d;
             ResetAimTracking();
             behavior?.ExitEncounter(reason);
+            gaze?.ReleaseEncounterAttention();
             Transition(identity != null && (identity.LifecycleState == ActorLifecycleState.Dead ||
                                             condition != null && !condition.CanPerformActiveActions)
                 ? HumanEncounterAIState.Inactive : HumanEncounterAIState.Idle, reason);
@@ -781,6 +788,7 @@ namespace OldScars.Core.Actors
             if (condition == null) condition = GetComponent<ActorConditionComponent>();
             if (navigation == null) navigation = GetComponent<ActorNavigationController>();
             if (behavior == null) behavior = GetComponent<ActorBehaviorController>();
+            if (gaze == null) gaze = GetComponent<ActorGazeController>();
             if (perception == null) perception = GetComponent<ActorVisualPerceptionService>();
             if (ownership == null) ownership = GetComponent<ActorItemOwnershipComponent>();
         }

@@ -65,6 +65,7 @@ namespace OldScars.Editor
         private static int inactiveAttackCount;
         private static int inactiveScanCount;
         private static int inactiveAmbientOrderCount;
+        private static float inactiveAmbientTravel;
 
         static M41SandboxPreparationDiagnostics()
         {
@@ -346,6 +347,7 @@ namespace OldScars.Editor
             inactiveAttackCount = encounter.AttackCount;
             inactiveScanCount = red.GetComponent<ActorThreatAcquisitionController>().AcquisitionScanCount;
             inactiveAmbientOrderCount = behavior.AmbientAcceptedOrderCount;
+            inactiveAmbientTravel = behavior.AmbientDistanceTravelled;
             inactiveTravel.Reset(red);
             SetStage(7);
         }
@@ -362,16 +364,24 @@ namespace OldScars.Editor
                     encounter.TransitionRevision == inactiveTransitionRevision && encounter.AttackCount == inactiveAttackCount &&
                     acquisition.AcquisitionScanCount == inactiveScanCount &&
                     behavior.Owner == ActorBehaviorOwner.Inactive && behavior.OwnerRevision == inactiveOwnerRevision &&
-                    behavior.AmbientAcceptedOrderCount == inactiveAmbientOrderCount && inactiveTravel.Distance < 0.05f &&
+                    behavior.AmbientAcceptedOrderCount == inactiveAmbientOrderCount &&
+                    Mathf.Abs(behavior.AmbientDistanceTravelled - inactiveAmbientTravel) < 0.001f &&
                     red.GetComponent<ActorNavigationController>().State != ActorNavigationState.Moving,
-                "Inactive actor changed owner, travelled, acquired, navigated or attacked while acquisition remained enabled.");
+                "Inactive actor changed owner, travelled, acquired, navigated or attacked while acquisition remained enabled. " +
+                $"AcquisitionEnabled={acquisition.enabled}; State={encounter.State}; Threat={encounter.ThreatActorInstanceId ?? "<NONE>"}; " +
+                $"Transition={encounter.TransitionRevision}/{inactiveTransitionRevision}; Attack={encounter.AttackCount}/{inactiveAttackCount}; " +
+                $"Scans={acquisition.AcquisitionScanCount}/{inactiveScanCount}; Owner={behavior.Owner}; " +
+                $"OwnerRevision={behavior.OwnerRevision}/{inactiveOwnerRevision}; AmbientOrders={behavior.AmbientAcceptedOrderCount}/{inactiveAmbientOrderCount}; " +
+                $"AmbientTravel={behavior.AmbientDistanceTravelled:0.###}/{inactiveAmbientTravel:0.###}; " +
+                $"PhysicalCollapseTravel={inactiveTravel.Distance:0.###}; Nav={red.GetComponent<ActorNavigationController>().State}.");
             Debug.Log(
                 "M41 Sandbox Preparation Diagnostics: PASS\n" +
                 "- Relations: Blue<->Red hostile; Red->Player hostile; Blue->Player neutral\n" +
                 $"- Ambient physical travel: Blue={blueInitialTravel.Distance:0.###}m; " +
                 $"Red={redInitialTravel.Distance:0.###}m; White={whiteInitialTravel.Distance:0.###}m\n" +
                 $"- Ownership: Ambient -> Encounter -> Ambient; resumed Red travel={redResumeTravel.Distance:0.###}m\n" +
-                $"- Incapacity: Inactive stable; physical travel={inactiveTravel.Distance:0.###}m; no threat/navigation/attack");
+                $"- Incapacity: Inactive stable; ambient travel delta=0m; physical collapse travel={inactiveTravel.Distance:0.###}m; " +
+                "no threat/navigation/attack");
             SessionState.SetInt(StageKey, 99);
             EditorApplication.ExitPlaymode();
         }

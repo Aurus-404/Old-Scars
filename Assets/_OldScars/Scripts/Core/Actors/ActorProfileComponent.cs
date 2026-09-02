@@ -417,6 +417,10 @@ namespace OldScars.Core.Actors
 
             if (GetComponent<ActorBehaviorController>() == null)
                 gameObject.AddComponent<ActorBehaviorController>();
+            ActorGazeController gaze = GetComponent<ActorGazeController>();
+            if (gaze == null)
+                gaze = gameObject.AddComponent<ActorGazeController>();
+            gaze.ConfigureFromIdentity();
 
             if (GetComponent<Rigidbody>() == null)
                 gameObject.AddComponent<Rigidbody>();

@@ -86,6 +86,7 @@ namespace OldScars.Core.Actors
             ActorThreatAcquisitionController acquisition = selected.GetComponent<ActorThreatAcquisitionController>();
             ActorNavigationController navigation = selected.GetComponent<ActorNavigationController>();
             ActorBehaviorController behavior = selected.GetComponent<ActorBehaviorController>();
+            ActorGazeController gaze = selected.GetComponent<ActorGazeController>();
 
             GUILayout.Label("IDENTITY", GUI.skin.box);
             GUILayout.Label("Instance: " + Text(identity?.ActorInstanceId));
@@ -101,6 +102,7 @@ namespace OldScars.Core.Actors
             GUILayout.Label($"State: {Text(ai?.State.ToString())} | Policy: {Text(ai?.Response.ToString())} | Threat: {Text(ai?.ThreatActorInstanceId)}");
             GUILayout.Label($"LastKnown: {(ai?.HasLastKnownPosition == true ? ai.LastKnownPosition.ToString("F2") : "<NONE>")} | Contact age: {ContactAge(ai)}");
             GUILayout.Label($"Recognition: {Value(acquisition?.HighestRecognitionProgress)} / {Text(acquisition?.HighestRecognitionTargetActorInstanceId)} | Candidate: {Text(acquisition?.HighestRecognitionTargetActorInstanceId)}");
+            GUILayout.Label($"Attention: {Text(gaze?.Mode.ToString())} | Gaze yaw: {Value(gaze?.CurrentBodyRelativeYaw)} | Angular error: {Value(gaze?.AngularError)}");
             DrawPerception(ai, acquisition);
 
             GUILayout.Label("NAVIGATION / ROAMING", GUI.skin.box);
@@ -175,6 +177,13 @@ namespace OldScars.Core.Actors
                     Vector3 right = Quaternion.AngleAxis(halfFov, Vector3.up) * selected.transform.forward;
                     DrawWorldLine(perception.ObserverOrigin, perception.ObserverOrigin + left * sight.VisualRange, Color.gray, "FOV");
                     DrawWorldLine(perception.ObserverOrigin, perception.ObserverOrigin + right * sight.VisualRange, Color.gray, "FOV");
+                }
+                ActorGazeController gaze = selected.GetComponent<ActorGazeController>();
+                if (gaze != null && sight != null)
+                {
+                    Vector3 gazeOrigin = selected.transform.position + Vector3.up * sight.EyeHeight;
+                    DrawWorldLine(gazeOrigin, gazeOrigin + gaze.CurrentGazeDirection * 5f, Color.magenta,
+                        "GAZE " + gaze.Mode);
                 }
             }
             if (showShotVisual && ai != null && ai.LastShotTime > Time.timeAsDouble - ShotVisualLifetimeSeconds)

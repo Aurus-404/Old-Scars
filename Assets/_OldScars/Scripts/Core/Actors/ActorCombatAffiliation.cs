@@ -115,6 +115,7 @@ namespace OldScars.Core.Actors
         private ActorConditionComponent condition;
         private ActorAffiliationComponent affiliation;
         private ActorVisualPerceptionService perception;
+        private ActorGazeController gaze;
         private HumanEncounterAIController encounter;
         private float nextAcquisitionTime;
         private int recognitionScanRevision;
@@ -189,9 +190,9 @@ namespace OldScars.Core.Actors
             ResolveReferences();
             error = null;
             if (identity == null || health == null || affiliation?.IsConfigured != true ||
-                perception?.IsConfigured != true || encounter?.IsConfigured != true)
+                perception?.IsConfigured != true || gaze?.IsConfigured != true || encounter?.IsConfigured != true)
             {
-                error = "Threat acquisition requires living actor identity, affiliation, configured perception and encounter AI.";
+                error = "Threat acquisition requires living actor identity, affiliation, configured perception, gaze and encounter AI.";
                 return false;
             }
 
@@ -241,6 +242,7 @@ namespace OldScars.Core.Actors
                 CandidateBufferExpansionCount++;
 
             SortCandidatesByApproximateDistance();
+            bool candidateAttentionClaimed = false;
             for (int index = 0; index < candidateBuffer.Count; index++)
             {
                 ActorRuntimeIdentity candidate = candidateBuffer[index];
@@ -269,6 +271,8 @@ namespace OldScars.Core.Actors
                 state.LastScanRevision = recognitionScanRevision;
                 if (LastAcquisitionPerception.Perceived)
                 {
+                    if (!candidateAttentionClaimed)
+                        candidateAttentionClaimed = gaze.TryAttendCandidate(LastAcquisitionPerception);
                     float recognitionSeconds = perception.RecognitionSecondsAtDistance(LastAcquisitionPerception.Distance);
                     state.Progress = Mathf.Clamp01(state.Progress + elapsed / recognitionSeconds);
                 }
@@ -282,6 +286,7 @@ namespace OldScars.Core.Actors
                 {
                     if (encounter.TryAssignThreat(candidate, out string error))
                     {
+                        gaze.TryAttendEncounter(LastAcquisitionPerception);
                         ClearRecognitionStates();
                         return;
                     }
@@ -383,6 +388,7 @@ namespace OldScars.Core.Actors
             if (condition == null) condition = GetComponent<ActorConditionComponent>();
             if (affiliation == null) affiliation = GetComponent<ActorAffiliationComponent>();
             if (perception == null) perception = GetComponent<ActorVisualPerceptionService>();
+            if (gaze == null) gaze = GetComponent<ActorGazeController>();
             if (encounter == null) encounter = GetComponent<HumanEncounterAIController>();
         }
 
