@@ -217,7 +217,7 @@ namespace OldScars.Editor
             Physics.SyncTransforms();
             ActorVisualPerceptionResult rejected = perception.Evaluate(target);
             Require(!rejected.Perceived && rejected.Reason == ActorVisualPerceptionReason.OutsideFov,
-                "Registry-only candidate fixture was not outside production body-forward FOV. " +
+                "Registry-only candidate fixture was not outside the production perception FOV. " +
                 $"Reason={rejected.Reason}; Angle={rejected.HorizontalAngle:0.###}; " +
                 $"Observer={observer.transform.position}; Body={bodyForward}; Target={target.transform.position}.");
             int revisionBeforeRejected = gaze.AttentionRevision;
@@ -471,7 +471,7 @@ namespace OldScars.Editor
                 $"- Target switch reset={targetSwitchReset}; prediction expiry travel={predictionExpiryTravel:0.######}m\n" +
                 "- Candidate/Encounter rejected cross-observer results; Encounter used own Perceived observation\n" +
                 "- LostContact used only bounded observed history; hidden target motion was ignored; Inactive cleared tracking\n" +
-                "- Production ActorVisualPerceptionService remained body-forward");
+                "- Production ActorVisualPerceptionService used the bounded Current gaze forward");
             CompleteRun();
         }
 

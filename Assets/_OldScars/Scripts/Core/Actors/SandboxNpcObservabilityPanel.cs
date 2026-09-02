@@ -173,8 +173,9 @@ namespace OldScars.Core.Actors
                 if (sight != null && perception.ObserverOrigin != default)
                 {
                     float halfFov = sight.HorizontalFovDegrees * .5f;
-                    Vector3 left = Quaternion.AngleAxis(-halfFov, Vector3.up) * selected.transform.forward;
-                    Vector3 right = Quaternion.AngleAxis(halfFov, Vector3.up) * selected.transform.forward;
+                    Vector3 perceptionForward = sight.CurrentPerceptionForward;
+                    Vector3 left = Quaternion.AngleAxis(-halfFov, Vector3.up) * perceptionForward;
+                    Vector3 right = Quaternion.AngleAxis(halfFov, Vector3.up) * perceptionForward;
                     DrawWorldLine(perception.ObserverOrigin, perception.ObserverOrigin + left * sight.VisualRange, Color.gray, "FOV");
                     DrawWorldLine(perception.ObserverOrigin, perception.ObserverOrigin + right * sight.VisualRange, Color.gray, "FOV");
                 }

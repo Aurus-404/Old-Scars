@@ -69,6 +69,7 @@ namespace OldScars.Core.Actors
         private const int InitialLineOfSightHitBufferCapacity = 16;
 
         private ActorRuntimeIdentity observer;
+        private ActorGazeController gaze;
         private readonly List<Collider> targetColliderBuffer = new List<Collider>(InitialColliderBufferCapacity);
         private RaycastHit[] lineOfSightHitBuffer = new RaycastHit[InitialLineOfSightHitBufferCapacity];
         private bool configured;
@@ -88,10 +89,20 @@ namespace OldScars.Core.Actors
         public float RecognitionDecaySeconds => recognitionDecaySeconds;
         public int TargetColliderBufferExpansionCount { get; private set; }
         public int LineOfSightFallbackCount { get; private set; }
+        public Vector3 CurrentPerceptionForward => ResolvePerceptionForward(out _);
+        public bool IsUsingGazeForward
+        {
+            get
+            {
+                ResolvePerceptionForward(out bool usingGaze);
+                return usingGaze;
+            }
+        }
 
         private void Awake()
         {
             observer = GetComponent<ActorRuntimeIdentity>();
+            gaze = GetComponent<ActorGazeController>();
         }
 
         public bool TryConfigure(
@@ -104,6 +115,8 @@ namespace OldScars.Core.Actors
             out string error)
         {
             error = null;
+            if (gaze == null)
+                gaze = GetComponent<ActorGazeController>();
             if (!FinitePositive(range) || !FinitePositive(horizontalFov) || horizontalFov > 360f ||
                 !FinitePositive(observerEyeHeight) || !FinitePositive(nearRecognitionSeconds) ||
                 !FinitePositive(farRecognitionSeconds) || farRecognitionSeconds <= nearRecognitionSeconds ||
@@ -158,7 +171,7 @@ namespace OldScars.Core.Actors
             Vector3 toTarget = observed - eye;
             float distance = toTarget.magnitude;
             Vector3 flatDirection = Vector3.ProjectOnPlane(toTarget, Vector3.up);
-            Vector3 flatForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+            Vector3 flatForward = ResolvePerceptionForward(out _);
             float angle = flatDirection.sqrMagnitude <= 0.000001f || flatForward.sqrMagnitude <= 0.000001f
                 ? 0f
                 : Vector3.Angle(flatForward, flatDirection);
@@ -240,6 +253,25 @@ namespace OldScars.Core.Actors
             return found;
         }
 
+        private Vector3 ResolvePerceptionForward(out bool usingGaze)
+        {
+            usingGaze = false;
+            if (gaze != null && gaze.IsConfigured)
+            {
+                Vector3 gazeForward = Vector3.ProjectOnPlane(gaze.CurrentGazeDirection, Vector3.up);
+                if (Finite(gazeForward) && gazeForward.sqrMagnitude > 0.000001f)
+                {
+                    usingGaze = true;
+                    return gazeForward.normalized;
+                }
+            }
+
+            Vector3 bodyForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+            return Finite(bodyForward) && bodyForward.sqrMagnitude > 0.000001f
+                ? bodyForward.normalized
+                : Vector3.forward;
+        }
+
         private static ActorVisualPerceptionResult Result(
             bool perceived,
             ActorVisualPerceptionReason reason,
@@ -260,5 +292,10 @@ namespace OldScars.Core.Actors
 
         private static bool FinitePositive(float value) =>
             !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f;
+
+        private static bool Finite(Vector3 value) =>
+            !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+            !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
+            !float.IsNaN(value.z) && !float.IsInfinity(value.z);
     }
 }

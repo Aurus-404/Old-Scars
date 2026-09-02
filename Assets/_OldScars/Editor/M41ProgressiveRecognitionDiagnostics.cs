@@ -193,6 +193,7 @@ namespace OldScars.Editor
             Require(TryPlacePairWithClearPerception(observer, nearTarget, NearDistance, out string placementError),
                 "Could not place near FOV pair: " + placementError);
             observer.transform.rotation = Quaternion.LookRotation(-FlatDirection(observer, nearTarget));
+            observer.GetComponent<ActorGazeController>()?.ConfigureFromIdentity();
             Physics.SyncTransforms();
             ActorVisualPerceptionResult behind = sight.Evaluate(nearTarget);
             Require(!behind.Perceived && behind.Reason == ActorVisualPerceptionReason.OutsideFov,
@@ -211,6 +212,7 @@ namespace OldScars.Editor
                     acquisition.LastAcquisitionPerception.Reason == ActorVisualPerceptionReason.OutsideFov,
                 "Target outside frontal FOV accumulated recognition or was detected.");
             observer.transform.rotation = Quaternion.LookRotation(FlatDirection(observer, nearTarget));
+            observer.GetComponent<ActorGazeController>()?.ConfigureFromIdentity();
             Physics.SyncTransforms();
             nearPartialObserved = false;
             SetStage(3);
@@ -571,6 +573,7 @@ namespace OldScars.Editor
             Require(navigation.Agent != null && navigation.Agent.isOnNavMesh && navigation.Agent.Warp(position),
                 "Actor could not warp through its existing NavMeshAgent: " + actor.ActorInstanceId);
             actor.transform.rotation = rotation;
+            actor.GetComponent<ActorGazeController>()?.ConfigureFromIdentity();
             navigation.Agent.nextPosition = position;
         }
 
