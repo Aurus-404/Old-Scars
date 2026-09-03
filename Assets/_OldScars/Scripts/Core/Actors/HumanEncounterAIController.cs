@@ -741,10 +741,13 @@ namespace OldScars.Core.Actors
             for (int index = 0; index < colliderBuffer.Count; index++)
             {
                 Collider candidate = colliderBuffer[index];
-                if (candidate == null || !candidate.enabled || candidate.isTrigger)
+                if (candidate == null || !candidate.enabled || candidate.isTrigger ||
+                    candidate.GetComponent<ActorCombatHitRegion>() != null)
                     continue;
-                body = candidate;
-                break;
+                if (candidate.GetComponent<ActorLocomotionCollider>() != null)
+                    return candidate.bounds.center;
+                if (body == null)
+                    body = candidate;
             }
             return body != null ? body.bounds.center : transform.position + Vector3.up * perception.EyeHeight;
         }
@@ -761,8 +764,11 @@ namespace OldScars.Core.Actors
             for (int index = 0; index < colliderBuffer.Count; index++)
             {
                 Collider candidate = colliderBuffer[index];
-                if (candidate == null || !candidate.enabled || candidate.isTrigger)
+                if (candidate == null || !candidate.enabled || candidate.isTrigger ||
+                    candidate.GetComponent<ActorCombatHitRegion>() != null)
                     continue;
+                if (candidate.GetComponent<ActorLocomotionCollider>() != null)
+                    return candidate;
                 float heightDistance = Mathf.Abs(candidate.bounds.center.y - preferredHeight);
                 if (heightDistance >= closestHeight)
                     continue;

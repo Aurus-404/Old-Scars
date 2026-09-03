@@ -222,7 +222,8 @@ namespace OldScars.Core.Actors
             for (int index = 0; index < targetColliderBuffer.Count; index++)
             {
                 Collider collider = targetColliderBuffer[index];
-                if (collider == null || !collider.enabled || collider.isTrigger)
+                if (collider == null || !collider.enabled || collider.isTrigger ||
+                    collider.GetComponent<ActorCombatHitRegion>() != null)
                     continue;
 
                 float distanceSquared = (collider.bounds.center - observerEye).sqrMagnitude;

@@ -330,12 +330,11 @@ namespace OldScars.Core.Actors
             GameObject root = null;
             try
             {
-                root = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                root = ActorRuntimeRepresentationFactory.Create(actorProfile, position, rotation);
                 root.name = "Runtime Actor " + actorInstanceId;
-                root.transform.SetPositionAndRotation(position, rotation);
                 int interactableLayer = LayerMask.NameToLayer("Interactable");
                 if (interactableLayer >= 0)
-                    root.layer = interactableLayer;
+                    SetLayerRecursively(root, interactableLayer);
 
                 root.AddComponent<WorldObjectTags>();
                 root.AddComponent<WorldObjectDebugInfo>();
@@ -438,6 +437,13 @@ namespace OldScars.Core.Actors
                 error = exception.Message;
                 return false;
             }
+        }
+
+        private static void SetLayerRecursively(GameObject root, int layer)
+        {
+            root.layer = layer;
+            for (int index = 0; index < root.transform.childCount; index++)
+                SetLayerRecursively(root.transform.GetChild(index).gameObject, layer);
         }
 
         private static void CollectItemIds(IReadOnlyList<ItemStorageEntry> entries, HashSet<string> result)

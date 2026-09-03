@@ -51,7 +51,8 @@ namespace OldScars.Core.Combat
                 }
 
                 Collider collider = hit.collider;
-                if (collider.GetComponentInParent<ActorHealthComponent>() != null)
+                ActorHealthComponent actor = collider.GetComponentInParent<ActorHealthComponent>();
+                if (actor != null)
                 {
                     return new PhysicalShotResolution(
                         PhysicalShotTermination.Impact, collider, hit.point,
@@ -126,6 +127,9 @@ namespace OldScars.Core.Combat
                 Collider collider = hit.collider;
                 if (collider == null || collider.transform == shooter || collider.transform.IsChildOf(shooter) ||
                     ignoredColliders.Contains(collider))
+                    continue;
+                ActorLocomotionCollider locomotion = collider.GetComponent<ActorLocomotionCollider>();
+                if (locomotion != null && locomotion.HasExplicitCombatHitboxes)
                     continue;
                 result = hit;
                 return true;

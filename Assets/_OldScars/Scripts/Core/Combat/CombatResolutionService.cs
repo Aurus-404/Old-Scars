@@ -675,6 +675,10 @@ namespace OldScars.Core.Combat
             if (actorRoot == null || hitCollider == null)
                 return BodyRegion.Torso;
 
+            ActorCombatHitRegion explicitRegion = hitCollider.GetComponent<ActorCombatHitRegion>();
+            if (explicitRegion != null && explicitRegion.BelongsTo(actorRoot))
+                return explicitRegion.Region;
+
             Bounds bounds = hitCollider.bounds;
             float height = Mathf.Max(0.001f, bounds.size.y);
             float normalizedY = Mathf.Clamp01((hitPoint.y - bounds.min.y) / height);
