@@ -1,281 +1,336 @@
 # Old Scars — NPC AI Sanitation Plan
 
-Este documento fija la secuencia de saneamiento posterior a Prueba 2 para que el trabajo no dependa de memoria de chat ni cambie de dirección entre días. El objetivo no es conservar arquitectura por orgullo: si la capa de decisión actual resulta innecesariamente compleja o contradictoria, puede simplificarse o reemplazarse reutilizando las autoridades inferiores válidas.
+Este documento fija la secuencia de saneamiento posterior a Prueba 2 y su revisión de 2026-09-03. Su objetivo es mantener una NPC Foundation V1 completa, funcional y observable sin convertirla en un stack innecesariamente complejo.
+
+La regla principal sigue siendo la misma: no conservar arquitectura por sunk cost, pero tampoco reemplazar autoridades que ya demostraron funcionar.
+
+Research asociado al bloque de combate/aim: `NPC_Combat_Targeting_Research.md`.
 
 ## Objetivo final
 
-Cerrar una `NPC FOUNDATION V1` simple pero sólida:
+Cerrar una `NPC FOUNDATION V1` donde:
 
-- NPC humano libre realiza comportamiento ambiental en vez de quedar congelado;
-- percepción visual depende de una mirada/atención humana observable, no de visión 360° ni exclusivamente de locomotion facing;
-- al reconocer una amenaza, la conducta de encounter toma ownership de forma limpia;
-- durante combate el NPC intenta mantener visualmente al objetivo y puede perderlo de forma física;
-- LostContact conserva información limitada, busca brevemente y reacquire o abandona;
-- navegación tiene un único dueño de alto nivel por frame;
-- impactos usan geometría corporal suficiente para validar regiones anatómicas;
-- localized wounds, condition y Vital Integrity siguen usando las autoridades ya existentes;
-- incapacidad y muerte cancelan conducta activa;
-- herramientas de debug permiten observar NPC↔NPC y NPC↔Player sin destruir la prueba;
-- diagnostics validan resultados observables, no meros method calls/proxies.
+- White/Blue/Red poseen vida ambiental real;
+- Behavior ownership es inequívoco;
+- Gaze, Perception, Recognition, Encounter y Search están separados por responsabilidad;
+- tracking lateral y occlusion son físicos y bounded;
+- LostContact usa información conocida y puede Search/reacquire/release;
+- shots usan una ruta física compartida;
+- targets humanos usan geometría anatómica explícita;
+- el aim normal no depende de que el shooter entienda anatomía humana;
+- incapacidad/death cancelan conducta;
+- QA puede observar NPC↔NPC y NPC↔Player sin alterar gameplay cuando debug está OFF;
+- diagnostics prueban resultados observables, no proxies.
 
-## Regla arquitectónica central
+## Arquitectura que se conserva
 
-En cualquier frame debe existir una respuesta inequívoca a:
+No reabrir por inercia:
 
-> ¿Qué conducta tiene derecho a ordenar movimiento a este actor ahora?
+- `ActorBehaviorController` — ownership `Ambient / Encounter / Search / Inactive`;
+- `ActorNavigationController` — autoridad técnica de movimiento;
+- `ActorGazeController` — atención lógica bounded;
+- `ActorVisualPerceptionService` — range/FOV/LOS productivos;
+- `ActorThreatAcquisitionController` — discovery/recognition/threat;
+- Search V1;
+- `WeaponCombatService`;
+- `PhysicalShotPathResolver`;
+- health/medical/condition/vital;
+- `ActorCombatHitRegion` y `ActorLocomotionCollider` como contratos separados.
 
-Ambient, Encounter, Search e Inactive no deben competir entre sí sobre `ActorNavigationController`.
+Una regresión real puede justificar cambios; el mero tamaño de una clase no autoriza un framework nuevo.
 
-La simplificación puede eliminar o reemplazar una capa de decisión si la auditoría demuestra que conservarla requiere banderas, resets o ownership patches crecientes. Esto no autoriza a duplicar Perception, Navigation, Combat, Health, Equipment, Affiliation o Persistence.
+## Regla arquitectónica de combate revisada
 
-## Fuera de alcance del saneamiento
+El aim/attack pipeline objetivo es:
 
-No introducir por inercia Behavior Trees complejos, GOAP, Utility AI general, squads, cover avanzado, flanking sofisticado, hearing/noise, schedules/jobs, strategic AI, off-sector AI, morale complejo, procedural animation, full ballistics, bullet travel/drop/wind ni una facción/reputation productiva completa.
+```text
+Threat / Encounter
+    ↓
+Target
+    ↓
+Primary Aim Point
+    ↓
+Shooter focus/context error
+    ↓
+Weapon parameters/cadence
+    ↓
+PhysicalShotPathResolver
+    ↓
+world / miss / actual target collider
+    ↓
+CombatResolution
+    ↓
+receiver consequences
+```
+
+Preguntas separadas:
+
+- target acquisition decide a quién atacar;
+- target/representation decide dónde es razonable intentar impactarlo;
+- shooter decide cuánto error tiene;
+- weapon decide sus parámetros;
+- physics decide dónde pegó;
+- receiver decide qué significa ese hit.
+
+No acoplar firearm aim normal a `BodyRegion.Torso`: futuros animales, mutantes, robots u otros actors pueden no tener anatomía humana.
+
+## Fuera de alcance
+
+No introducir por inercia:
+
+- Behavior Trees complejos, GOAP o Utility AI general;
+- generic blackboard/planner;
+- weak-point/aim-point scoring framework;
+- headshot/mobility targeting AI;
+- cover/flanking/squads avanzados;
+- hearing/noise/schedules/jobs;
+- morale/suppression/stance/breathing/weapon-skill frameworks;
+- full ballistics, bullet travel/drop/drag/wind;
+- machine/vehicle damage framework antes de un consumidor real;
+- attack-method framework para animales/mutantes antes del primer atacante real que lo necesite.
 
 ---
 
-## Fase 0 — Registro, baseline y documentación
+# Fases cerradas
 
-**Estado:** `IN PROGRESS` al crear este documento.
+## Fase 0 — Registry / baseline / documentación
 
-- Crear `Issue_Registry.md`.
-- Registrar problemas confirmados, sospechosos y resueltos de Prueba 1/Prueba 2.
-- Fijar severidad y evidencia.
-- Reconciliar documentación operativa con el estado post-Pass D sin inventar estados históricos.
-- Preservar el baseline Git y cambios user-owned.
+`COMPLETADA`.
 
-**Gate:** existe una fuente persistente para bugs y una secuencia de trabajo estable.
+Se crearon/establecieron el Issue Registry y el plan persistente para evitar perder problemas entre pruebas/sesiones.
 
-## Fase 1 — Auditoría destructiva de la IA actual
+## Fase 1 — Auditoría destructiva
 
-Sin refactor de gameplay inicialmente.
+`COMPLETADA`.
 
-Auditar todos los writers/owners de:
+Decisión: reemplazar/simplificar la coordinación alta de behavior sin rehacer Perception/Navigation/Combat/Health/Equipment/Affiliation/Persistence.
 
-- `ActorNavigationController`;
-- state AI;
-- threat/target assignment y clear/reset;
-- roaming;
-- LastKnownPosition;
-- body rotation / `transform.forward`;
-- combat target;
-- `Stop()` / navigation commands.
+## Fase 2 — Behavior ownership + Ambient roaming
 
-Revisar especialmente `SandboxActorRoamingController`, `HumanEncounterAIController`, `ActorThreatAcquisitionController`, `ActorNavigationController`, `SandboxNpcController` y seams reales encontrados en repo.
+`COMPLETADA` — commit funcional `7fa47c59d8bbe1df61b598f01875e91b2b51c089`.
 
-Entregar mapa `componente → decide → escribe → activa/desactiva → puede interrumpir`.
+White/Blue/Red demostraron desplazamiento físico real. Encounter interrumpe Ambient sin competencia y Ambient reanuda al terminar.
 
-**Gate:** decidir con evidencia entre:
+## Fase 3 — Gaze/Attention V1
 
-A. refactor pequeño de la capa actual; o
-B. reemplazar/simplificar la capa de decisión conservando autoridades inferiores válidas.
+`COMPLETADA` — `e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509`.
 
-No aceptar una solución basada en proliferación de flags de ownership.
+Gaze lógico independiente de locomotion; Ambient/Candidate/Encounter/LostContact/Inactive; no-wallhack; yaw inicial deterministic.
 
-## Fase 2 — Behavior ownership + Ambient roaming real
+## Fase 4 — Tracking visual bounded
 
-**Estado:** `COMPLETADA — 2026-09-01` (`7fa47c59d8bbe1df61b598f01875e91b2b51c089`).
+`COMPLETADA` — `e72feeb67edfe9b208eefa4d4c6c13f488df62cc`.
 
-- White/Blue/Red comparten comportamiento Ambient cuando están realmente Idle.
-- Threat/Encounter interrumpe Ambient limpiamente.
-- Al terminar encounter se libera ownership y Ambient vuelve.
-- Incapacitado/muerto no navega ni combate.
-- Diagnostics de roaming miden desplazamiento real, no sólo accepted orders.
+Movimiento observado → velocidad bounded → predicción corta; target switch reset; LostContact no sigue posiciones ocultas.
 
-**Gate cerrado:** White/Blue/Red recorrieron `0,75 m` físicos individualmente sin amenaza; Encounter tomó ownership sin nuevas órdenes Ambient, lo liberó y Red reanudó `0,751 m`; Inactive permaneció estable. Search continúa reservado y Fase 3 no se inició.
+## Fase 5 — Production Perception usa Current Gaze
 
-## Fase 3 — Orientación inicial + Gaze/Attention V1
+`COMPLETADA` — `2fc27d946f5a807abd4f046d2dee85331490b7c2`.
 
-**Estado:** `COMPLETADA — 2026-09-02` (`e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509`).
-
-Separar locomotion/body facing de atención visual.
-
-Una autoridad mínima de gaze debe permitir:
-
-- Ambient: inspección ocasional de direcciones;
-- Candidate: orientar atención hacia posible amenaza;
-- Combat: intentar mantener al objetivo en la mirada;
-- LostContact/Search: mirar hacia información conocida/probable.
-
-Gaze no duplica LOS/perception ni crea un segundo sistema de raycasts.
-
-**Gate cerrado:** `ActorGazeController` mantiene dirección lógica acotada a `65°` respecto del cuerpo y `90°/s`; Ambient recorrió dos direcciones sin mover ni rotar el root, Candidate/Encounter aceptaron sólo observaciones `Perceived` del mismo observer, LostContact conservó `LastKnownPosition` e Inactive quedó estable. El yaw inicial del sandbox es determinista por seed. `ActorVisualPerceptionService` continúa usando body facing; su integración con gaze permanece reservada para Fase 5.
-
-## Fase 4 — Tracking visual continuo
-
-**Estado:** `COMPLETADA — 2026-09-02` (`e72feeb67edfe9b208eefa4d4c6c13f488df62cc`).
-
-Usar movimiento observado reciente para una predicción visual corta, limitada y humana. El objetivo es mantener la mirada sobre un target que se desplaza, especialmente lateralmente, sin snap instantáneo ni conocimiento mágico.
-
-**Gate cerrado:** dos observaciones legítimas del mismo `TargetId` producen velocidad horizontal acotada y un punto de atención que avanza entre samples durante un horizonte máximo de `0,35 s`, con lead máximo `1,5 m`. Cambiar target o recibir timing/movimiento absurdo resetea la historia; LostContact sólo extrapola la última historia observada y luego se congela; Inactive la elimina. El diagnostic midió `4,491 m/s`, error `52,993° → 41,476°`, step máximo `0,177°`, target-switch reset y `0 m` de deriva después de expiry. Production FOV continúa body-forward y el cierre productivo de tracking permanece en Fase 5.
-
-## Fase 5 — Perception integrada con Gaze
-
-**Estado:** `COMPLETADA — 2026-09-02` (`2fc27d946f5a807abd4f046d2dee85331490b7c2`).
-
-El FOV/LOS de producción debe usar la dirección de mirada apropiada, con fallback explícito donde corresponda.
-
-Tests mínimos:
-
-- delante y dentro de FOV → visible si hay LOS;
-- fuera de FOV → no visible hasta que gaze lo incluya;
-- obstáculo → occluded aunque gaze sea correcto;
-- actor detrás y nunca observado → no detección mágica.
-
-**Gate cerrado:** `ActorVisualPerceptionService` usa un único forward horizontal: `CurrentGazeDirection` cuando existe Gaze configurado/válido y `transform.forward` como fallback. Con half-FOV `60°`, Ambient descubrió un target a `70°` del cuerpo cuando el ángulo de gaze llegó a `59,991°`; tracking lateral conservó `Perceived` a `82°` del cuerpo / `40,457°` del gaze; un target extremo quedó `OutsideFov`; la barrera mantuvo `Occluded`; y el overlay F6 consume la misma dirección read-only del servicio. LOS, recognition, aim/combat y los límites humanos no cambiaron.
+FOV productivo centrado en `CurrentGazeDirection`, LOS físico intacto, Ambient discovery real, tracking lateral integrado y límites humanos.
 
 ## Fase 6 — LostContact / Search V1
 
-**Estado:** `COMPLETADA — 2026-09-02` (`7590ec6f868da89a72a5514a85f7c042fb89e36f`).
+`COMPLETADA` — `7590ec6f868da89a72a5514a85f7c042fb89e36f`.
 
-Flujo mínimo:
+Fight: `LostContact → Search → Reacquire/Encounter OR Release/Ambient`; SearchAnchor congelado, orden única, arrival/inspection, no ataques sin percepción fresca.
 
-`Seen → LOS lost → retain LastKnownPosition/recent motion hint → navigate to information → inspect briefly → reacquire OR release → Ambient`.
+## Fase 7 — Human representation + explicit anatomical hitboxes
 
-No agregar cover, flanking, hearing, squad search ni room clearing.
+`COMPLETADA` — `96cccbe514177d8eb05d8c5c439909b4657f252e`.
 
-**Gate cerrado:** Fight ejecuta `Fighting → LostContact → Searching` con owner `Encounter → Search`, un `SearchAnchor` proyectado y congelado desde `LastKnownPosition`, una sola orden y percepción activa durante movimiento/inspección. Reacquire recorrió `0,642 m` y volvió `Search → Encounter` con el mismo threat y sin Ambient intermedio. Release recorrió `8 m`, llegó con error `0 m`, inspeccionó `0,8 s`, terminó `Idle/Ambient` y reanudó `0,501 m` físicos Ambient. Movimiento oculto no cambió anchor/destino; Avoid abrió `0` búsquedas; incapacidad dejó `Inactive`; target inválido abortó; `AttackCount` no avanzó sin percepción fresca.
+`humanoid_standard` reutiliza `PSX_Char_Male_Base`, sin Animator; visual rig, locomotion collider y seis combat hit regions están separados. `PhysicalShotPathResolver` sigue compartido y los hits explícitos resolvieron 6/6 regiones.
 
-## Fase 7 — Human debug actor + hitboxes anatómicos
-
-**Estado:** `COMPLETADA — 2026-09-03` (`96cccbe514177d8eb05d8c5c439909b4657f252e`).
-
-Usar modelo humano disponible estático/bind pose/T-pose para validar combate antes de animaciones.
-
-Hit regions explícitas como mínimo:
-
-- Head
-- Torso
-- LeftArm
-- RightArm
-- LeftLeg
-- RightLeg
-
-Separar collider locomotor de colliders de combate para que la cápsula no intercepte shots destinados a regiones anatómicas.
-
-**Gate cerrado:** el prefab runtime estático `humanoid_standard` reutiliza el FBX existente `PSX_Char_Male_Base`, sin `Animator`, y se selecciona por `visual_rig_profile_id → family_id`. Conserva una cápsula marcada para locomoción y seis colliders de combate no-trigger explícitos. El shared `PhysicalShotPathResolver` omite sólo esa cápsula cuando el actor posee hitboxes explícitos; `CombatResolution` da precedencia al `BodyRegion` del collider y conserva el fallback geométrico legacy. El diagnostic físico atravesó `shot path → collider → combat → wound` con `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg` exactos `6/6`, cápsula activa bypassed, fallback legacy `Torso`, percepción `Perceived/OutsideFov/Occluded` intacta y collapse que preserva ownership de los seis colliders. La investigación estadística del posible sesgo de piernas continúa en Fase 8.
-
-## Fase 8 — Investigación del posible sesgo de piernas/pies
-
-Instrumentar cada impacto relevante con origin, direction, collider hit, hit point, target y BodyRegion resuelta.
-
-Primero tests deterministas por región; después muestra estadística razonable con aim NPC real.
-
-No exigir una distribución artificial uniforme. Investigar sesgos inexplicables en aim point, spread, shot origin, collider selection o pose.
-
-**Gate:** todas las regiones son físicamente alcanzables y no existe un sesgo anómalo sin explicación.
-
-## Fase 9 — Debug Player: Invisible / Invincible
-
-### Invisible-to-AI
-
-Player conserva presencia física/interacción pero queda fuera del candidate/acquisition boundary de IA.
-
-### Invincible
-
-NPCs continúan detectando, disparando e impactando mediante el pipeline real. V1 permite heridas, pain, bleeding, trauma y condición, pero bloquea la transición final a Dead para no terminar la prueba.
-
-**Gate:** ambos modos pueden activarse/desactivarse sin alterar contratos productivos cuando están apagados.
-
-## Fase 10 — Observabilidad V2
-
-Separar:
-
-- overlay global multi-NPC: short ID/affiliation, state, gaze, FOV, LOS/target, LKP/search, navigation destination, shot traces;
-- inspector detallado de un seleccionado: Vital, Blood, Trauma, Pain, wounds, ammo, recognition, perception reason, navigation/home/LKP, etc.
-
-Overlays deben poder filtrarse por categorías y usar datos/queries reales de producción.
-
-**Gate:** una pelea multi-NPC se entiende sin ciclar F6 constantemente.
-
-## Fase 11 — Batería automatizada pequeña pero fuerte
-
-Gates objetivos:
-
-1. Ambient Roaming real.
-2. Behavior Ownership.
-3. Encounter Interruption.
-4. Ambient Resume.
-5. Idle Gaze.
-6. Target Tracking.
-7. FOV Integrity.
-8. Occlusion.
-9. Recognition.
-10. LostContact.
-11. Search.
-12. Search Release/Reacquire.
-13. Incapacity cancela conducta.
-14. Death cancela conducta.
-15. Anatomy / regiones.
-16. Invisible Debug.
-17. Invincible Debug.
-
-**Regla:** validar resultados observables y contratos, no proxies irrelevantes.
-
-## Fase 12 — Prueba 3 automatizada integrada
-
-Escenario de referencia:
-
-- 1 White;
-- 3 Blue;
-- 3 Red;
-- Player Invisible.
-
-Duración orientativa: 5–10 minutos.
-
-Observar roaming, gaze, encounters, recognition, tracking, Blue↔Red, navigation, shots, hit regions, injuries, incapacity, death, LostContact/Search y retorno a Ambient.
-
-Guardar log, screenshots/event trace y estado final. Durante la prueba no corregir silenciosamente problemas: registrarlos.
-
-## Fase 13 — Prueba 3B con Player
-
-- Invisible OFF.
-- Invincible ON.
-- Validar Blue→Player Neutral y Red→Player Hostile.
-- Player se mueve lateralmente, cruza obstáculos, se acerca/aleja y rodea NPCs.
-- Evaluar gaze/tracking/recognition/LostContact/Search/shots/damage.
-
-**Gate:** cubre directamente las fallas de game feel observadas en Prueba 2.
-
-## Fase 14 — Prueba manual final
-
-Validación humana de game feel:
-
-- ¿parece un humano en vez de un tanque?
-- ¿mira de forma creíble?
-- ¿detecta demasiado o demasiado poco?
-- ¿tracking y pérdida de contacto son comprensibles?
-- ¿la pelea se puede leer visualmente?
-- ¿las heridas/regiones observadas tienen sentido?
-
-Los diagnostics no sustituyen esta prueba.
-
-## Fase 15 — Limpieza y cierre
-
-Eliminar debug temporal, branches/código muerto, compatibilidad ya innecesaria, tests que validen contratos reemplazados y comentarios históricos engañosos.
-
-Conservar:
-
-- Issue Registry e historial `RESOLVED`;
-- observabilidad útil;
-- toggles Invisible/Invincible;
-- regressions de contratos importantes.
-
-Reconciliar Roadmap, Current Milestone, Next Sprints, Development Log y arquitectura técnica.
-
-**Gate final:** NPC Foundation V1 queda cerrada sólo después de pruebas integradas y manuales satisfactorias.
+La compatibilidad capsule-only/geometric BodyRegion conservada durante F7 es transición, no arquitectura final.
 
 ---
 
-## DONE global del saneamiento
+# Fase 8 revisada — Combat targeting / accuracy
 
-El bloque sólo se considera cerrado cuando un escenario White/Blue/Red demuestra que todos tienen vida ambiental, la atención visual puede descubrir amenazas físicamente, Encounter toma ownership sin competir, el target es seguido visualmente, la pérdida de contacto produce una búsqueda breve basada en información limitada, los impactos se resuelven sobre geometría corporal coherente, incapacidad/muerte cancelan conducta, el actor vuelve a Ambient cuando corresponde y todo puede observarse/debuggearse sin herramientas que alteren el resultado.
+La antigua Fase 8 de investigación abierta queda sustituida por etapas pequeñas y verificables. La investigación previa ya está en `NPC_Combat_Targeting_Research.md`; Codex no debe repetirla exhaustivamente.
+
+## Fase 8A — Aim Bias Evidence
+
+**Estado:** `NEXT`.
+
+No cambiar gameplay.
+
+Instrumentar el aim NPC actual bajo condiciones reproducibles y registrar por shot:
+
+- target/TargetId;
+- source del aim point;
+- aim point actual;
+- proposed human center-mass;
+- focus;
+- current spread;
+- shot origin;
+- final direction;
+- hit collider/hit point;
+- BodyRegion o miss;
+- seed/condiciones.
+
+Hipótesis fuerte a probar:
+
+- firearm aim actual usa el centro del `ActorLocomotionCollider`;
+- ese punto queda más bajo que el centro del Torso explícito;
+- el spread radial normal puede convertir una base baja en demasiados impactos de piernas.
+
+No tocar Focus/spread/distance/movement/burst/damage/anatomy durante 8A.
+
+**Gate:** explicar con evidencia si el base aim point contribuye materialmente a `ISSUE-0008` o si la causa real es otra.
+
+## Fase 8B — Generic target-side Primary Aim Point
+
+**Estado:** `CONDITIONAL / READY`.
+
+Sólo si 8A lo justifica.
+
+Introducir la abstracción mínima del lado del target, por ejemplo `ActorPrimaryAimPoint` según conventions reales.
+
+V1:
+
+- un único punto primario;
+- humano → center mass;
+- futuros targets → punto equivalente definido por su representation;
+- Encounter no busca `Torso` ni adivina anatomía;
+- sin manager, scoring, weak points, head/mobility roles ni schema JSON nuevo por anticipación.
+
+Firearm aim normal deja de usar el locomotion center cuando el target expone Primary Aim Point.
+
+## Fase 8C — Controlled Before/After
+
+Repetir exactamente la muestra de 8A con:
+
+- mismas seeds;
+- mismo shooter/target;
+- misma arma/distancia;
+- mismo focus/spread;
+- mismas hitboxes.
+
+La única diferencia relevante debe ser el base target point.
+
+Comparar Head/Torso/Arms/Legs/Miss. No exigir uniformidad; exigir distribución explicable y ausencia de sesgo geométrico absurdo.
+
+`ISSUE-0008` sólo se resuelve con evidencia reproducible.
+
+## Fase 8D — Accuracy Simplification Review
+
+No es un refactor automático.
+
+Revisar después de 8C:
+
+- Focus — KEEP salvo evidencia;
+- shooter movement penalty — KEEP salvo evidencia;
+- target movement penalty — KEEP provisionalmente;
+- automatic burst spread — KEEP V1 salvo evidencia;
+- distance penalty — medir posible doble penalización con el cono angular;
+- weapon spread — decidir si `debug_accuracy_spread` debe convertirse en contribución productiva mínima.
+
+No extraer `ActorAimController`, `AccuracyController`, `FireControlController` o `WeaponHandlingController` por limpieza preventiva.
+
+## Fase 8E — Legacy migration / cleanup
+
+Primero identificar/migrar perfiles y diagnostics que aún dependan de actor capsule-only.
+
+Después, cuando no existan consumers legítimos:
+
+- quitar fallback visual `missing representation → CreatePrimitive(Capsule)`;
+- quitar BodyRegion anatómico inferido por bounds/hitPoint;
+- quitar tests cuya única misión sea preservar esos contratos reemplazados.
+
+Mantener la cápsula técnica invisible de locomoción si Navigation/collision/avoidance/collapse todavía la necesitan.
+
+---
+
+# Fases siguientes
+
+## Fase 9 — Player Debug: Invisible / Invincible
+
+Invisible: Player sigue físico/interactivo pero se excluye del candidate/acquisition boundary.
+
+Invincible: pipeline real de detection/shot/hit/region/wounds/condition continúa, pero QA puede bloquear el terminal Dead.
+
+OFF debe equivaler a gameplay normal.
+
+## Fase 10 — Observability V2
+
+Overlay global multi-NPC + inspector seleccionado. Incluir targeting/accuracy (`PrimaryAimPoint`, focus, spread, shot origin/direction, hit collider/region) cuando esos contratos existan.
+
+No crear otra autoridad de gameplay.
+
+## Fase 11 — Batería automatizada pequeña
+
+Gates de resultados observables:
+
+1. Ambient movement;
+2. Behavior ownership;
+3. Encounter interruption/resume;
+4. Gaze/FOV/LOS;
+5. Recognition;
+6. tracking;
+7. LostContact/Search;
+8. incapacity/death;
+9. anatomy 6/6;
+10. Primary Aim Point / physical imperfect shot;
+11. Invisible;
+12. Invincible.
+
+## Fase 12 — Prueba 3 integrada
+
+Referencia: 1 White, 3 Blue, 3 Red, Player Invisible. Observar vida ambiental, encounters, gaze, Search, shots, aim point, actual regions, wounds, incapacity/death y retorno a Ambient.
+
+Registrar problemas; no corregirlos silenciosamente durante la prueba.
+
+## Fase 13 — Prueba 3B Player
+
+Invisible OFF, Invincible ON. Player se mueve lateralmente, cruza obstáculos, cambia distancia y rodea NPCs para probar la cadena completa de perception → target → aim → physical hit → damage.
+
+## Fase 14 — Manual game feel
+
+Preguntas humanas:
+
+- ¿parecen humanos y no aimbots/tanques?;
+- ¿hay tiempo de reacción razonable?;
+- ¿focus vuelve peligroso a quien mantiene target?;
+- ¿moverse/usar obstáculos cambia el combate?;
+- ¿los misses y regiones impactadas parecen físicamente creíbles?;
+- ¿la pelea multi-NPC se puede leer visualmente?
+
+Diagnostics no sustituyen esta prueba.
+
+## Fase 15 — Cleanup y cierre
+
+Eliminar:
+
+- instrumentation temporal de F8;
+- compatibilidad capsule-only/geometric anatomy ya sin consumers;
+- tests de contratos reemplazados;
+- código muerto/comentarios históricos engañosos.
+
+Conservar:
+
+- Issue Registry;
+- Implementation Backlog;
+- observability útil;
+- debug toggles;
+- regressions de contratos importantes.
+
+Reconciliar Roadmap/Current/Next/Development Log/Architecture.
+
+---
 
 ## Protocolo entre fases
 
 Después de toda fase con código:
 
-1. Codex entrega un **REPORTE FINAL** suficientemente detallado: archivos, contratos, cambios, decisiones, tests, resultados, issues detectados y commit.
-2. Se revisa el commit/diff real antes de autorizar la siguiente fase.
-3. `Issue_Registry.md` se actualiza con nuevos problemas o resoluciones.
-4. No encadenar automáticamente la fase siguiente si el gate anterior no está demostrado.
+1. la investigación de repo se hace fuera de Codex primero cuando sea posible;
+2. Codex recibe objetivo, seam concreto, alcance/DONE y validación proporcional;
+3. Codex implementa y explica el cambio en detalle;
+4. no se inicia la fase siguiente automáticamente;
+5. el commit publicado se revisa otra vez contra el repo;
+6. bugs nuevos → `Issue_Registry.md`;
+7. mecánicas/mejoras futuras no-bug → `Implementation_Backlog.md`.
+
+## DONE global
+
+NPC Foundation V1 sólo se cierra cuando el flujo `Ambient → Gaze/Perception → Recognition → Encounter → Aim/Physical Combat → LostContact/Search → Reacquire/Release → Ambient` funciona de forma observable, sin ownership contradictorio, con anatomía/hits coherentes, player debug suficiente y una Prueba 3/manual satisfactoria.

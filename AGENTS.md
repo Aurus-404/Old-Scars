@@ -4,10 +4,13 @@ Old Scars is a Unity/C# game. Codex supports implementation and technical execut
 
 ## Source Of Truth
 
+- Start continuity work from [Docs/Development_Context_Index.md](Docs/Development_Context_Index.md). It explains which document answers which question and what to read when a development chat/session changes.
 - The repository establishes what exists technically; it does not turn a prototype into design canon.
 - [Docs/Game_Design_Document.md](Docs/Game_Design_Document.md) is the maintainable design baseline. An external GDD is historical/reference material.
 - [Docs/Project_Roadmap.md](Docs/Project_Roadmap.md) owns milestone IDs, states, dependencies, and gates. [Docs/Current_Milestone.md](Docs/Current_Milestone.md) is the operating snapshot; [Docs/Next_Sprints.md](Docs/Next_Sprints.md) is the real near-term queue.
+- [Docs/Issue_Registry.md](Docs/Issue_Registry.md) stores bugs, confirmed/suspected defects and resolved history. [Docs/Implementation_Backlog.md](Docs/Implementation_Backlog.md) stores approved smaller mechanics/technical improvements that should not be forgotten but are not roadmap milestones or bugs.
 - [Docs/Development_Log.md](Docs/Development_Log.md) is append-only. [Docs/Technical_Architecture.md](Docs/Technical_Architecture.md) and [Docs/DataDriven_JSON_Rules.md](Docs/DataDriven_JSON_Rules.md) own implemented technical and data contracts.
+- Research/decision notes may exist for active areas. In the current NPC combat block, [Docs/NPC_Combat_Targeting_Research.md](Docs/NPC_Combat_Targeting_Research.md) is the research basis for aim/accuracy decisions; it does not claim unimplemented behavior is already architecture.
 - Escalate a material creative, product, authority, or scope ambiguity to Mauro. Do not silently reconcile conflicting sources.
 
 ## System Harmony
@@ -18,6 +21,21 @@ Before changing a feature, inspect the relevant authorities, interfaces, service
 - Do not create parallel authorities, per-content C# exceptions, speculative universal managers, or foundations without a current consumer.
 - Assess regressions by systemic blast radius, not lines changed. Preserve identity, ownership, atomicity, rollback, Core/mod infrastructure, and current contracts when they are in scope.
 - Do not begin an unauthorized milestone or expand gameplay, data, persistence, or scenes merely for convenience.
+- Sunk cost is not a reason to preserve a bad seam. Remove or replace obsolete coordination/compatibility after its real consumers have migrated and tests prove the replacement.
+
+## Research-First Routing
+
+Do not spend Codex quota re-auditing a repository problem when the cause can be established from GitHub/repository review outside Codex and the task already provides that evidence.
+
+Preferred flow:
+
+1. repository research establishes likely/confirmed cause, affected authorities, scope and DONE criteria;
+2. Codex verifies the named seam in the canonical checkout rather than restarting an exhaustive audit;
+3. Codex implements the smallest correct change and runs Unity/local validation that cannot be done from repository review alone;
+4. Codex reports exactly what changed, evidence, regressions and Git state;
+5. the published commit is reviewed again before the next phase.
+
+Codex should still investigate locally when the answer depends on uncommitted files, Unity runtime/editor state, generated assets, logs, scene state or other evidence unavailable from the repository.
 
 ## Data-Driven And Modding
 
@@ -34,7 +52,7 @@ Use the smallest prompt and investigation that can safely establish the requeste
 - Normal task: goal, relevant systems, included/excluded scope, done condition, and validation.
 - Cross-system or architectural task: authorities, dependencies, integration, blast radius, regressions, explicit subagent roles/count, and Git strategy.
 
-Use [Docs/Milestone_Template.md](Docs/Milestone_Template.md) as a proportional prompt template, not a compulsory mega-prompt. Work in **Objective** mode by default; use **Plan** only when material investigation/design is needed (for example authority migration, delicate persistence, worldgen, streaming, machine runtime, or a cross-system refactor).
+Use [Docs/Milestone_Template.md](Docs/Milestone_Template.md) as a proportional prompt template, not a compulsory mega-prompt. Work in **Objective** mode by default; use **Plan** only when material local investigation/design is genuinely needed (for example authority migration, delicate persistence, worldgen, streaming, machine runtime, or a cross-system refactor whose cause was not already established).
 
 Model policy: use **Terra** by default for normal implementation, bugs, diagnostics, and integration; **Luna** for mechanical, predictable, repetitive, or routine content/documentation work; **Sol** for delicate architecture, persistence, durable identity, worldgen, streaming, authority changes, or hard cross-system bugs. Use **Ultra** only when its extra reasoning is justified. Use **Standard** speed; do not recommend Fast for Old Scars.
 
@@ -68,5 +86,7 @@ Use `$old-scars-unity-validation` for Unity validation and `$old-scars-persisten
 ## Documentation And Closeout
 
 Update only documentation whose truth changed. Keep the Development Log append-only; do not rewrite historical statuses. Use `$old-scars-milestone-closeout` for a milestone, significant refactor, or other closeout that needs review and publication.
+
+When an implementation reveals a future mechanic/improvement rather than a defect, put it in [Docs/Implementation_Backlog.md](Docs/Implementation_Backlog.md), not in the milestone roadmap and not as a fake bug. When a real defect is discovered, use [Docs/Issue_Registry.md](Docs/Issue_Registry.md).
 
 The technical-contract map is [Docs/OldScars_Development_Rules.md](Docs/OldScars_Development_Rules.md). It is a navigation reference, not a second workflow policy.

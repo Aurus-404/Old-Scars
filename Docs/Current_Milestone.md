@@ -1,117 +1,127 @@
-# Old Scars - Current Milestone
+# Old Scars — Current Milestone
 
-Este archivo es un snapshot operativo breve. La autoridad de IDs, estados, dependencias y gates sigue siendo [Project_Roadmap.md](Project_Roadmap.md); la cronología/evidencia permanece en [Development_Log.md](Development_Log.md). Los problemas persistentes y su estado viven en [Issue_Registry.md](Issue_Registry.md).
+Este archivo es el snapshot operativo breve. `Project_Roadmap.md` conserva IDs/dependencias de milestones grandes; `Next_Sprints.md` es la cola inmediata; `Issue_Registry.md` almacena defectos; `Implementation_Backlog.md` guarda mecánicas/mejoras menores aprobadas para después; `Development_Context_Index.md` indica qué leer al cambiar de chat/sesión.
 
-> Nota de reconciliación: `Project_Roadmap.md` todavía conserva wording anterior que presenta M41.4 como `AUTHORIZED — IMMEDIATE PRIORITY`. Eso está registrado como `ISSUE-0016` y no debe interpretarse como que M41.4 todavía no fue implementado. No renumerar ni reasignar IDs por este desfase documental.
+## Estado actual
 
-## Estado Actual
-
-### M41 — NPC Combat / AI Stabilization after Prueba 2
+### M41 — NPC Combat / AI Foundation after Prueba 2
 
 Estado operativo:
 
-`IN PROGRESS — SANITATION / REVIEW`
+`IN PROGRESS — SANITATION PHASE 8 / COMBAT TARGETING`
 
-Plan activo: [NPC_AI_Sanitation_Plan.md](NPC_AI_Sanitation_Plan.md).
+Plan activo: `NPC_AI_Sanitation_Plan.md`.
 
-Registro de problemas: [Issue_Registry.md](Issue_Registry.md).
+Research/decision record activo: `NPC_Combat_Targeting_Research.md`.
 
-M41.4 ya avanzó más allá del estado documental anterior. El baseline publicado incluye affiliation/threat acquisition, range-aware combat, imperfect aim, fixes de incapacidad/hostilidad/roaming intentado, consolidación health/condition/vital damage, balance .303 y observabilidad NPC/combate.
+## Foundation ya cerrada
 
-Commits relevantes del baseline reciente:
+El bloque ya no está en la situación inicial de Prueba 2. Están implementados y validados:
 
-- `b42e17c40ad843244fd390c9b0eeb707b6462d31` — estabilización P0 de AI/incapacitación y matriz Blue/Red;
-- `feab22115f384d908397b2836ffe4316075cd552` — estabilización de condition/recovery;
-- `a0769e14bc71946dc35fbef5085a191785d27c35` — integración de Vital Damage;
-- `8d567b4ce6779e8bff8495c497b9a1cbfc3aec35` — calibración .303;
-- `eae5f14bed6aae82840762faf6561bf0b0e1625d` — observabilidad M41 de NPC/combate.
+- F2 — `ActorBehaviorController`: ownership `Ambient / Encounter / Search / Inactive`, roaming físico White/Blue/Red y reanudación real;
+- F3 — `ActorGazeController`: gaze/attention lógica bounded, yaw inicial determinista y no-wallhack;
+- F4 — tracking visual por movimiento observado con predicción corta bounded;
+- F5 — `ActorVisualPerceptionService` centrado en Current Gaze, FOV/LOS productivos y tracking lateral integrado;
+- F6 — LostContact/Search V1 con `SearchAnchor` congelado, navegación física, reacquire/release y ownership Search real;
+- F7 — humano estático reutilizado + `ActorLocomotionCollider` + seis `ActorCombatHitRegion` explícitos + shot path compartido.
 
-La Prueba 2 manual confirmó que el bloque todavía no está listo para cerrarse. Los problemas activos incluyen, entre otros:
+Commits funcionales de referencia:
 
-- Blue/Red no muestran roaming ambiental efectivo mientras están Idle aunque White sí;
-- el diagnóstico de roaming puede demostrar órdenes aceptadas sin demostrar desplazamiento real;
-- existe una sospecha de ownership/competencia entre Ambient/Encounter/Navigation que requiere auditoría antes de seguir parchando;
-- la percepción depende demasiado del facing corporal de spawn y falta una autoridad de gaze/attention;
-- tracking visual lateral deficiente;
-- LostContact todavía no realiza Search V1;
-- posible sesgo de impactos hacia piernas/pies aún no confirmado;
-- la cápsula actual es insuficiente para validar regiones anatómicas de combate;
-- faltan herramientas debug Invisible-to-AI / Invincible y mejor observabilidad multi-NPC.
+- F2 `7fa47c59d8bbe1df61b598f01875e91b2b51c089`;
+- F3 `e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509`;
+- F4 `e72feeb67edfe9b208eefa4d4c6c13f488df62cc`;
+- F5 `2fc27d946f5a807abd4f046d2dee85331490b7c2`;
+- F6 `7590ec6f868da89a72a5514a85f7c042fb89e36f`;
+- F7 `96cccbe514177d8eb05d8c5c439909b4657f252e`.
 
-La lista completa, severidad, evidencia y estado están en `Issue_Registry.md`.
+No reabrir estas autoridades por inercia. Una regresión real puede justificar cambios, pero no otra reconstrucción global de IA.
 
-## Objetivo Del Bloque Activo
+## Problema activo
 
-No agregar nuevas features grandes. Primero sanear y simplificar la foundation humana hasta poder demostrar:
+### ISSUE-0008 — posible sesgo de impactos hacia piernas/pies
 
-`Ambient → Perception/Gaze → Recognition → Encounter → Tracking/Combat → LostContact/Search → Reacquire o Release → Ambient`
+Estado del issue: `SUSPECTED / P1` hasta validación estadística reproducible.
 
-con ownership inequívoco de navegación, daño localizado coherente, incapacidad/muerte estables y tooling suficiente para probarlo.
+La investigación de repo posterior a Fase 7 encontró una hipótesis fuerte:
 
-No existe obligación de conservar la capa de decisión actual si la auditoría demuestra sobreingeniería. Sí deben preservarse/reutilizarse las autoridades inferiores válidas de Perception, Navigation, Combat, Health/Medical/Condition, Equipment, Affiliation y Persistence en vez de crear stacks paralelos.
+- firearm aim de `HumanEncounterAIController` todavía toma el `ActorLocomotionCollider` del target y usa `bounds.center` como base aim point;
+- los `ActorCombatHitRegion` nuevos se ignoran para aim (correctamente durante F7 para no cambiar aim accidentalmente), por lo que la IA sigue apuntando a un centro técnico de locomoción, no a un center-mass del target;
+- en `humanoid_standard`, el centro de Torso está aproximadamente 0.18 m por encima del centro de locomoción y el borde superior de piernas queda aproximadamente 0.11 m por debajo del aim histórico;
+- el spread actual es radial/simétrico y no muestra por código una inclinación vertical deliberada, por lo que un aim base bajo puede ser amplificado por un error angular normal.
 
-## Fase Actual
+Esto todavía no autoriza cambiar balance/spread. La próxima fase debe demostrarlo bajo condiciones controladas.
 
-### Fase 0 — Registro, baseline y documentación
+## Dirección arquitectónica elegida
 
-Se está fijando una fuente persistente de issues y el plan secuencial de saneamiento para evitar perder problemas entre días/pruebas/prompts.
+No implementar `aim at Torso` dentro de Human Encounter como solución permanente.
 
-Al completar Fase 0, el próximo trabajo de código es:
+La dirección objetivo es genérica para humanos, animales, mutantes, robots u otros targets:
 
-### Fase 1 — Auditoría destructiva de la IA actual
+`Target → Primary Aim Point → shooter focus/context error → weapon → PhysicalShotPathResolver → actual hit → receiver`.
 
-Antes de refactorizar, inspeccionar writers/owners reales de Navigation, AI state, threat assignment/reset, roaming, LastKnownPosition, facing/rotation y combat target. El gate es decidir con evidencia si la capa actual se simplifica mediante refactor acotado o si conviene reemplazar la capa de decisión conservando las autoridades inferiores.
+El target define dónde es razonable intentar impactarlo; el shooter define cuánto error tiene; el arma define sus parámetros; la física decide dónde pegó; el receptor interpreta el impacto.
 
-## Cierres Relevantes Previos
+Esto está documentado en `NPC_Combat_Targeting_Research.md`.
 
-### M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1
+## Próximo paso exacto
 
-`DONE — NPC SANDBOX SPAWN & RANDOMIZED LOADOUTS V1 VALIDATED`
+### Fase 8A — Aim Bias Evidence
 
-Commit funcional: `a90dc4e1a38bef69e3762e398a378a666a9f993e`.
+Implementar únicamente instrumentación/diagnostic reproducible. No cambiar gameplay todavía.
 
-### M41.2 — Basic Equipment & Weapon Coverage V1
+Medir por shot:
 
-`DONE — BASIC EQUIPMENT & WEAPON COVERAGE V1 VALIDATED`
+- base aim point y su source;
+- proposed human center-mass;
+- focus/current spread;
+- shot origin/direction;
+- hit collider/hit point;
+- BodyRegion o miss;
+- seed/condición reproducible.
 
-Commit funcional: `4f877da10dee813b0bed816194110b5a27087683`.
+Comparar el comportamiento actual contra el proposed target point bajo las mismas condiciones. Si 8A confirma la hipótesis, pasar a F8B; si no, investigar la evidencia real antes de tocar spread.
 
-### Deformable Volumetric Terrain Foundation / Technical Spike
+## Secuencia inmediata revisada
 
-`VALIDATED — TECHNICAL SPIKE COMPLETE`
+- F8A — Aim Bias Evidence.
+- F8B — Generic target-side Primary Aim Point, sólo si 8A lo justifica.
+- F8C — comparación before/after con mismas seeds/condiciones, sin retuning.
+- F8D — review pequeño de accuracy; ningún factor cambia por defecto.
+- F8E — migrar consumers legacy y eliminar actor capsule-only/geometric BodyRegion fallback cuando sea seguro.
+- F9 — Player Invisible / Invincible debug.
+- F10 — Observability V2.
+- F11–F15 — batería integrada, Prueba 3/3B, game feel, cleanup y cierre.
 
-Commit técnico: `d0309cf053be220a22151cae2dae9aca6f988e6f`.
+## Reglas de alcance
 
-Integración publicada en `dev`: `1b41ead829cd566c55df5adfc0522e33e1dffb96`.
+Conservar salvo evidencia contraria:
 
-Autoridad de evidencia: [Deformable_Terrain_Foundation.md](Deformable_Terrain_Foundation.md).
+- Behavior ownership;
+- Navigation;
+- Gaze;
+- Perception;
+- Recognition/Threat Acquisition;
+- Search V1;
+- `WeaponCombatService`;
+- `PhysicalShotPathResolver`;
+- explicit combat hit regions;
+- Focus y error angular físico.
 
-## Contratos Que No Deben Duplicarse
+No iniciar ahora:
 
-- M37/M37.1: persistence/Current Slice.
-- M38: actor identity/lifecycle/spawn foundation.
-- M39: localized health/wounds.
-- M40/M40.1: combat, firearms/ammo/reload, armor y penetration.
-- M41.0: Navigation/Perception foundation, salvo refactor explícito basado en auditoría.
-- `ActorEquipmentComponent`, item-owned storage, ownership e `ItemInstance`: equipment/state.
-- JSON declara contenido; C# ejecuta comportamiento genérico.
+- Behavior Trees/GOAP/Utility AI;
+- weak-point/aim-point scoring framework;
+- head targeting AI;
+- full ballistics/drop/wind;
+- Accuracy/FireControl/WeaponHandling controllers separados por limpieza preventiva;
+- machine/vehicle damage framework sin consumidor real;
+- attack-method framework para animales/mutantes antes del primer atacante real de ese tipo.
 
-## No Iniciar Todavía
+## Nota sobre compatibilidad legacy
 
-Durante el saneamiento no iniciar por inercia:
+La cápsula invisible técnica de locomoción puede seguir existiendo. Lo que no forma parte de la arquitectura final es:
 
-- Behavior Trees/GOAP/Utility AI generales;
-- squads, cover tactics sofisticadas o strategic/off-sector AI;
-- hearing/noise y schedules/jobs;
-- full ballistics/bullet drop/travel time/wind;
-- facciones/reputación productivas completas;
-- final NPC population/ecology;
-- production UI;
-- world streaming/LOD/navigation productivos;
-- minería/geología/fluid simulation;
-- condition/repair/crafting;
-- producción masiva de contenido.
+- el actor capsule-only como fallback de representación;
+- inferir anatomía productiva por porcentajes de una cápsula.
 
-## Próximo Paso Exacto
-
-Completar Fase 0 documental. Después ejecutar **Fase 1 — Auditoría destructiva de la IA actual** sin implementar todavía un nuevo stack de IA. La auditoría debe terminar con un mapa claro de ownership/writers y una decisión explícita: `REFactor salvable` o `reemplazo/simplificación de la capa de decisión`.
+Esos fallbacks se retiran sólo después de migrar los consumers/fixtures que todavía los usan.
