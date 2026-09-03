@@ -3564,3 +3564,29 @@ Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`:
 - `git diff --check`: `PASS`.
 
 `ISSUE-0007` queda `RESOLVED`. No aparecieron issues nuevos. F6 añade sólo una línea proporcional de Search/outcome/anchor/inspection. Gaze/FOV/prediction, aim, spread, `CurrentAimPoint`, `WeaponCombatService`, `PhysicalShotPathResolver`, combat balance, health/medical, profiles, persistence y worldgen no cambiaron. Fase 7 no fue iniciada; modelo humano/hitboxes anatómicos continúan pendientes. No se ejecutó aceptación visual/manual ni se declara sustituida por automatización. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.
+
+### NPC AI Sanitation — Fase 7 Human Debug Actor + Explicit Anatomical Hitboxes
+
+Fecha: 2026-09-03.
+
+Estado: `VALIDATED — PHASE 7 COMPLETE`.
+
+Se reutilizó el FBX ya presente `PSX_Char_Male_Base` como representación humana estática `humanoid_standard`: renderer visible de `1,93 m`, bind pose sin `Animator`, rig/sockets existentes y cápsula locomotora invisible. `ActorRuntimeRepresentationFactory` resuelve `ActorProfile.visual_rig_profile_id → VisualRigProfile.family_id → Resources/OldScarsActorRepresentations/<family_id>` sin branch por actor; sin asset conserva el fallback capsule legacy. White usa el profile sandbox y Blue/Red el profile de combate compartido, todos con la misma family humana; los tintes Blue/Red y la afiliación textual preexistentes se conservan.
+
+El prefab distingue visual, `ActorLocomotionCollider` y seis `ActorCombatHitRegion` no-trigger (`Head`, `Torso`, `LeftArm`, `RightArm`, `LeftLeg`, `RightLeg`). El marker de región sólo identifica `BodyRegion`; Medical/armor/Vital Integrity conservan su autoridad. El shared `PhysicalShotPathResolver` omite la cápsula marcada sólo cuando el mismo root tiene hitboxes explícitos. `CombatResolution` prioriza esa región explícita y mantiene fallback geométrico legacy. Perception y aim ignoran los hitboxes al seleccionar su centro/collider histórico, sin implementar aim anatómico ni cambiar spread. Collapse conserva root, regiones y colliders; no se añadió ragdoll.
+
+El diagnostic físico pasó `6/6` mediante `PhysicalShotPathResolver → collider real → CombatResolution → wound`: Head `(-8,20.720,37.830)`, Torso `(-5,20.180,37.850)`, LeftArm `(-2.550,20.250,37.900)`, RightArm `(1.550,20.250,37.900)`, LeftLeg `(3.860,19.480,37.880)` y RightLeg `(7.140,19.480,37.880)`, cada uno con región explícita/final/wound coincidente. Para Torso la cápsula habilitada intersectaba físicamente el rayo pero no terminó el shot; un actor legacy siguió resolviendo Torso por fallback. Perception conservó `Perceived`, `OutsideFov` y `Occluded`, con delta de centro `0 m`; collapse preservó ownership de las seis regiones. Un render inspeccionado confirmó anatomía humana legible, escala razonable, pose estática y ausencia de cápsula visible.
+
+Validación focalizada en Unity `6000.4.6f1`:
+
+- Runtime compile y Editor compile: `PASS`; warnings preexistentes separados;
+- `M41 Human Debug Actor & Anatomical Hitboxes Diagnostics: PASS`;
+- `M40.0 Combat Resolution & Weapons Diagnostics: PASS`;
+- `M40.1 Armor & Penetration Diagnostics: PASS`;
+- `M41.3 NPC Sandbox Spawn & Randomized Loadouts Diagnostics: PASS` (`12` actores, `12` identidades, `131` items únicos);
+- `M41.0 Navigation & Perception Diagnostics: PASS`;
+- `M41 Sandbox Preparation Diagnostics: PASS`;
+- `M41 LostContact / Search V1 Diagnostics: PASS`;
+- `git diff --check`: `PASS`.
+
+`ISSUE-0009` queda `RESOLVED` por el commit funcional `96cccbe514177d8eb05d8c5c439909b4657f252e`. `ISSUE-0008` permanece `SUSPECTED`: Fase 7 demuestra geometría alcanzable, no distribución estadística ni causa de sesgo. No aparecieron issues nuevos; el límite conocido del asset mapping built-in/moddable ya está documentado en la arquitectura. Fase 8 no fue iniciada. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.

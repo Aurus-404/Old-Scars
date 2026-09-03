@@ -177,14 +177,14 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Causa confirmada o hipótesis:** puede provenir de aim point/spread, geometría de cápsula, selección de collider o algoritmo legacy de región. No asumir causa todavía.
 - **Sistemas afectados:** physical shot path, hit geometry, body region resolution, combat diagnostics.
 - **Solución prevista:** Fases 7–8: hitboxes anatómicos explícitos + instrumentación por impacto + tests deterministas y estadísticos.
-- **Commit de corrección:** pendiente.
-- **Validación:** todas las regiones deben ser alcanzables y la distribución real no debe mostrar un sesgo inexplicable.
-- **Notas:** no modificar medicina/Vital Integrity para arreglar un problema de geometría/aim.
+- **Commit de corrección:** Fase 7 `96cccbe514177d8eb05d8c5c439909b4657f252e` agrega geometría anatómica explícita y prueba determinista; no declara corrección del sesgo.
+- **Validación:** Fase 7 confirma `6/6` regiones físicas alcanzables, pero la distribución real todavía debe medirse con aim NPC y muestra estadística en Fase 8.
+- **Notas:** `HumanEncounterAIController` y Perception filtran los nuevos combat hitboxes para conservar sus centros/semánticas previas; no se ajustaron aim, spread, medicina ni Vital Integrity. El sesgo permanece `SUSPECTED`.
 
 ## ISSUE-0009 — La cápsula humana es insuficiente para validar hit testing anatómico
 
 - **Tipo:** `DESIGN_DEBT`
-- **Estado:** `CONFIRMED`
+- **Estado:** `RESOLVED`
 - **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** Prueba 2 manual integrada
@@ -193,10 +193,10 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Evidencia:** representación actual y limitación observada durante combate.
 - **Causa confirmada o hipótesis:** la cápsula fue adecuada para la foundation, no para evaluación anatómica final.
 - **Sistemas afectados:** actor presentation, combat hit testing, body region resolution.
-- **Solución prevista:** Fase 7: usar modelo humano estático/bind pose o T-pose con hitboxes `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg`, conservando collider locomotor separado.
-- **Commit de corrección:** pendiente.
-- **Validación:** disparos dirigidos a cada collider deben resolver la región correcta.
-- **Notas:** animaciones siguen fuera de alcance hasta que aporten valor a la prueba.
+- **Solución prevista:** aplicada en Fase 7: el FBX existente `PSX_Char_Male_Base` se materializa como prefab estático por family de visual rig, con cápsula locomotora marcada y seis hitboxes explícitos `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg`.
+- **Commit de corrección:** `96cccbe514177d8eb05d8c5c439909b4657f252e` — `feat(ai): add human anatomical hitboxes`.
+- **Validación:** `M41 Human Debug Actor & Anatomical Hitboxes Diagnostics: PASS`: `6/6` chain real `PhysicalShotPathResolver → CombatHitbox → CombatResolution → wound`; la cápsula habilitada fue atravesada para Torso, fallback legacy resolvió `Torso`, Perception conservó `Perceived/OutsideFov/Occluded` y physical collapse preservó ownership de las seis regiones. Runtime/Editor compile, M40.0/M40.1, M41 Sandbox, Navigation/Perception, Sandbox Preparation y Search V1 pasaron.
+- **Notas:** animaciones, IK, ragdoll articulado, target anatomical AI y distribución estadística continúan fuera de alcance. Los assets de representación runtime son actualmente built-in `Resources` por family de rig; el contrato visual existente ya declara que AssetBundles/Mod Kit no forman parte del slice actual.
 
 ## ISSUE-0010 — Observabilidad global insuficiente para peleas multi-NPC
 

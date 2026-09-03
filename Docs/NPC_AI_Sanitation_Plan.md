@@ -138,6 +138,8 @@ No agregar cover, flanking, hearing, squad search ni room clearing.
 
 ## Fase 7 — Human debug actor + hitboxes anatómicos
 
+**Estado:** `COMPLETADA — 2026-09-03` (`96cccbe514177d8eb05d8c5c439909b4657f252e`).
+
 Usar modelo humano disponible estático/bind pose/T-pose para validar combate antes de animaciones.
 
 Hit regions explícitas como mínimo:
@@ -151,7 +153,7 @@ Hit regions explícitas como mínimo:
 
 Separar collider locomotor de colliders de combate para que la cápsula no intercepte shots destinados a regiones anatómicas.
 
-**Gate:** disparos dirigidos a cada región resuelven exactamente esa región.
+**Gate cerrado:** el prefab runtime estático `humanoid_standard` reutiliza el FBX existente `PSX_Char_Male_Base`, sin `Animator`, y se selecciona por `visual_rig_profile_id → family_id`. Conserva una cápsula marcada para locomoción y seis colliders de combate no-trigger explícitos. El shared `PhysicalShotPathResolver` omite sólo esa cápsula cuando el actor posee hitboxes explícitos; `CombatResolution` da precedencia al `BodyRegion` del collider y conserva el fallback geométrico legacy. El diagnostic físico atravesó `shot path → collider → combat → wound` con `Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg` exactos `6/6`, cápsula activa bypassed, fallback legacy `Torso`, percepción `Perceived/OutsideFov/Occluded` intacta y collapse que preserva ownership de los seis colliders. La investigación estadística del posible sesgo de piernas continúa en Fase 8.
 
 ## Fase 8 — Investigación del posible sesgo de piernas/pies
 
