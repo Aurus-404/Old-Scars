@@ -42,6 +42,8 @@ namespace OldScars.Core.Actors
                 gameObject.AddComponent<ActorMedicalStateComponent>();
             if (GetComponent<ActorConditionComponent>() == null)
                 gameObject.AddComponent<ActorConditionComponent>();
+            if (GetComponent<ActorWoundTreatmentController>() == null)
+                gameObject.AddComponent<ActorWoundTreatmentController>();
             ResolveWorldObjectTags();
             ClampHealth();
 

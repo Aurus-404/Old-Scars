@@ -1529,6 +1529,11 @@ namespace OldScars.Core.Data.Validation
                 {
                     report.Error($"{ctx}: 'consumable.wound_treatment.bleeding_multiplier' must be finite and in [0, 1).");
                 }
+                if (float.IsNaN(treatment.application_seconds) || float.IsInfinity(treatment.application_seconds) ||
+                    treatment.application_seconds <= 0f)
+                {
+                    report.Error($"{ctx}: 'consumable.wound_treatment.application_seconds' must be finite and > 0.");
+                }
                 if (hasRestoreNeeds || item.consumable.restore_health != null)
                     report.Error($"{ctx}: 'wound_treatment' cannot be combined with restore effects in V1.");
             }

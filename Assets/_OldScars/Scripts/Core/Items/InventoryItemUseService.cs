@@ -105,10 +105,81 @@ namespace OldScars.Core.Items
             return total;
         }
 
-        public static InventoryItemUseResult TryApplyWoundTreatment(
+        public static bool TryFindOwnedWoundTreatment(
+            ActorItemOwnershipComponent ownership,
+            out string itemInstanceId,
+            out ItemWoundTreatment treatment,
+            out string failure)
+        {
+            itemInstanceId = null;
+            treatment = null;
+            if (ownership == null || ownership.PersonalInventory == null)
+            {
+                failure = "Actor item ownership is unavailable.";
+                return false;
+            }
+
+            IReadOnlyList<ItemStorageEntry> entries = ownership.GetAllOwnedEntries();
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (!TryResolveOwnedTreatment(
+                        ownership,
+                        entry,
+                        out ItemDefinition item,
+                        out _,
+                        out _))
+                {
+                    continue;
+                }
+
+                itemInstanceId = entry.Item.InstanceId;
+                treatment = item.consumable.wound_treatment;
+                failure = null;
+                return true;
+            }
+
+            failure = "No compatible wound-treatment item is owned by the actor.";
+            return false;
+        }
+
+        public static bool TryGetOwnedWoundTreatment(
+            ActorItemOwnershipComponent ownership,
+            string itemInstanceId,
+            out ItemWoundTreatment treatment,
+            out string definitionId,
+            out string failure)
+        {
+            treatment = null;
+            definitionId = null;
+            if (ownership == null || ownership.PersonalInventory == null)
+            {
+                failure = "Actor item ownership is unavailable.";
+                return false;
+            }
+
+            IReadOnlyList<ItemStorageEntry> entries = ownership.GetAllOwnedEntries();
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ItemStorageEntry entry = entries[index];
+                if (entry?.Item == null || entry.Item.InstanceId != itemInstanceId ||
+                    !TryResolveOwnedTreatment(ownership, entry, out ItemDefinition item, out _, out _))
+                    continue;
+                treatment = item.consumable.wound_treatment;
+                definitionId = item.id;
+                failure = null;
+                return true;
+            }
+
+            failure = "The exact wound-treatment ItemInstance is no longer owned by the actor.";
+            return false;
+        }
+
+        internal static InventoryItemUseResult TryCommitWoundTreatment(
             ActorItemOwnershipComponent ownership,
             ActorMedicalStateComponent medicalState,
-            string woundId)
+            string woundId,
+            string itemInstanceId)
         {
             if (ownership == null || ownership.PersonalInventory == null)
                 return InventoryItemUseResult.Failed("Actor item ownership is unavailable.");
@@ -119,15 +190,14 @@ namespace OldScars.Core.Items
             for (int index = 0; index < entries.Count; index++)
             {
                 ItemStorageEntry entry = entries[index];
-                if (!TryResolveOwnedTreatment(
+                if (entry?.Item == null || entry.Item.InstanceId != itemInstanceId ||
+                    !TryResolveOwnedTreatment(
                         ownership,
                         entry,
                         out ItemDefinition item,
                         out IGridStorageOwner owner,
                         out IGridStorageTransferEndpoint endpoint))
-                {
                     continue;
-                }
 
                 ItemWoundTreatment treatment = item.consumable.wound_treatment;
                 if (!medicalState.CanApplyBandage(woundId, treatment.bleeding_multiplier, out string failure))
@@ -162,7 +232,7 @@ namespace OldScars.Core.Items
                 return InventoryItemUseResult.Succeeded($"Applied {displayName}; bleeding reduced.");
             }
 
-            return InventoryItemUseResult.Failed("No compatible wound-treatment item is owned by the actor.");
+            return InventoryItemUseResult.Failed("The exact wound-treatment ItemInstance is no longer owned by the actor.");
         }
 
         private static bool RemoveOne(

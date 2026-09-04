@@ -710,6 +710,7 @@ namespace OldScars.Core.Actors
         private Rect windowRect = new Rect(252f, 16f, WindowWidth, WindowHeight);
         private ActorMedicalStateComponent medicalState;
         private ActorItemOwnershipComponent itemOwnership;
+        private ActorWoundTreatmentController woundTreatment;
         private BodyRegion selectedRegion = BodyRegion.Torso;
         private string selectedWoundId;
         private string feedback;
@@ -778,6 +779,7 @@ namespace OldScars.Core.Actors
             actorHealth = health;
             medicalState = actorHealth != null ? actorHealth.GetComponent<ActorMedicalStateComponent>() : null;
             itemOwnership = actorHealth != null ? actorHealth.GetComponent<ActorItemOwnershipComponent>() : null;
+            woundTreatment = actorHealth != null ? actorHealth.GetComponent<ActorWoundTreatmentController>() : null;
             selectedWoundId = null;
         }
 
@@ -931,14 +933,23 @@ namespace OldScars.Core.Actors
             }
 
             int treatmentQuantity = InventoryItemUseService.GetAvailableWoundTreatmentQuantity(itemOwnership);
-            GUI.enabled = selected != null;
+            if (woundTreatment?.IsTreating == true)
+            {
+                GUILayout.Label($"Vendando {woundTreatment.WoundRegion}... {woundTreatment.Progress * 100f:0}%");
+                GUILayout.Label($"Restante: {woundTreatment.RemainingSeconds:0.0}s");
+            }
+            else if (feedback == "Vendando..." && woundTreatment != null &&
+                     woundTreatment.LastOutcome != ActorWoundTreatmentOutcome.InProgress)
+                feedback = woundTreatment.LastMessage;
+            GUI.enabled = selected != null && woundTreatment?.IsTreating != true;
             if (GUILayout.Button($"Aplicar vendaje (disponibles: {treatmentQuantity})", GUILayout.Height(30f)))
             {
-                InventoryItemUseResult result = InventoryItemUseService.TryApplyWoundTreatment(
-                    itemOwnership,
-                    medicalState,
-                    selectedWoundId);
-                feedback = result.Message;
+                string failure = null;
+                bool started = woundTreatment != null && woundTreatment.TryStart(
+                    selectedWoundId,
+                    ActorWoundTreatmentPurpose.Manual,
+                    out failure);
+                feedback = started ? "Vendando..." : failure ?? "No se pudo iniciar el vendaje.";
             }
             GUI.enabled = true;
             if (!string.IsNullOrWhiteSpace(feedback))

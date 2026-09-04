@@ -223,7 +223,8 @@
       "consumable": {
         "wound_treatment": {
           "type": "bandage",
-          "bleeding_multiplier": 0.1
+          "bleeding_multiplier": 0.1,
+          "application_seconds": 4.0
         }
       }
     },

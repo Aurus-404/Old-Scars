@@ -128,6 +128,7 @@ namespace OldScars.Core.ApplicationShell
                 playerContext.GetComponent<ActorCarryWeightComponent>() == null ||
                 playerContext.GetComponent<ActorHealthComponent>() == null ||
                 playerContext.GetComponent<ActorMedicalStateComponent>() == null ||
+                playerContext.GetComponent<ActorWoundTreatmentController>() == null ||
                 playerContext.GetComponent<ActorConditionComponent>() == null ||
                 playerContext.GetComponent<ActorNeedsComponent>() == null ||
                 playerContext.GetComponent<ActorStaminaComponent>() == null)

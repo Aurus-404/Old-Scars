@@ -129,6 +129,7 @@ namespace OldScars.Core.Data.Definitions
     {
         public string type;
         public float bleeding_multiplier = float.NaN;
+        public float application_seconds = float.NaN;
     }
 
     public static class ItemWoundTreatmentTypes

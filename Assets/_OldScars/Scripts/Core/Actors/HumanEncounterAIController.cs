@@ -48,6 +48,8 @@ namespace OldScars.Core.Actors
         private const float FocusDecaySeconds = 0.75f;
         private const float BurstSpreadRecoveryPerSecond = 1.25f;
         private const int InitialColliderBufferCapacity = 8;
+        private const float MinimumSelfTreatmentCalmSeconds = 2f;
+        private const float MaximumSelfTreatmentCalmSeconds = 5f;
 
         private readonly List<Collider> colliderBuffer = new List<Collider>(InitialColliderBufferCapacity);
 
@@ -59,6 +61,8 @@ namespace OldScars.Core.Actors
         private ActorGazeController gaze;
         private ActorVisualPerceptionService perception;
         private ActorItemOwnershipComponent ownership;
+        private ActorMedicalStateComponent medical;
+        private ActorWoundTreatmentController woundTreatment;
         private ActorRuntimeIdentity threat;
         private HumanEncounterResponse configuredResponse;
         private HumanEncounterResponse? responseOverride;
@@ -93,6 +97,9 @@ namespace OldScars.Core.Actors
         private double previousObservedTime;
         private float observedTargetSpeed;
         private float burstSpreadDegrees;
+        private double selfTreatmentCalmStartedAt = double.NaN;
+        private float resolvedSelfTreatmentCalmSeconds;
+        private int selfTreatmentCalmEpisode;
 
         private float alertDuration;
         private float lostContactTimeout;
@@ -148,6 +155,13 @@ namespace OldScars.Core.Actors
         public Vector3 LastShotOrigin { get; private set; }
         public Vector3 LastShotDirection { get; private set; }
         public string LastShotIntentTargetActorInstanceId { get; private set; }
+        public double SelfTreatmentCalmStartedAt => selfTreatmentCalmStartedAt;
+        public float ResolvedSelfTreatmentCalmSeconds => resolvedSelfTreatmentCalmSeconds;
+        public bool IsSelfTreatmentCalm => State == HumanEncounterAIState.Idle &&
+                                           behavior?.Owner == ActorBehaviorOwner.Ambient && threat == null;
+        public float EstimatedRealSecondsUntilFatalBleeding => EstimateRealSecondsUntilFatalBleeding();
+        public int RoutineSelfTreatmentCount { get; private set; }
+        public int EmergencySelfTreatmentCount { get; private set; }
 
         private void Awake() => ResolveReferences();
 
@@ -158,11 +172,13 @@ namespace OldScars.Core.Actors
                 return;
             if (identity == null || health == null || identity.LifecycleState == ActorLifecycleState.Dead || health.IsDead)
             {
+                woundTreatment?.Cancel("Actor lifecycle became Dead");
                 EnterInactive("Actor lifecycle is Dead");
                 return;
             }
             if (condition != null && !condition.CanPerformActiveActions)
             {
+                woundTreatment?.Cancel("Actor became functionally incapacitated");
                 EnterInactive("Actor is functionally incapacitated");
                 return;
             }
@@ -175,13 +191,16 @@ namespace OldScars.Core.Actors
                 nextDecisionTime = now + decisionInterval;
                 EvaluateEncounter(now);
             }
+            UpdateSelfTreatment();
             UpdateAimState(now);
-            if (State == HumanEncounterAIState.Fighting && HasFreshPerception(now))
+            if (woundTreatment?.IsTreating != true && State == HumanEncounterAIState.Fighting && HasFreshPerception(now))
                 ExecuteWeaponCycle(now);
         }
 
         private void OnDisable()
         {
+            woundTreatment?.Cancel("Encounter controller disabled");
+            ResetSelfTreatmentCalmTimer();
             CancelActiveAction();
             behavior?.EnterInactive("Encounter controller disabled");
             gaze?.ReleaseEncounterAttention();
@@ -224,6 +243,7 @@ namespace OldScars.Core.Actors
             replanDistance = profile.replan_distance;
             if (!deterministicAimSeedConfigured)
                 deterministicAimSeed = StableHash(identity.ActorProfileId);
+            resolvedSelfTreatmentCalmSeconds = ResolveSelfTreatmentCalmSeconds();
             configured = true;
             ReleaseEncounter("Profile configured");
             return true;
@@ -254,6 +274,10 @@ namespace OldScars.Core.Actors
                 error = "Threat must be a distinct registered living actor.";
                 return false;
             }
+            if (woundTreatment?.IsTreating == true &&
+                woundTreatment.Purpose == ActorWoundTreatmentPurpose.RoutineSelfTreatment)
+                woundTreatment.Cancel("Threat appeared during routine self-treatment");
+            ResetSelfTreatmentCalmTimer();
             if (threat == target)
                 return true;
             if (!behavior.EnterEncounter("Threat assigned"))
@@ -525,6 +549,136 @@ namespace OldScars.Core.Actors
                    observerAffiliation.IsHostileToward(threat);
         }
 
+        private void UpdateSelfTreatment()
+        {
+            if (woundTreatment == null || medical == null || ownership == null)
+                return;
+
+            bool calm = IsSelfTreatmentCalm;
+            if (calm)
+            {
+                if (double.IsNaN(selfTreatmentCalmStartedAt))
+                {
+                    resolvedSelfTreatmentCalmSeconds = ResolveSelfTreatmentCalmSeconds();
+                    selfTreatmentCalmStartedAt = Time.realtimeSinceStartupAsDouble;
+                }
+            }
+            else
+                ResetSelfTreatmentCalmTimer();
+
+            if (woundTreatment.IsTreating)
+            {
+                if (woundTreatment.Purpose == ActorWoundTreatmentPurpose.RoutineSelfTreatment && !calm)
+                    woundTreatment.Cancel("Routine self-treatment interrupted by renewed danger");
+                return;
+            }
+
+            if (!InventoryItemUseService.TryFindOwnedWoundTreatment(
+                    ownership, out string itemInstanceId, out ItemWoundTreatment treatment, out _) ||
+                !TrySelectWorstBleedingWound(treatment.bleeding_multiplier, out ActorMedicalWoundState wound))
+                return;
+
+            float realSecondsUntilFatal = EstimateRealSecondsUntilFatalBleeding();
+            float survivalWindow = resolvedSelfTreatmentCalmSeconds + treatment.application_seconds;
+            if (!float.IsInfinity(realSecondsUntilFatal) && realSecondsUntilFatal <= survivalWindow)
+            {
+                StartSelfTreatment(wound, itemInstanceId, ActorWoundTreatmentPurpose.EmergencySelfTreatment);
+                return;
+            }
+
+            if (!calm || Time.realtimeSinceStartupAsDouble - selfTreatmentCalmStartedAt < resolvedSelfTreatmentCalmSeconds)
+                return;
+            StartSelfTreatment(wound, itemInstanceId, ActorWoundTreatmentPurpose.RoutineSelfTreatment);
+        }
+
+        private void StartSelfTreatment(
+            ActorMedicalWoundState wound,
+            string itemInstanceId,
+            ActorWoundTreatmentPurpose purpose)
+        {
+            CancelActiveAction();
+            if (!woundTreatment.TryStart(wound.woundId, itemInstanceId, purpose, out string failure))
+            {
+                Debug.LogWarning(
+                    "[AI][SELF_TREATMENT_REJECTED]" +
+                    $"\n  Actor: {identity?.ActorInstanceId ?? "<NONE>"}" +
+                    $"\n  Purpose: {purpose}" +
+                    $"\n  Failure: {failure ?? "<UNKNOWN>"}");
+                return;
+            }
+            if (purpose == ActorWoundTreatmentPurpose.EmergencySelfTreatment)
+                EmergencySelfTreatmentCount++;
+            else
+                RoutineSelfTreatmentCount++;
+            Debug.Log(
+                "[AI][SELF_TREATMENT_STARTED]" +
+                $"\n  Actor: {identity?.ActorInstanceId ?? "<NONE>"}" +
+                $"\n  Purpose: {purpose}" +
+                $"\n  WoundId: {wound.woundId}" +
+                $"\n  EffectiveBleeding: {ActorMedicalStateComponent.EffectiveBleedingRate(wound):0.###}" +
+                $"\n  CalmDelayRealSeconds: {resolvedSelfTreatmentCalmSeconds:0.###}" +
+                $"\n  EstimatedRealSecondsUntilFatal: {EstimateRealSecondsUntilFatalBleeding():0.###}");
+        }
+
+        private bool TrySelectWorstBleedingWound(
+            float bleedingMultiplier,
+            out ActorMedicalWoundState selected)
+        {
+            selected = null;
+            float highestBleeding = 0f;
+            foreach (BodyRegion region in ActorMedicalStateComponent.HumanRegions)
+            {
+                ActorMedicalWoundState[] wounds = medical.GetWounds(region);
+                for (int index = 0; index < wounds.Length; index++)
+                {
+                    ActorMedicalWoundState candidate = wounds[index];
+                    float bleeding = ActorMedicalStateComponent.EffectiveBleedingRate(candidate);
+                    if (bleeding <= highestBleeding ||
+                        !medical.CanApplyBandage(candidate.woundId, bleedingMultiplier, out _))
+                        continue;
+                    selected = candidate;
+                    highestBleeding = bleeding;
+                }
+            }
+            return selected != null;
+        }
+
+        private float EstimateRealSecondsUntilFatalBleeding()
+        {
+            if (condition == null || medical == null)
+                return float.PositiveInfinity;
+            float bleedingPerGameHour = medical.EffectiveBleedingRatePerGameHour;
+            double gameSecondsPerRealSecond = WorldClock.Current != null
+                ? WorldClock.Current.GameSecondsPerRealSecond
+                : 0d;
+            if (bleedingPerGameHour <= 0f || gameSecondsPerRealSecond <= 0d ||
+                double.IsNaN(gameSecondsPerRealSecond) || double.IsInfinity(gameSecondsPerRealSecond))
+                return float.PositiveInfinity;
+            float bloodMargin = condition.BloodFraction - condition.FatalBloodFraction;
+            if (bloodMargin <= 0f)
+                return 0f;
+            double gameSecondsUntilFatal = bloodMargin / bleedingPerGameHour * WorldClock.SecondsPerHour;
+            double realSeconds = gameSecondsUntilFatal / gameSecondsPerRealSecond;
+            return realSeconds >= float.MaxValue ? float.PositiveInfinity : Mathf.Max(0f, (float)realSeconds);
+        }
+
+        private float ResolveSelfTreatmentCalmSeconds()
+        {
+            ulong sample = Mix(unchecked((ulong)StableHash(identity?.ActorInstanceId)) +
+                               (ulong)selfTreatmentCalmEpisode * 0x9E3779B97F4A7C15UL);
+            float unit = (sample & 0x00ffffffUL) / 16777215f;
+            return Mathf.Lerp(MinimumSelfTreatmentCalmSeconds, MaximumSelfTreatmentCalmSeconds, unit);
+        }
+
+        private void ResetSelfTreatmentCalmTimer()
+        {
+            if (double.IsNaN(selfTreatmentCalmStartedAt))
+                return;
+            selfTreatmentCalmStartedAt = double.NaN;
+            selfTreatmentCalmEpisode++;
+            resolvedSelfTreatmentCalmSeconds = ResolveSelfTreatmentCalmSeconds();
+        }
+
         private void ExecuteRetreat(float desiredDistance, bool decisive)
         {
             float currentDistance = FlatDistance(transform.position, lastKnownPosition);
@@ -780,6 +934,7 @@ namespace OldScars.Core.Actors
 
         private void EnterInactive(string reason)
         {
+            ResetSelfTreatmentCalmTimer();
             if (State == HumanEncounterAIState.Inactive)
                 return;
             if (State == HumanEncounterAIState.Searching)
@@ -1018,6 +1173,8 @@ namespace OldScars.Core.Actors
             if (gaze == null) gaze = GetComponent<ActorGazeController>();
             if (perception == null) perception = GetComponent<ActorVisualPerceptionService>();
             if (ownership == null) ownership = GetComponent<ActorItemOwnershipComponent>();
+            if (medical == null) medical = GetComponent<ActorMedicalStateComponent>();
+            if (woundTreatment == null) woundTreatment = GetComponent<ActorWoundTreatmentController>();
         }
 
         private static bool TryParseResponse(string value, out HumanEncounterResponse response)

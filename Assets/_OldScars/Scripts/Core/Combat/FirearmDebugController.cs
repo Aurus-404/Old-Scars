@@ -28,6 +28,7 @@ namespace OldScars.Core.Combat
 
         private ActorItemOwnershipComponent ownership;
         private ActorConditionComponent condition;
+        private ActorWoundTreatmentController woundTreatment;
         private DebugActionProgressController progressController;
         private bool isCombatActive;
         private string aimedWeaponInstanceId;
@@ -190,6 +191,7 @@ namespace OldScars.Core.Combat
         public bool TryStartReload()
         {
             ResolveReferences();
+            CancelWoundTreatmentForCombatAction("Player requested reload");
             if (!TryGetEquipped(out ItemInstance item, out ItemDefinition definition,
                     out FirearmProfileDefinition firearm, out _) || firearm == null)
             {
@@ -226,6 +228,7 @@ namespace OldScars.Core.Combat
 
         private bool TryAttack()
         {
+            CancelWoundTreatmentForCombatAction("Player requested an attack");
             if (Time.time < nextAttackTime)
             {
                 Record(GameplayFeedbackEntryType.Warning, "Weapon action is still cycling.");
@@ -449,10 +452,18 @@ namespace OldScars.Core.Combat
             if (inventory == null) inventory = GetComponent<InventoryComponent>();
             if (ownership == null) ownership = GetComponent<ActorItemOwnershipComponent>();
             if (condition == null) condition = GetComponent<ActorConditionComponent>();
+            if (woundTreatment == null) woundTreatment = GetComponent<ActorWoundTreatmentController>();
             if (inputCamera == null) inputCamera = Camera.main;
             if (uiInputBlocker == null) uiInputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
             if (movementInput == null) movementInput = GetComponent<PlayerMovementInputController>();
             if (progressController == null) progressController = GetComponent<DebugActionProgressController>() ?? FindAnyObjectByType<DebugActionProgressController>();
+        }
+
+        private void CancelWoundTreatmentForCombatAction(string reason)
+        {
+            if (woundTreatment == null)
+                woundTreatment = GetComponent<ActorWoundTreatmentController>();
+            woundTreatment?.Cancel(reason);
         }
 
         private void EnsureLines()

@@ -22,7 +22,9 @@ namespace OldScars.Editor
         private const string PhaseKey = "OldScars.M39.Medicine.Phase";
         private const string RootKey = "OldScars.M39.Medicine.Root";
         private const string ErrorKey = "OldScars.M39.Medicine.Error";
+        private const string TreatmentQuantityBeforeKey = "OldScars.M39.Medicine.TreatmentQuantityBefore";
         private const string EnterA = "enter_a";
+        private const string WaitForTreatmentA = "wait_for_treatment_a";
         private const string ExitA = "exit_a";
         private const string EnterB = "enter_b";
         private const string Finish = "finish";
@@ -76,7 +78,16 @@ namespace OldScars.Editor
 
             if (phase == EnterA && Ready())
             {
-                ExecutePlayPhase(RunSessionA, ExitA);
+                ExecutePlayPhase(BeginSessionA, WaitForTreatmentA, false);
+                return;
+            }
+            if (phase == WaitForTreatmentA && Ready())
+            {
+                ActorWoundTreatmentController treatment = PlayerHealth().GetComponent<ActorWoundTreatmentController>();
+                if (treatment != null && treatment.IsTreating)
+                    return;
+
+                ExecutePlayPhase(CompleteSessionA, ExitA, true);
                 return;
             }
             if (phase == ExitA && !EditorApplication.isPlayingOrWillChangePlaymode)
@@ -88,7 +99,7 @@ namespace OldScars.Editor
             }
             if (phase == EnterB && Ready())
             {
-                ExecutePlayPhase(RunSessionB, Finish);
+                ExecutePlayPhase(RunSessionB, Finish, true);
                 return;
             }
             if (phase == Finish && !EditorApplication.isPlayingOrWillChangePlaymode)
@@ -101,7 +112,7 @@ namespace OldScars.Editor
                    GameDataManager.Instance != null && GameDataManager.Instance.IsReady;
         }
 
-        private static void ExecutePlayPhase(Action action, string nextPhase)
+        private static void ExecutePlayPhase(Action action, string nextPhase, bool exitPlaymode)
         {
             try
             {
@@ -114,10 +125,11 @@ namespace OldScars.Editor
                 SessionState.SetString(ErrorKey, exception.Message);
                 SessionState.SetString(PhaseKey, Finish);
             }
-            EditorApplication.ExitPlaymode();
+            if (exitPlaymode || SessionState.GetString(PhaseKey, string.Empty) == Finish)
+                EditorApplication.ExitPlaymode();
         }
 
-        private static void RunSessionA()
+        private static void BeginSessionA()
         {
             WorldClock clock = Clock();
             ActorHealthComponent health = PlayerHealth();
@@ -180,18 +192,41 @@ namespace OldScars.Editor
                     InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership) == treatmentsBeforeAdd + 2,
                 "F. Could not add two data-driven bandage treatments to player ownership.");
             int treatmentBefore = InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership);
-            ActorMedicalWoundState torsoBefore = medical.GetWound(TorsoWoundId);
-            InventoryItemUseResult treatment = InventoryItemUseService.TryApplyWoundTreatment(ownership, medical, LeftWoundId);
+            SessionState.SetInt(TreatmentQuantityBeforeKey, treatmentBefore);
+            ActorWoundTreatmentController treatment = health.GetComponent<ActorWoundTreatmentController>();
+            Require(treatment != null, "F. Player timed wound-treatment capability is unavailable.");
+            Require(treatment.TryStart(LeftWoundId, ActorWoundTreatmentPurpose.Manual, out failure),
+                "F. Timed bandage could not start: " + failure);
             left = medical.GetWound(LeftWoundId);
-            Require(treatment.Success && InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership) == treatmentBefore - 1 &&
+            Require(treatment.IsTreating &&
+                    InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership) == treatmentBefore &&
+                    left != null && left.treatmentState == WoundTreatmentState.Unbandaged.ToString(),
+                "F. Starting timed bandaging consumed inventory or changed the wound before completion.");
+        }
+
+        private static void CompleteSessionA()
+        {
+            WorldClock clock = Clock();
+            ActorHealthComponent health = PlayerHealth();
+            ActorMedicalStateComponent medical = health.GetComponent<ActorMedicalStateComponent>();
+            ActorConditionComponent condition = health.GetComponent<ActorConditionComponent>();
+            ActorItemOwnershipComponent ownership = health.GetComponent<ActorItemOwnershipComponent>();
+            ActorWoundTreatmentController treatment = health.GetComponent<ActorWoundTreatmentController>();
+            Require(medical != null && condition != null && ownership != null && treatment != null,
+                "F. Timed treatment completion dependencies are unavailable.");
+
+            ActorMedicalWoundState left = medical.GetWound(LeftWoundId);
+            Require(treatment.LastOutcome == ActorWoundTreatmentOutcome.Completed &&
+                    InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership) ==
+                    SessionState.GetInt(TreatmentQuantityBeforeKey, -1) - 1 &&
                     left != null && left.treatmentState == WoundTreatmentState.Bandaged.ToString() &&
                     Near(ActorMedicalStateComponent.EffectiveBleedingRate(left), 0.009f) && medical.WoundCount == 2,
-                "F. Bandage did not consume exactly one item, retain the wound and reduce its bleeding: " + treatment.Message);
+                "F. Timed bandage did not retain the wound and reduce its bleeding: " + treatment.LastMessage);
             int afterFirstTreatment = InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership);
-            InventoryItemUseResult secondTreatment = InventoryItemUseService.TryApplyWoundTreatment(ownership, medical, LeftWoundId);
+            ActorMedicalWoundState torsoBefore = medical.GetWound(TorsoWoundId);
+            bool secondTreatment = treatment.TryStart(LeftWoundId, ActorWoundTreatmentPurpose.Manual, out string failure);
             ActorMedicalWoundState torsoAfter = medical.GetWound(TorsoWoundId);
-            Require(!secondTreatment.Success &&
-                    InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership) == afterFirstTreatment &&
+            Require(!secondTreatment && InventoryItemUseService.GetAvailableWoundTreatmentQuantity(ownership) == afterFirstTreatment &&
                     EquivalentWound(torsoBefore, torsoAfter),
                 "F/G. Repeat treatment was not rejected atomically or altered the torso wound.");
 
@@ -520,6 +555,7 @@ namespace OldScars.Editor
             SessionState.EraseString(PhaseKey);
             SessionState.EraseString(RootKey);
             SessionState.EraseString(ErrorKey);
+            SessionState.EraseInt(TreatmentQuantityBeforeKey);
         }
     }
 }
