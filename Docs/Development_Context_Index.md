@@ -7,13 +7,14 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 1. `AGENTS.md` — reglas permanentes de trabajo, Git, validación, alcance y routing ChatGPT/Codex.
 2. `Docs/Current_Milestone.md` — estado operativo actual y próximo paso exacto.
 3. `Docs/Next_Sprints.md` — cola real de trabajo a corto plazo.
-4. `Docs/Issue_Registry.md` — bugs/deudas/sospechas/resoluciones persistentes.
-5. `Docs/Implementation_Backlog.md` — mecánicas/mejoras menores aprobadas para implementar después; no son milestones ni bugs.
-6. El plan específico del bloque activo. Actualmente: `Docs/NPC_AI_Sanitation_Plan.md`.
-7. La investigación/decision record específica si existe. Actualmente para combate NPC: `Docs/NPC_Combat_Targeting_Research.md`.
-8. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos ya implementados.
-9. `Docs/Development_Log.md` — cronología/evidencia histórica cuando se necesite reconstruir por qué se tomó una decisión.
-10. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes. No usarlo como sustituto de `Next_Sprints` ni del Implementation Backlog.
+4. `Docs/Prueba_3_Findings.md` — evidencia manual integrada más reciente y decisiones derivadas de Prueba 3/3.1/3.2.
+5. `Docs/Issue_Registry.md` — bugs/deudas/sospechas/resoluciones persistentes.
+6. `Docs/Implementation_Backlog.md` — mecánicas/mejoras menores aprobadas para implementar después; no son milestones ni bugs.
+7. El plan específico del bloque activo. Actualmente: `Docs/NPC_AI_Sanitation_Plan.md`.
+8. La investigación/decision record específica si existe. Actualmente para combate NPC: `Docs/NPC_Combat_Targeting_Research.md`.
+9. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos ya implementados.
+10. `Docs/Development_Log.md` — cronología/evidencia histórica cuando se necesite reconstruir por qué se tomó una decisión.
+11. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes. No usarlo como sustituto de `Next_Sprints` ni del Implementation Backlog.
 
 ## Qué documento responde qué pregunta
 
@@ -21,6 +22,7 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 | --- | --- |
 | ¿Qué estamos haciendo ahora? | `Current_Milestone.md` |
 | ¿Qué hacemos después? | `Next_Sprints.md` |
+| ¿Qué mostró la última prueba manual integrada? | `Prueba_3_Findings.md` |
 | ¿Qué milestone grande corresponde? | `Project_Roadmap.md` |
 | ¿Qué bug/deuda real sigue abierto? | `Issue_Registry.md` |
 | ¿Qué mecánica/mejora menor queremos recordar para después? | `Implementation_Backlog.md` |
@@ -33,8 +35,9 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 ## Regla de precedencia
 
 - El código publicado y los diagnostics prueban qué existe técnicamente.
-- `Technical_Architecture.md` describe contratos implementados; un research doc no convierte una propuesta en implementación.
-- `Current_Milestone.md`/`Next_Sprints.md` prevalecen para el trabajo operativo actual cuando el Roadmap aún conserva wording histórico pendiente de reconciliación.
+- `Technical_Architecture.md` describe contratos implementados; un research doc o findings doc no convierte una propuesta en implementación.
+- `Current_Milestone.md`/`Next_Sprints.md` prevalecen para el trabajo operativo actual cuando el Roadmap conserva wording histórico pendiente de reconciliación.
+- `Prueba_3_Findings.md` conserva evidencia manual y decisiones de producto recientes, pero el estado formal de bugs sigue en `Issue_Registry.md`.
 - `Issue_Registry.md` prevalece para el estado de bugs.
 - `Implementation_Backlog.md` prevalece para mejoras menores aprobadas aún no implementadas.
 - El GDD y Mauro conservan autoridad de diseño/producto; una implementación de debug no crea canon de diseño por sí sola.
@@ -45,7 +48,7 @@ Cuando un problema pueda investigarse leyendo el repo/GitHub, la investigación 
 
 ## Estado de continuidad al 2026-09-03
 
-El bloque activo es `M41 — NPC Combat / AI Stabilization after Prueba 2`.
+El bloque activo es `M41 — NPC Combat / AI Foundation after Prueba 3`.
 
 Fases cerradas del saneamiento:
 
@@ -56,6 +59,15 @@ Fases cerradas del saneamiento:
 - F6 LostContact/Search V1;
 - F7 representación humana + hitboxes anatómicos explícitos.
 
-El siguiente trabajo es Fase 8 revisada: demostrar el sesgo de aim actual, introducir un Primary Aim Point genérico del lado del target si la evidencia confirma la hipótesis, repetir la muestra sin retuning, revisar sólo después si accuracy necesita simplificación y finalmente retirar compatibilidad capsule-only/geometric-body-region una vez migrados sus consumidores.
+Prueba 3 confirmó gran parte de F2–F7 en ejecución real, pero cambió la prioridad antes de F8A:
 
-No iniciar por inercia un nuevo stack de accuracy, Behavior Trees, GOAP, Utility AI, weak-point framework, full ballistics ni damage frameworks para máquinas/vehículos sin un consumidor real.
+1. Player Invisible-to-AI mínimo para pruebas NPC-only limpias;
+2. F6 current-vs-last/origin correctness y visuals multi-NPC simultáneas;
+3. continuidad de memoria de combate durante KO temporal;
+4. minimum real-time KO dwell antes de recovery;
+5. Prueba 3.3 1 Blue vs 1 Red limpia;
+6. después F8A Aim Bias Evidence.
+
+El plan F8 no se elimina: después siguen Primary Aim Point genérico si la evidencia lo confirma, before/after sin retuning, review pequeño de accuracy y cleanup legacy. Invincible, Observability V2 completa, batería integrada, pruebas Player y cleanup final siguen planificados.
+
+No iniciar por inercia un nuevo stack de accuracy, Behavior Trees, GOAP, Utility AI, memory framework general, weak-point framework, full ballistics ni damage frameworks para máquinas/vehículos sin consumidor real.
