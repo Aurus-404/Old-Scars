@@ -178,7 +178,7 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Sistemas afectados:** physical shot path, hit geometry, body region resolution, combat diagnostics.
 - **Solución prevista:** Fases 7–8: hitboxes anatómicos explícitos + instrumentación por impacto + tests deterministas y estadísticos.
 - **Commit de corrección:** Fase 7 `96cccbe514177d8eb05d8c5c439909b4657f252e` agrega geometría anatómica explícita y prueba determinista; no declara corrección del sesgo.
-- **Validación:** Fase 7 confirma `6/6` regiones físicas alcanzables, pero la distribución real todavía debe medirse con aim NPC y muestra estadística en Fase 8.
+- **Validación:** Fase 7 confirma `6/6` regiones físicas alcanzables. Prueba 3 observó múltiples Torso/Arm/Leg y no reprodujo cualitativamente el patrón extremo anterior, pero la distribución NPC real todavía debe medirse en Fase 8A.
 - **Notas:** `HumanEncounterAIController` y Perception filtran los nuevos combat hitboxes para conservar sus centros/semánticas previas; no se ajustaron aim, spread, medicina ni Vital Integrity. El sesgo permanece `SUSPECTED`.
 
 ## ISSUE-0009 — La cápsula humana es insuficiente para validar hit testing anatómico
@@ -204,13 +204,13 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Estado:** `CONFIRMED`
 - **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-09-01
-- **Prueba / origen:** Prueba 2 / revisión de Pass D
+- **Prueba / origen:** Prueba 2 / revisión de Pass D; reconfirmado en Prueba 3.
 - **Momento de descubrimiento:** seguimiento de varios NPCs simultáneamente
 - **Síntoma observado:** la observabilidad detallada es buena para un NPC seleccionado, pero no permite entender de un vistazo gaze/FOV/target/navigation/search/shot traces de toda la pelea.
-- **Evidencia:** experiencia de Prueba 2 con múltiples NPCs.
+- **Evidencia:** experiencia de Prueba 2 y Prueba 3; para comparar ambos lados de un 1v1 sigue siendo necesario ciclar selección.
 - **Causa confirmada o hipótesis:** Pass D priorizó inspección focal mediante selección F6.
 - **Sistemas afectados:** development UI, world overlays, diagnostics.
-- **Solución prevista:** Fase 10: overlay global por categorías más inspector detallado para un seleccionado.
+- **Solución prevista:** adelantar un slice mínimo antes de F8A: world visuals Gaze/FOV/LOS simultáneas para varios/todos los NPC y selección sólo para inspector profundo. F10 completa targeting/shot observability.
 - **Commit de corrección:** pendiente.
 - **Validación:** una pelea multi-NPC debe ser comprensible sin ciclar constantemente selección.
 - **Notas:** usar datos/queries de producción; no duplicar percepción o raycasts sólo para debug.
@@ -221,7 +221,7 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Estado:** `CONFIRMED`
 - **Severidad:** `P2 / YELLOW`
 - **Fecha de descubrimiento:** 2026-09-01
-- **Prueba / origen:** Prueba 2
+- **Prueba / origen:** Prueba 2; reconfirmado en Prueba 3
 - **Momento de descubrimiento:** inspección manual prolongada
 - **Síntoma observado:** para observar el sistema completo hay que seleccionar/ciclar actores, lo que dificulta comparar estados simultáneos.
 - **Evidencia:** experiencia de prueba.
@@ -253,17 +253,17 @@ Cada entrada debe conservar, cuando exista información suficiente:
 
 - **Tipo:** `TOOLING`
 - **Estado:** `CONFIRMED`
-- **Severidad:** `P2 / YELLOW`
+- **Severidad:** `P1 / ORANGE`
 - **Fecha de descubrimiento:** 2026-09-01
-- **Prueba / origen:** planificación posterior a Prueba 2
+- **Prueba / origen:** planificación posterior a Prueba 2; necesidad confirmada por Prueba 3.1
 - **Momento de descubrimiento:** necesidad de observar NPC↔NPC de cerca sin que Player altere adquisición de amenazas
-- **Síntoma observado:** el Player no puede excluirse limpiamente de percepción/acquisition manteniendo presencia física e interacción.
-- **Evidencia:** tooling actual.
+- **Síntoma observado:** el Player no puede excluirse limpiamente de perception/acquisition manteniendo presencia física e interacción. Prueba 3.1 mostró a Red abandonando el supuesto 1v1 y adquiriendo Player como threat.
+- **Evidencia:** tooling actual + log manual de Prueba 3.1.
 - **Causa confirmada o hipótesis:** feature debug aún no implementada.
 - **Sistemas afectados:** player debug, AI candidate/acquisition boundary.
-- **Solución prevista:** Fase 9: excluir al Player como candidato perceptivo/adquirible sin desactivar GameObject ni collider.
+- **Solución prevista:** adelantada al Prueba 3 Correction Pass: excluir al Player como candidato/adquirible sin desactivar GameObject ni collider; OFF conserva gameplay normal.
 - **Commit de corrección:** pendiente.
-- **Validación:** Player puede acercarse a la pelea sin generar recognition/targeting.
+- **Validación:** Player puede acercarse a una pelea NPC↔NPC sin generar recognition/targeting.
 - **Notas:** no implementar invisibilidad visual/rendering si no es necesaria para el contrato de IA.
 
 ## ISSUE-0014 — Ping-pong Idle↔Inactive en actores incapacitados
@@ -308,13 +308,13 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Fecha de descubrimiento:** 2026-09-01
 - **Prueba / origen:** Fase 0 — saneamiento AI/NPC
 - **Momento de descubrimiento:** revisión de `Current_Milestone.md`, `Next_Sprints.md` y `Project_Roadmap.md`
-- **Síntoma observado:** documentos todavía presentan M41.4 como `AUTHORIZED — IMMEDIATE PRIORITY`, aunque ya existen implementación, balance, observabilidad Pass D y Prueba 2 manual; el bloque NPC sigue abierto por defectos detectados, no porque M41.4 aún no haya comenzado.
-- **Evidencia:** `eae5f14bed6aae82840762faf6561bf0b0e1625d` (`Add M41 NPC combat observability`) y estado documental actual.
+- **Síntoma observado:** documentos todavía presentaban M41.4 como `AUTHORIZED — IMMEDIATE PRIORITY`, aunque ya existen implementación, balance, observabilidad Pass D y pruebas manuales posteriores; el bloque NPC sigue abierto por saneamiento/correcciones, no porque M41.4 aún no haya comenzado.
+- **Evidencia:** `eae5f14bed6aae82840762faf6561bf0b0e1625d` (`Add M41 NPC combat observability`) y estado documental.
 - **Causa confirmada o hipótesis:** documentación no reconciliada después de los passes A–D y pruebas posteriores.
 - **Sistemas afectados:** roadmap/operational docs.
-- **Solución prevista:** Fase 0 actualiza snapshots operativos y deja la reconciliación canónica del roadmap como cambio documental controlado, sin renumerar IDs históricos.
-- **Commit de corrección:** pendiente hasta cerrar reconciliación documental.
-- **Validación:** `Current_Milestone`, `Next_Sprints` y autoridad canónica deben dejar de afirmar que el próximo paso es implementar M41.4 desde cero.
+- **Solución prevista:** `Current_Milestone`, `Next_Sprints`, sanitation plan y contexto ya fueron reconciliados; `Project_Roadmap.md` también debe dejar de presentar M41.4 como trabajo no iniciado sin renumerar IDs históricos.
+- **Commit de corrección:** parcial; pendiente cierre canónico del `Project_Roadmap.md`.
+- **Validación:** todos los snapshots/camino crítico deben describir el correction pass post-Prueba 3 y conservar M42+ sin autorización automática.
 - **Notas:** no alterar estados históricos sin evidencia.
 
 ## ISSUE-0017 — El fixture M41NpcSandbox puede matar el target antes de validar la segunda región
@@ -350,6 +350,57 @@ Cada entrada debe conservar, cuando exista información suficiente:
 - **Commit de corrección:** `e1bd7d7ce6d0f0a6885cb23a7047d53d31fd0509` — `Add NPC gaze and attention V1`.
 - **Validación:** `M41 Sandbox Preparation Diagnostics: PASS`: Blue/Red/White `0,751 m`, ownership `Ambient → Encounter → Ambient`, reanudación Red `0,751 m`, Inactive con delta Ambient `0 m`, physical collapse `0,026 m` y sin threat/navigation/attack.
 - **Notas:** no se cambió `ActorPhysicalCollapseController`, gameplay de incapacidad ni el contrato de Behavior; sólo se corrigió la semántica y observabilidad del gate.
+
+## ISSUE-0019 — F6 presenta snapshots históricos de Perception/LOS como si fueran estado actual
+
+- **Tipo:** `TOOLING`
+- **Estado:** `CONFIRMED`
+- **Severidad:** `P1 / ORANGE`
+- **Fecha de descubrimiento:** 2026-09-03
+- **Prueba / origen:** Prueba 3 / 3.1 / 3.2 + revisión de repo
+- **Momento de descubrimiento:** observación de world lines mientras NPCs se desplazaban y después de death/inactive
+- **Síntoma observado:** FOV/LOS puede parecer salir del piso o de una posición anterior, desaparecer por momentos y mostrar `Perception: True / Perceived` o `LOS Perceived` en un actor que ya está `Dead / Inactive / Threat <NONE> / Attention Inactive`.
+- **Evidencia:** capturas manuales repetidas. La revisión del tooling muestra que parte de F6 consume `LastPerception`/`LastAcquisitionPerception` y su `ObserverOrigin` snapshot mientras el actor puede haber seguido moviéndose; el panel no separa con suficiente claridad current state de last evidence.
+- **Causa confirmada o hipótesis:** `CONFIRMADO POR CÓDIGO + MANUAL`: el visualizador usa evidencia histórica legítima pero la presenta como si fuese current en contextos donde el snapshot ya quedó espacial/temporalmente stale. Esto no demuestra que la percepción productiva realmente observe desde esa posición vieja.
+- **Sistemas afectados:** F6 observability, world overlays, manual QA de perception/search/combat.
+- **Solución prevista:** Prueba 3 Correction Pass B: current Gaze/FOV debe originarse en eye/origin actual; last result debe marcarse explícitamente `LAST`; Dead/Inactive no presenta snapshot histórico como current perception. Resolver junto con multi-NPC sin duplicar raycasts/perception.
+- **Commit de corrección:** pendiente.
+- **Validación:** mover un NPC después de una percepción no deja current FOV/LOS anclado atrás; Dead/Inactive no afirma current perception; last evidence puede seguir inspeccionándose sólo si está rotulado como histórico.
+- **Notas:** relacionado con `ISSUE-0010/0011`, pero distinto: éstos cubren selección/multi-NPC; este issue cubre veracidad temporal/espacial del visualizador.
+
+## ISSUE-0020 — La incapacidad temporal borra el contexto de enemigo y reinicia artificialmente el combate
+
+- **Tipo:** `BUG`
+- **Estado:** `CONFIRMED`
+- **Severidad:** `P1 / ORANGE`
+- **Fecha de descubrimiento:** 2026-09-03
+- **Prueba / origen:** Prueba 3.1/3.2 + revisión de repo
+- **Momento de descubrimiento:** Blue/Red durante Fight cuando uno queda `Incapacitated/Unconscious`
+- **Síntoma observado:** el rival deja de atacar al incapacitado — comportamiento deseable — pero además libera Encounter y vuelve a Ambient; el actor KO entra Inactive y limpia threat/contexto. Al recuperarse, vuelve a Ambient/Idle y debe redescubrir al mismo enemigo como si la pelea anterior no hubiese ocurrido. Visualmente produce `golpe → KO → paseo/separación → recovery → redescubrimiento → pelea nueva`.
+- **Evidencia:** Prueba 3.2 registró `Fighting → Inactive` en el KO, `Encounter → Ambient` en el rival con `Assigned actor is no longer a living hostile candidate`, luego `Inactive → Ambient/Idle` y posterior `THREAT_ASSIGNED` nuevo. En código, acquisition exige `CanPerformActiveActions` para mantener current threat; `EnterInactive`/`ReleaseEncounter` limpian threat y encounter memory.
+- **Causa confirmada o hipótesis:** `CONFIRMADO`: el contrato actual trata `no puede actuar ahora` como si también significara `ya no existe contexto de enemigo`. Threat activo y memoria mínima de combate están acoplados de forma demasiado destructiva.
+- **Sistemas afectados:** threat acquisition, Human Encounter, incapacity/recovery, combat continuity.
+- **Solución prevista:** `IMPL-0014`: separar amenaza activa de memoria mínima del enemigo reciente. Mientras KO, no atacar deliberadamente; atacante y noqueado conservan contexto del enemigo. Recovery puede reanudar conflicto sin redescubrimiento artificial. La memoria no actualiza posición oculta: Perception/LKP/Search siguen siendo autoridad espacial. No crear memory framework general.
+- **Commit de corrección:** pendiente.
+- **Validación:** 1v1: actor A noquea B; A deja de golpearlo; B permanece inactivo; tras recovery ambos conservan al rival como enemigo conocido, y la reanudación usa percepción/LKP correctos sin wallhack ni `Ambient rediscovery` obligatorio.
+- **Notas:** `Dead` sigue siendo terminal. Este issue no reabre `ISSUE-0014` ping-pong Idle/Inactive, que permanece resuelto.
+
+## ISSUE-0021 — Knockout/Unconscious no tiene minimum real-time dwell antes de recovery
+
+- **Tipo:** `DESIGN_DEBT`
+- **Estado:** `CONFIRMED`
+- **Severidad:** `P1 / ORANGE`
+- **Fecha de descubrimiento:** 2026-09-03
+- **Prueba / origen:** Prueba 3.1/3.2 + revisión de `ActorConditionComponent`/`WorldClock`
+- **Momento de descubrimiento:** recuperación visible de actores noqueados durante el mismo encounter prolongado
+- **Síntoma observado:** un actor puede volver a active behavior relativamente rápido después de quedar KO; no existe una garantía explícita de permanencia mínima en knockout/unconscious.
+- **Evidencia:** recovery de condición depende de thresholds/trauma y del progreso por `WorldClock`. El baseline de world time está acelerado respecto de tiempo real, por lo que trauma transitorio puede recuperarse y cruzar thresholds sin un dwell real específico de KO.
+- **Causa confirmada o hipótesis:** `CONFIRMADO COMO GAP DE CONTRATO`: no existe un minimum real-time KO dwell. El valor final de duración adecuada todavía requiere playtest, pero la ausencia del gate es real.
+- **Sistemas afectados:** ActorCondition, incapacity/unconscious, combat game feel, QA.
+- **Solución prevista:** `IMPL-0015`: agregar un mínimo configurable de tiempo real durante el cual knockout/unconscious no puede devolver active actions; después de ese mínimo, physiology/thresholds vigentes siguen decidiendo si recovery es posible. No crear otro reloj global.
+- **Commit de corrección:** pendiente.
+- **Validación:** un KO no puede recuperarse antes del dwell mínimo aunque `WorldClock` avance; una vez cumplido, un actor fisiológicamente incapaz sigue sin despertar; balance final se ajusta con prueba manual.
+- **Notas:** no confundir con healing ni con tiempo de sangrado. Es un gate de pérdida de conciencia/recovery, no una recuperación médica paralela.
 
 ---
 
