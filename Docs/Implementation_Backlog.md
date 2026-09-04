@@ -108,13 +108,11 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0008 — Player Debug: Invisible-to-AI
 
-- **Estado:** `READY — IMMEDIATE`.
+- **Estado:** `DONE`.
 - **Fecha/origen:** Prueba 2; prioridad elevada por Prueba 3.1/3.2.
-- **Qué queremos:** toggle debug que mantenga al Player físico/interactivo pero lo excluya del boundary de candidate/acquisition de IA.
-- **Por qué:** observar combates NPC↔NPC sin contaminar threat selection. Prueba 3.1 demostró que Red puede abandonar Blue y adquirir Player, invalidando un supuesto 1v1.
-- **Trigger/dependencias:** Prueba 3 Correction Pass A, antes de F8A.
-- **Límites:** no desactivar Perception global ni alterar contratos productivos cuando está OFF; no apagar GameObject/collider.
-- **Relación:** `ISSUE-0013`; parte mínima de F9 adelantada para QA.
+- **Resolución:** Correction Pass A, `321f26d1d3c1e765e19e86ab66f316238734c8fe`. Toggle `Invisible to AI` en `ActorNeedsDebugPanel`; ON aplica un marker target-side efímero que excluye al Player de acquisition automática y libera su threat actual; OFF conserva elegibilidad normal.
+- **Validación:** `M41 Player Invisible-to-AI Diagnostics: PASS` con OFF → Player, ON → Blue y OFF → Player; no altera Perception/FOV/LOS, colliders, combat, input ni persistence.
+- **Relación:** `ISSUE-0013` resuelto; slice mínimo de F9 adelantado para QA. `IMPL-0009` Invincible queda pendiente.
 
 ## IMPL-0009 — Player Debug: Invincible
 

@@ -4,24 +4,9 @@ Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.
 
 ## Próximo trabajo
 
-### 1. Prueba 3 Correction Pass A — Player Invisible-to-AI mínimo
+### 1. Prueba 3 Correction Pass B — F6 correctness + multi-NPC mínimo
 
 Estado: `NEXT`.
-
-Objetivo: permitir pruebas NPC↔NPC limpias sin que Red pueda adquirir al Player.
-
-Contrato:
-
-- Player sigue físico, visible para el usuario e interactivo;
-- no se desactiva GameObject/collider;
-- con toggle ON queda fuera del candidate/acquisition boundary de IA;
-- con toggle OFF el gameplay actual queda idéntico.
-
-Referencia: `IMPL-0008`, `ISSUE-0013`, `Prueba_3_Findings.md`.
-
-### 2. Prueba 3 Correction Pass B — F6 correctness + multi-NPC mínimo
-
-Estado: `NEXT AFTER A`.
 
 Corregir dos problemas que hoy vuelven engañosa la observabilidad:
 
@@ -35,9 +20,9 @@ No duplicar raycasts/perception para debug; consumir datos productivos/read-only
 
 Referencias: `ISSUE-0010`, `ISSUE-0011`, findings nuevos de Prueba 3.
 
-### 3. Prueba 3 Correction Pass C — KO / combat memory continuity
+### 2. Prueba 3 Correction Pass C — KO / combat memory continuity
 
-Estado: `NEXT AFTER B`.
+Estado: `NEXT AFTER F6`.
 
 Problema confirmado: incapacidad temporal hace que atacante libere threat y que el incapacitado limpie su encounter/memoria, produciendo `KO → Ambient → recovery → redescubrimiento → encounter nuevo`.
 
@@ -52,9 +37,9 @@ Contrato V1 deseado:
 
 Referencia: `IMPL-0014` y `Prueba_3_Findings.md`.
 
-### 4. Prueba 3 Correction Pass D — Minimum KO dwell
+### 3. Prueba 3 Correction Pass D — Minimum KO dwell
 
-Estado: `NEXT AFTER C`.
+Estado: `NEXT AFTER KO MEMORY`.
 
 Agregar un mínimo real-time configurable durante el cual un knockout/unconscious no puede recuperar capacidad activa sólo porque el `WorldClock` avanza acelerado. Una vez cumplido ese mínimo, la fisiología/thresholds vigentes deciden si puede despertar.
 
@@ -62,7 +47,7 @@ No fijar balance final sin playtest y no sustituir `ActorConditionComponent` com
 
 Referencia: `IMPL-0015`.
 
-### 5. Prueba 3.3 — 1 Blue vs 1 Red limpio
+### 4. Prueba 3.3 — 1 Blue vs 1 Red limpio
 
 Estado: `GATE BEFORE F8A`.
 
@@ -201,7 +186,7 @@ No gastar cuota repitiendo auditorías ya resueltas en `NPC_Combat_Targeting_Res
 
 - `ISSUE-0008` — posible sesgo de impactos piernas/pies — `SUSPECTED / P1`; F8A después del correction pass.
 - `ISSUE-0010` / `0011` — observabilidad multi-NPC/selection — ahora priorizados por Prueba 3.
-- `ISSUE-0013` — falta Invisible-to-AI — adelantado para QA limpio.
+- `ISSUE-0013` — Invisible-to-AI resuelto; usar ON como condición de Prueba 3.3.
 - findings nuevos: F6 stale current-vs-last y KO/combat-memory continuity deben quedar registrados en `Issue_Registry.md`.
 
 ## No iniciar todavía

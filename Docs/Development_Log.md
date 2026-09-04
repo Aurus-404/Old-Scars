@@ -3590,3 +3590,13 @@ Validación focalizada en Unity `6000.4.6f1`:
 - `git diff --check`: `PASS`.
 
 `ISSUE-0009` queda `RESOLVED` por el commit funcional `96cccbe514177d8eb05d8c5c439909b4657f252e`. `ISSUE-0008` permanece `SUSPECTED`: Fase 7 demuestra geometría alcanzable, no distribución estadística ni causa de sesgo. No aparecieron issues nuevos; el límite conocido del asset mapping built-in/moddable ya está documentado en la arquitectura. Fase 8 no fue iniciada. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.
+
+### Prueba 3 Correction Pass A — Player Invisible-to-AI mínimo
+
+Fecha: 2026-09-04.
+
+Estado: `VALIDATED — COMPLETED`.
+
+El Player real enlazado por `GameplayRuntimeComposition` recibe desde Runtime Debug Tools el toggle `Invisible to AI`. ON aplica `ActorDebugAiAcquisitionExclusion`, marker target-side efímero; `ActorThreatAcquisitionController` lo descarta antes de candidate buffer, Recognition y Perception de adquisición, y libera limpiamente un threat automático preexistente para elegir otros candidatos legales. OFF conserva la elegibilidad normal. No se modificaron afiliación, FOV/LOS, rendering, GameObject, colliders, health, combat, Player input, aim/spread, KO/memory, JSON/schema ni persistence.
+
+Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`: Runtime y Editor compile `PASS`; `M41 Player Invisible-to-AI Diagnostics: PASS` (Player OFF adquirido; ON activo/registered/CharacterController intacto, sin Recognition/threat, Blue adquirido en `0,398 s`; OFF Player reacquirido en `0,4 s`); `M41 Progressive Visual Recognition Diagnostics: PASS`; `M41.1 Human Encounter AI Diagnostics: PASS`; `M41 LostContact / Search V1 Diagnostics: PASS`; `M41 Sandbox Preparation Diagnostics: PASS`; `git diff --check: PASS`. `ISSUE-0013` e `IMPL-0008` quedan resueltos/completados por el commit funcional `321f26d1d3c1e765e19e86ab66f316238734c8fe`. El siguiente slice es Correction Pass B (F6 correctness + multi-NPC); no se inició. La inspección visual/manual del nuevo checkbox sigue separada de estas validaciones automatizadas. `ProjectSettings.runInBackground` permanece dirty, unstaged, user-owned y fuera de los commits.

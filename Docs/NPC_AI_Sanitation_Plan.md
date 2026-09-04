@@ -182,18 +182,20 @@ Detalle: `Prueba_3_Findings.md`.
 
 ## Correction Pass A — Player Invisible-to-AI mínimo
 
-**Estado:** `NEXT`.
+**Estado:** `COMPLETED — 2026-09-04`.
 
-Adelantar sólo el slice mínimo de F9 necesario para QA:
+Slice mínimo de F9 completado para QA:
 
 - Player sigue físico/interactivo;
-- ON lo excluye de candidate/acquisition de IA;
+- ON lo excluye antes de candidate/Recognition/Perception de adquisición y libera su threat automático actual;
 - OFF conserva gameplay normal;
-- no desactivar Perception global, GameObject ni colliders.
+- no desactiva Perception global, GameObject ni colliders.
+
+Implementación: marker target-side efímero `ActorDebugAiAcquisitionExclusion` expuesto como `Invisible to AI` en Runtime Debug Tools para el Player real de la composición. Commit funcional `321f26d1d3c1e765e19e86ab66f316238734c8fe`; diagnostic WorldRuntime OFF → Player, ON → Blue, OFF → Player `PASS`.
 
 ## Correction Pass B — F6 correctness + multi-NPC mínimo
 
-**Estado:** `NEXT AFTER A`.
+**Estado:** `NEXT`.
 
 - current Gaze/FOV parte del eye/origin actual;
 - `CURRENT` y `LAST` evidence se distinguen explícitamente;

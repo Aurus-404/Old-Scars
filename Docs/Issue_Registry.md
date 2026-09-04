@@ -56,11 +56,12 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Gate:** OFF = gameplay normal.
 
 ### ISSUE-0013 — Falta modo debug Invisible-to-AI
-- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`
+- **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P1 / ORANGE`
 - **Origen:** post-Prueba 2; necesidad demostrada en Prueba 3.1.
 - **Síntoma:** Red puede abandonar un supuesto Blue↔Red 1v1 y adquirir Player.
-- **Plan:** adelantado a Prueba 3 Correction Pass A. Player sigue físico/interactivo pero queda fuera de candidate/acquisition con toggle ON; no apagar GameObject/collider ni Perception global.
-- **Gate:** Player puede observar de cerca sin recognition/targeting; OFF restaura conducta normal.
+- **Resolución:** Prueba 3 Correction Pass A, commit funcional `321f26d1d3c1e765e19e86ab66f316238734c8fe`. `ActorDebugAiAcquisitionExclusion` es un marker target-side efímero; `ActorThreatAcquisitionController` lo descarta antes de candidate buffer, Recognition y Perception de adquisición, y libera un threat automático ya asignado. `ActorNeedsDebugPanel` lo expone para el Player real enlazado por `GameplayRuntimeComposition`.
+- **Evidencia:** `M41 Player Invisible-to-AI Diagnostics: PASS` en WorldRuntime: Player adquirido OFF, ON activo/registered/CharacterController intacto y sin Recognition/threat, Blue adquirido en `0,398 s`, Player reacquirido OFF en `0,4 s`; Progressive Recognition, Human Encounter, Search V1 y Sandbox Preparation también `PASS`.
+- **Límite:** no altera afiliación, FOV/LOS, rendering, colliders, health, combat, input ni persistence. Invincible continúa en `IMPL-0009`.
 
 ### ISSUE-0019 — F6 presenta snapshots históricos como percepción actual
 - **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`
