@@ -6,6 +6,8 @@ La regla principal sigue siendo la misma: no conservar arquitectura por sunk cos
 
 Research asociado al bloque de combate/aim: `NPC_Combat_Targeting_Research.md`.
 
+Evidencia manual más reciente: `Prueba_3_Findings.md`.
+
 ## Objetivo final
 
 Cerrar una `NPC FOUNDATION V1` donde:
@@ -18,7 +20,8 @@ Cerrar una `NPC FOUNDATION V1` donde:
 - shots usan una ruta física compartida;
 - targets humanos usan geometría anatómica explícita;
 - el aim normal no depende de que el shooter entienda anatomía humana;
-- incapacidad/death cancelan conducta;
+- incapacidad/death cancelan conducta activa, pero una incapacidad temporal no borra por defecto el contexto de enemigo reciente;
+- un knockout tiene una duración mínima de tiempo real antes de que physiology pueda permitir recovery;
 - QA puede observar NPC↔NPC y NPC↔Player sin alterar gameplay cuando debug está OFF;
 - diagnostics prueban resultados observables, no proxies.
 
@@ -74,12 +77,29 @@ Preguntas separadas:
 
 No acoplar firearm aim normal a `BodyRegion.Torso`: futuros animales, mutantes, robots u otros actors pueden no tener anatomía humana.
 
+## Regla de KO / amenaza activa / memoria reciente
+
+Prueba 3 demostró que el contrato actual mezcla `no puede actuar ahora` con `ya no recuerdo a este enemigo`.
+
+V1 debe separar ambas cosas sin crear un memory framework general:
+
+- `Conscious/Dazed` puede representar amenaza activa según hostility/perception;
+- `Incapacitated/Unconscious` deja de ser amenaza activa y no debe recibir ataques deliberados sólo por seguir siendo hostile;
+- una incapacidad temporal no borra automáticamente quién era el enemigo del encounter reciente;
+- atacante y noqueado conservan una referencia/contexto mínimo del enemigo hasta recovery, invalidación real o expiración definida;
+- esa memoria no actualiza la posición oculta: Perception/LKP/Search siguen siendo la única autoridad espacial;
+- `Dead` permanece terminal para conducta activa;
+- knockout/unconscious debe respetar un minimum real-time dwell configurable antes de que recovery fisiológico pueda devolver active behavior.
+
+No crear `MemorySystem`, relationship history general, blackboard o planner para resolver esta V1.
+
 ## Fuera de alcance
 
 No introducir por inercia:
 
 - Behavior Trees complejos, GOAP o Utility AI general;
 - generic blackboard/planner;
+- memory framework general;
 - weak-point/aim-point scoring framework;
 - headshot/mobility targeting AI;
 - cover/flanking/squads avanzados;
@@ -145,13 +165,85 @@ La compatibilidad capsule-only/geometric BodyRegion conservada durante F7 es tra
 
 ---
 
+# Prueba 3 — evidencia integrada y Correction Pass
+
+Prueba 3/3.1/3.2 validó gran parte de F2–F7 manualmente, pero encontró problemas que deben corregirse antes de medir aim con rigor.
+
+Detalle: `Prueba_3_Findings.md`.
+
+## Hallazgos que cambian prioridad
+
+1. Player puede contaminar NPC↔NPC porque Red también puede adquirirlo como hostile.
+2. F6 puede usar `LastPerception`/snapshots históricos para dibujar LOS/FOV y presentarlos como actuales; las líneas pueden quedar atrás del actor y Dead/Inactive puede seguir mostrando `Perceived` histórico.
+3. F6 sigue siendo focal: sólo un NPC seleccionado obtiene world visuals útiles a la vez.
+4. incapacidad temporal hace que rival libere Encounter y que el incapacitado limpie contexto, creando `KO → Ambient → recovery → rediscovery`.
+5. no existe un minimum real-time KO dwell; recovery puede quedar dominado por physiology sobre `WorldClock` acelerado.
+6. el viejo sesgo extremo de piernas no volvió a reproducirse cualitativamente, pero `ISSUE-0008` sigue abierto hasta medición NPC reproducible.
+
+## Correction Pass A — Player Invisible-to-AI mínimo
+
+**Estado:** `NEXT`.
+
+Adelantar sólo el slice mínimo de F9 necesario para QA:
+
+- Player sigue físico/interactivo;
+- ON lo excluye de candidate/acquisition de IA;
+- OFF conserva gameplay normal;
+- no desactivar Perception global, GameObject ni colliders.
+
+## Correction Pass B — F6 correctness + multi-NPC mínimo
+
+**Estado:** `NEXT AFTER A`.
+
+- current Gaze/FOV parte del eye/origin actual;
+- `CURRENT` y `LAST` evidence se distinguen explícitamente;
+- un snapshot histórico no se presenta como current perception de Dead/Inactive;
+- world visuals de Gaze/FOV/LOS pueden verse para varios/todos los NPC simultáneamente;
+- selección sólo controla el inspector detallado;
+- no duplicar perception/raycasts como segunda autoridad debug.
+
+Este slice adelanta lo mínimo de F10 requerido para pruebas fiables; F10 completa después targeting/shot observability.
+
+## Correction Pass C — KO / combat memory continuity
+
+**Estado:** `NEXT AFTER B`.
+
+- KO deja al actor sin active actions;
+- rival deja de atacarlo deliberadamente;
+- ambos conservan identidad/contexto mínimo del enemigo reciente;
+- recovery puede volver a Encounter sin redescubrimiento artificial;
+- si se perdió LOS, no se conoce la posición actual: usar Perception/LKP/Search;
+- muerte invalida conducta activa;
+- sin framework general de memoria.
+
+## Correction Pass D — Minimum KO dwell
+
+**Estado:** `NEXT AFTER C`.
+
+Agregar un mínimo configurable de tiempo real para knockout/unconscious. Al finalizar ese mínimo, `ActorConditionComponent` y sus thresholds siguen decidiendo si la fisiología permite despertar.
+
+No crear otra autoridad temporal global ni fijar balance final sin playtest.
+
+## Gate — Prueba 3.3
+
+Antes de F8A ejecutar un 1 Blue vs 1 Red con:
+
+- Player Invisible ON;
+- observabilidad simultánea de ambos;
+- ninguna intervención del Player;
+- registro de armas, KO start/duration/recovery, memoria/reanudación y wounds/regions.
+
+Gate: la pelea debe poder interpretarse limpiamente y el KO no debe parecer un reset de personalidad/encounter.
+
+---
+
 # Fase 8 revisada — Combat targeting / accuracy
 
 La antigua Fase 8 de investigación abierta queda sustituida por etapas pequeñas y verificables. La investigación previa ya está en `NPC_Combat_Targeting_Research.md`; Codex no debe repetirla exhaustivamente.
 
 ## Fase 8A — Aim Bias Evidence
 
-**Estado:** `NEXT`.
+**Estado:** `QUEUED AFTER PRUEBA 3.3`.
 
 No cambiar gameplay.
 
@@ -244,17 +336,22 @@ Mantener la cápsula técnica invisible de locomoción si Navigation/collision/a
 
 # Fases siguientes
 
-## Fase 9 — Player Debug: Invisible / Invincible
+## Fase 9 — completar Player Debug
 
-Invisible: Player sigue físico/interactivo pero se excluye del candidate/acquisition boundary.
+El slice mínimo Invisible-to-AI se adelanta al Correction Pass. F9 conserva:
 
-Invincible: pipeline real de detection/shot/hit/region/wounds/condition continúa, pero QA puede bloquear el terminal Dead.
+- cierre/regresiones del toggle Invisible;
+- Invincible: pipeline real de detection/shot/hit/region/wounds/condition continúa, pero QA puede bloquear terminal Dead;
+- OFF debe equivaler a gameplay normal.
 
-OFF debe equivaler a gameplay normal.
+## Fase 10 — completar Observability V2
 
-## Fase 10 — Observability V2
+El slice mínimo current-vs-last/multi-NPC se adelanta al Correction Pass. F10 completa:
 
-Overlay global multi-NPC + inspector seleccionado. Incluir targeting/accuracy (`PrimaryAimPoint`, focus, spread, shot origin/direction, hit collider/region) cuando esos contratos existan.
+- overlay global compacto;
+- inspector seleccionado;
+- targeting/accuracy (`PrimaryAimPoint`, focus, spread, shot origin/direction, hit collider/region) cuando esos contratos existan;
+- shot traces útiles para QA.
 
 No crear otra autoridad de gameplay.
 
@@ -269,19 +366,21 @@ Gates de resultados observables:
 5. Recognition;
 6. tracking;
 7. LostContact/Search;
-8. incapacity/death;
-9. anatomy 6/6;
-10. Primary Aim Point / physical imperfect shot;
-11. Invisible;
-12. Invincible.
+8. KO dwell + combat memory continuity;
+9. incapacity/death;
+10. anatomy 6/6;
+11. Primary Aim Point / physical imperfect shot;
+12. Invisible;
+13. Invincible;
+14. multi-NPC observability current-vs-last.
 
-## Fase 12 — Prueba 3 integrada
+## Fase 12 — Prueba integrada NPC-only
 
-Referencia: 1 White, 3 Blue, 3 Red, Player Invisible. Observar vida ambiental, encounters, gaze, Search, shots, aim point, actual regions, wounds, incapacity/death y retorno a Ambient.
+Referencia: 1 White, 3 Blue, 3 Red, Player Invisible. Observar vida ambiental, encounters, gaze, Search, shots, aim point, actual regions, wounds, KO/memoria, incapacity/death y retorno a Ambient.
 
 Registrar problemas; no corregirlos silenciosamente durante la prueba.
 
-## Fase 13 — Prueba 3B Player
+## Fase 13 — Prueba Player
 
 Invisible OFF, Invincible ON. Player se mueve lateralmente, cruza obstáculos, cambia distancia y rodea NPCs para probar la cadena completa de perception → target → aim → physical hit → damage.
 
@@ -293,6 +392,7 @@ Preguntas humanas:
 - ¿hay tiempo de reacción razonable?;
 - ¿focus vuelve peligroso a quien mantiene target?;
 - ¿moverse/usar obstáculos cambia el combate?;
+- ¿un KO dura lo suficiente y conserva contexto sin producir wallhack?;
 - ¿los misses y regiones impactadas parecen físicamente creíbles?;
 - ¿la pelea multi-NPC se puede leer visualmente?
 
@@ -333,4 +433,4 @@ Después de toda fase con código:
 
 ## DONE global
 
-NPC Foundation V1 sólo se cierra cuando el flujo `Ambient → Gaze/Perception → Recognition → Encounter → Aim/Physical Combat → LostContact/Search → Reacquire/Release → Ambient` funciona de forma observable, sin ownership contradictorio, con anatomía/hits coherentes, player debug suficiente y una Prueba 3/manual satisfactoria.
+NPC Foundation V1 sólo se cierra cuando el flujo `Ambient → Gaze/Perception → Recognition → Encounter → Aim/Physical Combat → KO/Recovery or LostContact/Search → Reacquire/Release → Ambient` funciona de forma observable, sin ownership contradictorio, con memoria mínima de combate coherente, anatomía/hits coherentes, player debug suficiente y una prueba manual satisfactoria.
