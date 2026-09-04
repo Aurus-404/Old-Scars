@@ -190,6 +190,14 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Trigger/dependencias:** después de cerrar NPC Foundation/aim, o antes si la falta de visuales impide validar un feature concreto.
 - **Límites:** no convertir F7 en sistema de animación/IK ni requerir arte final; reutilizar el framework visual existente y evitar una autoridad paralela.
 
+## IMPL-0017 — Timed Bandaging V1 compartido y self-treatment NPC
+
+- **Estado:** `DONE`.
+- **Fecha/origen:** 2026-09-04 — slice médico autorizado fuera del orden del Correction Pass.
+- **Resolución:** `ActorWoundTreatmentController` por actor ejecuta bandaging real de 4 s con exact-instance commit; Player puede caminar, sprint/combat cancelan, y NPC usa inventario real tras calma determinista o por emergencia hemorrágica derivada de physiology/WorldClock.
+- **Validación:** `Timed Bandaging / NPC Self-Treatment Diagnostics: PASS`, M39.0, Consciousness, Player Controls/Health Window, M40.0, Human Encounter, Search V1, Behavior Ownership e Inventory Interaction `PASS`.
+- **Límites:** no persiste progreso; sin Blood Trails, carry-weight changes, NPC sprint authority, Medical AI state, scheduler ni generic action manager.
+
 ---
 
 ## Regla de mantenimiento

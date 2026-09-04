@@ -186,6 +186,23 @@ El bloque espacial de inventario es cerrado y opcional durante la migracion:
 - `icon_id` no se deriva de `ItemDefinition.id`; distintos items pueden compartirlo y cambiarlo sin modificar C#.
 - Un `icon_id` ausente o sin Sprite disponible usa fallback visual y no bloquea la carga de datos.
 
+Un consumible de tratamiento de heridas declara el contrato completo de aplicación:
+
+```json
+"consumable": {
+  "wound_treatment": {
+    "type": "bandage",
+    "bleeding_multiplier": 0.1,
+    "application_seconds": 4.0
+  }
+}
+```
+
+- `wound_treatment.type` sólo admite `bandage` en el contrato vigente.
+- `bleeding_multiplier` debe ser finito y estar en `[0,1)`.
+- `application_seconds` es obligatorio, finito y mayor que cero; expresa segundos reales de aplicación y no escala con `WorldClock`.
+- La Definition declara compatibilidad/duración/efecto. La `ItemInstance` concreta, su ownership y el progreso temporal pertenecen al runtime; no se persiste una operación en curso.
+
 Los items no deben declarar dónde aparecen en loot.
 
 Incorrecto:
