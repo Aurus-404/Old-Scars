@@ -4,15 +4,17 @@ Este archivo es el snapshot operativo breve. `Project_Roadmap.md` conserva IDs/d
 
 ## Estado actual
 
-### M41 — NPC Combat / AI Foundation after Prueba 2
+### M41 — NPC Combat / AI Foundation after Prueba 3
 
 Estado operativo:
 
-`IN PROGRESS — SANITATION PHASE 8 / COMBAT TARGETING`
+`IN PROGRESS — PRUEBA 3 CORRECTION PASS BEFORE PHASE 8A`
 
 Plan activo: `NPC_AI_Sanitation_Plan.md`.
 
-Research/decision record activo: `NPC_Combat_Targeting_Research.md`.
+Evidencia manual activa: `Prueba_3_Findings.md`.
+
+Research/decision record de targeting: `NPC_Combat_Targeting_Research.md`.
 
 ## Foundation ya cerrada
 
@@ -36,61 +38,85 @@ Commits funcionales de referencia:
 
 No reabrir estas autoridades por inercia. Una regresión real puede justificar cambios, pero no otra reconstrucción global de IA.
 
-## Problema activo
+## Qué confirmó Prueba 3
+
+Prueba 3/3.1/3.2 confirmó en ejecución real:
+
+- Ambient roaming White/Blue/Red físico y sostenido;
+- Gaze/FOV/LOS productivos y LostContact/Search visibles;
+- representación humana/anatomía explícita funcionando;
+- Dead/Inactive deja de ejecutar acciones activas;
+- el patrón extremo previo de impactos sólo en piernas no volvió a reproducirse cualitativamente, aunque `ISSUE-0008` sigue sin muestra estadística suficiente;
+- F6 mezcla snapshots históricos con estado actual y puede dibujar FOV/LOS desde un origen viejo o mostrar `Perceived` en un actor Dead/Inactive;
+- F6 sigue permitiendo world visuals de un solo NPC seleccionado a la vez;
+- Player puede contaminar una prueba NPC↔NPC porque Red también puede adquirirlo como hostile;
+- incapacidad temporal corta Encounter, borra el contexto de pelea y provoca `KO → Ambient → recuperación → redescubrimiento → encounter nuevo`;
+- no existe un minimum real-time dwell explícito para knockout/unconscious antes de permitir recuperación fisiológica.
+
+Detalle/evidencia: `Prueba_3_Findings.md`.
+
+## Decisión de producto — KO y memoria de combate
+
+`KO / Unconscious != Dead`.
+
+Contrato V1 deseado:
+
+- el actor noqueado deja de representar amenaza activa y no recibe ataques deliberados mientras siga incapacitado;
+- atacante y noqueado conservan identidad/contexto del enemigo reciente;
+- al recuperar capacidad pueden reanudar la pelea sin tratarse como desconocidos recién descubiertos;
+- la memoria no da wallhack: la posición actual sólo puede venir de Perception; si se perdió LOS, sólo se conserva información legítimamente conocida/LKP y aplica Search;
+- debe existir un minimum real-time KO dwell configurable antes de permitir recovery; luego la fisiología vigente decide si puede despertar;
+- no crear un `MemorySystem`, blackboard o planner general para este contrato.
+
+## Problema de targeting todavía activo
 
 ### ISSUE-0008 — posible sesgo de impactos hacia piernas/pies
 
-Estado del issue: `SUSPECTED / P1` hasta validación estadística reproducible.
+Estado: `SUSPECTED / P1` hasta validación estadística reproducible.
 
-La investigación de repo posterior a Fase 7 encontró una hipótesis fuerte:
+La investigación de repo posterior a Fase 7 mantiene una hipótesis fuerte:
 
 - firearm aim de `HumanEncounterAIController` todavía toma el `ActorLocomotionCollider` del target y usa `bounds.center` como base aim point;
-- los `ActorCombatHitRegion` nuevos se ignoran para aim (correctamente durante F7 para no cambiar aim accidentalmente), por lo que la IA sigue apuntando a un centro técnico de locomoción, no a un center-mass del target;
-- en `humanoid_standard`, el centro de Torso está aproximadamente 0.18 m por encima del centro de locomoción y el borde superior de piernas queda aproximadamente 0.11 m por debajo del aim histórico;
-- el spread actual es radial/simétrico y no muestra por código una inclinación vertical deliberada, por lo que un aim base bajo puede ser amplificado por un error angular normal.
+- los `ActorCombatHitRegion` se ignoran para aim para no alterar targeting durante F7, por lo que la IA sigue apuntando a un centro técnico de locomoción;
+- ese punto queda más bajo que el center-mass humano;
+- el spread actual es radial/simétrico y no muestra por código una inclinación vertical deliberada.
 
-Esto todavía no autoriza cambiar balance/spread. La próxima fase debe demostrarlo bajo condiciones controladas.
+Prueba 3 aporta evidencia cualitativa favorable — varios Torso/Arm y no un dominio extremo de piernas — pero no autoriza cerrar el issue ni retunear spread.
 
 ## Dirección arquitectónica elegida
 
 No implementar `aim at Torso` dentro de Human Encounter como solución permanente.
 
-La dirección objetivo es genérica para humanos, animales, mutantes, robots u otros targets:
+La dirección objetivo sigue siendo genérica:
 
 `Target → Primary Aim Point → shooter focus/context error → weapon → PhysicalShotPathResolver → actual hit → receiver`.
 
 El target define dónde es razonable intentar impactarlo; el shooter define cuánto error tiene; el arma define sus parámetros; la física decide dónde pegó; el receptor interpreta el impacto.
 
-Esto está documentado en `NPC_Combat_Targeting_Research.md`.
+## Próximo paso exacto — Prueba 3 Correction Pass
 
-## Próximo paso exacto
+Antes de F8A hay que corregir lo que hoy invalida o distorsiona pruebas de combate:
 
-### Fase 8A — Aim Bias Evidence
+1. **Player Invisible-to-AI mínimo** — adelantar `IMPL-0008`; Player sigue físico/interactivo pero queda fuera del candidate/acquisition boundary.
+2. **F6 observability correctness + multi-NPC mínimo** — corregir current-vs-last/origin stale y permitir gaze/FOV/LOS simultáneo para todos; la selección sólo controla el inspector profundo.
+3. **KO / combat memory continuity** — incapacidad suspende amenaza/acciones, no borra el enemigo/contexto reciente.
+4. **Minimum KO dwell** — bloquear recuperación demasiado inmediata por aceleración del `WorldClock`.
+5. **Prueba 3.3 controlada** — 1 Blue vs 1 Red con Player Invisible y observabilidad simultánea.
 
-Implementar únicamente instrumentación/diagnostic reproducible. No cambiar gameplay todavía.
-
-Medir por shot:
-
-- base aim point y su source;
-- proposed human center-mass;
-- focus/current spread;
-- shot origin/direction;
-- hit collider/hit point;
-- BodyRegion o miss;
-- seed/condición reproducible.
-
-Comparar el comportamiento actual contra el proposed target point bajo las mismas condiciones. Si 8A confirma la hipótesis, pasar a F8B; si no, investigar la evidencia real antes de tocar spread.
+Este correction pass es pequeño y está antes de F8A porque mejora la fiabilidad de las próximas mediciones. No se convierte en un framework nuevo.
 
 ## Secuencia inmediata revisada
 
+- Prueba 3 Correction Pass — Invisible mínimo + F6 correctness/multi-NPC mínimo + KO memory/dwell.
+- Prueba 3.3 — 1v1 limpio.
 - F8A — Aim Bias Evidence.
 - F8B — Generic target-side Primary Aim Point, sólo si 8A lo justifica.
 - F8C — comparación before/after con mismas seeds/condiciones, sin retuning.
 - F8D — review pequeño de accuracy; ningún factor cambia por defecto.
 - F8E — migrar consumers legacy y eliminar actor capsule-only/geometric BodyRegion fallback cuando sea seguro.
-- F9 — Player Invisible / Invincible debug.
-- F10 — Observability V2.
-- F11–F15 — batería integrada, Prueba 3/3B, game feel, cleanup y cierre.
+- F9 — completar Player Debug, especialmente Invincible y cierre de toggles.
+- F10 — completar Observability V2/targeting observability más allá del mínimo adelantado.
+- F11–F15 — batería integrada, pruebas NPC/Player, game feel, cleanup y cierre.
 
 ## Reglas de alcance
 
@@ -110,6 +136,7 @@ Conservar salvo evidencia contraria:
 No iniciar ahora:
 
 - Behavior Trees/GOAP/Utility AI;
+- memory framework general;
 - weak-point/aim-point scoring framework;
 - head targeting AI;
 - full ballistics/drop/wind;
