@@ -167,15 +167,23 @@ namespace OldScars.Core.Actors
             ActorRuntimeIdentity current = encounter.Threat;
             if (current != null)
             {
-                ActorConditionComponent currentCondition = current.GetComponent<ActorConditionComponent>();
-                if (current.IsRegistered && current.LifecycleState == ActorLifecycleState.Alive &&
-                    (currentCondition == null || currentCondition.CanPerformActiveActions) &&
-                    affiliation.IsHostileToward(current))
+                if (IsExcludedFromAutomaticThreatAcquisition(current))
                 {
+                    encounter.ClearThreat("Assigned actor is excluded from automatic threat acquisition");
                     ClearRecognitionStates();
-                    return;
                 }
-                encounter.ClearThreat("Assigned actor is no longer a living hostile candidate");
+                else
+                {
+                    ActorConditionComponent currentCondition = current.GetComponent<ActorConditionComponent>();
+                    if (current.IsRegistered && current.LifecycleState == ActorLifecycleState.Alive &&
+                        (currentCondition == null || currentCondition.CanPerformActiveActions) &&
+                        affiliation.IsHostileToward(current))
+                    {
+                        ClearRecognitionStates();
+                        return;
+                    }
+                    encounter.ClearThreat("Assigned actor is no longer a living hostile candidate");
+                }
             }
 
             float now = Time.time;
@@ -227,7 +235,8 @@ namespace OldScars.Core.Actors
                 ActorRuntimeIdentity candidate = registryBuffer[index];
                 RegistryCandidateVisitCount++;
                 if (candidate == null || candidate == identity || !candidate.IsRegistered ||
-                    candidate.LifecycleState == ActorLifecycleState.Dead)
+                    candidate.LifecycleState == ActorLifecycleState.Dead ||
+                    IsExcludedFromAutomaticThreatAcquisition(candidate))
                     continue;
                 ActorConditionComponent candidateCondition = candidate.GetComponent<ActorConditionComponent>();
                 if (candidateCondition != null && !candidateCondition.CanPerformActiveActions)
@@ -316,7 +325,9 @@ namespace OldScars.Core.Actors
                     continue;
                 ActorRuntimeIdentity candidate = state.Candidate;
                 if (candidate == null || !candidate.IsRegistered ||
-                    candidate.LifecycleState == ActorLifecycleState.Dead || !affiliation.IsHostileToward(candidate))
+                    candidate.LifecycleState == ActorLifecycleState.Dead ||
+                    IsExcludedFromAutomaticThreatAcquisition(candidate) ||
+                    !affiliation.IsHostileToward(candidate))
                 {
                     recognitionStates.RemoveAt(index);
                     continue;
@@ -390,6 +401,13 @@ namespace OldScars.Core.Actors
             if (perception == null) perception = GetComponent<ActorVisualPerceptionService>();
             if (gaze == null) gaze = GetComponent<ActorGazeController>();
             if (encounter == null) encounter = GetComponent<HumanEncounterAIController>();
+        }
+
+        private static bool IsExcludedFromAutomaticThreatAcquisition(ActorRuntimeIdentity candidate)
+        {
+            return candidate != null &&
+                   candidate.GetComponent<ActorDebugAiAcquisitionExclusion>()?
+                       .IsExcludedFromAutomaticThreatAcquisition == true;
         }
 
         private static ulong Mix(ulong value)

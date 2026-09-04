@@ -23,6 +23,8 @@ namespace OldScars.Core.Actors
         [SerializeField] private bool visible;
 
         private PlayerMovementController movementController;
+        private ActorRuntimeIdentity playerIdentity;
+        private ActorDebugAiAcquisitionExclusion playerAiAcquisitionExclusion;
         private ActorStaminaComponent stamina;
         private CameraRigController cameraRig;
         private Camera gameplayCamera;
@@ -141,6 +143,7 @@ namespace OldScars.Core.Actors
             WorldClock clock,
             InventoryUISessionController inventorySession,
             PlayerMovementController movement,
+            ActorRuntimeIdentity playerRuntimeIdentity,
             CameraRigController camera,
             Camera playerCamera,
             DebugWorldUiInputBlocker blocker,
@@ -150,6 +153,10 @@ namespace OldScars.Core.Actors
             worldClock = clock;
             inventorySessionController = inventorySession;
             movementController = movement;
+            playerIdentity = playerRuntimeIdentity;
+            playerAiAcquisitionExclusion = playerIdentity != null
+                ? playerIdentity.GetComponent<ActorDebugAiAcquisitionExclusion>()
+                : null;
             stamina = movement != null ? movement.Stamina : null;
             cameraRig = camera;
             gameplayCamera = playerCamera;
@@ -248,6 +255,8 @@ namespace OldScars.Core.Actors
                 movementController.SetDebugMovementMultiplier(movementMultiplier);
             if (GUILayout.Button("Reset movement multiplier", GUILayout.Height(22f)))
                 movementController.ResetDebugMovementMultiplier();
+
+            DrawAiAcquisitionExclusionControl();
 
             if (stamina == null)
             {
@@ -547,6 +556,10 @@ namespace OldScars.Core.Actors
             ResolveInventorySessionController();
             if (movementController == null && actorNeeds != null)
                 movementController = actorNeeds.GetComponent<PlayerMovementController>();
+            if (playerIdentity == null && actorNeeds != null)
+                playerIdentity = actorNeeds.GetComponent<ActorRuntimeIdentity>();
+            if (playerAiAcquisitionExclusion == null && playerIdentity != null)
+                playerAiAcquisitionExclusion = playerIdentity.GetComponent<ActorDebugAiAcquisitionExclusion>();
             if (stamina == null && movementController != null)
                 stamina = movementController.Stamina;
             if (gameplayCamera == null)
@@ -555,6 +568,26 @@ namespace OldScars.Core.Actors
                 cameraRig = gameplayCamera.GetComponentInParent<CameraRigController>();
             if (inputBlocker == null)
                 inputBlocker = FindAnyObjectByType<DebugWorldUiInputBlocker>();
+        }
+
+        private void DrawAiAcquisitionExclusionControl()
+        {
+            if (playerIdentity == null)
+            {
+                GUILayout.Label("Invisible to AI: <PLAYER IDENTITY NONE>");
+                return;
+            }
+
+            if (playerAiAcquisitionExclusion == null)
+                playerAiAcquisitionExclusion = playerIdentity.gameObject.AddComponent<ActorDebugAiAcquisitionExclusion>();
+
+            bool current = playerAiAcquisitionExclusion.IsExcludedFromAutomaticThreatAcquisition;
+            bool requested = GUILayout.Toggle(current, "Invisible to AI");
+            if (requested != current)
+                playerAiAcquisitionExclusion.SetExcludedFromAutomaticThreatAcquisition(requested);
+            GUILayout.Label(requested
+                ? "AI acquisition: EXCLUDED (debug)"
+                : "AI acquisition: ELIGIBLE");
         }
 
         private void HandleTeleportInput()

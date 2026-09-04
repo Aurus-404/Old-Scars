@@ -115,6 +115,7 @@ namespace OldScars.Core.ApplicationShell
                 WorldClock.Current,
                 inventorySession,
                 player.MovementController,
+                player.PlayerIdentity,
                 player.CameraRig,
                 player.GameplayCamera,
                 inputBlocker,
