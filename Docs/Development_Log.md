@@ -3644,3 +3644,13 @@ Estado: `PASS`.
 V1.1 corrige tres deudas sin retunar gameplay: `BloodTrailVisualSettings` serializa diámetro base `0,25 m`, profundidad `0,30 m` y draw distance 50 m; con variación existente `0,85..1,15`, las marcas observadas fueron `0,246..0,272 m`, en vez del tamaño anterior `1,7..2,3 m`. Medical deja de materializar la representación visual; `ActorHealthComponent` es el seam común que agrega exactamente un emitter a Player/NPC con Medical. `ActorBloodTrailEmitter` reemplaza `RaycastAll` por un buffer propio de ocho hits `RaycastNonAlloc`, conserva filtros/normal y registra saturación; las pruebas Terrain, piso, pendiente, trigger y self-collider no saturaron.
 
 `Blood Trails V1 Diagnostics: PASS` con RenderTexture D3D11 (`trailPixels=212`, seis marks activas); R0, M39.0, Timed Bandaging y M38 Actor Lifecycle también `PASS`, junto a Runtime/Editor compile y `git diff --check`. Spacing `0,01 / 0,60 / 3,00 / 0,25`, WorldClock, bandaging, budget global 128, lifetime 45 s, FIFO, material/arte R0, renderer, AI, Perception y persistence permanecen sin cambio. Evidencia: `Evidence/BloodTrailsV11/trail.png`.
+
+### NPC Opportunistic Reload V1
+
+Fecha: 2026-09-05.
+
+Estado: `PASS`.
+
+`HumanEncounterAIController` centraliza el timer real de recarga sin crear otra autoridad: `AmbientTopOff` completa firearms parciales sólo en `Idle + Ambient + Threat null`; `EmptyWeapon` puede iniciarse/continuar durante Fight, LostContact y Search, incluso tras reacquisition. Threat cancela el top-off parcial; tratamiento, incapacidad, death, disable y firearm invalidado cancelan sin consumo. `WeaponCombatService` no cambió y sigue validando/consumiendo owned ammo sólo al COMPLETE.
+
+Runtime/Editor compile, `M41 NPC Opportunistic Reload Diagnostics` (x1 `2,49 s`, x100 `2,5 s`), M40.0 Combat & Weapons, M41.1 Human Encounter, M41 LostContact / Search V1 y Timed Bandaging / NPC Self-Treatment dieron `PASS`; `git diff --check` pasó. No se tocaron Player reload, Navigation ownership, F6/Correction Pass B ni `ProjectSettings`.

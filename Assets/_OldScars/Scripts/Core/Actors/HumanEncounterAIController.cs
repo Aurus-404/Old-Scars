@@ -41,6 +41,14 @@ namespace OldScars.Core.Actors
     [DisallowMultipleComponent]
     public sealed class HumanEncounterAIController : MonoBehaviour
     {
+        // This remains local to Human Encounter: WeaponCombatService owns the actual reload commit.
+        private enum NpcReloadPurpose
+        {
+            None,
+            EmptyWeapon,
+            AmbientTopOff
+        }
+
         private const float DestinationProjectionDistance = 3f;
         private const float MinimumNpcSpreadDegrees = 1.25f;
         private const float MaximumNpcSpreadDegrees = 4.5f;
@@ -76,6 +84,7 @@ namespace OldScars.Core.Actors
         private bool reloadPending;
         private double reloadCompletionTime;
         private string reloadWeaponInstanceId;
+        private NpcReloadPurpose reloadPurpose;
         private bool navigationFailureLatched;
         private Vector3 failedPlanActorPosition;
         private Vector3 failedPlanThreatPosition;
@@ -118,6 +127,9 @@ namespace OldScars.Core.Actors
         public double LastSeenTime => lastSeenTime;
         public bool IsConfigured => configured;
         public bool IsReloadPending => reloadPending;
+        public string PendingReloadPurpose => reloadPending ? reloadPurpose.ToString() : null;
+        public double ReloadCompletionTime => reloadPending ? reloadCompletionTime : double.NaN;
+        public string ReloadWeaponInstanceId => reloadPending ? reloadWeaponInstanceId : null;
         public bool NavigationFailureLatched => navigationFailureLatched;
         public int TransitionRevision { get; private set; }
         public int AttackCount { get; private set; }
@@ -192,9 +204,17 @@ namespace OldScars.Core.Actors
                 EvaluateEncounter(now);
             }
             UpdateSelfTreatment();
+            bool reloadActionUpdated = UpdateReloadAction(now);
             UpdateAimState(now);
-            if (woundTreatment?.IsTreating != true && State == HumanEncounterAIState.Fighting && HasFreshPerception(now))
-                ExecuteWeaponCycle(now);
+            if (woundTreatment?.IsTreating != true)
+            {
+                if (reloadActionUpdated || reloadPending)
+                    return;
+                if (State == HumanEncounterAIState.Fighting && HasFreshPerception(now))
+                    ExecuteWeaponCycle(now);
+                else
+                    TryStartOpportunisticReload(now);
+            }
         }
 
         private void OnDisable()
@@ -290,7 +310,7 @@ namespace OldScars.Core.Actors
             ClearEncounterMemory();
             ClearSearchMemory(true);
             ResetAimTracking();
-            CancelActiveAction();
+            CancelAmbientTopOff();
             Transition(HumanEncounterAIState.Idle, "Threat assigned; awaiting perception");
             nextDecisionTime = 0d;
             Debug.Log($"[AI][THREAT_ASSIGNED]\n  Actor: {identity.ActorInstanceId}\n  Threat: {target.ActorInstanceId}");
@@ -311,7 +331,7 @@ namespace OldScars.Core.Actors
                 return false;
             }
             responseOverride = response;
-            CancelActiveAction();
+            CancelAmbientTopOff();
             if (State == HumanEncounterAIState.Searching)
             {
                 if (AbortSearchToEncounter("Encounter response changed during Search"))
@@ -330,7 +350,7 @@ namespace OldScars.Core.Actors
         public void ClearResponseOverride()
         {
             responseOverride = null;
-            CancelActiveAction();
+            CancelAmbientTopOff();
             if (State == HumanEncounterAIState.Searching)
             {
                 if (!AbortSearchToEncounter("Encounter response override cleared during Search"))
@@ -394,7 +414,7 @@ namespace OldScars.Core.Actors
                 if (State != HumanEncounterAIState.LostContact)
                 {
                     IsClosingDistance = false;
-                    CancelActiveAction();
+                    CancelAmbientTopOff();
                     if (State != HumanEncounterAIState.Avoiding && State != HumanEncounterAIState.Fleeing)
                         behavior.StopEncounterNavigation();
                     Transition(HumanEncounterAIState.LostContact, $"Perception lost: {LastPerception.Reason}");
@@ -433,7 +453,7 @@ namespace OldScars.Core.Actors
 
         private void BeginSearch(double now)
         {
-            CancelActiveAction();
+            CancelAmbientTopOff();
             ResetPlanLatch();
             if (!behavior.EnterSearch("Fight lost contact with observed threat"))
             {
@@ -759,7 +779,7 @@ namespace OldScars.Core.Actors
             float engagementTolerance = navigation.Agent != null ? navigation.Agent.stoppingDistance : 0.2f;
             if (physicalDistance > engagementRange + engagementTolerance)
             {
-                CancelActiveAction();
+                CancelAmbientTopOff();
                 float desiredFlatDistance = firearm != null
                     ? Mathf.Max(0.5f, engagementRange * 0.9f)
                     : Mathf.Max(0.25f, melee.melee_range * 0.6f);
@@ -793,28 +813,11 @@ namespace OldScars.Core.Actors
                 if (distance > engagementRange + engagementTolerance || distance > firearm.range + 0.01f)
                     return;
                 if (reloadPending)
-                {
-                    if (weapon.InstanceId != reloadWeaponInstanceId)
-                    {
-                        CancelActiveAction();
-                        return;
-                    }
-                    if (now < reloadCompletionTime)
-                        return;
-                    reloadPending = false;
-                    LastCombatResult = WeaponCombatService.ReloadEquipped(ownership, reloadWeaponInstanceId);
-                    if (LastCombatResult.Success)
-                        ReloadCount++;
                     return;
-                }
 
                 if (weapon.LoadedRounds <= 0)
                 {
-                    if (WeaponCombatService.GetCompatibleAmmoQuantity(ownership, weapon) <= 0)
-                        return;
-                    reloadPending = true;
-                    reloadWeaponInstanceId = weapon.InstanceId;
-                    reloadCompletionTime = now + firearm.reload_duration;
+                    TryStartReload(now, weapon, firearm, NpcReloadPurpose.EmptyWeapon);
                     return;
                 }
                 if (now < nextAttackTime)
@@ -1004,9 +1007,85 @@ namespace OldScars.Core.Actors
 
         private void CancelActiveAction()
         {
+            CancelReload();
+        }
+
+        private void CancelAmbientTopOff()
+        {
+            if (reloadPending && reloadPurpose == NpcReloadPurpose.AmbientTopOff)
+                CancelReload();
+        }
+
+        private void CancelReload()
+        {
             reloadPending = false;
             reloadCompletionTime = 0d;
             reloadWeaponInstanceId = null;
+            reloadPurpose = NpcReloadPurpose.None;
+        }
+
+        private bool UpdateReloadAction(double now)
+        {
+            if (!reloadPending)
+                return false;
+            if (woundTreatment?.IsTreating == true || condition != null && !condition.CanPerformActiveActions)
+            {
+                CancelReload();
+                return true;
+            }
+            if (!WeaponCombatService.TryGetEquippedWeapon(ownership, out ItemInstance weapon, out _,
+                    out FirearmProfileDefinition firearm, out _) || firearm == null ||
+                weapon.InstanceId != reloadWeaponInstanceId)
+            {
+                CancelReload();
+                return true;
+            }
+            if (now < reloadCompletionTime)
+                return true;
+
+            string expectedWeaponInstanceId = reloadWeaponInstanceId;
+            CancelReload();
+            LastCombatResult = WeaponCombatService.ReloadEquipped(ownership, expectedWeaponInstanceId);
+            if (LastCombatResult.Success)
+                ReloadCount++;
+            return true;
+        }
+
+        private void TryStartOpportunisticReload(double now)
+        {
+            if (!WeaponCombatService.TryGetEquippedWeapon(ownership, out ItemInstance weapon, out _,
+                    out FirearmProfileDefinition firearm, out _) || firearm == null)
+                return;
+            if (weapon.LoadedRounds <= 0)
+            {
+                bool emptyReloadAllowed =
+                    State == HumanEncounterAIState.LostContact ||
+                    State == HumanEncounterAIState.Searching ||
+                    State == HumanEncounterAIState.Idle && behavior?.Owner == ActorBehaviorOwner.Ambient && threat == null;
+                if (emptyReloadAllowed)
+                    TryStartReload(now, weapon, firearm, NpcReloadPurpose.EmptyWeapon);
+                return;
+            }
+            if (State == HumanEncounterAIState.Idle && behavior?.Owner == ActorBehaviorOwner.Ambient && threat == null)
+                TryStartReload(now, weapon, firearm, NpcReloadPurpose.AmbientTopOff);
+        }
+
+        private bool TryStartReload(
+            double now,
+            ItemInstance weapon,
+            FirearmProfileDefinition firearm,
+            NpcReloadPurpose purpose)
+        {
+            if (reloadPending || weapon == null || firearm == null || weapon.LoadedRounds >= firearm.magazine_capacity ||
+                weapon.LoadedRounds < 0 || purpose == NpcReloadPurpose.AmbientTopOff && weapon.LoadedRounds <= 0 ||
+                purpose == NpcReloadPurpose.EmptyWeapon && weapon.LoadedRounds != 0 ||
+                WeaponCombatService.GetCompatibleAmmoQuantity(ownership, weapon) <= 0)
+                return false;
+            reloadPending = true;
+            reloadPurpose = purpose;
+            reloadWeaponInstanceId = weapon.InstanceId;
+            reloadCompletionTime = now + firearm.reload_duration;
+            return true;
         }
 
         private void UpdateObservedMotion(Vector3 observedPosition, double now)

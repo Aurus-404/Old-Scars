@@ -206,6 +206,14 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Validación:** diagnostics V1.1/R0, M39.0, Timed Bandaging y M38 Actor Lifecycle `PASS`; el escenario comprobó Player/NPC, composición sin duplicados, terrain/piso/slope, filtros trigger/propio, bandaging real, x1/x100, budget, expiry, recycling, buffer nonalloc no saturado y trail visual RenderTexture.
 - **Límites:** textura R0 provisional; sin persistence, puddles, spray, tracking AI, footprints, weather cleanup ni framework genérico de evidencia.
 
+## IMPL-0019 — NPC Opportunistic Reload
+
+- **Estado:** `DONE`.
+- **Fecha/origen:** 2026-09-05 — slice puntual autorizado.
+- **Resolución:** `HumanEncounterAIController` inicia `AmbientTopOff` sólo en `Idle + Ambient + Threat null` para firearms parciales, y `EmptyWeapon` con magazine vacío durante Fighting, LostContact, Search o Ambient seguro. La acción vacía conserva weapon instance y completion time a través de Fight -> LostContact -> Search -> reacquisition; el top-off se cancela al aparecer threat. `WeaponCombatService.ReloadEquipped` conserva el commit real con munición owned.
+- **Validación:** `M41 NPC Opportunistic Reload`, M40.0 Combat & Weapons, M41.1 Human Encounter, M41 LostContact / Search V1 y Timed Bandaging / NPC Self-Treatment diagnostics: `PASS`.
+- **Límites:** sin weapon switching/fallback, planner, FireControl, cambios Player reload ni fusión de stacks de ammo.
+
 ---
 
 ## Regla de mantenimiento
