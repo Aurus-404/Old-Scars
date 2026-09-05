@@ -8,6 +8,12 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 
 `PC_Renderer` mantiene Forward+ y SSAO activo e incorpora una única URP `DecalRendererFeature` activa en Automatic (50 m, decal layers OFF). R0 comprobó DBuffer sobre el Terrain real de WorldRuntime y fixtures opacas horizontal/inclinada mediante GPU/RenderTexture y controles OFF/ON/fuera de profundidad. `BloodTrailsR0Diagnostics` es tooling Editor batch-only; su textura/material técnico y proyector efímero no constituyen Blood Trails gameplay. No existen en R0 emitter, pooling, integración médica, tracking ni persistencia. Configuración, reproducción, límites y capturas: [Blood_Trails_R0_Rendering_Proof.md](Blood_Trails_R0_Rendering_Proof.md).
 
+## Blood Trails V1 — trail visual gobernado por Medical
+
+`ActorMedicalStateComponent` sigue siendo la única autoridad de heridas, bleeding y tratamiento. Al inicializar, materializa un `ActorBloodTrailEmitter` que sólo observa `EffectiveBleedingRatePerGameHour`, cacheado por `Revision`; no escribe Medical ni conoce treatment, AI, Perception o persistence. El emitter acumula desplazamiento y, desde `0,01` de bleeding, interpola marcas con spacing monótono entre `3 m` y `0,60 m` al llegar a `0,25`; el WorldClock no participa. Por debajo del threshold, quieto o muerto no emite.
+
+`WorldBloodMarkPool` es la única autoridad visual de escena: comparte un presupuesto de 128 `DecalProjector`, lifetime real de 45 s y reciclaje FIFO de la marca activa más vieja. Carga `BloodTrailVisualSettings` desde Resources, que referencia el material técnico R0; no persiste decals ni conserva colliders. Cada emisión hace raycast descendente de 4 m desde 1,5 m, ignora triggers y colliders propios, y usa `RaycastHit.point`/`normal` para pose, profundidad de proyección `0,30 m` y variación determinista por actor/secuencia. El renderer, SSAO y configuración R0 no se modifican.
+
 ## Datos, Mods Y Runtime
 
 - JSON contiene definiciones moddables; `GameDataLoader` las carga una vez, canonicaliza sus Global Content IDs en la frontera, `GameDatabase` las registra por ID canónico y `DataValidator` rechaza los contratos o referencias que valida explicitamente.
