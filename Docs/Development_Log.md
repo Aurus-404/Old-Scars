@@ -3612,3 +3612,15 @@ Estado: `VALIDATED — COMPLETED`.
 `HumanEncounterAIController` usa la misma capability y ownership real. Routine exige `Idle + Ambient + Threat null`, espera un delay determinista por actor/episodio de `2..5 s`, trata primero el mayor bleeding efectivo y se cancela si vuelve danger. Emergency compara tiempo real estimado hasta `FatalBloodFraction` contra `calmDelay + application_seconds`; puede ocupar las manos durante Encounter sin detener navegación, pero incapacidad/death cancela. No se añadió estado Medical, manager, scheduler, persistencia de progreso ni bandages a profiles.
 
 Validación focalizada en Unity `6000.4.6f1`, batchmode `-nographics`: Runtime/Editor compile `PASS`; `Timed Bandaging / NPC Self-Treatment Diagnostics: PASS` (`4,004 s` a x1, `4,001 s` a x100, Player `2 m`, NPC `6,84 m`, calm `4,681 s`, TTF control `5520 s`, emergency `0,552 s`); M39.0, Actor Consciousness, Player Controls & Health Window, M40.0, M41.1 Human Encounter, LostContact/Search V1, Sandbox Preparation/Behavior Ownership e Inventory Interaction UX `PASS`; `git diff --check: PASS`. No se tocaron Blood Trails, Carry Weight, Correction Pass B/F6, KO memory/dwell ni F8. Los tres archivos locales de Correction Pass B y `ProjectSettings.runInBackground` permanecen fuera de stage/commits.
+
+### Blood Trails R0 — URP blood mark rendering proof
+
+Fecha: 2026-09-05.
+
+Estado: `PASS — GRAPHICS PRIMITIVE ONLY`.
+
+PC_Renderer conserva Forward+ y SSAO activo; Unity Editor API añade una única DecalRendererFeature Automatic, 50 m, layers OFF. Se utiliza un material Shader Graphs/Decal del paquete URP y una textura RGBA técnica 128×128. No se editó YAML manualmente: Unity serializó la feature y migró el renderer a asset v3; el diff adicional fue revisado contra URP 17.4.
+
+BloodTrailsR0Diagnostics carga WorldRuntime real con session/store temporal y Unity Terrain. Batchmode D3D11 sobre Radeon RX 560, SubmitRenderRequest/SingleCameraRequest + RenderTexture/ReadPixels: DBuffer observado; exterior 13247, piso opaco 13320 e inclinado 30° 13273 píxeles distintos OFF→ON. Los tres controles fuera de profundidad regresan exactamente a baseline (0 píxeles distintos). Capturas originales inspeccionadas; recursos SSAO preparados; Runtime/Editor compile y diagnostic PASS, sin errores de Console del escenario ni errores shader; git diff --check PASS. Primer intento falló al comprobar el proyector antes de inicializar rendering; corregido en el fixture usando solicitudes URP y validación posterior. Dos ejecuciones posteriores produjeron la misma evidencia visual, la última con assertions adicionales de SSAO/errores.
+
+Recomendación: Proceed with Blood Trails V1 por viabilidad gráfica PC. No se implementó V1, gameplay, AI, Medical ni persistence. Build Player, otros GPUs/backends, estrés/pooling y aceptación manual de Mauro no forman parte de este PASS. Los cuatro archivos dirty ajenos (F6 y ProjectSettings.runInBackground) se preservan byte por byte fuera de stage/commit. Informe, reproducción y evidencia: Blood_Trails_R0_Rendering_Proof.md y Evidence/BloodTrailsR0/.

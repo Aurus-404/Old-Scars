@@ -4,6 +4,10 @@
 
 Este documento describe contratos tecnicos implementados en el slice actual. No asigna IDs, estados, dependencias ni gates; esa autoridad pertenece a [Project_Roadmap.md](Project_Roadmap.md). [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto con estado explícito `NOT IMPLEMENTED`. Una capacidad futura mencionada aqui es un limite de integracion, no una implementacion existente.
 
+## Blood Trails R0 — primitive gráfica PC
+
+`PC_Renderer` mantiene Forward+ y SSAO activo e incorpora una única URP `DecalRendererFeature` activa en Automatic (50 m, decal layers OFF). R0 comprobó DBuffer sobre el Terrain real de WorldRuntime y fixtures opacas horizontal/inclinada mediante GPU/RenderTexture y controles OFF/ON/fuera de profundidad. `BloodTrailsR0Diagnostics` es tooling Editor batch-only; su textura/material técnico y proyector efímero no constituyen Blood Trails gameplay. No existen en R0 emitter, pooling, integración médica, tracking ni persistencia. Configuración, reproducción, límites y capturas: [Blood_Trails_R0_Rendering_Proof.md](Blood_Trails_R0_Rendering_Proof.md).
+
 ## Datos, Mods Y Runtime
 
 - JSON contiene definiciones moddables; `GameDataLoader` las carga una vez, canonicaliza sus Global Content IDs en la frontera, `GameDatabase` las registra por ID canónico y `DataValidator` rechaza los contratos o referencias que valida explicitamente.

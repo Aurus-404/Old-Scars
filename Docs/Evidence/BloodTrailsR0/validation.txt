@@ -1,0 +1,13 @@
+Unity 6000.4.6f1 / URP 17.4.0 / Windows D3D11 / Radeon RX 560
+Source: final Logs/BloodTrailsR0/unity.log, 2026-09-05
+Scene: real WorldRuntime; seed 941413001; Small/High; Unity Terrain
+SSAO active and runtime material prepared (asserted by diagnostic).
+[BloodR0] CONFIG PASS: PC Forward+; SSAO active; Decal Automatic, maxDistance=50, layers=false; shader=Shader Graphs/Decal; GPU=Radeon RX 560 Series
+[BloodR0] CONFIG PASS: PC Forward+; SSAO active; Decal Automatic, maxDistance=50, layers=false; shader=Shader Graphs/Decal; GPU=Radeon RX 560 Series
+[BloodR0] exterior RENDER PASS changedPixels=13247; technique=DBuffer; point=(5.00, 74.67, 5.00); normal=(0.02, 1.00, 0.00)
+[BloodR0] exterior DEPTH PASS changedPixels=0
+[BloodR0] opaque-floor RENDER PASS changedPixels=13320; technique=DBuffer; point=(5.00, 78.67, 5.00); normal=(0.00, 1.00, 0.00)
+[BloodR0] opaque-floor DEPTH PASS changedPixels=0
+[BloodR0] inclined-floor RENDER PASS changedPixels=13273; technique=DBuffer; point=(5.00, 78.67, 5.00); normal=(-0.50, 0.87, 0.00)
+[BloodR0] inclined-floor DEPTH PASS changedPixels=0
+Blood Trails R0 Diagnostics: PASS — All three surfaces rendered; depth negative controls passed.
