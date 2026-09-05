@@ -37,6 +37,16 @@ Preferred flow:
 
 Codex should still investigate locally when the answer depends on uncommitted files, Unity runtime/editor state, generated assets, logs, scene state or other evidence unavailable from the repository.
 
+## Execution Autonomy And Instruction Precedence
+
+For an authorized implementation or fix, carry the task through the smallest correct implementation and proportional verification. Do not stop at a plan or ask for confirmation merely because a routine implementation detail could be chosen safely.
+
+- Make routine, reversible assumptions when they do not change product direction, authorized scope, authority boundaries, destructive Git state, or required manual/visual acceptance.
+- Ask Mauro only when missing information materially affects correctness, creative/product authority, scope, an irreversible or destructive action, or a required manual Unity/visual gate.
+- Explicit task instructions from Mauro take precedence over conflicting repo-local skill guidance unless a higher-priority safety, permission, or destructive-operation boundary applies.
+- If a repo-local skill blocks, pauses, or redirects requested work, identify the skill and the concrete rule responsible rather than stopping vaguely.
+- Complete all unaffected authorized work before waiting on a manual gate. Never fabricate manual, visual, runtime, MCP, or fresh-session evidence.
+
 ## Data-Driven And Modding
 
 - JSON declares content and parameters; C# implements closed system logic. Avoid content-specific classes such as `Crowbar.cs`.
@@ -54,9 +64,9 @@ Use the smallest prompt and investigation that can safely establish the requeste
 
 Use [Docs/Milestone_Template.md](Docs/Milestone_Template.md) as a proportional prompt template, not a compulsory mega-prompt. Work in **Objective** mode by default; use **Plan** only when material local investigation/design is genuinely needed (for example authority migration, delicate persistence, worldgen, streaming, machine runtime, or a cross-system refactor whose cause was not already established).
 
-Model policy: use **Terra** by default for normal implementation, bugs, diagnostics, and integration; **Luna** for mechanical, predictable, repetitive, or routine content/documentation work; **Sol** for delicate architecture, persistence, durable identity, worldgen, streaming, authority changes, or hard cross-system bugs. Use **Ultra** only when its extra reasoning is justified. Use **Standard** speed; do not recommend Fast for Old Scars.
+Model policy: use **Terra** by default for normal implementation, bugs, diagnostics, and integration; **Luna** for mechanical, predictable, repetitive, or routine content/documentation work; **Sol** for delicate architecture, persistence, durable identity, worldgen, streaming, authority changes, or hard cross-system bugs. Use **Astra**, when available, selectively for unusually large or ambiguous end-to-end tasks where one model must coordinate substantial research, implementation, validation, and review across several systems, or where its larger-context orchestration materially reduces risk; Astra is not a project prerequisite and does not replace Terra as the default or Sol for every delicate seam. Use **Ultra** only when its extra reasoning is justified. Use **Standard** speed; do not recommend Fast for Old Scars.
 
-Default to zero subagents. Request a deliberate number and bounded roles only when independent investigation, integration audit, regression review, or specialized QA materially reduces risk. One integrator owns coupled edits and the final decision.
+Default to zero subagents. Request a deliberate number and bounded roles only when independent investigation, integration audit, regression review, or specialized QA materially reduces risk. One integrator owns coupled edits and the final decision. Astra does not change this rule: do not delegate merely because delegation is available.
 
 For a long interruptible task, maintain only this short state in the active Codex task/conversation: `ACTIVE TASK`, `GOAL`, `BASE`, `CHANGES MADE`, `VALIDATION PASSED`, `VALIDATION PENDING`, `KNOWN FAILURE`, `DO NOT TOUCH`, `NEXT EXACT STEP`. Do not put ephemeral checkpoints in canonical docs or commit them by default.
 
