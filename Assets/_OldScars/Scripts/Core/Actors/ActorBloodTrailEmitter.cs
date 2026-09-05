@@ -18,6 +18,7 @@ namespace OldScars.Core.Actors
 
         private const float RaycastHeight = 1.5f;
         private const float RaycastDistance = 4f;
+        private const int SurfaceQueryBufferSize = 8;
         private const int MaximumMarksPerObservation = 8;
 
         private ActorMedicalStateComponent medical;
@@ -30,10 +31,12 @@ namespace OldScars.Core.Actors
         private bool hasLastPosition;
         private float pendingDistance;
         private ulong emissionSequence;
+        private readonly RaycastHit[] surfaceHits = new RaycastHit[SurfaceQueryBufferSize];
 
         public float CachedEffectiveBleedingRatePerGameHour => cachedBleeding;
         public float CurrentSpacingMeters => cachedSpacing;
         public int EmittedCount { get; private set; }
+        public int SurfaceQuerySaturationCount { get; private set; }
 
         private void Awake()
         {
@@ -105,12 +108,14 @@ namespace OldScars.Core.Actors
 
         private bool TryResolveSurface(Vector3 candidate, out RaycastHit resolved)
         {
-            RaycastHit[] hits = Physics.RaycastAll(candidate + Vector3.up * RaycastHeight, Vector3.down,
-                RaycastDistance, Physics.AllLayers, QueryTriggerInteraction.Ignore);
+            int hitCount = Physics.RaycastNonAlloc(candidate + Vector3.up * RaycastHeight, Vector3.down,
+                surfaceHits, RaycastDistance, Physics.AllLayers, QueryTriggerInteraction.Ignore);
+            if (hitCount == surfaceHits.Length) SurfaceQuerySaturationCount++;
             float nearestDistance = float.PositiveInfinity;
             resolved = default;
-            foreach (RaycastHit hit in hits)
+            for (int index = 0; index < hitCount; index++)
             {
+                RaycastHit hit = surfaceHits[index];
                 if (hit.collider == null || hit.collider.isTrigger || hit.collider.transform.IsChildOf(transform)) continue;
                 if (hit.distance >= nearestDistance) continue;
                 nearestDistance = hit.distance;

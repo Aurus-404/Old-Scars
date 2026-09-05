@@ -25,6 +25,9 @@ namespace OldScars.Editor
         private const string SettingsPath = "Assets/Resources/BloodTrails/BloodTrailVisualSettings.asset";
         private const string R0MaterialPath = "Assets/_OldScars/Art/BloodTrailsR0/BloodMarkR0.mat";
         private const string Output = "Logs/BloodTrailsV1";
+        private const float ProductiveMarkSizeMeters = .25f;
+        private const float ProductiveProjectionDepth = .30f;
+        private const float ProductiveDrawDistance = 50f;
         private static readonly string OutputAbsolute = Path.GetFullPath(Output);
         private static int stage;
         private static double stageStarted;
@@ -37,6 +40,8 @@ namespace OldScars.Editor
         private static int preBandageMarks;
         private static string treatmentWoundId;
         private static float bandageSpacingBefore, bandageSpacingAfter;
+        private static float smallestMarkSize = float.PositiveInfinity;
+        private static float largestMarkSize;
         private static int x1Marks, x100Marks;
         private static Camera camera;
         private static RenderTexture target;
@@ -79,11 +84,13 @@ namespace OldScars.Editor
                 settings = ScriptableObject.CreateInstance<BloodTrailVisualSettings>();
                 settings.name = "BloodTrailVisualSettings";
                 settings.SetBloodMarkMaterial(material);
+                settings.SetPresentation(ProductiveMarkSizeMeters, ProductiveProjectionDepth, ProductiveDrawDistance);
                 AssetDatabase.CreateAsset(settings, SettingsPath);
             }
-            else if (settings.BloodMarkMaterial != material)
+            else
             {
                 settings.SetBloodMarkMaterial(material);
+                settings.SetPresentation(ProductiveMarkSizeMeters, ProductiveProjectionDepth, ProductiveDrawDistance);
                 EditorUtility.SetDirty(settings);
             }
             AssetDatabase.SaveAssets();
@@ -142,10 +149,12 @@ namespace OldScars.Editor
             int terrainBefore = pool.AcquiredCount;
             Move(terrainEmitter, terrainPoint + Vector3.left * 3f, terrainPoint + Vector3.right * 3f, 12);
             Require(pool.AcquiredCount > terrainBefore, "Bleeding actor did not place a mark on real WorldRuntime Terrain.");
+            Require(terrainEmitter.SurfaceQuerySaturationCount == 0, "Terrain surface query saturated its nonalloc buffer.");
             CreateSurfaces(origin);
+            TestCompositionBoundary();
 
             ActorRuntimeIdentity player = runtime.PlayerComposition.PlayerIdentity;
-            Require(player != null && player.GetComponent<ActorBloodTrailEmitter>() != null, "Real Player lacks BloodTrailEmitter.");
+            Require(player != null && player.GetComponents<ActorBloodTrailEmitter>().Length == 1, "Real Player does not have exactly one BloodTrailEmitter.");
             ActorBloodTrailEmitter playerEmitter = player.GetComponent<ActorBloodTrailEmitter>();
             int healthyBefore = pool.AcquiredCount;
             Move(playerEmitter, origin + Vector3.left * 5f, origin + Vector3.right * 5f, 10);
@@ -163,7 +172,7 @@ namespace OldScars.Editor
             npc.name = "Blood Trails V1 NPC";
             NavMeshAgentIfPresent(npc.gameObject, false);
             ActorBloodTrailEmitter npcEmitter = npc.GetComponent<ActorBloodTrailEmitter>();
-            Require(npcEmitter != null, "NPC lacks BloodTrailEmitter.");
+            Require(npc.GetComponents<ActorBloodTrailEmitter>().Length == 1, "NPC does not have exactly one BloodTrailEmitter.");
             int npcRevision = npc.GetComponent<ActorMedicalStateComponent>().Revision;
             ApplyWound(npc.gameObject, 2, .12f);
             npcBefore = pool.AcquiredCount;
@@ -220,12 +229,45 @@ namespace OldScars.Editor
             DecalProjector projector = pool.ActiveProjectors.Last();
             float opaqueAlignment = Vector3.Dot(projector.transform.forward, -Vector3.up);
             Require(opaqueAlignment > .98f, "Opaque floor projector is not aligned to hit normal: " + opaqueAlignment);
+            ValidateProductiveMarkSize(projector);
+            float opaqueSize = projector.size.x;
 
             ActorBloodTrailEmitter slope = CreateFixture("Blood Slope", slopeFloor.transform.position + Vector3.up * .5f, .25f, true);
             Vector3 slopeNormal = slopeFloor.transform.up;
             Move(slope, slope.transform.position + slopeFloor.transform.right * -3f, slope.transform.position + slopeFloor.transform.right * 3f, 12);
             projector = pool.ActiveProjectors.Last();
             Require(Vector3.Dot(projector.transform.forward, -slopeNormal) > .98f, "Slope projector is not aligned to RaycastHit.normal.");
+            ValidateProductiveMarkSize(projector);
+            Require(!Mathf.Approximately(opaqueSize, projector.size.x), "Deterministic mark variation did not vary scale.");
+            Require(filter.SurfaceQuerySaturationCount == 0 && slope.SurfaceQuerySaturationCount == 0,
+                "Surface query saturated its nonalloc buffer.");
+        }
+
+        private static void TestCompositionBoundary()
+        {
+            GameObject noMedical = new GameObject("Blood No Medical");
+            Require(noMedical.GetComponent<ActorBloodTrailEmitter>() == null, "Actor without Medical received a BloodTrailEmitter.");
+            noMedical.AddComponent<ActorMedicalStateComponent>();
+            Require(noMedical.GetComponent<ActorBloodTrailEmitter>() == null,
+                "ActorMedicalStateComponent directly materialized BloodTrailEmitter.");
+            noMedical.AddComponent<ActorHealthComponent>();
+            Require(noMedical.GetComponents<ActorBloodTrailEmitter>().Length == 1,
+                "ActorHealth composition did not materialize exactly one BloodTrailEmitter.");
+            Object.Destroy(noMedical);
+        }
+
+        private static void ValidateProductiveMarkSize(DecalProjector projector)
+        {
+            BloodTrailVisualSettings settings = Resources.Load<BloodTrailVisualSettings>("BloodTrails/BloodTrailVisualSettings");
+            Require(settings != null, "Blood trail visual settings are unavailable at runtime.");
+            float minimum = settings.BaseMarkSizeMeters * .85f - .0001f;
+            float maximum = settings.BaseMarkSizeMeters * 1.15f + .0001f;
+            Require(projector.size.x >= minimum && projector.size.x <= maximum &&
+                    Mathf.Approximately(projector.size.x, projector.size.y) && projector.size.x < .5f &&
+                    Mathf.Approximately(projector.size.z, settings.ProjectionDepth),
+                "Productive blood mark size/depth is invalid: " + projector.size);
+            smallestMarkSize = Mathf.Min(smallestMarkSize, projector.size.x);
+            largestMarkSize = Mathf.Max(largestMarkSize, projector.size.x);
         }
 
         private static void BeginRealBandage(Vector3 origin)
@@ -292,6 +334,7 @@ namespace OldScars.Editor
                       "\n  PlayerMarks: " + (pool.AcquiredCount - playerBefore) +
                       "\n  NpcMarks: " + (pool.AcquiredCount - npcBefore) +
                       "\n  BandageSpacing: " + bandageSpacingBefore.ToString("0.###") + " -> " + bandageSpacingAfter.ToString("0.###") +
+                      "\n  MarkSize: " + smallestMarkSize.ToString("0.###") + ".." + largestMarkSize.ToString("0.###") +
                       "\n  ClockDensity: x1=" + x1Marks + " x100=" + x100Marks +
                       "\n  Pool: Created=" + pool.CreatedCount + " Acquired=" + pool.AcquiredCount + " Recycled=" + pool.RecycledCount +
                       " Expired=" + pool.ExpiredCount + " Peak=" + pool.PeakActiveMarkCount + " Budget=" + pool.ActiveBudget);
@@ -358,7 +401,8 @@ namespace OldScars.Editor
             camera = new GameObject("Blood Trails V1 Evidence Camera").AddComponent<Camera>();
             camera.enabled = false;
             camera.orthographic = true;
-            camera.orthographicSize = 9f;
+            // Frame the existing trail closely enough to resolve the productive 0.25 m marks.
+            camera.orthographicSize = 5f;
             camera.nearClipPlane = .1f;
             camera.farClipPlane = 30f;
             camera.clearFlags = CameraClearFlags.SolidColor;
@@ -376,7 +420,7 @@ namespace OldScars.Editor
                 image.Apply();
                 Color32[] pixels = image.GetPixels32();
                 int bloodPixels = pixels.Count(pixel => pixel.r > pixel.g * 1.4f && pixel.r > pixel.b * 1.4f && pixel.r > 80);
-                Require(bloodPixels > 1500, "Visual trail was not visible in URP render request: " + bloodPixels);
+                Require(bloodPixels > 100, "Visual trail was not visible in URP render request: " + bloodPixels);
                 File.WriteAllBytes(Path.Combine(OutputAbsolute, "trail.png"), image.EncodeToPNG());
                 Debug.Log("[BloodV1] VISUAL PASS trailPixels=" + bloodPixels + " active=" + pool.ActiveMarkCount);
             }

@@ -202,8 +202,8 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 - **Estado:** `DONE`.
 - **Fecha/origen:** 2026-09-05 — continuación autorizada tras la prueba gráfica R0.
-- **Resolución:** `ActorBloodTrailEmitter` se materializa junto a cada `ActorMedicalStateComponent`, observa su `EffectiveBleedingRatePerGameHour` por `Revision` y solicita marcas espaciadas por distancia al `WorldBloodMarkPool` global. Reutiliza el material/renderer URP validado en R0; no cambia estado médico, tratamiento, AI, Perception ni save data.
-- **Validación:** diagnostics V1/R0, M39.0, Timed Bandaging y M38 Actor Lifecycle `PASS`; el escenario V1 comprobó Player/NPC, terrain/piso/slope, filtros trigger/propio, bandaging real, x1/x100, budget, expiry, recycling y trail visual RenderTexture.
+- **Resolución:** `ActorHealthComponent` materializa el `ActorBloodTrailEmitter` dentro de la composición runtime existente; éste observa `EffectiveBleedingRatePerGameHour` por `Revision` y solicita marcas espaciadas por distancia al `WorldBloodMarkPool` global. V1.1 configura diámetro base `0,25 m` en el settings existente y usa consulta de superficie `RaycastNonAlloc` por emitter. Reutiliza el material/renderer URP validado en R0; no cambia estado médico, tratamiento, AI, Perception ni save data.
+- **Validación:** diagnostics V1.1/R0, M39.0, Timed Bandaging y M38 Actor Lifecycle `PASS`; el escenario comprobó Player/NPC, composición sin duplicados, terrain/piso/slope, filtros trigger/propio, bandaging real, x1/x100, budget, expiry, recycling, buffer nonalloc no saturado y trail visual RenderTexture.
 - **Límites:** textura R0 provisional; sin persistence, puddles, spray, tracking AI, footprints, weather cleanup ni framework genérico de evidencia.
 
 ---

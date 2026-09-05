@@ -3634,3 +3634,13 @@ Estado: `PASS`.
 `ActorMedicalStateComponent` continúa como única autoridad médica y materializa `ActorBloodTrailEmitter`; éste lee `EffectiveBleedingRatePerGameHour` con cache por `Revision`, acumula distancia y no escribe Medical ni trata bandages. La función `InverseLerp(0,01, 0,25)` mapea monotónicamente bleeding a spacing `3,00..0,60 m`; por debajo de threshold, en reposo o muerto no hay emisión y WorldClock no interviene. Cada actor comparte `WorldBloodMarkPool`: 128 marcas activas máximas, 45 s reales, `DecalProjector` reutilizado, expiry y reciclaje FIFO. El raycast descendente ignora triggers y self colliders, y proyecta el material R0 a `hit.point`/`hit.normal` con profundidad `0,30 m` y variación determinista local.
 
 `Blood Trails V1 Diagnostics: PASS`: Player 168 y NPC 163 marcas; mild/severe ordenado; bandaging real completo llevó spacing `1,90 -> 2,98 m`; la misma distancia produjo x1=7 y x100=7; el budget diagnóstico compartido de 12 alcanzó peak 12 con Created=12, Acquired=182, Recycled=164 y Expired=18. Validó Terrain, piso opaco, slope 30°, filtros trigger/self, actor dead/static/sano, no mutación de Medical/AI/Perception, expiry/reuse y trail RenderTexture de múltiples manchas. También `Blood Trails R0`, M39.0, Timed Bandaging y M38 Actor Lifecycle `PASS`; Runtime/Editor compile y `git diff --check` PASS. `PC_Renderer`, R0, persistence, AI y Perception no cambiaron. Evidencia: `Evidence/BloodTrailsV1/trail.png`.
+
+### Blood Trails V1.1 — size, composition and nonalloc surface query
+
+Fecha: 2026-09-05.
+
+Estado: `PASS`.
+
+V1.1 corrige tres deudas sin retunar gameplay: `BloodTrailVisualSettings` serializa diámetro base `0,25 m`, profundidad `0,30 m` y draw distance 50 m; con variación existente `0,85..1,15`, las marcas observadas fueron `0,246..0,272 m`, en vez del tamaño anterior `1,7..2,3 m`. Medical deja de materializar la representación visual; `ActorHealthComponent` es el seam común que agrega exactamente un emitter a Player/NPC con Medical. `ActorBloodTrailEmitter` reemplaza `RaycastAll` por un buffer propio de ocho hits `RaycastNonAlloc`, conserva filtros/normal y registra saturación; las pruebas Terrain, piso, pendiente, trigger y self-collider no saturaron.
+
+`Blood Trails V1 Diagnostics: PASS` con RenderTexture D3D11 (`trailPixels=212`, seis marks activas); R0, M39.0, Timed Bandaging y M38 Actor Lifecycle también `PASS`, junto a Runtime/Editor compile y `git diff --check`. Spacing `0,01 / 0,60 / 3,00 / 0,25`, WorldClock, bandaging, budget global 128, lifetime 45 s, FIFO, material/arte R0, renderer, AI, Perception y persistence permanecen sin cambio. Evidencia: `Evidence/BloodTrailsV11/trail.png`.

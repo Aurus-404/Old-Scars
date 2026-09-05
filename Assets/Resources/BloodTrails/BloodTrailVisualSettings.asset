@@ -13,3 +13,6 @@ MonoBehaviour:
   m_Name: BloodTrailVisualSettings
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Actors.BloodTrailVisualSettings
   bloodMarkMaterial: {fileID: 2100000, guid: dc3be84b5018ff742af770b370ad76e1, type: 2}
+  baseMarkSizeMeters: 0.25
+  projectionDepth: 0.3
+  drawDistance: 50

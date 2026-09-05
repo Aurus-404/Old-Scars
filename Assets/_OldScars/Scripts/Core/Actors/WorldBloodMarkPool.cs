@@ -14,7 +14,6 @@ namespace OldScars.Core.Actors
     {
         public const int DefaultActiveBudget = 128;
         public const float DefaultLifetimeRealSeconds = 45f;
-        public const float ProjectionDepth = .30f;
 
         private const string SettingsResourcePath = "BloodTrails/BloodTrailVisualSettings";
         private readonly List<PooledMark> active = new List<PooledMark>();
@@ -89,9 +88,10 @@ namespace OldScars.Core.Actors
             Quaternion orientation = Quaternion.AngleAxis(rotationDegrees, normal) *
                                      Quaternion.LookRotation(-normal, Vector3.forward);
             mark.projector.transform.SetPositionAndRotation(point + normal * .01f, orientation);
-            mark.projector.size = new Vector3(2f * scale, 2f * scale, ProjectionDepth);
+            float markSize = settings.BaseMarkSizeMeters * scale;
+            mark.projector.size = new Vector3(markSize, markSize, settings.ProjectionDepth);
             mark.projector.pivot = Vector3.zero;
-            mark.projector.drawDistance = 50f;
+            mark.projector.drawDistance = settings.DrawDistance;
             mark.expiresAt = Time.realtimeSinceStartupAsDouble + lifetimeRealSeconds;
             mark.order = ++serial;
             mark.projector.gameObject.SetActive(true);

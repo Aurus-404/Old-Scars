@@ -40,6 +40,8 @@ namespace OldScars.Core.Actors
         {
             if (GetComponent<ActorMedicalStateComponent>() == null)
                 gameObject.AddComponent<ActorMedicalStateComponent>();
+            if (GetComponent<ActorBloodTrailEmitter>() == null)
+                gameObject.AddComponent<ActorBloodTrailEmitter>();
             if (GetComponent<ActorConditionComponent>() == null)
                 gameObject.AddComponent<ActorConditionComponent>();
             if (GetComponent<ActorWoundTreatmentController>() == null)

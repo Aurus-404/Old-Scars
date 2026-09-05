@@ -91,8 +91,6 @@ namespace OldScars.Core.Actors
         private void Awake()
         {
             ResolveActor();
-            if (GetComponent<ActorBloodTrailEmitter>() == null)
-                gameObject.AddComponent<ActorBloodTrailEmitter>();
         }
 
         public bool ApplyWound(
