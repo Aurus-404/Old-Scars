@@ -126,11 +126,11 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0010 — Observability V2 multi-NPC
 
-- **Estado:** `LOCAL CANDIDATE — MANUAL ACCEPTANCE/PUBLISH PENDING`.
+- **Estado:** `MINIMUM SLICE DONE / ACCEPTED / PUBLISHED — FULL F10 PENDING`.
 - **Fecha/origen:** Prueba 2; prioridad elevada por Prueba 3.
 - **Qué queremos:** overlay global compacto multi-NPC + inspector profundo del seleccionado. El mínimo adelantado muestra gaze/FOV/LOS simultáneamente y distingue CURRENT vs LAST; F10 completa targeting/shot observability.
-- **Estado local:** `SandboxNpcObservabilityPanel.cs` y `M41F6ObservabilityDiagnostics.cs` contienen una implementación candidata con PASS automático, todavía sin aceptación visual ni commit.
-- **Próximo gate:** revisar coherencia temporal de LAST completa, movimiento/occlusion real, selección y Dead/Inactive en Game View; sólo después publicar.
+- **Cierre mínimo:** `5aac763c14c399bfe09a3e925c50698658ad2716`; diagnostics PASS y aceptación visual manual final confirmada por Mauro el 2026-09-06.
+- **Pendiente:** F10 completo, incluyendo targeting/shot observability.
 - **Límites:** no crear debug framework general; usar datos read-only de producción; no duplicar Perception/raycasts como segunda verdad.
 - **Relación:** `ISSUE-0010`, `ISSUE-0011`, `ISSUE-0019`.
 
@@ -171,11 +171,11 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0015 — Minimum real-time knockout dwell
 
-- **Estado:** `READY — NEXT AFTER F6`.
+- **Estado:** `READY — NEXT (P2)`.
 - **Fecha/origen:** 2026-09-03 — Prueba 3.1/3.2 + decisión de producto.
 - **Qué queremos:** mínimo configurable de tiempo real durante el cual un actor realmente `Unconscious` no puede recuperar active behavior. Después del mínimo, `ActorConditionComponent`/fisiología vigente decide si puede despertar.
 - **Por qué:** `WorldClock` acelerado puede cruzar thresholds demasiado rápido en tiempo real.
-- **Trigger/dependencias:** después de cerrar F6 local; antes de `IMPL-0014` y Prueba 3.3.
+- **Trigger/dependencias:** después de F6 aceptado/publicado; antes de `IMPL-0014` y Prueba 3.3.
 - **Límites:** no extender automáticamente a toda `Incapacitated`; no reemplazar physiology/thresholds; el timer no fuerza wake-up; death terminal; no crear otro reloj global. Save/load debe tener semántica que no permita bypass accidental.
 - **Relación:** `ISSUE-0021`.
 

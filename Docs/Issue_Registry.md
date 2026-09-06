@@ -36,32 +36,11 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Plan:** después de Correction Pass + Prueba 3.3, F8A instrumenta aim source/point, spread, direction, collider/region/miss. F8B/C sólo cambian a Primary Aim Point genérico si evidencia lo justifica.
 - **No hacer:** retunear spread/damage/anatomy por intuición.
 
-### ISSUE-0010 — Observabilidad global insuficiente para peleas multi-NPC
-- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`
-- **Origen:** Prueba 2; reconfirmado Prueba 3.
-- **Síntoma:** sólo un NPC seleccionado recibe world visuals útiles; comparar ambos lados exige ciclar F6.
-- **Estado actual:** existe candidato local no publicado de Correction Pass B con PASS automático; falta aceptación visual/manual y commit.
-- **Plan:** cerrar junto a ISSUE-0011/0019; selección sólo controla inspector profundo y overlay global consume datos read-only de producción.
-
-### ISSUE-0011 — Inspector F6 demasiado dependiente de selección
-- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`
-- **Origen:** Prueba 2/3.
-- **Síntoma:** estados simultáneos son difíciles de comparar.
-- **Estado/plan:** mismo candidato local de F6; resolver sólo después de aceptación visual y publicación.
-
 ### ISSUE-0012 — Falta modo debug Invincible
 - **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`
 - **Origen:** post-Prueba 2.
 - **Plan:** después de estabilizar KO y F8 targeting. Pipeline real detection→shot→region→wounds/trauma/bleeding/condition continúa, pero QA puede bloquear coherentemente terminal Dead. OFF = gameplay normal.
 - **Riesgo conocido:** no basta con saltar `ProcessDeath`; `IsDead`, lifecycle y fatal blood loss deben seguir consistentes.
-
-### ISSUE-0019 — F6 presenta snapshots históricos como percepción actual
-- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`
-- **Origen:** Prueba 3/3.1/3.2 + revisión de repo, 2026-09-03.
-- **Síntoma:** FOV/LOS puede quedar atrás del NPC, parecer salir del piso/desaparecer; Dead/Inactive puede seguir mostrando `Perceived` histórico.
-- **Causa publicada:** tooling consume `LastPerception`/`LastAcquisitionPerception` + `ObserverOrigin` snapshot y no diferencia claramente CURRENT vs LAST. No implica que perception productiva vea desde el origen viejo.
-- **Estado local:** candidato F6 no publicado ya separa CURRENT/LAST y multi-NPC, pero requiere revisión de coherencia temporal completa. En particular, evidencia LAST no debe mezclar un `ObserverOrigin` histórico con geometría actual de un blocker móvil.
-- **Plan:** cerrar el candidato local con aceptación manual; no duplicar Perception/raycasts.
 
 ### ISSUE-0020 — Incapacidad temporal borra contexto de enemigo y reinicia el combate
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`
@@ -76,7 +55,7 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Tipo/estado/severidad:** `DESIGN_DEBT` · `CONFIRMED` · `P1 / ORANGE`
 - **Origen:** Prueba 3.1/3.2 + revisión `ActorConditionComponent`/`WorldClock`, 2026-09-03.
 - **Gap confirmado:** no existe garantía explícita de permanencia mínima en `Unconscious`; recovery physiology corre sobre world time acelerado.
-- **Plan operativo:** próximo después de cerrar F6 local y ANTES de ISSUE-0020. Mínimo configurable de tiempo real mientras el actor realmente está `Unconscious`; después del mínimo physiology/thresholds/hysteresis siguen decidiendo si puede despertar.
+- **Plan operativo:** P2 próximo tras F6 aceptado/publicado y ANTES de ISSUE-0020. Mínimo configurable de tiempo real mientras el actor realmente está `Unconscious`; después del mínimo physiology/thresholds/hysteresis siguen decidiendo si puede despertar.
 - **Límites:** no extender automáticamente a toda `Incapacitated`; no crear otro reloj global; cumplir el mínimo no fuerza wake-up; save/load no debe permitir bypass accidental.
 
 ### ISSUE-0022 — Loaded ammo desaparece del cálculo de carry mass
@@ -88,9 +67,37 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Plan:** resolver después de cerrar M41 y ANTES de `IMPL-0020` Carry Weight / Encumbrance. Validar reload parcial/completo, fire, rollback, equipment/storage y save/load.
 - **No hacer:** cambiar política de reload NPC, introducir cargadores físicos o weapon framework nuevo por este bug.
 
+### ISSUE-0023 — Posible desajuste Perception eye origin / representación humana
+- **Tipo/estado/severidad:** `BUG` · `SUSPECTED` · `P2 / YELLOW`.
+- **Origen:** cierre P1/F6, 2026-09-06; candidato separado indicado por Mauro.
+- **Evidencia/límite:** CURRENT representa el origen productivo actual; queda por comprobar su coincidencia visual con los ojos de la representación humana. Sin causa confirmada ni corrección en P1.
+- **Plan:** investigar en tarea separada antes de proponer cambios de eyeHeight, humanoid_standard o actor profiles; no reabrir Perception ni aim/F8 por este cierre.
+
 ---
 
 ## Issues resueltos / historial
+
+### ISSUE-0010 — Observabilidad global insuficiente para peleas multi-NPC
+- **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P1 / ORANGE`
+- **Origen:** Prueba 2; reconfirmado Prueba 3.
+- **Síntoma:** sólo un NPC seleccionado recibe world visuals útiles; comparar ambos lados exige ciclar F6.
+- **Corrección/publicación:** `5aac763c14c399bfe09a3e925c50698658ad2716`; CURRENT multi-NPC independiente del inspector, LAST histórico separado sin geometría actual del blocker y Dead/Inactive sin CURRENT engañoso.
+- **Validación:** F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro el 2026-09-06. Correction Pass B cerrado; F10 completo pendiente.
+
+### ISSUE-0011 — Inspector F6 demasiado dependiente de selección
+- **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P2 / YELLOW`
+- **Origen:** Prueba 2/3.
+- **Síntoma:** estados simultáneos son difíciles de comparar.
+- **Corrección/publicación:** `5aac763c14c399bfe09a3e925c50698658ad2716`; CURRENT multi-NPC independiente del inspector, LAST histórico separado sin geometría actual del blocker y Dead/Inactive sin CURRENT engañoso.
+- **Validación:** F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro el 2026-09-06. Correction Pass B cerrado; F10 completo pendiente.
+
+### ISSUE-0019 — F6 presenta snapshots históricos como percepción actual
+- **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P1 / ORANGE`
+- **Origen:** Prueba 3/3.1/3.2 + revisión de repo, 2026-09-03.
+- **Síntoma:** FOV/LOS puede quedar atrás del NPC, parecer salir del piso/desaparecer; Dead/Inactive puede seguir mostrando `Perceived` histórico.
+- **Causa publicada:** tooling consume `LastPerception`/`LastAcquisitionPerception` + `ObserverOrigin` snapshot y no diferencia claramente CURRENT vs LAST. No implica que perception productiva vea desde el origen viejo.
+- **Corrección/publicación:** `5aac763c14c399bfe09a3e925c50698658ad2716`; CURRENT multi-NPC independiente del inspector, LAST histórico separado sin geometría actual del blocker y Dead/Inactive sin CURRENT engañoso.
+- **Validación:** F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro el 2026-09-06. Correction Pass B cerrado; F10 completo pendiente.
 
 ### ISSUE-0001 — Blue/Red no realizaban roaming efectivo Idle
 - **Estado:** `RESOLVED / P0`.

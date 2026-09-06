@@ -187,30 +187,15 @@ Cambios de KO/Search deben preservar esta continuidad o registrar regresión rea
 
 # Secuencia operativa aprobada — 2026-09-06
 
-## P1 — Cerrar Correction Pass B / F6 observability local
+## P1 — Correction Pass B / F6 cerrado
 
-**Estado:** `NEXT`.
+P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-Existe un candidato local no publicado con PASS automático:
-
-- `SandboxNpcObservabilityPanel.cs`;
-- `M41F6ObservabilityDiagnostics.cs` + `.meta`.
-
-Debe validarse antes de commit:
-
-- current Gaze/FOV desde eye/origin actual;
-- CURRENT/LAST explícitos;
-- varios NPC simultáneos;
-- selección sólo para inspector profundo;
-- Dead/Inactive sin current falso;
-- evidencia LAST temporalmente coherente, incluido blocker histórico si corresponde;
-- sin duplicar raycasts/Perception de gameplay.
-
-**Gate manual obligatorio:** Game View con movimiento, oclusión, selección y actor inactive/dead.
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
 
 ## P2 — Minimum real-time KO dwell
 
-**Estado:** `NEXT AFTER P1`.
+**Estado:** `NEXT`.
 
 Primero estabilizar cuándo un actor `Unconscious` puede volver a active behavior.
 

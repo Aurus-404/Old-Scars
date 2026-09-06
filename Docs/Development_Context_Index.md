@@ -73,18 +73,15 @@ Capacidades recientes también cerradas:
 - Blood Trails V1/V1.1;
 - NPC Opportunistic Reload (`4b90b9f4c8f5ae3c896d8b1fc21d688095172b0a`).
 
-### Estado local especial — F6 Observability
+### P1/F6 publicado
 
-Existe un candidato local no publicado:
+P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-- `SandboxNpcObservabilityPanel.cs` modificado;
-- `M41F6ObservabilityDiagnostics.cs` + `.meta` nuevos.
-
-Los diagnostics locales llegaron a PASS, pero falta aceptación visual/manual y commit. Por tanto, el próximo trabajo NO es reimplementar F6: es revisar el candidato, comprobar coherencia temporal de CURRENT/LAST y publicarlo sólo si la prueba manual pasa.
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
 
 ### Secuencia operativa aprobada para cerrar M41
 
-1. cerrar F6 local;
+1. F6 / Correction Pass B cerrado, aceptado y publicado;
 2. minimum real-time KO dwell;
 3. KO / combat-memory continuity;
 4. Prueba 3.3 1 Blue vs 1 Red limpia;

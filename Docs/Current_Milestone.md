@@ -8,7 +8,7 @@ Este archivo es el snapshot operativo breve. `Project_Roadmap.md` conserva IDs/d
 
 Estado operativo:
 
-`IN PROGRESS — CLOSE LOCAL F6 CANDIDATE, THEN KO DWELL / KO MEMORY / PRUEBA 3.3 / F8`
+`IN PROGRESS — P1 ACCEPTED/PUBLISHED; NEXT P2 KO DWELL`
 
 Plan activo: `NPC_AI_Sanitation_Plan.md`.
 
@@ -36,33 +36,19 @@ También están cerradas capacidades recientes que deben conservarse en regresio
 
 No reabrir estas autoridades por inercia. Una regresión real puede justificar cambios; el tamaño de una clase o una preferencia estética no.
 
-## Próximo paso exacto — P1
+## P1/F6 cerrado
 
-### Cerrar el candidato local de F6 / Observability minimum slice
+P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-Existe trabajo local no publicado en:
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
 
-- `Assets/_OldScars/Scripts/Core/Actors/SandboxNpcObservabilityPanel.cs`;
-- `Assets/_OldScars/Editor/M41F6ObservabilityDiagnostics.cs`;
-- `Assets/_OldScars/Editor/M41F6ObservabilityDiagnostics.cs.meta`.
+## Próximo paso exacto — P2
 
-Ese candidato ya obtuvo PASS automático, pero todavía NO está aceptado manualmente ni publicado.
-
-El cierre debe verificar:
-
-- Gaze/FOV CURRENT desde eye/origin actual;
-- `CURRENT` separado explícitamente de `LAST`;
-- world visuals simultáneos para varios NPC;
-- selección sólo para inspector profundo;
-- Dead/Inactive sin presentar evidencia histórica como percepción actual;
-- coherencia temporal de la evidencia `LAST` completa, incluido cualquier blocker histórico;
-- ninguna segunda autoridad de Perception/raycasts de gameplay.
-
-La aceptación visual/manual en Game View es obligatoria antes del commit.
+P2 — Minimum real-time KO dwell. Pendiente; no iniciado en este cierre.
 
 ## Orden operativo aprobado para cerrar M41
 
-1. **P1 — cerrar F6 local** y publicarlo sólo después de aceptación visual.
+1. **P1 — F6 DONE / ACCEPTED / PUBLISHED**, Correction Pass B cerrado.
 2. **P2 — minimum real-time KO dwell**: estabilizar primero cuándo un actor Unconscious puede recuperar actividad; physiology sigue siendo autoridad después del mínimo.
 3. **P3 — KO / combat-memory continuity**: recordar identidad/contexto mínimo sin conservar al KO como threat activo ni otorgar posición oculta.
 4. **P4 — Prueba 3.3**: 1 Blue vs 1 Red, Player Invisible ON, observabilidad simultánea, KO/recovery/contexto interpretable.
@@ -116,7 +102,7 @@ Antes de este bloque debe resolverse `ISSUE-0022` para que recargar/disparar no 
 ## Issues activos relevantes
 
 - `ISSUE-0008` — posible sesgo de impactos piernas/pies; medir en F8A antes de tocar gameplay.
-- `ISSUE-0010` / `ISSUE-0011` / `ISSUE-0019` — cierre F6/observabilidad.
+- `ISSUE-0023` — posible desajuste eye origin/representación humana; SUSPECTED.
 - `ISSUE-0012` — falta Player Debug Invincible.
 - `ISSUE-0020` — KO borra contexto de enemigo.
 - `ISSUE-0021` — no existe minimum real-time KO dwell.

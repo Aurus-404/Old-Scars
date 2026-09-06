@@ -4,35 +4,15 @@ Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.
 
 ## Secuencia operativa aprobada — 2026-09-06
 
-### 1. P1 — Cerrar F6 local / Observability minimum slice
+### 1. P1 — F6 cerrado
 
-Estado: `NEXT`.
+P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-Existe una implementación local candidata, todavía no publicada:
-
-- `SandboxNpcObservabilityPanel.cs` modificado;
-- `M41F6ObservabilityDiagnostics.cs` nuevo;
-- `.meta` nuevo.
-
-Los diagnostics locales ya llegaron a PASS, pero falta aceptación visual/manual.
-
-Cierre requerido:
-
-- Gaze/FOV CURRENT desde eye/origin actual;
-- CURRENT y LAST separados;
-- varios NPC visibles simultáneamente;
-- selección sólo controla el inspector profundo;
-- Dead/Inactive no presenta history como current;
-- revisar que `LAST` no mezcle origen histórico con datos actuales de un blocker móvil;
-- no duplicar Perception/raycasts productivos.
-
-Gate manual: Game View con Blue + Red, movimiento real, selección alternada, oclusión y actor inactive/dead. Sólo después publicar.
-
-Referencias: `IMPL-0010`, `ISSUE-0010`, `ISSUE-0011`, `ISSUE-0019`.
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
 
 ### 2. P2 — Minimum real-time KO dwell
 
-Estado: `NEXT AFTER F6`.
+Estado: `NEXT`.
 
 Objetivo:
 

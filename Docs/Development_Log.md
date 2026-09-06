@@ -3654,3 +3654,11 @@ Estado: `PASS`.
 `HumanEncounterAIController` centraliza el timer real de recarga sin crear otra autoridad: `AmbientTopOff` completa firearms parciales sólo en `Idle + Ambient + Threat null`; `EmptyWeapon` puede iniciarse/continuar durante Fight, LostContact y Search, incluso tras reacquisition. Threat cancela el top-off parcial; tratamiento, incapacidad, death, disable y firearm invalidado cancelan sin consumo. `WeaponCombatService` no cambió y sigue validando/consumiendo owned ammo sólo al COMPLETE.
 
 Runtime/Editor compile, `M41 NPC Opportunistic Reload Diagnostics` (x1 `2,49 s`, x100 `2,5 s`), M40.0 Combat & Weapons, M41.1 Human Encounter, M41 LostContact / Search V1 y Timed Bandaging / NPC Self-Treatment dieron `PASS`; `git diff --check` pasó. No se tocaron Player reload, Navigation ownership, F6/Correction Pass B ni `ProjectSettings`.
+
+### P1/F6 — Correction Pass B final closure / publish
+
+P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
+
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
+
+Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funcional limitado al panel F6 y diagnostic + .meta; push a dev exitoso, HEAD/origin dev 0/0. ISSUE-0010/0011/0019 resueltos. No se repitió Unity: PASS y aceptación manual confirmados por Mauro. ProjectSettings.asset permanece user-owned, intacto y fuera del commit. Próximo paso: P2 — Minimum real-time KO dwell; no iniciado.
