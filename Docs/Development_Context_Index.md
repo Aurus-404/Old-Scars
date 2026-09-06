@@ -6,15 +6,15 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 
 1. `AGENTS.md` — reglas permanentes de trabajo, Git, validación, alcance y routing ChatGPT/Codex.
 2. `Docs/Current_Milestone.md` — estado operativo actual y próximo paso exacto.
-3. `Docs/Next_Sprints.md` — cola real de trabajo a corto plazo.
-4. `Docs/Prueba_3_Findings.md` — evidencia manual integrada más reciente y decisiones derivadas de Prueba 3/3.1/3.2.
+3. `Docs/Next_Sprints.md` — cola real de trabajo a corto plazo y secuencia post-M41 ya aprobada.
+4. `Docs/Prueba_3_Findings.md` — evidencia manual integrada más reciente de Prueba 3/3.1/3.2.
 5. `Docs/Issue_Registry.md` — bugs/deudas/sospechas/resoluciones persistentes.
-6. `Docs/Implementation_Backlog.md` — mecánicas/mejoras menores aprobadas para implementar después; no son milestones ni bugs.
-7. El plan específico del bloque activo. Actualmente: `Docs/NPC_AI_Sanitation_Plan.md`.
-8. La investigación/decision record específica si existe. Actualmente para combate NPC: `Docs/NPC_Combat_Targeting_Research.md`.
-9. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos ya implementados.
-10. `Docs/Development_Log.md` — cronología/evidencia histórica cuando se necesite reconstruir por qué se tomó una decisión.
-11. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes. No usarlo como sustituto de `Next_Sprints` ni del Implementation Backlog.
+6. `Docs/Implementation_Backlog.md` — mecánicas/mejoras aprobadas para después; no son milestones ni bugs.
+7. `Docs/NPC_AI_Sanitation_Plan.md` — plan completo del bloque activo M41.
+8. `Docs/NPC_Combat_Targeting_Research.md` — investigación/decision record de aim/accuracy.
+9. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos implementados.
+10. `Docs/Development_Log.md` — cronología/evidencia histórica.
+11. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes.
 
 ## Qué documento responde qué pregunta
 
@@ -25,49 +25,110 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 | ¿Qué mostró la última prueba manual integrada? | `Prueba_3_Findings.md` |
 | ¿Qué milestone grande corresponde? | `Project_Roadmap.md` |
 | ¿Qué bug/deuda real sigue abierto? | `Issue_Registry.md` |
-| ¿Qué mecánica/mejora menor queremos recordar para después? | `Implementation_Backlog.md` |
+| ¿Qué mecánica/mejora aprobada queremos recordar para después? | `Implementation_Backlog.md` |
 | ¿Cuál es el plan completo del saneamiento NPC/AI? | `NPC_AI_Sanitation_Plan.md` |
-| ¿Qué aprendimos sobre aim/accuracy/targets y por qué cambió Fase 8? | `NPC_Combat_Targeting_Research.md` |
+| ¿Qué aprendimos sobre aim/accuracy/targets? | `NPC_Combat_Targeting_Research.md` |
 | ¿Cómo está implementado técnicamente el sistema hoy? | `Technical_Architecture.md` + código |
 | ¿Qué reglas data-driven/modding son autoridad? | `DataDriven_JSON_Rules.md` |
 | ¿Qué ocurrió históricamente y con qué evidencia? | `Development_Log.md` |
 
 ## Regla de precedencia
 
-- El código publicado y los diagnostics prueban qué existe técnicamente.
-- `Technical_Architecture.md` describe contratos implementados; un research doc o findings doc no convierte una propuesta en implementación.
-- `Current_Milestone.md`/`Next_Sprints.md` prevalecen para el trabajo operativo actual cuando el Roadmap conserva wording histórico pendiente de reconciliación.
-- `Prueba_3_Findings.md` conserva evidencia manual y decisiones de producto recientes, pero el estado formal de bugs sigue en `Issue_Registry.md`.
-- `Issue_Registry.md` prevalece para el estado de bugs.
-- `Implementation_Backlog.md` prevalece para mejoras menores aprobadas aún no implementadas.
-- El GDD y Mauro conservan autoridad de diseño/producto; una implementación de debug no crea canon de diseño por sí sola.
+- El código publicado y diagnostics prueban qué existe técnicamente.
+- Un working tree local no publicado puede ser una implementación candidata, pero no convierte un feature en DONE.
+- `Technical_Architecture.md` describe contratos implementados; research/findings no convierten propuestas en implementación.
+- `Current_Milestone.md`/`Next_Sprints.md` prevalecen para el orden operativo actual cuando otros documentos conservan wording histórico.
+- `Prueba_3_Findings.md` conserva evidencia manual, no sustituye `Issue_Registry.md`.
+- `Issue_Registry.md` prevalece para bugs/deudas confirmadas o sospechadas.
+- `Implementation_Backlog.md` prevalece para mejoras aprobadas aún no implementadas.
+- Mauro/GDD conservan autoridad de producto.
 
 ## Regla de investigación y cuota
 
-Cuando un problema pueda investigarse leyendo el repo/GitHub, la investigación debe hacerse fuera de Codex primero. Codex se usa después para implementar el arreglo acotado y para evidencia que requiera checkout local/Unity/diagnostics/assets. No repetir auditorías exhaustivas en Codex si el repo ya permitió establecer la causa y el prompt puede nombrar el seam concreto.
+Cuando un problema pueda investigarse leyendo el repo/GitHub, hacerlo fuera de Codex primero. Codex se usa para implementación, Unity/local diagnostics, assets y validación que realmente requiere el checkout.
 
-## Estado de continuidad al 2026-09-03
+Para auditorías sistémicas amplias, Astra puede usarse como investigador/arquitecto cuando aporte valor; no es el modelo por defecto para slices ya acotados.
 
-El bloque activo es `M41 — NPC Combat / AI Foundation after Prueba 3`.
+No repetir auditorías exhaustivas si el repo ya estableció el seam y el próximo trabajo sólo requiere implementación/validación.
 
-Fases cerradas del saneamiento:
+## Estado de continuidad al 2026-09-06
+
+Bloque activo:
+
+`M41 — NPC Combat / AI Foundation`
+
+Foundation cerrada:
 
 - F2 Behavior ownership + Ambient roaming;
 - F3 Gaze/Attention V1;
 - F4 tracking visual bounded;
-- F5 production perception centrada en current gaze;
+- F5 production perception centrada en Current Gaze;
 - F6 LostContact/Search V1;
-- F7 representación humana + hitboxes anatómicos explícitos.
+- F7 representación humana + hitboxes anatómicos explícitos;
+- Player Debug Invisible-to-AI.
 
-Prueba 3 confirmó gran parte de F2–F7 en ejecución real, pero cambió la prioridad antes de F8A:
+Capacidades recientes también cerradas:
 
-1. Player Invisible-to-AI mínimo para pruebas NPC-only limpias;
-2. F6 current-vs-last/origin correctness y visuals multi-NPC simultáneas;
-3. continuidad de memoria de combate durante KO temporal;
-4. minimum real-time KO dwell antes de recovery;
-5. Prueba 3.3 1 Blue vs 1 Red limpia;
-6. después F8A Aim Bias Evidence.
+- Timed Bandaging V1 + NPC self-treatment;
+- Blood Trails V1/V1.1;
+- NPC Opportunistic Reload (`4b90b9f4c8f5ae3c896d8b1fc21d688095172b0a`).
 
-El plan F8 no se elimina: después siguen Primary Aim Point genérico si la evidencia lo confirma, before/after sin retuning, review pequeño de accuracy y cleanup legacy. Invincible, Observability V2 completa, batería integrada, pruebas Player y cleanup final siguen planificados.
+### Estado local especial — F6 Observability
 
-No iniciar por inercia un nuevo stack de accuracy, Behavior Trees, GOAP, Utility AI, memory framework general, weak-point framework, full ballistics ni damage frameworks para máquinas/vehículos sin consumidor real.
+Existe un candidato local no publicado:
+
+- `SandboxNpcObservabilityPanel.cs` modificado;
+- `M41F6ObservabilityDiagnostics.cs` + `.meta` nuevos.
+
+Los diagnostics locales llegaron a PASS, pero falta aceptación visual/manual y commit. Por tanto, el próximo trabajo NO es reimplementar F6: es revisar el candidato, comprobar coherencia temporal de CURRENT/LAST y publicarlo sólo si la prueba manual pasa.
+
+### Secuencia operativa aprobada para cerrar M41
+
+1. cerrar F6 local;
+2. minimum real-time KO dwell;
+3. KO / combat-memory continuity;
+4. Prueba 3.3 1 Blue vs 1 Red limpia;
+5. F8A Aim Bias Evidence;
+6. F8B/C y F8D sólo según evidencia;
+7. Player Debug Invincible;
+8. completar Observability V2/F10;
+9. legacy migration + QA integrada + aceptación manual + cierre M41.
+
+Cambio deliberado respecto de wording anterior: KO dwell se ejecuta antes de KO memory para estabilizar primero la transición funcional que la memoria debe soportar.
+
+### Después de M41
+
+Orden sistémico aprobado:
+
+- Equipment visuals humanoides cuando convenga para lectura visual;
+- corregir `ISSUE-0022` loaded ammo mass;
+- implementar `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC;
+- implementar `IMPL-0021` Localized Limb Impairment después de Encumbrance.
+
+Equipment visuals y loaded ammo mass pueden intercambiar posición. Loaded ammo mass sí debe resolverse antes de Encumbrance.
+
+No introducir Encumbrance entre F8A y sus comparaciones: velocidad NPC participa en las condiciones de accuracy y contaminaría la medición.
+
+## Contrato futuro de Carry Weight ya aprobado
+
+- Carry Capacity no es storage capacity.
+- `0..75%` sin penalización.
+- `>75%..100%` penalización progresiva.
+- `100%` todavía móvil.
+- `>100%` traslación cero.
+- Inventory/transfer/drop/equipment/use/reload/treatment siguen operativos según sus propias autoridades.
+- Player/NPC comparten el contrato.
+- `Overloaded` no significa `Incapacitated`.
+- restore sobrecargado conserva items.
+
+No implementar todavía Strength, backpack capacity modifiers ni Limb HP.
+
+## Riesgos/relaciones que deben recordarse
+
+- KO memory no debe mantener al KO como `Threat` activo ni bloquear por sí solo self-treatment/ambient reload.
+- Invincible debe conservar heridas/bleeding/pain/trauma/KO reales y bloquear coherentemente Dead; no basta con saltar `ProcessDeath`.
+- Search debe distinguir path/order válido de futura inmovilidad por Encumbrance.
+- `IsSprinting` futuro debe representar sprint efectivo, no sólo Shift solicitado cuando traslación está bloqueada.
+- Loaded ammo actualmente puede desaparecer del cálculo de masa al convertirse en `LoadedRounds`; corregir antes de que peso gobierne locomoción.
+
+No iniciar por inercia Behavior Trees, GOAP/Utility AI, memory framework general, weak-point framework, full ballistics, cover/squad/hearing/schedules, Strength/stats ni weapon viability/fallback sin una tarea propia y evidencia real.

@@ -42,8 +42,8 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Estado:** `READY` condicionado a Fase 8A.
 - **Fecha/origen:** 2026-09-03 — investigación repo + comparación Source/Unreal.
 - **Qué queremos:** un punto primario genérico que cada target/representation exponga como ubicación razonable para aim normal. Humano → center mass; futuros animales/robots → punto equivalente definido por ellos.
-- **Por qué:** `HumanEncounterAIController` no debería inspeccionar anatomía/colliders internos del target para adivinar su center mass. El contrato debe servir para humanos y targets no humanoides.
-- **Trigger/dependencias:** Fase 8A debe confirmar que el aim actual sobre locomotion center contribuye a `ISSUE-0008`.
+- **Por qué:** `HumanEncounterAIController` no debería inspeccionar anatomía/colliders internos del target para adivinar su center mass.
+- **Trigger/dependencias:** Fase 8A debe confirmar que el aim actual contribuye materialmente a `ISSUE-0008`.
 - **Límites:** un único Primary Aim Point V1. Sin weak points, scoring, head targeting, mobility targeting, enums grandes ni manager.
 - **Relación:** NPC Sanitation F8B; `ISSUE-0008`.
 
@@ -53,7 +53,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Fecha/origen:** 2026-09-03 — Prueba 2 + investigación de aim.
 - **Qué queremos:** diagnostic controlado que registre aim source/point, focus/spread, shot origin/direction, collider/hit point, BodyRegion y miss bajo seeds/condiciones reproducibles.
 - **Por qué:** separar target-point, spread, origin y geometría antes de retunear gameplay.
-- **Trigger/dependencias:** Fase 8A, después del Prueba 3 Correction Pass para evitar contaminación del Player/tooling stale.
+- **Trigger/dependencias:** Fase 8A después de Prueba 3.3.
 - **Límites:** tooling/diagnostic; no cambiar balance ni accuracy durante la medición.
 - **Relación:** `ISSUE-0008`.
 
@@ -62,8 +62,8 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Estado:** `PLANNED`.
 - **Fecha/origen:** 2026-09-03 — investigación comparativa de IA shooter.
 - **Qué queremos:** revisar uno por uno Focus, distance penalty, target movement, shooter movement, automatic burst y contribución del arma sólo después de corregir/validar el punto base de aim.
-- **Por qué:** evitar reemplazar un problema geométrico con retuning arbitrario y evitar un Accuracy V2 sobrediseñado.
-- **Trigger/dependencias:** Fase 8C completa.
+- **Por qué:** evitar reemplazar un problema geométrico con retuning arbitrario.
+- **Trigger/dependencias:** Fase 8C completa y evidencia residual real.
 - **Límites:** medir primero; ningún factor se elimina o expande por intuición.
 - **Relación:** NPC Sanitation F8D.
 
@@ -72,8 +72,8 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Estado:** `PLANNED`.
 - **Fecha/origen:** 2026-09-03 — revisión de `firearm_profiles`.
 - **Qué queremos:** si la evidencia lo requiere, reemplazar/renombrar `debug_accuracy_spread` por una contribución productiva simple de error mecánico/base del arma.
-- **Por qué:** hoy los perfiles principales observados aportan 0 y gran parte de la identidad de precisión vive en IA.
-- **Trigger/dependencias:** después de `IMPL-0001/0003`; sólo si diferentes armas necesitan realmente distinguir precisión.
+- **Por qué:** hoy gran parte de la identidad de precisión vive en IA.
+- **Trigger/dependencias:** después de `IMPL-0001/0003`; sólo si armas reales necesitan distinguir precisión.
 - **Límites:** no crear `AccuracyProfile`, recoil/ergonomics/MOA/heat/stability frameworks.
 
 ## IMPL-0005 — Migrar consumers restantes fuera de actor capsule-only
@@ -81,7 +81,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Estado:** `PLANNED`.
 - **Fecha/origen:** 2026-09-03 — decisión posterior a Fase 7.
 - **Qué queremos:** migrar perfiles/fixtures humanos que todavía dependan de representación legacy capsule-only hacia representación 3D válida con contratos explícitos.
-- **Por qué:** la cápsula legacy fue compatibilidad transicional de Fase 7 y no forma parte de la arquitectura final.
+- **Por qué:** la cápsula legacy fue compatibilidad transicional de Fase 7.
 - **Trigger/dependencias:** Fase 8 estabilizada; identificar consumers reales antes de borrar fallback.
 - **Límites:** no eliminar la cápsula técnica invisible de locomoción si NavMesh/collision todavía la necesita.
 - **Relación:** NPC Sanitation F8E.
@@ -91,7 +91,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Estado:** `PLANNED`.
 - **Fecha/origen:** 2026-09-03.
 - **Qué queremos:** retirar `missing representation → GameObject.CreatePrimitive(Capsule)` cuando todos los consumers legítimos estén migrados.
-- **Por qué:** una representación faltante debe ser un error/configuración inválida, no crear silenciosamente un actor ficticio.
+- **Por qué:** una representación faltante debe ser error/configuración inválida, no crear silenciosamente un actor ficticio.
 - **Trigger/dependencias:** `IMPL-0005` completa.
 - **Límites:** conservar `ActorLocomotionCollider` técnico si corresponde.
 - **Relación:** NPC Sanitation F8E.
@@ -101,7 +101,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Estado:** `PLANNED`.
 - **Fecha/origen:** 2026-09-03.
 - **Qué queremos:** retirar inferencia `bounds/hitPoint → BodyRegion` cuando todos los actores combatibles relevantes usen `ActorCombatHitRegion` explícito.
-- **Por qué:** la anatomía productiva ya no debe depender de porcentajes de una cápsula.
+- **Por qué:** anatomía productiva no debe depender de porcentajes de una cápsula.
 - **Trigger/dependencias:** migración anatómica completa; diagnostics reemplazados.
 - **Límites:** no quitar fallback mientras haya consumers legítimos no migrados.
 - **Relación:** NPC Sanitation F8E.
@@ -110,37 +110,37 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 - **Estado:** `DONE`.
 - **Fecha/origen:** Prueba 2; prioridad elevada por Prueba 3.1/3.2.
-- **Resolución:** Correction Pass A, `321f26d1d3c1e765e19e86ab66f316238734c8fe`. Toggle `Invisible to AI` en `ActorNeedsDebugPanel`; ON aplica un marker target-side efímero que excluye al Player de acquisition automática y libera su threat actual; OFF conserva elegibilidad normal.
-- **Validación:** `M41 Player Invisible-to-AI Diagnostics: PASS` con OFF → Player, ON → Blue y OFF → Player; no altera Perception/FOV/LOS, colliders, combat, input ni persistence.
-- **Relación:** `ISSUE-0013` resuelto; slice mínimo de F9 adelantado para QA. `IMPL-0009` Invincible queda pendiente.
+- **Resolución:** Correction Pass A, `321f26d1d3c1e765e19e86ab66f316238734c8fe`. Toggle `Invisible to AI` en Runtime Debug Tools; ON excluye al Player de acquisition automática y libera su threat automático actual; OFF conserva elegibilidad normal.
+- **Validación:** diagnostic WorldRuntime OFF → Player, ON → Blue y OFF → Player `PASS`; no altera Perception/FOV/LOS, colliders, combat, input ni persistence.
+- **Relación:** `ISSUE-0013` resuelto.
 
 ## IMPL-0009 — Player Debug: Invincible
 
 - **Estado:** `PLANNED`.
 - **Fecha/origen:** Prueba 2.
-- **Qué queremos:** toggle que permita detection, physical hit, regions, wounds/pain/bleeding/trauma reales pero bloquee la transición terminal a Dead durante QA.
+- **Qué queremos:** toggle que permita detection, physical hit, regions, wounds/pain/bleeding/trauma/KO reales pero bloquee coherentemente la transición terminal a Dead durante QA.
 - **Por qué:** probar NPC→Player durante períodos largos sin reiniciar la prueba.
-- **Trigger/dependencias:** después de Fase 8 / cierre del correction pass.
-- **Límites:** OFF debe ser gameplay normal; no sustituir el pipeline de daño por mocks.
-- **Relación:** NPC Sanitation F9.
+- **Trigger/dependencias:** después de estabilizar KO y F8 targeting; antes de QA Player final.
+- **Límites:** OFF = gameplay normal; no sustituir daño por mocks, no volver intangible al Player, no curar ni resucitar al apagar.
+- **Relación:** NPC Sanitation F9; `ISSUE-0012`.
 
 ## IMPL-0010 — Observability V2 multi-NPC
 
-- **Estado:** `READY — MINIMUM SLICE IMMEDIATE`.
+- **Estado:** `LOCAL CANDIDATE — MANUAL ACCEPTANCE/PUBLISH PENDING`.
 - **Fecha/origen:** Prueba 2; prioridad elevada por Prueba 3.
-- **Qué queremos:** overlay global compacto multi-NPC más inspector profundo del seleccionado. El mínimo adelantado debe mostrar gaze/FOV/LOS simultáneamente para varios/todos los NPC y distinguir current vs last evidence; F10 completará targeting/shot observability más rica.
-- **Por qué:** Prueba 3 confirmó que selección única dificulta comparar ambos lados de un encounter y que world lines basadas en snapshots históricos pueden quedar atrás del actor o parecer salir del piso.
-- **Trigger/dependencias:** Prueba 3 Correction Pass B antes de F8A; expansión completa en F10.
-- **Límites:** no crear debug framework general; usar datos read-only de producción; no duplicar Perception/raycasts para inventar una segunda verdad.
-- **Relación:** `ISSUE-0010`, `ISSUE-0011` y issue de snapshot stale de Prueba 3.
+- **Qué queremos:** overlay global compacto multi-NPC + inspector profundo del seleccionado. El mínimo adelantado muestra gaze/FOV/LOS simultáneamente y distingue CURRENT vs LAST; F10 completa targeting/shot observability.
+- **Estado local:** `SandboxNpcObservabilityPanel.cs` y `M41F6ObservabilityDiagnostics.cs` contienen una implementación candidata con PASS automático, todavía sin aceptación visual ni commit.
+- **Próximo gate:** revisar coherencia temporal de LAST completa, movimiento/occlusion real, selección y Dead/Inactive en Game View; sólo después publicar.
+- **Límites:** no crear debug framework general; usar datos read-only de producción; no duplicar Perception/raycasts como segunda verdad.
+- **Relación:** `ISSUE-0010`, `ISSUE-0011`, `ISSUE-0019`.
 
 ## IMPL-0011 — Observabilidad de targeting/accuracy
 
 - **Estado:** `PLANNED`.
-- **Fecha/origen:** investigación 2026-09-03.
-- **Qué queremos:** en tooling de combate, exponer target, Primary Aim Point, focus, current spread, shot origin/direction, hit collider/region y miss cuando esos contratos existan.
+- **Fecha/origen:** 2026-09-03.
+- **Qué queremos:** exponer target, Primary Aim Point, focus, spread, shot origin/direction, hit collider/region y miss cuando esos contratos existan.
 - **Por qué:** diagnosticar game feel sin logs masivos ni inferencias visuales.
-- **Trigger/dependencias:** `IMPL-0001` + F10.
+- **Trigger/dependencias:** F8A genera el mínimo reutilizable; F10 lo integra al tooling estable.
 - **Límites:** visualización read-only; no alterar aim.
 
 ## IMPL-0012 — Fire-control más weapon-driven cuando existan múltiples arquetipos reales
@@ -148,74 +148,93 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Estado:** `DEFERRED`.
 - **Fecha/origen:** investigación comparativa Source/STALKER/Insurgency, 2026-09-03.
 - **Qué queremos:** permitir que weapon data contribuya de forma simple a cadence/burst/rest/precision cuando bolt-action, SMG, shotgun, MG, etc. realmente lo necesiten.
-- **Por qué:** no conviene que toda identidad de disparo viva para siempre hardcodeada en `HumanEncounterAIController`.
-- **Trigger/dependencias:** al menos dos/tres arquetipos productivos que requieran comportamiento distinto demostrado.
-- **Límites:** no implementar ahora; sin WeaponHandling/FireControl framework especulativo.
+- **Trigger/dependencias:** al menos dos/tres arquetipos productivos con necesidad demostrada.
+- **Límites:** sin WeaponHandling/FireControl framework especulativo.
 
 ## IMPL-0013 — Abstracción de método de ataque sólo al aparecer el primer consumidor no-firearm
 
 - **Estado:** `DEFERRED`.
-- **Fecha/origen:** investigación sobre targets/attackers no humanoides, 2026-09-03.
-- **Qué queremos:** eventualmente separar `Threat/Attack Intent` del método concreto (rifle, melee, mordida, embestida, etc.) cuando exista un segundo tipo real de atacante.
-- **Por qué:** futuros animales/mutantes no deben forzar casos especiales dentro de Human Encounter.
-- **Trigger/dependencias:** primer atacante productivo cuyo método no encaje en el ciclo firearm/melee actual.
+- **Fecha/origen:** investigación 2026-09-03.
+- **Qué queremos:** separar `Threat/Attack Intent` del método concreto sólo cuando exista un atacante real que no encaje en firearm/melee actual.
+- **Trigger/dependencias:** primer consumidor no-firearm productivo.
 - **Límites:** no crear `AttackSolver`/capability framework antes del consumer.
 
 ## IMPL-0014 — Continuidad de memoria de combate durante KO temporal
 
-- **Estado:** `READY — IMMEDIATE`.
+- **Estado:** `READY — AFTER IMPL-0015`.
 - **Fecha/origen:** 2026-09-03 — Prueba 3.1/3.2 + decisión de producto.
-- **Qué queremos:** cuando un enemigo queda incapacitado/noqueado, dejar de tratarlo como amenaza activa y detener ataques deliberados, pero conservar la identidad/contexto del enemigo reciente tanto en atacante como en noqueado. Al recuperar capacidad, el actor puede reanudar el conflicto sin redescubrir al rival como si nunca hubiera existido.
-- **Por qué:** el contrato actual borra Encounter/memoria y produce `KO → Ambient → recovery → redescubrimiento → encounter nuevo`, visible como combatientes que se golpean, pasean y vuelven a pelear.
-- **Trigger/dependencias:** Prueba 3 Correction Pass C, antes de F8A.
-- **Límites:** un seam mínimo dentro de autoridades existentes; sin memory framework, relationship history general, planner o blackboard. La memoria no entrega posición actual ni wallhack: Perception/LKP/Search siguen siendo autoridad espacial. Death sigue terminal.
-- **Relación:** issue confirmado de Prueba 3 sobre incapacidad/Encounter.
+- **Qué queremos:** al incapacitar/noquear a un enemigo, dejar de tratarlo como amenaza activa y detener ataques deliberados, pero conservar identidad/contexto mínimo del enemigo reciente. Recovery puede reanudar conflicto sin redescubrimiento artificial.
+- **Por qué:** el contrato actual produce `KO → Ambient → recovery → rediscovery → encounter nuevo`.
+- **Trigger/dependencias:** después de estabilizar el minimum KO dwell; antes de Prueba 3.3.
+- **Límites:** memoria no entrega posición oculta; Perception/LKP/Search siguen siendo autoridad espacial. Recordar identidad no equivale a `Threat != null` y no debe bloquear por sí solo self-treatment/AmbientTopOff. Death sigue terminal. Sin MemorySystem/blackboard/planner.
+- **Relación:** `ISSUE-0020`.
 
 ## IMPL-0015 — Minimum real-time knockout dwell
 
-- **Estado:** `READY — IMMEDIATE`.
+- **Estado:** `READY — NEXT AFTER F6`.
 - **Fecha/origen:** 2026-09-03 — Prueba 3.1/3.2 + decisión de producto.
-- **Qué queremos:** un mínimo configurable en tiempo real durante el cual un actor que quedó KO/unconscious no puede recuperar capacidad activa. Después del mínimo, `ActorConditionComponent`/fisiología vigente decide si puede despertar.
-- **Por qué:** el `WorldClock` acelerado puede reducir trauma y cruzar thresholds de recuperación demasiado rápido para que el knockout se sienta como una pérdida real de conciencia.
-- **Trigger/dependencias:** Prueba 3 Correction Pass D; validar luego en Prueba 3.3.
-- **Límites:** no reemplazar physiology/thresholds; no fijar duración final de balance sin playtest; no crear otro reloj global.
-- **Relación:** issue de recovery/KO de Prueba 3.
+- **Qué queremos:** mínimo configurable de tiempo real durante el cual un actor realmente `Unconscious` no puede recuperar active behavior. Después del mínimo, `ActorConditionComponent`/fisiología vigente decide si puede despertar.
+- **Por qué:** `WorldClock` acelerado puede cruzar thresholds demasiado rápido en tiempo real.
+- **Trigger/dependencias:** después de cerrar F6 local; antes de `IMPL-0014` y Prueba 3.3.
+- **Límites:** no extender automáticamente a toda `Incapacitated`; no reemplazar physiology/thresholds; el timer no fuerza wake-up; death terminal; no crear otro reloj global. Save/load debe tener semántica que no permita bypass accidental.
+- **Relación:** `ISSUE-0021`.
 
 ## IMPL-0016 — Integrar visuales de equipment en `humanoid_standard`
 
 - **Estado:** `PLANNED`.
 - **Fecha/origen:** 2026-09-03 — Prueba 3 runtime warnings.
-- **Qué queremos:** permitir que la representación humana runtime exponga el seam visual necesario para que Equipment real pueda sincronizar visuales cuando exista contenido/attachment correspondiente.
-- **Por qué:** durante Prueba 3 `EntityEquipmentVisualSynchronizer` reporta que `humanoid_standard(Clone)` no tiene `IEquipmentVisualSource`; el estado de Equipment existe pero la representación debug no puede reflejarlo.
-- **Trigger/dependencias:** después de cerrar NPC Foundation/aim, o antes si la falta de visuales impide validar un feature concreto.
-- **Límites:** no convertir F7 en sistema de animación/IK ni requerir arte final; reutilizar el framework visual existente y evitar una autoridad paralela.
+- **Qué queremos:** permitir que la representación humana runtime exponga el seam visual necesario para que Equipment real sincronice visuales cuando exista contenido/attachment correspondiente.
+- **Por qué:** Equipment existe pero la representation debug no siempre lo refleja.
+- **Trigger/dependencias:** después de cerrar NPC Foundation/aim, o antes sólo si un gate concreto exige arma físicamente visible.
+- **Límites:** no convertir F7 en IK/animation system ni crear otra autoridad de Equipment.
 
 ## IMPL-0017 — Timed Bandaging V1 compartido y self-treatment NPC
 
 - **Estado:** `DONE`.
-- **Fecha/origen:** 2026-09-04 — slice médico autorizado fuera del orden del Correction Pass.
-- **Resolución:** `ActorWoundTreatmentController` por actor ejecuta bandaging real de 4 s con exact-instance commit; Player puede caminar, sprint/combat cancelan, y NPC usa inventario real tras calma determinista o por emergencia hemorrágica derivada de physiology/WorldClock.
-- **Validación:** `Timed Bandaging / NPC Self-Treatment Diagnostics: PASS`, M39.0, Consciousness, Player Controls/Health Window, M40.0, Human Encounter, Search V1, Behavior Ownership e Inventory Interaction `PASS`.
-- **Límites:** no persiste progreso; sin Blood Trails, carry-weight changes, NPC sprint authority, Medical AI state, scheduler ni generic action manager.
+- **Fecha/origen:** 2026-09-04.
+- **Resolución:** `ActorWoundTreatmentController` por actor ejecuta bandaging real de 4 s con exact-instance commit; Player puede caminar, sprint/combat cancelan; NPC usa inventario real tras calma determinista o emergencia hemorrágica.
+- **Validación:** Timed Bandaging/NPC Self-Treatment, M39.0, Consciousness, Player Controls/Health Window, M40.0, Human Encounter, Search V1, Behavior Ownership e Inventory Interaction `PASS`.
+- **Límites:** progreso no persistido; sin scheduler/action manager general.
 
 ## IMPL-0018 — Blood Trails V1: marcas médicas por distancia
 
 - **Estado:** `DONE`.
-- **Fecha/origen:** 2026-09-05 — continuación autorizada tras la prueba gráfica R0.
-- **Resolución:** `ActorHealthComponent` materializa el `ActorBloodTrailEmitter` dentro de la composición runtime existente; éste observa `EffectiveBleedingRatePerGameHour` por `Revision` y solicita marcas espaciadas por distancia al `WorldBloodMarkPool` global. V1.1 configura diámetro base `0,25 m` en el settings existente y usa consulta de superficie `RaycastNonAlloc` por emitter. Reutiliza el material/renderer URP validado en R0; no cambia estado médico, tratamiento, AI, Perception ni save data.
-- **Validación:** diagnostics V1.1/R0, M39.0, Timed Bandaging y M38 Actor Lifecycle `PASS`; el escenario comprobó Player/NPC, composición sin duplicados, terrain/piso/slope, filtros trigger/propio, bandaging real, x1/x100, budget, expiry, recycling, buffer nonalloc no saturado y trail visual RenderTexture.
-- **Límites:** textura R0 provisional; sin persistence, puddles, spray, tracking AI, footprints, weather cleanup ni framework genérico de evidencia.
+- **Fecha/origen:** 2026-09-05.
+- **Resolución:** `ActorBloodTrailEmitter` observa bleeding médico real y solicita marcas por distancia al pool global. V1.1 usa diámetro base `0,25 m` configurable y `RaycastNonAlloc`; reutiliza renderer/material R0.
+- **Validación:** V1.1/R0, M39.0, Timed Bandaging y M38 Actor Lifecycle `PASS`; Player/NPC, terrain/piso/slope, filtros, x1/x100, budget, expiry/recycling y evidencia RenderTexture validados.
+- **Límites:** textura provisional; sin persistence, puddles, spray, tracking AI, footprints ni weather cleanup.
 
 ## IMPL-0019 — NPC Opportunistic Reload
 
 - **Estado:** `DONE`.
-- **Fecha/origen:** 2026-09-05 — slice puntual autorizado.
-- **Resolución:** `HumanEncounterAIController` inicia `AmbientTopOff` sólo en `Idle + Ambient + Threat null` para firearms parciales, y `EmptyWeapon` con magazine vacío durante Fighting, LostContact, Search o Ambient seguro. La acción vacía conserva weapon instance y completion time a través de Fight -> LostContact -> Search -> reacquisition; el top-off se cancela al aparecer threat. `WeaponCombatService.ReloadEquipped` conserva el commit real con munición owned.
-- **Validación:** `M41 NPC Opportunistic Reload`, M40.0 Combat & Weapons, M41.1 Human Encounter, M41 LostContact / Search V1 y Timed Bandaging / NPC Self-Treatment diagnostics: `PASS`.
-- **Límites:** sin weapon switching/fallback, planner, FireControl, cambios Player reload ni fusión de stacks de ammo.
+- **Fecha/origen:** 2026-09-05.
+- **Resolución:** `HumanEncounterAIController` usa `AmbientTopOff` en ventana segura y `EmptyWeapon` durante Fighting/LostContact/Search/Ambient seguro. Empty reload conserva instance/completion a través de transitions; top-off se cancela al aparecer threat. `WeaponCombatService.ReloadEquipped` sigue siendo autoridad transaccional.
+- **Validación:** M41 NPC Opportunistic Reload, M40.0, Human Encounter, Search V1 y Timed Bandaging/NPC Self-Treatment `PASS`.
+- **Límites:** sin weapon switching/fallback, planner, FireControl ni cambios Player reload.
+
+## IMPL-0020 — Carry Weight / Encumbrance compartido
+
+- **Estado:** `READY AFTER M41 + ISSUE-0022`.
+- **Fecha/origen:** 2026-09-06 — decisión de producto + auditoría profunda de repo/Astra.
+- **Qué queremos:** redefinir Carry Capacity como capacidad física de transporte, NO como límite de storage. Player y NPC comparten el mismo contrato locomotor.
+- **Contrato aprobado:** `0..75%` sin penalización; `>75%..100%` penalización progresiva; `100%` aún móvil; `>100%` traslación cero. Inventory/transfer/drop/equipment/use/reload/treatment siguen bajo sus propias autoridades y pueden operar sobrecargados.
+- **Por qué:** el hard limit actual mezcla storage acceptance con consecuencia física; además futuros Leg Impairment y Encumbrance deben componerse sin acoplar Carry/Medical.
+- **Trigger/dependencias:** cerrar M41/F8 para no contaminar accuracy; resolver primero `ISSUE-0022` loaded ammo mass.
+- **Límites:** sin Strength, stats, backpack capacity modifiers, cache global, Limb Impairment ni rebalanceo de accuracy. `Overloaded != Incapacitated`.
+- **Riesgos conocidos:** retirar todos los vetos/clamps de peso sin romper grid/stack/access/ownership/rollback; NPC spawn sin Carry actual; sprint falso; Search deadline y Navigation reversible; restore sobrecargado debe conservar items.
+
+## IMPL-0021 — Localized Limb Impairment
+
+- **Estado:** `PLANNED AFTER IMPL-0020`.
+- **Fecha/origen:** 2026-09-06 — dirección de producto ya aprobada.
+- **Qué queremos:** que heridas localizadas reales produzcan consecuencias funcionales sin introducir limb HP paralelo.
+- **Dirección:** piernas afectan locomoción/sprint; brazos afectan handling/reload/melee cuando sus reglas y consumers estén definidos. Bandaging reduce bleeding, no repara automáticamente impairment.
+- **Por qué:** hacer que regiones/wounds existentes tengan consecuencias sistémicas y compatibles con Carry/locomotion.
+- **Trigger/dependencias:** Encumbrance compartido y seam locomotor estable; después definir severidad/recuperación de cada consumer.
+- **Límites:** Medical y Carry no deben conocerse entre sí; sin targeting de miembros, limb HP, framework universal ni curación implícita por vendaje.
 
 ---
 
 ## Regla de mantenimiento
 
-Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe referenciar su ID. Cuando se implemente y valide, puede pasar a `DONE` o eliminarse sólo si no aporta historial; una decisión que explique arquitectura futura debería conservarse. Un item no debe crecer automáticamente hasta convertirse en milestone: si el alcance ya es grande, moverlo explícitamente al Roadmap mediante decisión de producto.
+Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe referenciar su ID. Cuando se implemente y valide, puede pasar a `DONE` o eliminarse sólo si no aporta historial. Bugs reales van a `Issue_Registry.md`, no se duplican aquí como features.

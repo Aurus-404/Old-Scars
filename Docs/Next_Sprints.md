@@ -1,203 +1,274 @@
 # Old Scars — Next Sprints
 
-Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras menores aprobadas para después; `NPC_AI_Sanitation_Plan.md` mantiene la secuencia completa del bloque; `Prueba_3_Findings.md` conserva la evidencia manual más reciente.
+Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Próximo trabajo
+## Secuencia operativa aprobada — 2026-09-06
 
-### 1. Prueba 3 Correction Pass B — F6 correctness + multi-NPC mínimo
+### 1. P1 — Cerrar F6 local / Observability minimum slice
 
 Estado: `NEXT`.
 
-Corregir dos problemas que hoy vuelven engañosa la observabilidad:
+Existe una implementación local candidata, todavía no publicada:
 
-- distinguir `CURRENT` de `LAST` perception/LOS/search evidence;
-- current FOV/Gaze debe salir del eye/origin actual del actor, no de un snapshot viejo que quedó atrás mientras caminaba;
-- Dead/Inactive no debe mostrar un snapshot histórico como si fuese current perception;
-- gaze/FOV/LOS world visuals deben poder mostrarse para varios/todos los NPCs simultáneamente;
-- `Selected NPC` sólo elige el inspector detallado.
+- `SandboxNpcObservabilityPanel.cs` modificado;
+- `M41F6ObservabilityDiagnostics.cs` nuevo;
+- `.meta` nuevo.
 
-No duplicar raycasts/perception para debug; consumir datos productivos/read-only.
+Los diagnostics locales ya llegaron a PASS, pero falta aceptación visual/manual.
 
-Referencias: `ISSUE-0010`, `ISSUE-0011`, findings nuevos de Prueba 3.
+Cierre requerido:
 
-### 2. Prueba 3 Correction Pass C — KO / combat memory continuity
+- Gaze/FOV CURRENT desde eye/origin actual;
+- CURRENT y LAST separados;
+- varios NPC visibles simultáneamente;
+- selección sólo controla el inspector profundo;
+- Dead/Inactive no presenta history como current;
+- revisar que `LAST` no mezcle origen histórico con datos actuales de un blocker móvil;
+- no duplicar Perception/raycasts productivos.
+
+Gate manual: Game View con Blue + Red, movimiento real, selección alternada, oclusión y actor inactive/dead. Sólo después publicar.
+
+Referencias: `IMPL-0010`, `ISSUE-0010`, `ISSUE-0011`, `ISSUE-0019`.
+
+### 2. P2 — Minimum real-time KO dwell
 
 Estado: `NEXT AFTER F6`.
 
-Problema confirmado: incapacidad temporal hace que atacante libere threat y que el incapacitado limpie su encounter/memoria, produciendo `KO → Ambient → recovery → redescubrimiento → encounter nuevo`.
+Objetivo:
 
-Contrato V1 deseado:
+- al entrar realmente en `Unconscious`, impedir recovery activo antes de un mínimo configurable de tiempo real;
+- después del mínimo, physiology/thresholds/hysteresis vigentes siguen decidiendo si puede despertar;
+- el timer no fuerza wake-up;
+- `WorldClock` acelerado no reduce ese mínimo;
+- death sigue terminal.
 
-- un incapacitado/noqueado deja de ser amenaza activa y no recibe ataques deliberados;
-- atacante y noqueado conservan quién era el enemigo del encounter reciente;
-- recovery puede reanudar contexto hostil sin redescubrimiento artificial;
-- memoria no da posición actual/wallhack; Perception/LKP/Search siguen siendo autoridad espacial;
-- muerte sigue siendo terminal;
-- no crear memory framework/blackboard/planner general.
+Antes de implementar, resolver explícitamente la semántica de save/load para que cargar no permita saltar el mínimo por accidente.
 
-Referencia: `IMPL-0014` y `Prueba_3_Findings.md`.
+No convertir toda `Incapacitated` en KO por conveniencia.
 
-### 3. Prueba 3 Correction Pass D — Minimum KO dwell
+Referencia: `IMPL-0015`, `ISSUE-0021`.
 
-Estado: `NEXT AFTER KO MEMORY`.
+### 3. P3 — KO / combat-memory continuity
 
-Agregar un mínimo real-time configurable durante el cual un knockout/unconscious no puede recuperar capacidad activa sólo porque el `WorldClock` avanza acelerado. Una vez cumplido ese mínimo, la fisiología/thresholds vigentes deciden si puede despertar.
+Estado: `NEXT AFTER KO DWELL`.
 
-No fijar balance final sin playtest y no sustituir `ActorConditionComponent` como autoridad fisiológica.
+Problema confirmado:
 
-Referencia: `IMPL-0015`.
+`Fight → KO → context/threat cleanup → Ambient → recovery → rediscovery → encounter nuevo`.
 
-### 4. Prueba 3.3 — 1 Blue vs 1 Red limpio
+Contrato:
+
+- incapacitado/noqueado deja de ser amenaza activa y no recibe ataques deliberados;
+- atacante y noqueado pueden conservar identidad/contexto mínimo del enemigo reciente;
+- recordar identidad NO equivale a `Threat != null`;
+- ese recuerdo por sí solo no debe impedir self-treatment ni AmbientTopOff;
+- recovery puede reanudar conflicto sin redescubrimiento artificial;
+- memoria no actualiza posición escondida;
+- Perception/LKP/Search siguen siendo autoridad espacial;
+- death/invalidation terminan la continuidad;
+- no crear MemorySystem/blackboard/planner general.
+
+Regresiones obligatorias: Search, Timed Bandaging/NPC self-treatment, Opportunistic Reload, Behavior ownership.
+
+Referencia: `IMPL-0014`, `ISSUE-0020`.
+
+### 4. P4 — Prueba 3.3 limpia
 
 Estado: `GATE BEFORE F8A`.
 
-Condiciones:
+Escenario:
 
+- 1 Blue + 1 Red;
 - Player Invisible-to-AI ON;
-- sólo 1 Blue + 1 Red;
-- observabilidad simultánea de ambos;
-- registrar arma de cada uno;
-- observar KO start, duración real, recovery, memoria del enemigo y reanudación;
-- confirmar que el rival no golpea deliberadamente al KO;
-- observar LostContact/Search si aparece;
-- anotar wounds/regions sin intervención del Player.
+- ninguna intervención del Player;
+- observabilidad simultánea aceptada;
+- arma/loadout identificable por debug aunque el visual físico todavía sea incompleto;
+- registrar KO start, duración real, recovery, context, wounds/regions, LostContact/Search si aparece.
 
-Gate: el combate 1v1 debe poder interpretarse sin contaminación del Player ni tooling stale.
+Gate:
 
-### 6. Fase 8A — Aim Bias Evidence
+- la pelea debe poder interpretarse sin tooling stale;
+- el rival no debe seguir atacando deliberadamente al KO;
+- recovery no debe parecer un reset de personalidad;
+- un run sin KO no valida recovery: repetir una preparación equivalente sin retunear balance productivo.
 
-Estado: `QUEUED AFTER PRUEBA 3.3`.
+### 5. P5 — F8A Aim Bias Evidence
 
-Objetivo: demostrar con evidencia reproducible qué está causando `ISSUE-0008` antes de cambiar gameplay.
+Estado: `AFTER PRUEBA 3.3`.
 
-Implementar un diagnostic que capture por disparo:
+No cambiar gameplay.
 
-- target y aim source;
-- aim point actual (`ActorLocomotionCollider.bounds.center` en el contrato actual);
-- proposed human center-mass;
+Capturar por shot, de forma correlacionada y reproducible:
+
+- target/TargetId;
+- aim source;
+- aim point actual;
+- proposed center-mass relevante;
 - focus/current spread;
 - shot origin/direction;
 - hit collider/hit point;
 - BodyRegion o miss;
-- seed/condición.
+- seed/condiciones.
 
-Usar mismo shooter, target, arma, distancia, focus, spread y seeds para poder comparar.
+No tocar Focus, spread, distance/movement penalties, burst, damage, .303 ni anatomy durante la medición.
 
-**No cambiar todavía:** spread, Focus, distance/movement penalties, burst spread, damage, .303, anatomy ni weapon balance.
+Gate: concluir si `ISSUE-0008` depende materialmente del base aim point o si la evidencia apunta a otra causa.
 
-Gate: explicar si el punto base actual contribuye materialmente al exceso de piernas/pies o si la evidencia apunta a otra causa.
+### 6. P6 — F8B/C y F8D sólo si corresponde
 
-### 7. Fase 8B — Generic Target-side Primary Aim Point
+Estado: `CONDITIONAL`.
 
-Estado: `CONDITIONAL / READY`.
+Si F8A justifica cambiar el punto base:
 
-Sólo ejecutar si F8A justifica el cambio.
+- introducir sólo el Primary Aim Point target-side mínimo;
+- humano → center-mass razonable;
+- futuros targets → su punto equivalente;
+- shooter no inspecciona Torso/especie;
+- sin weak points/scoring/head targeting.
 
-Objetivo: dejar de hacer que `HumanEncounterAIController` adivine el center mass inspeccionando anatomía/collider técnico del target.
+Después repetir before/after con mismas condiciones.
 
-Contrato V1 esperado:
+F8D review de accuracy sólo ocurre si quedan problemas demostrados después de F8C. No retunear por intuición.
 
-`Target → Primary Aim Point`.
+### 7. P7 — Player Debug Invincible
 
-- humano: center mass;
-- futuros animales/robots/otros actors: punto equivalente definido por su propia representation;
-- el shooter no conoce `Torso` ni especies concretas.
+Estado: `AFTER F8 TARGETING STABILIZATION`.
 
-Límites:
+Objetivo QA:
 
-- un único punto primario;
-- sin manager;
-- sin weak points;
-- sin scoring;
-- sin head/mobility targeting;
-- sin schema JSON nuevo salvo necesidad real demostrada.
+ON conserva el pipeline real:
 
-Referencia: `IMPL-0001` y `NPC_Combat_Targeting_Research.md`.
+`AI detection → shot → collider → BodyRegion → wounds → bleeding → pain → trauma → condition`
 
-### 8. Fase 8C — Controlled Before/After
+pero bloquea coherentemente el desenlace terminal `Dead`.
 
-Repetir exactamente la muestra de F8A después del nuevo target point.
+No basta con omitir `ProcessDeath`: `IsDead`, lifecycle y fatal blood loss deben permanecer consistentes.
 
-Mismas seeds, arma, distancia, focus, spread, shooter/target e hitboxes.
+OFF = gameplay normal.
 
-Comparar Head/Torso/Arms/Legs/Miss. No exigir distribución uniforme; exigir una distribución explicable y sin sesgo geométrico absurdo.
+Pruebas obligatorias:
 
-`ISSUE-0008` sólo puede resolverse con esta evidencia o con otra causa demostrada.
+- daño vital letal;
+- fatalidad por sangre;
+- KO permitido mientras Invincible está ON;
+- OFF vuelve a reglas normales sin curar ni resucitar;
+- no cambia Perception/AI/colliders.
 
-### 9. Fase 8D — Accuracy Simplification Review
+Referencia: `IMPL-0009`, `ISSUE-0012`.
 
-No es un refactor automático.
+### 8. P8 — Completar Observability V2 / F10
 
-Revisar uno por uno después de F8C:
+Estado: `AFTER F8 EVIDENCE CONTRACTS EXIST`.
 
-- Focus — mantener salvo evidencia;
-- shooter movement penalty — mantener salvo evidencia;
-- target movement penalty — mantener provisionalmente;
-- automatic burst spread — mantener V1 salvo evidencia;
-- distance penalty — medir posible doble penalización con cono angular;
-- `debug_accuracy_spread`/weapon contribution — decidir si necesita convertirse en campo productivo mínimo.
+Evolucionar el mismo tooling de P1/F8A:
 
-No crear `AccuracyController`, `WeaponHandlingController`, `FireControlController` o similares sólo para repartir líneas.
+- overlay compacto multi-NPC;
+- inspector profundo del seleccionado;
+- target;
+- Primary Aim Point si existe;
+- focus/spread;
+- shot origin/direction;
+- collider/region/miss;
+- traces suficientes para QA.
 
-### 10. Fase 8E — Legacy migration / cleanup
+Read-only. No segunda autoridad de Perception/Combat.
 
-Migrar consumers/fixtures que todavía dependan de actor capsule-only.
+### 9. P9 — Legacy migration + QA integrada + cierre M41
 
-Después, cuando no haya consumers legítimos:
+Estado: `AFTER P4–P8`.
 
-- quitar fallback `missing representation → CreatePrimitive(Capsule)`;
-- quitar BodyRegion legacy inferido por bounds/hitPoint;
-- quitar diagnostics cuyo único objetivo sea preservar esos contratos reemplazados.
+Migrar sólo consumers reales que todavía dependan de representation/anatomy legacy.
 
-Mantener `ActorLocomotionCollider` técnico si sigue siendo necesario para movimiento/collision/NavMesh/collapse.
+Después ejecutar:
 
-### 11. Fase 9 — completar Player Debug
-
-El mínimo Invisible-to-AI se adelanta al Correction Pass. F9 conserva:
-
-- cierre/regresiones del toggle Invisible;
-- `IMPL-0009` Invincible;
-- OFF = gameplay normal;
-- QA prolongado sin sustituir Perception/combat/damage por mocks.
-
-### 12. Fase 10 — completar Observability V2
-
-El mínimo multi-NPC/current-vs-last se adelanta al Correction Pass. F10 conserva la expansión útil:
-
-- overlay global compacto;
-- inspector seleccionado;
-- targeting/accuracy observability cuando Primary Aim Point exista;
-- shot traces/regions suficientemente legibles para QA.
-
-### 13. Fases 11–15 — QA integrado y cierre
-
-- batería automatizada pequeña pero fuerte;
-- pruebas NPC-only y NPC↔Player renovadas;
+- batería automatizada pequeña;
+- NPC-only integrada;
+- NPC↔Player con Invisible OFF / Invincible ON cuando corresponda;
 - manual game feel;
-- cleanup final y reconciliación documental.
+- console review;
+- cleanup de instrumentation temporal y código legacy realmente sin consumers;
+- reconciliación documental.
 
-## Investigación antes de Codex
+NPC Foundation V1 se cierra sólo con aceptación manual de Mauro.
 
-Para problemas nuevos cuyo código/causa pueda inspeccionarse desde GitHub, realizar primero la investigación de repo y entregar a Codex seam concreto, alcance y DONE. Codex debe concentrarse en implementación, Unity/local diagnostics, assets y validación que no pueda obtenerse sólo desde el repo.
+---
 
-No gastar cuota repitiendo auditorías ya resueltas en `NPC_Combat_Targeting_Research.md` o `Prueba_3_Findings.md`.
+# Después de M41
 
-## Issues activos relevantes
+### 10. P10 — Equipment visuals humanoides
 
-- `ISSUE-0008` — posible sesgo de impactos piernas/pies — `SUSPECTED / P1`; F8A después del correction pass.
-- `ISSUE-0010` / `0011` — observabilidad multi-NPC/selection — ahora priorizados por Prueba 3.
-- `ISSUE-0013` — Invisible-to-AI resuelto; usar ON como condición de Prueba 3.3.
-- findings nuevos: F6 stale current-vs-last y KO/combat-memory continuity deben quedar registrados en `Issue_Registry.md`.
+Estado: `PLANNED AFTER M41`.
+
+Integrar Equipment real en `humanoid_standard` usando el seam visual existente. Sin nuevo Equipment system, IK ni animación final.
+
+Puede adelantarse sólo si una validación concreta exige ver físicamente el arma; para Prueba 3.3 basta identificación debug inequívoca.
+
+Referencia: `IMPL-0016`.
+
+### 11. P11 — Loaded ammo mass
+
+Estado: `REQUIRED BEFORE ENCUMBRANCE`.
+
+Problema confirmado por código: reload consume ammo owned del Inventory y la firearm guarda `LoadedAmmoProfileId + LoadedRounds`, pero el resolver de peso no suma esa munición cargada. Recargar puede reducir masa calculada artificialmente.
+
+Resolver la conservación de masa sin elegir arbitrariamente “el primer item” compatible con un ammo profile en presencia de mods.
+
+Gate: reload/disparo/save-load conservan masa coherente.
+
+Referencia: `ISSUE-0022`.
+
+P10 y P11 pueden intercambiar posición; P11 sí debe preceder Encumbrance.
+
+### 12. P12 — Carry Weight / Encumbrance compartido
+
+Estado: `READY AFTER M41 + ISSUE-0022`.
+
+Contrato aprobado:
+
+- Carry Capacity no limita storage/acceptance;
+- `0..75%` normal;
+- `>75%..100%` penalización progresiva;
+- `100%` aún móvil;
+- `>100%` traslación cero;
+- girar/mirar/manipular inventory/drop/equipment/use/reload/treatment siguen según sus autoridades;
+- Player y NPC comparten el contrato;
+- `Overloaded != Incapacitated`;
+- restore sobrecargado conserva items;
+- descargar recupera movimiento.
+
+Debe retirar todos los vetos/clamps de peso de Inventory/Transfer/Equipment sin romper grid, ownership, rollback ni access.
+
+Navigation debe distinguir orden/path válido de bloqueo físico por carga; Search no debe convertir sobrecarga temporal en falso path failure/deadline imposible.
+
+Referencia: `IMPL-0020`.
+
+### 13. P13 — Localized Limb Impairment
+
+Estado: `PLANNED AFTER ENCUMBRANCE`.
+
+Usar heridas reales existentes como causa funcional, sin limb HP paralelo.
+
+Orden futuro recomendado:
+
+1. piernas → locomoción/sprint;
+2. brazos → handling/reload/melee sólo cuando reglas/consumers estén definidos.
+
+Bandaging reduce bleeding; no repara automáticamente impairment.
+
+Carry y Medical no deben conocerse entre sí.
+
+Referencia: `IMPL-0021`.
 
 ## No iniciar todavía
 
-- Behavior Trees/GOAP/Utility AI generales;
-- memory framework general;
-- cover/squad tactics sofisticadas;
-- hearing/noise/schedules/strategic AI;
+- Encumbrance antes de cerrar M41/F8;
+- weapon-driven fire-control sin varios arquetipos reales;
+- weapon viability/fallback sin tarea propia;
+- Strength/stats y backpack capacity modifiers;
+- MemorySystem/blackboard/planner;
+- cover/squad/hearing/schedules;
 - full ballistics/drop/wind;
-- aim-point/weak-point scoring;
-- generic machine/vehicle damage framework;
-- attack-method framework sin consumidor;
-- producción masiva de contenido;
-- otro milestone grande antes de cerrar NPC Foundation V1.
+- weak-point/head-targeting framework;
+- blood tracking AI/footprints/puddles;
+- Limb HP paralelo;
+- producción masiva de contenido antes del cierre de la foundation.
