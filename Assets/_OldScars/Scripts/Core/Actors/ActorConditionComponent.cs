@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using Newtonsoft.Json;
 using OldScars.Core.Data.Definitions;
 using UnityEngine;
 
@@ -17,6 +19,9 @@ namespace OldScars.Core.Actors
     {
         public float bloodFraction = float.NaN;
         public float transientTrauma = float.NaN;
+        [JsonProperty(Required = Required.DisallowNull, NullValueHandling = NullValueHandling.Ignore)]
+        public double? unconsciousDwellRemainingSeconds;
+        public bool unconsciousRecoveryPending;
     }
 
     /// <summary>
@@ -50,6 +55,9 @@ namespace OldScars.Core.Actors
         private float traumaRecoveryPerGameHour = 0.6f;
         private float bloodRecoveryPerGameHour = 0.02f;
         private float recoveryHysteresis = 0.05f;
+        private float minimumUnconsciousRealSeconds = 5f;
+        private double unconsciousDwellRemainingSeconds;
+        private double dwellLastRealTime;
 
         private ActorHealthComponent health;
         private ActorMedicalStateComponent medical;
@@ -69,6 +77,8 @@ namespace OldScars.Core.Actors
         public float FatalBloodFraction => fatalBloodFraction;
         public float BloodRecoveryPerGameHour => bloodRecoveryPerGameHour;
         public float RecoveryHysteresis => recoveryHysteresis;
+        public double UnconsciousDwellRemainingSeconds => unconsciousDwellRemainingSeconds;
+        public bool IsUnconsciousDwellActive => IsUnconscious && unconsciousDwellRemainingSeconds > 0d;
         public int Revision { get; private set; }
 
         public event Action<ActorFunctionalState, ActorFunctionalState> FunctionalStateChanged;
@@ -95,6 +105,21 @@ namespace OldScars.Core.Actors
             ConnectWorldClock(null);
         }
 
+        private void Update()
+        {
+            if (!IsUnconsciousDwellActive)
+                return;
+            double now = Time.realtimeSinceStartupAsDouble;
+            unconsciousDwellRemainingSeconds = Math.Max(0d,
+                unconsciousDwellRemainingSeconds - Math.Max(0d, now - dwellLastRealTime));
+            dwellLastRealTime = now;
+            if (unconsciousDwellRemainingSeconds == 0d)
+            {
+                Revision++;
+                RecalculateConsciousness();
+            }
+        }
+
         public bool TryConfigure(ActorProfileConsciousness profile, out string failure)
         {
             failure = null;
@@ -112,6 +137,7 @@ namespace OldScars.Core.Actors
             traumaRecoveryPerGameHour = profile.trauma_recovery_per_game_hour;
             bloodRecoveryPerGameHour = profile.blood_recovery_per_game_hour;
             recoveryHysteresis = profile.recovery_hysteresis;
+            minimumUnconsciousRealSeconds = profile.minimum_unconscious_real_seconds;
             configured = true;
             RecalculateConsciousness(false);
             return true;
@@ -174,7 +200,11 @@ namespace OldScars.Core.Actors
             return new ActorConditionStateData
             {
                 bloodFraction = bloodFraction,
-                transientTrauma = transientTrauma
+                transientTrauma = transientTrauma,
+                // Capture the last evaluated frame atomically: synchronous load/rollback
+                // comparisons must not consume wall time between individual actors.
+                unconsciousDwellRemainingSeconds = unconsciousDwellRemainingSeconds,
+                unconsciousRecoveryPending = IsUnconscious
             };
         }
 
@@ -184,8 +214,11 @@ namespace OldScars.Core.Actors
                 return false;
             bloodFraction = state.bloodFraction;
             transientTrauma = state.transientTrauma;
+            bool legacy = !state.unconsciousDwellRemainingSeconds.HasValue;
+            unconsciousDwellRemainingSeconds = state.unconsciousDwellRemainingSeconds ?? 0d;
+            dwellLastRealTime = Time.realtimeSinceStartupAsDouble;
             Revision++;
-            RecalculateConsciousness(false);
+            RecalculateConsciousness(false, legacy ? (bool?)null : state.unconsciousRecoveryPending, legacy);
             return true;
         }
 
@@ -209,6 +242,15 @@ namespace OldScars.Core.Actors
             if (!Finite(state.transientTrauma) || state.transientTrauma < 0f || state.transientTrauma > 1f)
             {
                 failure = $"Transient trauma '{state.transientTrauma}' must be finite and within 0..1.";
+                return false;
+            }
+            if (state.unconsciousDwellRemainingSeconds.HasValue &&
+                (!Finite(state.unconsciousDwellRemainingSeconds.Value) ||
+                 state.unconsciousDwellRemainingSeconds.Value < 0d ||
+                 state.unconsciousDwellRemainingSeconds.Value > 0d && !state.unconsciousRecoveryPending) ||
+                !state.unconsciousDwellRemainingSeconds.HasValue && state.unconsciousRecoveryPending)
+            {
+                failure = "Unconscious dwell must be finite, nonnegative and belong to an unconscious episode.";
                 return false;
             }
             failure = null;
@@ -235,9 +277,10 @@ namespace OldScars.Core.Actors
                 profile.fatal_blood_fraction >= profile.blood_pressure_start_fraction ||
                 !FinitePositive(profile.trauma_recovery_per_game_hour) ||
                 !FinitePositive(profile.blood_recovery_per_game_hour) ||
-                !FiniteUnitPositive(profile.recovery_hysteresis))
+                !FiniteUnitPositive(profile.recovery_hysteresis) ||
+                !FinitePositive(profile.minimum_unconscious_real_seconds))
             {
-                failure = "Consciousness tuning must be finite and ordered; recovery hysteresis and blood/trauma recovery rates must be positive.";
+                failure = "Consciousness tuning must be finite and ordered; recovery hysteresis, blood/trauma recovery rates and minimum unconscious real seconds must be positive.";
                 return false;
             }
             failure = null;
@@ -246,6 +289,7 @@ namespace OldScars.Core.Actors
 
         internal void ResetForHealthInitialization(bool alive)
         {
+            unconsciousDwellRemainingSeconds = 0d;
             if (alive)
             {
                 bloodFraction = 1f;
@@ -280,27 +324,32 @@ namespace OldScars.Core.Actors
             AdvancePhysiology(elapsedGameSeconds);
         }
 
-        private void RecalculateConsciousness(bool applyRecoveryHysteresis = true)
+        private void RecalculateConsciousness(bool applyRecoveryHysteresis = true,
+            bool? restoredUnconscious = null, bool legacyRestore = false)
         {
             ResolveReferences();
             ClampState();
             float totalPain = medical != null ? medical.TotalPain : 0f;
-            float painPressure = Mathf.Clamp01(
-                (totalPain - painTolerance) / Mathf.Max(0.001f, 1f - painTolerance));
-            float circulatoryPressure = Mathf.Clamp01(
-                (bloodPressureStartFraction - bloodFraction) /
-                Mathf.Max(0.001f, bloodPressureStartFraction - fatalBloodFraction));
-            float totalPressure = transientTrauma + painPressure * PainPressureWeight +
-                                  circulatoryPressure * CirculatoryPressureWeight;
-            ConsciousnessStability = IsDead()
-                ? 0f
-                : Mathf.Clamp01(1f - totalPressure / Mathf.Max(0.01f, consciousnessResilience));
+            ConsciousnessStability = IsDead() ? 0f : CalculateStability(bloodFraction, transientTrauma,
+                totalPain, painTolerance, bloodPressureStartFraction, fatalBloodFraction, consciousnessResilience);
 
             ActorFunctionalState next = IsDead()
                 ? ActorFunctionalState.Unconscious
-                : applyRecoveryHysteresis
-                    ? ResolveFunctionalState(ConsciousnessStability)
-                    : ResolveThresholdState(ConsciousnessStability);
+                : restoredUnconscious == true
+                    ? ResolveFunctionalState(ConsciousnessStability, ActorFunctionalState.Unconscious)
+                    : applyRecoveryHysteresis
+                        ? ResolveFunctionalState(ConsciousnessStability, FunctionalState)
+                        : ResolveThresholdState(ConsciousnessStability);
+            if (IsDead())
+                unconsciousDwellRemainingSeconds = 0d;
+            else if (unconsciousDwellRemainingSeconds > 0d)
+                next = ActorFunctionalState.Unconscious;
+            else if (next == ActorFunctionalState.Unconscious && !restoredUnconscious.HasValue &&
+                     (FunctionalState != ActorFunctionalState.Unconscious || legacyRestore))
+            {
+                unconsciousDwellRemainingSeconds = minimumUnconsciousRealSeconds;
+                dwellLastRealTime = Time.realtimeSinceStartupAsDouble;
+            }
             if (next == FunctionalState)
                 return;
             ActorFunctionalState previous = FunctionalState;
@@ -308,13 +357,40 @@ namespace OldScars.Core.Actors
             FunctionalStateChanged?.Invoke(previous, next);
         }
 
-        private ActorFunctionalState ResolveFunctionalState(float stability)
+        private static float CalculateStability(float blood, float trauma, float totalPain,
+            float painTolerance, float bloodPressureStartFraction, float fatalBloodFraction, float resilience)
+        {
+            float painPressure = Mathf.Clamp01(
+                (totalPain - painTolerance) / Mathf.Max(0.001f, 1f - painTolerance));
+            float circulatoryPressure = Mathf.Clamp01(
+                (bloodPressureStartFraction - blood) /
+                Mathf.Max(0.001f, bloodPressureStartFraction - fatalBloodFraction));
+            float totalPressure = trauma + painPressure * PainPressureWeight +
+                                  circulatoryPressure * CirculatoryPressureWeight;
+            return Mathf.Clamp01(1f - totalPressure / Mathf.Max(0.01f, resilience));
+        }
+
+        // Schema-v1 additive normalization before transactional apply/comparison.
+        internal static void NormalizeLegacyDwell(ActorConditionStateData state,
+            ActorMedicalStateData medicalState, ActorProfileConsciousness profile, bool alive)
+        {
+            if (state == null || state.unconsciousDwellRemainingSeconds.HasValue || profile == null)
+                return;
+            float pain = Mathf.Clamp01(medicalState.wounds.Sum(wound => wound.painContribution));
+            bool unconscious = alive && CalculateStability(state.bloodFraction, state.transientTrauma,
+                pain, profile.pain_tolerance, profile.blood_pressure_start_fraction,
+                profile.fatal_blood_fraction, profile.consciousness_resilience) < profile.unconscious_threshold;
+            state.unconsciousRecoveryPending = unconscious;
+            state.unconsciousDwellRemainingSeconds = unconscious ? profile.minimum_unconscious_real_seconds : 0d;
+        }
+
+        private ActorFunctionalState ResolveFunctionalState(float stability, ActorFunctionalState startingState)
         {
             ActorFunctionalState thresholdState = ResolveThresholdState(stability);
-            if (thresholdState >= FunctionalState)
+            if (thresholdState >= startingState)
                 return thresholdState;
 
-            ActorFunctionalState recovered = FunctionalState;
+            ActorFunctionalState recovered = startingState;
             while (recovered > thresholdState && stability >= RecoveryThreshold(recovered))
                 recovered = (ActorFunctionalState)((int)recovered - 1);
             return recovered;

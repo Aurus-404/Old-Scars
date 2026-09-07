@@ -418,6 +418,15 @@ namespace OldScars.Core.Persistence
                         itemStates[index].firearmState = new FirearmItemState { ammoProfileId = null, loadedRounds = 0 };
                 }
                 CurrentSliceValidationResult validation = Validate(snapshot);
+                if (validation.Success)
+                {
+                    ActorConditionComponent.NormalizeLegacyDwell(snapshot.player.conditionState,
+                        snapshot.player.medicalState, database.GetActorProfile(snapshot.player.actorProfileId)?.consciousness,
+                        snapshot.player.currentHealth > 0f);
+                    foreach (ActorState actor in actors)
+                        ActorConditionComponent.NormalizeLegacyDwell(actor.conditionState, actor.medicalState,
+                            database.GetActorProfile(actor.actorProfileId)?.consciousness, actor.lifecycleState == AliveLifecycle);
+                }
                 return validation.Success ? new CurrentSliceResult(snapshot, null) : Failed(validation.Failure);
             }
             catch (Exception exception) when (exception is JsonException || exception is InvalidOperationException)

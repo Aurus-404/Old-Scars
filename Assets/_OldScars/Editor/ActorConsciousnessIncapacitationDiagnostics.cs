@@ -95,6 +95,8 @@ namespace OldScars.Editor
                     }
                     if (stage == 1)
                     {
+                        if (headActor.GetComponent<ActorConditionComponent>().IsUnconsciousDwellActive)
+                            return;
                         ProveIncapacitationRecoveryPersistenceAndBloodCollapse();
                         SessionState.SetInt(StageKey, 99);
                         EditorApplication.ExitPlaymode();
@@ -403,7 +405,10 @@ namespace OldScars.Editor
         private static ActorConditionStateData StateForStability(float stability) => new ActorConditionStateData
         {
             bloodFraction = 1f,
-            transientTrauma = 1f - stability
+            transientTrauma = 1f - stability,
+            // This fixture isolates hysteresis after the minimum has elapsed.
+            unconsciousDwellRemainingSeconds = 0d,
+            unconsciousRecoveryPending = stability < 0.2f
         };
 
         private static ActorRuntimeIdentity Spawn(string profileId, Vector3 position)

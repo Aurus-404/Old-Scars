@@ -61,6 +61,7 @@ namespace OldScars.Core.Data.Definitions
         public float trauma_recovery_per_game_hour;
         public float blood_recovery_per_game_hour = 0.02f;
         public float recovery_hysteresis = 0.05f;
+        public float minimum_unconscious_real_seconds = 5f;
     }
 
     [System.Serializable]

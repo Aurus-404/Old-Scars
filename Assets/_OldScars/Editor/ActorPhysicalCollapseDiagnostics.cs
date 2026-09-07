@@ -86,7 +86,8 @@ namespace OldScars.Editor
                             }
                             break;
                         case 2:
-                            if (Time.time - stageStartedAt >= 0.25f)
+                            if (Time.time - stageStartedAt >= 0.25f &&
+                                !unconsciousActor.GetComponent<ActorConditionComponent>().IsUnconsciousDwellActive)
                             {
                                 ProveRestoredCollapseAndRecover();
                                 SetStage(3);
@@ -265,10 +266,11 @@ namespace OldScars.Editor
                 "Recovered encounter AI did not leave its incapacitated state.");
             if (encounter != null)
                 encounter.enabled = false;
+            ActorBehaviorController behavior = unconsciousActor.GetComponent<ActorBehaviorController>();
             navigationStart = unconsciousActor.transform.position;
-            Require(navigation.TryNavigate(
-                    MarkerPosition(M41SampleSceneNavigationTools.GoalName), out ActorNavigationResult result) && result.Accepted,
-                "Recovered NPC could not accept a real navigation order: " + result.Detail);
+            Require(behavior != null && behavior.EnterEncounter("Physical collapse diagnostic recovery navigation") &&
+                    behavior.TryNavigateEncounter(MarkerPosition(M41SampleSceneNavigationTools.GoalName)),
+                "Recovered NPC could not accept a real navigation order through Behavior ownership.");
         }
 
         private static bool ProveNavigationResumed()
