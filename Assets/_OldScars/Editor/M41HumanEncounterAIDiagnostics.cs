@@ -46,6 +46,8 @@ namespace OldScars.Editor
         private static int woundsAfterFirstShot;
         private static int attacksAfterFirstShot;
         private static int planAttempts;
+        private static int reacquisitionContext;
+        private static int reacquisitionResumes;
         private static double assertionTime;
         public static string CurrentManualScenario => SessionState.GetString(ManualScenarioKey, "<NONE>");
 
@@ -326,13 +328,24 @@ namespace OldScars.Editor
                     barrier.SetActive(false);
                     PlaceThreatForReacquisition();
                     Physics.SyncTransforms();
+                    Require(controller.RecentEnemyActorInstanceId == threat.ActorInstanceId,
+                        "Search expiry erased recent enemy identity before its independent memory window.");
+                    reacquisitionContext = controller.CombatContextSequence;
+                    reacquisitionResumes = controller.CombatContinuityResumeCount;
+                    transitionRevision = controller.TransitionRevision;
                     Require(controller.TryAssignThreat(threat, out string reacquireError), "Explicit reacquisition failed: " + reacquireError);
                     deadline = Now + 2d;
                     stage = 13;
                     break;
                 case 13:
-                    if (controller.State != HumanEncounterAIState.Alerted)
+                    Require(controller.State != HumanEncounterAIState.Alerted,
+                        "Recent recognized enemy restarted Alerted instead of continuing its combat context.");
+                    if (controller.State != HumanEncounterAIState.Fighting)
                         return;
+                    Require(controller.LastPerception.Perceived && controller.CombatContextSequence == reacquisitionContext &&
+                            controller.CombatContinuityResumeCount == reacquisitionResumes + 1 &&
+                            controller.TransitionRevision == transitionRevision + 1,
+                        "Explicit reacquisition did not resume one context through fresh perception.");
                     Require(controller.HasLastKnownPosition && !Near(controller.LastKnownPosition, frozenLastKnown, 0.1f),
                         "Reacquisition did not refresh last-known position from a positive perception.");
                     Require(EquippedFirearm(out ItemInstance beforeDeath), "Fighter lost equipped firearm before lifecycle test.");

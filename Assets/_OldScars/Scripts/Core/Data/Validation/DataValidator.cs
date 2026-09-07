@@ -731,6 +731,7 @@ namespace OldScars.Core.Data.Validation
                 report.Error($"{context}: 'response_policy' must be exactly 'avoid', 'flee' or 'fight'.");
             RequireFinitePositive(ai.alert_duration_seconds, "alert_duration_seconds", context);
             RequireFinitePositive(ai.lost_contact_timeout_seconds, "lost_contact_timeout_seconds", context);
+            RequireFinitePositive(ai.recent_enemy_memory_seconds, "recent_enemy_memory_seconds", context);
             RequireFinitePositive(ai.avoid_distance, "avoid_distance", context);
             RequireFinitePositive(ai.flee_distance, "flee_distance", context);
             RequireFinitePositive(ai.preferred_combat_distance, "preferred_combat_distance", context);

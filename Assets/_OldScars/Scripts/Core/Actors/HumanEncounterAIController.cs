@@ -72,6 +72,11 @@ namespace OldScars.Core.Actors
         private ActorMedicalStateComponent medical;
         private ActorWoundTreatmentController woundTreatment;
         private ActorRuntimeIdentity threat;
+        private ActorRuntimeIdentity recentEnemy;
+        private double recentEnemyRemainingSeconds;
+        private double recentEnemyLastRealTime;
+        private bool recentEnemyWasCapable;
+        private bool pendingCombatContinuity;
         private HumanEncounterResponse configuredResponse;
         private HumanEncounterResponse? responseOverride;
         private bool configured;
@@ -112,6 +117,7 @@ namespace OldScars.Core.Actors
 
         private float alertDuration;
         private float lostContactTimeout;
+        private float recentEnemyMemorySeconds;
         private float avoidDistance;
         private float fleeDistance;
         private float preferredCombatDistance;
@@ -122,6 +128,10 @@ namespace OldScars.Core.Actors
         public HumanEncounterResponse Response => responseOverride ?? configuredResponse;
         public ActorRuntimeIdentity Threat => threat;
         public string ThreatActorInstanceId => threat != null ? threat.ActorInstanceId : null;
+        public string RecentEnemyActorInstanceId => recentEnemy != null ? recentEnemy.ActorInstanceId : null;
+        public double RecentEnemyRemainingSeconds => recentEnemyRemainingSeconds;
+        public int CombatContextSequence { get; private set; }
+        public int CombatContinuityResumeCount { get; private set; }
         public bool HasLastKnownPosition => hasLastKnownPosition;
         public Vector3 LastKnownPosition => lastKnownPosition;
         public double LastSeenTime => lastSeenTime;
@@ -182,6 +192,7 @@ namespace OldScars.Core.Actors
             ResolveReferences();
             if (!configured)
                 return;
+            UpdateRecentEnemyMemory();
             if (identity == null || health == null || identity.LifecycleState == ActorLifecycleState.Dead || health.IsDead)
             {
                 woundTreatment?.Cancel("Actor lifecycle became Dead");
@@ -226,6 +237,7 @@ namespace OldScars.Core.Actors
             gaze?.ReleaseEncounterAttention();
             threat = null;
             responseOverride = null;
+            ClearRecentEnemy();
             ClearEncounterMemory();
             ClearSearchMemory(false);
             ResetPlanLatch();
@@ -240,7 +252,8 @@ namespace OldScars.Core.Actors
                 !FinitePositive(profile.alert_duration_seconds) || !FinitePositive(profile.lost_contact_timeout_seconds) ||
                 !FinitePositive(profile.avoid_distance) || !FinitePositive(profile.flee_distance) ||
                 profile.flee_distance <= profile.avoid_distance || !FinitePositive(profile.preferred_combat_distance) ||
-                !FinitePositive(profile.decision_interval_seconds) || !FinitePositive(profile.replan_distance))
+                !FinitePositive(profile.decision_interval_seconds) || !FinitePositive(profile.replan_distance) ||
+                !FinitePositive(profile.recent_enemy_memory_seconds))
             {
                 error = "Encounter AI requires a canonical response policy and finite positive tuning; flee_distance must exceed avoid_distance.";
                 return false;
@@ -256,6 +269,7 @@ namespace OldScars.Core.Actors
             configuredResponse = response;
             alertDuration = profile.alert_duration_seconds;
             lostContactTimeout = profile.lost_contact_timeout_seconds;
+            recentEnemyMemorySeconds = profile.recent_enemy_memory_seconds;
             avoidDistance = profile.avoid_distance;
             fleeDistance = profile.flee_distance;
             preferredCombatDistance = profile.preferred_combat_distance;
@@ -265,6 +279,7 @@ namespace OldScars.Core.Actors
                 deterministicAimSeed = StableHash(identity.ActorProfileId);
             resolvedSelfTreatmentCalmSeconds = ResolveSelfTreatmentCalmSeconds();
             configured = true;
+            ClearRecentEnemy();
             ReleaseEncounter("Profile configured");
             return true;
         }
@@ -305,6 +320,10 @@ namespace OldScars.Core.Actors
                 error = "Behavior ownership rejected Encounter while the actor cannot act.";
                 return false;
             }
+            UpdateRecentEnemyMemory();
+            if (recentEnemy != target)
+                ClearRecentEnemy();
+            pendingCombatContinuity = recentEnemy == target;
             threat = target;
             responseOverride = null;
             ClearEncounterMemory();
@@ -380,6 +399,7 @@ namespace OldScars.Core.Actors
             LastPerception = perception.Evaluate(threat);
             if (LastPerception.Perceived)
             {
+                RememberObservedEnemy();
                 if (State == HumanEncounterAIState.Searching)
                 {
                     if (!behavior.ReturnSearchToEncounter("Search reacquired perceived threat"))
@@ -991,6 +1011,63 @@ namespace OldScars.Core.Actors
             lastSeenTime = double.NaN;
             LastPerception = default;
             IsClosingDistance = false;
+        }
+
+        // Identity/context only. Spatial truth remains in Perception/LKP/Search.
+        // Memory never assigns a Threat, steers Gaze, or starts an action.
+        private void UpdateRecentEnemyMemory()
+        {
+            double now = Time.realtimeSinceStartupAsDouble;
+            bool capable = identity != null && health != null && !health.IsDead &&
+                identity.LifecycleState == ActorLifecycleState.Alive &&
+                (condition == null || condition.CanPerformActiveActions);
+            if (recentEnemy != null)
+            {
+                if (!recentEnemy.IsRegistered || recentEnemy.LifecycleState == ActorLifecycleState.Dead ||
+                    identity == null || health == null || health.IsDead || identity.LifecycleState == ActorLifecycleState.Dead)
+                    ClearRecentEnemy();
+                else if (capable && recentEnemyWasCapable)
+                {
+                    recentEnemyRemainingSeconds = Math.Max(0d, recentEnemyRemainingSeconds - Math.Max(0d, now - recentEnemyLastRealTime));
+                    if (recentEnemyRemainingSeconds == 0d)
+                        ClearRecentEnemy();
+                }
+            }
+            else if (recentEnemyRemainingSeconds > 0d)
+                ClearRecentEnemy(); // Unity destroyed-object reference.
+            recentEnemyLastRealTime = now;
+            recentEnemyWasCapable = capable;
+        }
+
+        private void RememberObservedEnemy()
+        {
+            if (Response != HumanEncounterResponse.Fight)
+                return;
+            if (recentEnemy != threat)
+            {
+                recentEnemy = threat;
+                CombatContextSequence++;
+            }
+            else if (pendingCombatContinuity)
+            {
+                CombatContinuityResumeCount++;
+                Debug.Log($"[AI][COMBAT_CONTINUITY_RESUMED]\n  Actor: {identity.ActorInstanceId}\n  Enemy: {recentEnemy.ActorInstanceId}\n  Context: {CombatContextSequence}");
+                // Acquisition already recognized this candidate, and this evaluation
+                // supplied fresh perception. Resume the prior combat without a new alert.
+                if (State == HumanEncounterAIState.Idle)
+                    Transition(HumanEncounterAIState.Fighting, "Recognized recent enemy; combat context resumed");
+            }
+            pendingCombatContinuity = false;
+            recentEnemyRemainingSeconds = recentEnemyMemorySeconds;
+            recentEnemyLastRealTime = Time.realtimeSinceStartupAsDouble;
+            recentEnemyWasCapable = true;
+        }
+
+        private void ClearRecentEnemy()
+        {
+            recentEnemy = null;
+            recentEnemyRemainingSeconds = 0d;
+            pendingCombatContinuity = false;
         }
 
         private void ClearSearchMemory(bool resetOutcome)

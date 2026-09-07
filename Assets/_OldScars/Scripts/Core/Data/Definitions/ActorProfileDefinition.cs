@@ -90,6 +90,7 @@ namespace OldScars.Core.Data.Definitions
         public string response_policy;
         public float alert_duration_seconds;
         public float lost_contact_timeout_seconds;
+        public float recent_enemy_memory_seconds = 60f;
         public float avoid_distance;
         public float flee_distance;
         public float preferred_combat_distance;
