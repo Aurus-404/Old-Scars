@@ -8,7 +8,7 @@ Este archivo es el snapshot operativo breve. `Project_Roadmap.md` conserva IDs/d
 
 Estado operativo:
 
-`IN PROGRESS — P2 DONE/PUBLISHED; NEXT P3 KO CONTINUITY`
+`IN PROGRESS — P3 DONE/PUBLISHED; NEXT P4 PRUEBA 3.3`
 
 Plan activo: `NPC_AI_Sanitation_Plan.md`.
 
@@ -42,17 +42,19 @@ P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aa
 
 F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
 
-## P2 cerrado — próximo paso exacto P3
+## P2 y P3 cerrados — próximo paso exacto P4
 
 P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED** el 2026-09-07 en `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Condition compartida Player/NPC; Core `5 s` es tuning inicial de prueba, no balance final. Current Slice v1 conserva restante y continuidad de recuperación; offline no consume el mínimo y un save legacy que deriva Unconscious inicia el mínimo completo. Diagnostic P2, sesión Play nueva y siete regresiones proporcionales PASS. No sustituye aceptación manual integrada de M41.
 
-Próximo: **P3 — KO / combat-memory continuity** (`ISSUE-0020`, `IMPL-0014`). No iniciado.
+P3 — KO / combat-memory continuity: **DONE / PUBLISHED** el 2026-09-07 en `394d01886b8c6697ca2d492c4450282f561ba688`. Encounter conserva una identidad reciente separada de Threat, sin posición ni Search propia. La ventana real configurable de `60 s` Core es tuning provisional; se pausa sólo durante incapacidad propia y se renueva con observaciones legítimas. Recovery requiere Recognition/Perception y retoma el contexto sin otro ciclo Alerted. Death/invalidation/expiry/reemplazo limpian el recuerdo; memoria sola no bloquea treatment ni AmbientTopOff. Diagnostic P3 y ocho regresiones proporcionales PASS; ISSUE-0020 RESOLVED, IMPL-0014 DONE.
+
+Próximo: **P4 — Prueba 3.3**. No iniciado; aceptación manual integrada de M41 pendiente.
 
 ## Orden operativo aprobado para cerrar M41
 
 1. **P1 — F6 DONE / ACCEPTED / PUBLISHED**, Correction Pass B cerrado.
 2. **P2 — minimum real-time KO dwell: DONE / PUBLISHED**; physiology sigue siendo autoridad después del mínimo.
-3. **P3 — KO / combat-memory continuity**: recordar identidad/contexto mínimo sin conservar al KO como threat activo ni otorgar posición oculta.
+3. **P3 — KO / combat-memory continuity: DONE / PUBLISHED**; identidad/contexto mínimo separado del threat activo y sin posición oculta.
 4. **P4 — Prueba 3.3**: 1 Blue vs 1 Red, Player Invisible ON, observabilidad simultánea, KO/recovery/contexto interpretable.
 5. **P5 — F8A Aim Bias Evidence**: medir antes de cambiar aim/accuracy.
 6. **P6 — F8B/C y F8D sólo si la evidencia lo justifica**: Primary Aim Point genérico y comparación controlada; ningún retuning por intuición.
@@ -106,7 +108,6 @@ Antes de este bloque debe resolverse `ISSUE-0022` para que recargar/disparar no 
 - `ISSUE-0008` — posible sesgo de impactos piernas/pies; medir en F8A antes de tocar gameplay.
 - `ISSUE-0023` — posible desajuste eye origin/representación humana; SUSPECTED.
 - `ISSUE-0012` — falta Player Debug Invincible.
-- `ISSUE-0020` — KO borra contexto de enemigo.
 - `ISSUE-0022` — munición cargada deja de contribuir correctamente a la masa agregada.
 
 ## Reglas de alcance

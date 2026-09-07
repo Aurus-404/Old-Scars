@@ -42,15 +42,6 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Plan:** después de estabilizar KO y F8 targeting. Pipeline real detection→shot→region→wounds/trauma/bleeding/condition continúa, pero QA puede bloquear coherentemente terminal Dead. OFF = gameplay normal.
 - **Riesgo conocido:** no basta con saltar `ProcessDeath`; `IsDead`, lifecycle y fatal blood loss deben seguir consistentes.
 
-### ISSUE-0020 — Incapacidad temporal borra contexto de enemigo y reinicia el combate
-- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`
-- **Origen:** Prueba 3.1/3.2 + código, 2026-09-03.
-- **Síntoma:** `Fight → KO → rival Ambient → KO recovery → rediscovery → encounter nuevo`.
-- **Causa:** acquisition deja de aceptar como current threat a quien no puede realizar active actions; `EnterInactive/ReleaseEncounter` limpian threat/contexto. Se mezcla `no es amenaza activa ahora` con `ya no recuerdo a este enemigo`.
-- **Decisión de producto:** atacante deja de golpear al KO, pero ambos conservan identidad/contexto mínimo del enemigo reciente. Memory no otorga posición actual; Perception/LKP/Search siguen siendo autoridad espacial. Death terminal.
-- **Plan operativo:** ejecutar DESPUÉS de ISSUE-0021 para estabilizar primero la transición funcional de Unconscious. El recuerdo no debe equivaler a `Threat != null` ni bloquear por sí solo self-treatment/AmbientTopOff.
-- **No hacer:** MemorySystem/blackboard/planner general.
-
 ### ISSUE-0022 — Loaded ammo desaparece del cálculo de carry mass
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`
 - **Origen:** auditoría Carry Weight + revisión de repo, 2026-09-06.
@@ -70,13 +61,21 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 
 ## Issues resueltos / historial
 
+### ISSUE-0020 — Incapacidad temporal borra contexto de enemigo y reinicia el combate
+- **Tipo/estado/severidad:** `BUG` · `RESOLVED` · `P1 / ORANGE`
+- **Origen/causa:** Prueba 3.1/3.2 + código, 2026-09-03. Acquisition libera al target sin capacidad activa y `EnterInactive/ReleaseEncounter` limpiaba todo el contexto: `Fight → KO → Ambient → recovery → encounter nuevo`.
+- **Corrección/publicación:** P3, `394d01886b8c6697ca2d492c4450282f561ba688`, 2026-09-07. Una identidad/contexto reciente en Encounter, separada de Threat, sin posición. Ambos lados conservan continuidad; no hay ataques deliberados al KO. Reacquisition exige Recognition/Perception y retoma Fighting sin otro Alerted.
+- **Expiración:** `recent_enemy_memory_seconds`, `60 s` Core provisional, no balance final; tiempo real pausado sólo por incapacidad propia y renovado por observaciones legítimas. Expiry/death/invalidation/reemplazo limpia. No MemorySystem ni Search nueva.
+- **Validación:** P3 PASS: KO con rival armado, tratamiento y AmbientTopOff con memoria, recovery visible/oculto, reconocimiento gradual, ausencia de posición oculta, expiración, muerte, retirada del runtime y reemplazo. Ocho regresiones PASS: P2, Human Encounter, Behavior ownership, Search, Gaze/Perception, Timed Bandaging, Opportunistic Reload y M38 lifecycle. Fixture Human Encounter actualizado a continuidad real sin relajar percepción/LKP; sin cambio de gameplay adicional.
+- **Siguiente:** P4 Prueba 3.3, no iniciado; aceptación manual integrada de M41 pendiente.
+
 ### ISSUE-0021 — Knockout/Unconscious sin minimum real-time dwell
 - **Tipo/estado/severidad:** `DESIGN_DEBT` · `RESOLVED` · `P1 / ORANGE`
 - **Origen/causa:** Prueba 3.1/3.2 + revisión Condition/WorldClock, 2026-09-03; recovery fisiológico acelerado carecía de un mínimo real explícito.
 - **Corrección/publicación:** P2, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`, 2026-09-07. Gate por episodio en Condition compartida Player/NPC; Core `5 s` inicial de prueba, no balance final. No extiende Incapacitated ni fuerza wake-up; physiology y Death continúan.
 - **Persistencia:** Current Slice v1 guarda restante/continuidad; offline no consume el mínimo. Legacy que deriva Unconscious recibe mínimo completo, sin migración de schema.
 - **Validación:** P2 x1 `5.001 s`, x100 `5.002 s`, configuración `0.3 s`, sesión Play nueva con `4.000 s` preservados después de más de `6 s` offline, invalid preflight/rollback exacto; Consciousness, Collapse, M39, M38, Human Encounter, Behavior ownership y Timed Bandaging/NPC Self-Treatment PASS.
-- **Siguiente:** P3 / `ISSUE-0020`, no iniciado.
+- **Continuidad posterior:** P3 / `ISSUE-0020` DONE/PUBLISHED; siguiente P4 Prueba 3.3, no iniciado.
 
 ### ISSUE-0024 — Fixture de collapse enviaba navegación fuera de Behavior ownership
 - **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P2 / YELLOW`

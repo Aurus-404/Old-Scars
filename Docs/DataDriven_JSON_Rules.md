@@ -376,6 +376,12 @@ Ejemplo de item-owned storage profile:
 - `minimum_unconscious_real_seconds` es finito y estrictamente positivo; un profile anterior que lo omite recibe `5.0`. Core lo declara en sus 11 profiles como valor inicial de prueba, no balance final. Mide tiempo real de ejecución y no game hours; aplica sólo a entradas en Unconscious, sin reiniciar el mismo episodio por daño o recálculo;
 - estas Definitions no guardan blood, trauma ni estado funcional runtime. Current Slice persiste ese estado de instancia por su contrato existente.
 
+### Actor Profiles: memoria reciente de combate
+
+`ActorProfileDefinition.encounter_ai.recent_enemy_memory_seconds` es finito y estrictamente positivo, validado tanto por DataValidator como por Encounter. Core declara `60.0` en sus cuatro bloques Encounter como tuning inicial de prueba, no balance final; profiles anteriores que omiten el campo reciben ese mismo default. No depende de `lost_contact_timeout_seconds` ni de WorldClock.
+
+La duración limita una identidad/contexto runtime en `HumanEncounterAIController`, sin guardar posiciones ni constituir Threat. Consume tiempo real sólo mientras el dueño puede actuar; incapacidad propia pausa el restante y observaciones legítimas del enemigo Fight lo renuevan. La incapacidad oculta del rival no pausa el reloj. Death/invalidation/expiry/reemplazo termina el recuerdo. Esta Definition no almacena memoria de instancia ni introduce campos de save.
+
 ### Actor Profiles: inventario y Equipment inicial
 
 `ActorProfileDefinition` puede declarar dos listas independientes:

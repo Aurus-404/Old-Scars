@@ -81,12 +81,14 @@ F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor P
 
 ### Secuencia operativa aprobada para cerrar M41
 
-P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED**, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Core `5 s` inicial de prueba; restante durable en Current Slice v1, sin progreso offline y legacy seguro. P2 y regresiones proporcionales PASS; siguiente trabajo P3, no iniciado. La aceptación manual integrada de M41 sigue pendiente.
+P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED**, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Core `5 s` inicial de prueba; restante durable en Current Slice v1, sin progreso offline y legacy seguro. P2 y regresiones proporcionales PASS.
+
+P3 — KO / combat-memory continuity: **DONE / PUBLISHED**, `394d01886b8c6697ca2d492c4450282f561ba688`. Memory != Threat; una identidad sin posición en Encounter, ventana real `60 s` Core provisional pausada sólo por incapacidad propia, reacquisition legítima y cleanup terminal. P3 y ocho regresiones PASS. Siguiente trabajo P4 Prueba 3.3, no iniciado; aceptación manual integrada de M41 pendiente.
 
 1. F6 / Correction Pass B cerrado, aceptado y publicado;
 2. minimum real-time KO dwell cerrado y publicado;
-3. P3 — KO / combat-memory continuity, próximo;
-4. Prueba 3.3 1 Blue vs 1 Red limpia;
+3. P3 — KO / combat-memory continuity cerrado y publicado;
+4. P4 — Prueba 3.3 1 Blue vs 1 Red limpia, próximo;
 5. F8A Aim Bias Evidence;
 6. F8B/C y F8D sólo según evidencia;
 7. Player Debug Invincible;

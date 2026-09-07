@@ -161,13 +161,14 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0014 — Continuidad de memoria de combate durante KO temporal
 
-- **Estado:** `READY — AFTER IMPL-0015`.
+- **Estado:** `DONE / PUBLISHED`, P3 `394d01886b8c6697ca2d492c4450282f561ba688`, 2026-09-07.
 - **Fecha/origen:** 2026-09-03 — Prueba 3.1/3.2 + decisión de producto.
 - **Qué queremos:** al incapacitar/noquear a un enemigo, dejar de tratarlo como amenaza activa y detener ataques deliberados, pero conservar identidad/contexto mínimo del enemigo reciente. Recovery puede reanudar conflicto sin redescubrimiento artificial.
-- **Por qué:** el contrato actual produce `KO → Ambient → recovery → rediscovery → encounter nuevo`.
+- **Por qué:** el contrato anterior producía `KO → Ambient → recovery → rediscovery → encounter nuevo`.
 - **Trigger/dependencias:** después de estabilizar el minimum KO dwell; antes de Prueba 3.3.
 - **Límites:** memoria no entrega posición oculta; Perception/LKP/Search siguen siendo autoridad espacial. Recordar identidad no equivale a `Threat != null` y no debe bloquear por sí solo self-treatment/AmbientTopOff. Death sigue terminal. Sin MemorySystem/blackboard/planner.
 - **Relación:** `ISSUE-0020`.
+- **Implementado/validado:** una identidad reciente en Encounter, separada de Threat y sin posición; ventana real configurable `60 s` Core provisional, pausada por incapacidad propia y renovada por observaciones legítimas. Recognition/Perception reanuda Fighting sin otro Alerted; expiry/death/invalidation/reemplazo limpia. P3 y ocho regresiones PASS, sin bloquear routine treatment ni AmbientTopOff. Próximo P4 Prueba 3.3; no ejecutado.
 
 ## IMPL-0015 — Minimum real-time knockout dwell
 

@@ -30,9 +30,9 @@ Referencia: `IMPL-0015`, `ISSUE-0021`.
 
 ### 3. P3 — KO / combat-memory continuity
 
-Estado: `NEXT — P2 DONE / PUBLISHED`. No iniciado.
+Estado: `DONE / PUBLISHED`, `394d01886b8c6697ca2d492c4450282f561ba688`, 2026-09-07.
 
-Problema confirmado:
+Problema resuelto:
 
 `Fight → KO → context/threat cleanup → Ambient → recovery → rediscovery → encounter nuevo`.
 
@@ -48,13 +48,15 @@ Contrato:
 - death/invalidation terminan la continuidad;
 - no crear MemorySystem/blackboard/planner general.
 
-Regresiones obligatorias: Search, Timed Bandaging/NPC self-treatment, Opportunistic Reload, Behavior ownership.
+Ventana `encounter_ai.recent_enemy_memory_seconds`: Core `60 s` provisional, no balance final; tiempo real pausado sólo por incapacidad propia, renovado por observaciones legítimas. Memoria efímera de una identidad, sin posición ni persistencia.
+
+Diagnostic P3 y regresiones P2 dwell, Human Encounter, Behavior ownership, Search, Gaze/Perception, Timed Bandaging/NPC self-treatment, Opportunistic Reload y Actor Lifecycle PASS.
 
 Referencia: `IMPL-0014`, `ISSUE-0020`.
 
 ### 4. P4 — Prueba 3.3 limpia
 
-Estado: `GATE BEFORE F8A`.
+Estado: `NEXT — GATE BEFORE F8A`. No iniciado.
 
 Escenario:
 

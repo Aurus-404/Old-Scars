@@ -211,9 +211,9 @@ No cambiar trauma/blood balance por esta tarea.
 
 ## P3 — KO / combat-memory continuity
 
-**Estado:** `NEXT — P2 DONE / PUBLISHED`. No iniciado.
+**Estado:** `DONE / PUBLISHED`, `394d01886b8c6697ca2d492c4450282f561ba688`, 2026-09-07.
 
-Después de estabilizar la transición funcional:
+Implementado después de estabilizar la transición funcional:
 
 - conservar identidad/contexto mínimo;
 - no mantener al KO como threat activo;
@@ -223,9 +223,11 @@ Después de estabilizar la transición funcional:
 - Search/Perception siguen siendo autoridad espacial;
 - treatment/reload siguen coherentes.
 
+Una identidad efímera en Encounter, sin posición ni nueva autoridad. Ventana `recent_enemy_memory_seconds` de `60 s` Core provisional; pausa sólo durante incapacidad propia, renovación por observaciones legítimas, cleanup por expiry/death/invalidation/reemplazo. Reacquisition pasa por Recognition/Perception y continúa Fighting sin otro Alerted. P3 y ocho regresiones proporcionales PASS; aceptación manual integrada corresponde a P4.
+
 ## P4 — Prueba 3.3
 
-**Estado:** `GATE BEFORE F8A`.
+**Estado:** `NEXT — GATE BEFORE F8A`. No iniciado.
 
 1 Blue vs 1 Red:
 
