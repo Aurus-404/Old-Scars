@@ -12,7 +12,7 @@ F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor P
 
 ### 2. P2 — Minimum real-time KO dwell
 
-Estado: `NEXT`.
+Estado: `DONE / PUBLISHED` — `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`, 2026-09-07. Core `5 s` inicial de prueba, no balance definitivo; diagnostic P2 y regresiones proporcionales PASS.
 
 Objetivo:
 
@@ -22,7 +22,7 @@ Objetivo:
 - `WorldClock` acelerado no reduce ese mínimo;
 - death sigue terminal.
 
-Antes de implementar, resolver explícitamente la semántica de save/load para que cargar no permita saltar el mínimo por accidente.
+Current Slice v1 persiste el tiempo real restante y la continuidad de Unconscious. Load reanuda el restante; offline no lo consume. Saves legacy que derivan Unconscious reciben un mínimo completo. Sin cambio de schema.
 
 No convertir toda `Incapacitated` en KO por conveniencia.
 
@@ -30,7 +30,7 @@ Referencia: `IMPL-0015`, `ISSUE-0021`.
 
 ### 3. P3 — KO / combat-memory continuity
 
-Estado: `NEXT AFTER KO DWELL`.
+Estado: `NEXT — P2 DONE / PUBLISHED`. No iniciado.
 
 Problema confirmado:
 

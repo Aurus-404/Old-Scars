@@ -171,13 +171,14 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0015 — Minimum real-time knockout dwell
 
-- **Estado:** `READY — NEXT (P2)`.
+- **Estado:** `DONE / PUBLISHED (P2)` — `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`, 2026-09-07.
 - **Fecha/origen:** 2026-09-03 — Prueba 3.1/3.2 + decisión de producto.
 - **Qué queremos:** mínimo configurable de tiempo real durante el cual un actor realmente `Unconscious` no puede recuperar active behavior. Después del mínimo, `ActorConditionComponent`/fisiología vigente decide si puede despertar.
 - **Por qué:** `WorldClock` acelerado puede cruzar thresholds demasiado rápido en tiempo real.
 - **Trigger/dependencias:** después de F6 aceptado/publicado; antes de `IMPL-0014` y Prueba 3.3.
 - **Límites:** no extender automáticamente a toda `Incapacitated`; no reemplazar physiology/thresholds; el timer no fuerza wake-up; death terminal; no crear otro reloj global. Save/load debe tener semántica que no permita bypass accidental.
 - **Relación:** `ISSUE-0021`.
+- **Implementado/validado:** gate en Condition compartida, `5 s` Core inicial de prueba, restante durable sin progreso offline, legacy seguro; P2 x1/x100, sesión Play nueva y regresiones proporcionales PASS. No balance final ni P3.
 
 ## IMPL-0016 — Integrar visuales de equipment en `humanoid_standard`
 

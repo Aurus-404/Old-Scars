@@ -195,11 +195,11 @@ F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor P
 
 ## P2 — Minimum real-time KO dwell
 
-**Estado:** `NEXT`.
+**Estado:** `DONE / PUBLISHED` — `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`, 2026-09-07.
 
-Primero estabilizar cuándo un actor `Unconscious` puede volver a active behavior.
+Condition aplica un mínimo real configurable sólo a Unconscious. Core `5 s` es valor inicial de prueba, no balance final. Current Slice v1 guarda restante y continuidad; offline no consume dwell, legacy que deriva Unconscious inicia mínimo completo.
 
-Validar:
+Validado PASS:
 
 - x1/x100 WorldClock;
 - recovery physiology antes/después del mínimo;
@@ -211,7 +211,7 @@ No cambiar trauma/blood balance por esta tarea.
 
 ## P3 — KO / combat-memory continuity
 
-**Estado:** `NEXT AFTER P2`.
+**Estado:** `NEXT — P2 DONE / PUBLISHED`. No iniciado.
 
 Después de estabilizar la transición funcional:
 

@@ -32,7 +32,7 @@ Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renom
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
-| Próximo trabajo | P2 Minimum real-time KO dwell → KO memory → Prueba 3.3 → F8A Aim Bias Evidence |
+| Próximo trabajo | P3 KO / combat-memory continuity → Prueba 3.3 → F8A Aim Bias Evidence; P2 DONE / PUBLISHED |
 | Después | F8B/C condicional → F8D/E → Player Debug/Observability closeout → QA integrado → decisión explícita antes de otro sistema grande |
 
 ### Qué significa el estado actual de M41.4
@@ -66,7 +66,7 @@ Prueba 3 manual integrada
 Correction Pass:
   1. Player Invisible-to-AI mínimo
   2. F6 current-vs-last + multi-NPC mínimo: DONE / ACCEPTED / PUBLISHED
-  3. minimum real-time KO dwell (P2, NEXT)
+  3. minimum real-time KO dwell (P2, DONE / PUBLISHED: 9ca0335)
   4. KO / combat-memory continuity
     ↓
 Prueba 3.3 — 1 Blue vs 1 Red limpio

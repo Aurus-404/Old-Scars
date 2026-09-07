@@ -363,7 +363,8 @@ Ejemplo de item-owned storage profile:
     "fatal_blood_fraction": 0.08,
     "trauma_recovery_per_game_hour": 0.60,
     "blood_recovery_per_game_hour": 0.02,
-    "recovery_hysteresis": 0.05
+    "recovery_hysteresis": 0.05,
+    "minimum_unconscious_real_seconds": 5.0
   }
 }
 ```
@@ -372,6 +373,7 @@ Ejemplo de item-owned storage profile:
 - `recovery_hysteresis` es finito y positivo; eleva la frontera de recuperación de cada estado y el runtime la acota a estabilidad 1, sin exigir separación nueva entre thresholds legacy;
 - las tasas de recuperación de trauma y Blood son finitas y estrictamente positivas; se expresan por game hour y consumen exclusivamente avances de `WorldClock`;
 - `blood_recovery_per_game_hour` y `recovery_hysteresis` conservan defaults compatibles para profiles externos anteriores que omitan sólo esos campos; Core los declara explícitamente;
+- `minimum_unconscious_real_seconds` es finito y estrictamente positivo; un profile anterior que lo omite recibe `5.0`. Core lo declara en sus 11 profiles como valor inicial de prueba, no balance final. Mide tiempo real de ejecución y no game hours; aplica sólo a entradas en Unconscious, sin reiniciar el mismo episodio por daño o recálculo;
 - estas Definitions no guardan blood, trauma ni estado funcional runtime. Current Slice persiste ese estado de instancia por su contrato existente.
 
 ### Actor Profiles: inventario y Equipment inicial

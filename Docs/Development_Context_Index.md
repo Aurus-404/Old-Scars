@@ -51,7 +51,7 @@ Para auditorías sistémicas amplias, Astra puede usarse como investigador/arqui
 
 No repetir auditorías exhaustivas si el repo ya estableció el seam y el próximo trabajo sólo requiere implementación/validación.
 
-## Estado de continuidad al 2026-09-06
+## Estado de continuidad al 2026-09-07
 
 Bloque activo:
 
@@ -81,9 +81,11 @@ F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor P
 
 ### Secuencia operativa aprobada para cerrar M41
 
+P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED**, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Core `5 s` inicial de prueba; restante durable en Current Slice v1, sin progreso offline y legacy seguro. P2 y regresiones proporcionales PASS; siguiente trabajo P3, no iniciado. La aceptación manual integrada de M41 sigue pendiente.
+
 1. F6 / Correction Pass B cerrado, aceptado y publicado;
-2. minimum real-time KO dwell;
-3. KO / combat-memory continuity;
+2. minimum real-time KO dwell cerrado y publicado;
+3. P3 — KO / combat-memory continuity, próximo;
 4. Prueba 3.3 1 Blue vs 1 Red limpia;
 5. F8A Aim Bias Evidence;
 6. F8B/C y F8D sólo según evidencia;

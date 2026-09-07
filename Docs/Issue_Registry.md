@@ -51,13 +51,6 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Plan operativo:** ejecutar DESPUÉS de ISSUE-0021 para estabilizar primero la transición funcional de Unconscious. El recuerdo no debe equivaler a `Threat != null` ni bloquear por sí solo self-treatment/AmbientTopOff.
 - **No hacer:** MemorySystem/blackboard/planner general.
 
-### ISSUE-0021 — Knockout/Unconscious sin minimum real-time dwell
-- **Tipo/estado/severidad:** `DESIGN_DEBT` · `CONFIRMED` · `P1 / ORANGE`
-- **Origen:** Prueba 3.1/3.2 + revisión `ActorConditionComponent`/`WorldClock`, 2026-09-03.
-- **Gap confirmado:** no existe garantía explícita de permanencia mínima en `Unconscious`; recovery physiology corre sobre world time acelerado.
-- **Plan operativo:** P2 próximo tras F6 aceptado/publicado y ANTES de ISSUE-0020. Mínimo configurable de tiempo real mientras el actor realmente está `Unconscious`; después del mínimo physiology/thresholds/hysteresis siguen decidiendo si puede despertar.
-- **Límites:** no extender automáticamente a toda `Incapacitated`; no crear otro reloj global; cumplir el mínimo no fuerza wake-up; save/load no debe permitir bypass accidental.
-
 ### ISSUE-0022 — Loaded ammo desaparece del cálculo de carry mass
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`
 - **Origen:** auditoría Carry Weight + revisión de repo, 2026-09-06.
@@ -76,6 +69,20 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 ---
 
 ## Issues resueltos / historial
+
+### ISSUE-0021 — Knockout/Unconscious sin minimum real-time dwell
+- **Tipo/estado/severidad:** `DESIGN_DEBT` · `RESOLVED` · `P1 / ORANGE`
+- **Origen/causa:** Prueba 3.1/3.2 + revisión Condition/WorldClock, 2026-09-03; recovery fisiológico acelerado carecía de un mínimo real explícito.
+- **Corrección/publicación:** P2, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`, 2026-09-07. Gate por episodio en Condition compartida Player/NPC; Core `5 s` inicial de prueba, no balance final. No extiende Incapacitated ni fuerza wake-up; physiology y Death continúan.
+- **Persistencia:** Current Slice v1 guarda restante/continuidad; offline no consume el mínimo. Legacy que deriva Unconscious recibe mínimo completo, sin migración de schema.
+- **Validación:** P2 x1 `5.001 s`, x100 `5.002 s`, configuración `0.3 s`, sesión Play nueva con `4.000 s` preservados después de más de `6 s` offline, invalid preflight/rollback exacto; Consciousness, Collapse, M39, M38, Human Encounter, Behavior ownership y Timed Bandaging/NPC Self-Treatment PASS.
+- **Siguiente:** P3 / `ISSUE-0020`, no iniciado.
+
+### ISSUE-0024 — Fixture de collapse enviaba navegación fuera de Behavior ownership
+- **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P2 / YELLOW`
+- **Origen/evidencia:** regresión durante P2; tras recuperar, el fixture deshabilitaba Encounter y enviaba una orden directa a Navigation. Behavior retomaba Ambient y cancelaba la orden: actor upright, NavMesh válido, desplazamiento casi cero.
+- **Corrección:** `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`; el fixture espera el dwell restaurado y emite la orden por `EnterEncounter`/`TryNavigateEncounter`. Mantiene assertions de postura, colisión y desplazamiento real. Ningún cambio de gameplay/AI.
+- **Validación:** Actor Physical Collapse Diagnostics PASS, exit 0.
 
 ### ISSUE-0010 — Observabilidad global insuficiente para peleas multi-NPC
 - **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P1 / ORANGE`
