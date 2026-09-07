@@ -234,6 +234,19 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Trigger/dependencias:** Encumbrance compartido y seam locomotor estable; después definir severidad/recuperación de cada consumer.
 - **Límites:** Medical y Carry no deben conocerse entre sí; sin targeting de miembros, limb HP, framework universal ni curación implícita por vendaje.
 
+## IMPL-0022 — Contenedores especializados data-driven: filtros y stack local
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-07 — decisión de producto; caso inicial: cajetilla de cigarrillos.
+- **Qué queremos:** extender los contenedores existentes con restricciones de contenido data-driven. `canHold` debe aceptar selectores inequívocos por ID exacto, categoría o tag (por ejemplo `item:common_matches_01`, `category:tobacco`, `tag:tobacco.cigarette`) con semántica OR. El contenedor también debe poder imponer un límite de stack local por slot independiente del `maxStack` global del ítem.
+- **Contrato de stack:** el límite efectivo dentro de un slot especializado es `min(maxStack del ítem, maxStackPerSlot del contenedor)`. Ejemplo aprobado: cigarrillos `maxStack = 100` en inventario normal; cajetilla `1x1` con `maxStackPerSlot = 20` mantiene como máximo 20 dentro sin alterar el stack global del cigarrillo.
+- **Autoridad:** toda transferencia/inserción debe validar estas reglas en la autoridad central de inventario/transferencias; la UI sólo refleja el resultado. No crear inventarios específicos por objeto como `CigaretteBoxInventory`.
+- **Contenido inicial:** las reglas de aceptación (`canHold`) permanecen separadas de `initialContents`/loot inicial. Que un contenedor admita un ítem no implica que deba generarse con él.
+- **Por qué:** permite cajetillas, cajas de munición, botiquines, estuches y contenedores modded reutilizando el mismo sistema, y permite añadir nuevas variantes de contenido mediante tags/categorías sin editar cada contenedor.
+- **Trigger/dependencias:** cuando se retome la expansión de inventario/contenedores o aparezca el primer contenedor especializado productivo que necesite esta capacidad.
+- **Límites:** V1 sin expresiones booleanas complejas, query DSL, reglas AND/NOT ni frameworks paralelos de inventario. Mantener IDs/categorías/tags explícitos, data-driven y compatibles con modding.
+- **Relación:** Inventory/containers, item definitions, JSON/modding content pipeline.
+
 ---
 
 ## Regla de mantenimiento
