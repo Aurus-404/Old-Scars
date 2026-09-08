@@ -57,6 +57,14 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Evidencia/límite:** CURRENT representa el origen productivo actual; queda por comprobar su coincidencia visual con los ojos de la representación humana. Sin causa confirmada ni corrección en P1.
 - **Plan:** investigar en tarea separada antes de proponer cambios de eyeHeight, humanoid_standard o actor profiles; no reabrir Perception ni aim/F8 por este cierre.
 
+### ISSUE-0025 — x100 acelera fisiología sin acelerar acciones activas
+- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`
+- **Origen:** prueba manual posterior a P3, 2026-09-08.
+- **Síntoma:** durante combate con `WorldClock` x100 varios NPC pueden quedar `Incapacitated/Unconscious/Dead` en pocos segundos reales y la escena puede parecer detenida/colapsada.
+- **Causa:** el multiplicador debug acelera `WorldClock/GameTimeAdvanced`; bleeding, blood/trauma recovery y needs avanzan con game time, mientras Encounter AI, Navigation, wound treatment y minimum Unconscious dwell siguen usando tiempo real normal. No se observaron 100 substeps por frame ni `Time.timeScale = 100`.
+- **Impacto/alcance:** el comportamiento vuelve incoherente usar x100 durante combate activo, pero no invalida P2/P3 y no bloquea M41/F8. La mecánica x100 puede no sobrevivir al producto final.
+- **Plan:** dejar registrado y no corregir ahora. Si el fast-forward se conserva, definir primero su contrato; evitar retunear medicina, KO o AI sólo para compensar este tooling.
+
 ---
 
 ## Issues resueltos / historial
