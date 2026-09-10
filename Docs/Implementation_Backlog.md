@@ -248,6 +248,22 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Límites:** V1 sin expresiones booleanas complejas, query DSL, reglas AND/NOT ni frameworks paralelos de inventario. Mantener IDs/categorías/tags explícitos, data-driven y compatibles con modding.
 - **Relación:** Inventory/containers, item definitions, JSON/modding content pipeline.
 
+## IMPL-0023 — Placeables físicos data-driven y attachments al mundo
+
+- **Estado:** `PLANNED`.
+- **Prioridad:** `ALTA` — debe tratarse como restricción de diseño transversal desde ahora aunque su implementación completa sea futura.
+- **Fecha/origen:** 2026-09-10 — decisión de producto tras analizar Crewman Placeables de MTC y generalizar el concepto para Old Scars.
+- **Qué queremos:** un sistema general de entidades físicas placeable que puedan existir como objeto suelto/inventariable, colocarse en el mundo y, cuando sus reglas lo permitan, fijarse a vehículos u otras superficies. No debe ser un sistema exclusivo de vehículos.
+- **Contrato base:** cada placeable conserva datos propios data-driven relevantes para sus interacciones: material/categorías/tags, masa física y, cuando corresponda, propiedades balísticas como espesor/blindaje de sus superficies. La compatibilidad de montaje debe depender de propiedades de la pieza, la superficie receptora y el método/herramienta requerido, no de listas hardcodeadas por vehículo.
+- **Attachment/prerequisitos:** permitir uniones físicas justificadas por materiales y herramientas/procesos compatibles; ejemplo aprobado de intención: una chapa metálica puede soldarse a una superficie metálica si el jugador dispone de una herramienta de soldadura adecuada. De forma equivalente, piezas de madera pueden colocarse o anclarse al terreno/superficies mediante herramientas apropiadas. La taxonomía exacta de métodos de unión se define sólo cuando exista el primer consumer concreto.
+- **Integración balística:** un placeable con protección balística debe actuar como una capa física real del sistema existente de penetración. El proyectil impacta primero esa superficie; la autoridad de penetración resuelve su material/espesor; si no penetra, se detiene allí; si penetra, puede continuar hacia las superficies subyacentes con el resultado residual correspondiente. Nunca convertir la pieza instalada en un bonus abstracto de armor del objeto padre ni crear una segunda autoridad balística para placeables.
+- **Masa/assembly:** la masa de piezas fijadas debe contribuir a la masa física efectiva del conjunto/host sin mutar su masa base. Ejemplo: vehículo de 300 kg + chapa de 20 kg = conjunto de 320 kg; nuevas piezas siguen acumulando masa.
+- **Uso en el mundo:** la misma base debe servir para futuros vehículos, refuerzo de puertas/estructuras, cobertura y barricadas improvisadas, y colocación/anclaje de materiales encontrados en el entorno. La pieza debe conservar su identidad y propiedades independientemente de dónde se utilice.
+- **Por qué:** cruza balística/penetración, materiales/tags, física/masa, inventario/world items, interacción, persistence, modding y futuros vehículos. Por eso debe influir en el diseño de esos sistemas antes de que existan vehículos, evitando decisiones actuales que luego impidan una integración física coherente.
+- **Trigger/dependencias:** no convertirlo todavía en milestone aislado. Tener `IMPL-0023` en cuenta al diseñar o modificar penetración multicapa, materiales/tags, masa/física, colocación de world items, interacción/herramientas, persistence y vehículos. Implementar el primer slice sólo cuando aparezca un consumer productivo concreto que permita validar el contrato mínimo end-to-end.
+- **Límites:** no convertir Old Scars en un building game ni buscar libertad caótica tipo MTC para apilar monstruosidades; no diseñar ahora una taxonomía universal de attachments; no crear clases específicas por vehículo/material; no duplicar física, inventario ni penetración existentes. La libertad de colocación futura debe conservar restricciones físicas y de herramientas coherentes.
+- **Relación:** Ballistics/Penetration, item definitions, material tags, Inventory/World Items, physics/mass, Interaction, Persistence, JSON/modding y futuros Vehicles.
+
 ---
 
 ## Regla de mantenimiento
