@@ -79,6 +79,9 @@ namespace OldScars.Core.Visuals
 
         private IEnumerator InitializeWhenReady()
         {
+            // Runtime composition may add and explicitly bind its Equipment source
+            // immediately after instantiating the visual representation.
+            yield return null;
             while (GameDataManager.Instance == null || !GameDataManager.Instance.IsReady)
                 yield return null;
 

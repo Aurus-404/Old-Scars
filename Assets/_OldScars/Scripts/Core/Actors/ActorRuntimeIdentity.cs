@@ -9,6 +9,7 @@ using OldScars.Core.Data.Definitions;
 using OldScars.Core.Identity;
 using OldScars.Core.Interactions;
 using OldScars.Core.Items;
+using OldScars.Core.Visuals;
 using UnityEngine;
 
 namespace OldScars.Core.Actors
@@ -346,7 +347,14 @@ namespace OldScars.Core.Actors
 
                 root.AddComponent<InventoryComponent>();
                 root.AddComponent<ActorItemOwnershipComponent>();
-                root.AddComponent<ActorEquipmentComponent>();
+                ActorEquipmentComponent equipment = root.AddComponent<ActorEquipmentComponent>();
+                EntityEquipmentVisualSynchronizer equipmentVisuals =
+                    root.GetComponent<EntityEquipmentVisualSynchronizer>();
+                if (equipmentVisuals != null)
+                {
+                    EntityVisualRigRuntime visualRig = root.GetComponent<EntityVisualRigRuntime>();
+                    equipmentVisuals.Configure(equipment, visualRig);
+                }
                 root.AddComponent<ActorHealthComponent>();
                 root.AddComponent<LootableActorInventoryComponent>();
                 ActorProfileComponent profileComponent = root.AddComponent<ActorProfileComponent>();

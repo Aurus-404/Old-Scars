@@ -81,10 +81,11 @@ M41 no se considera DONE sólo por compilación o diagnostics aislados. Requiere
 
 La secuencia sistémica aprobada es:
 
-1. `IMPL-0016` Equipment visuals humanoides, cuando convenga para lectura visual; puede intercambiar posición con la reparación de masa de munición porque no existe dependencia técnica entre ambos.
-2. `ISSUE-0022` loaded ammo mass: corregir conservación de masa antes de que Carry Weight gobierne locomoción.
-3. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC.
-4. `IMPL-0021` Localized Limb Impairment, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
+`IMPL-0016` Equipment visuals humanoides fue adelantado por necesidad de validación visual y quedó `DONE / ACCEPTED` sin alterar Equipment ni combat.
+
+1. `ISSUE-0022` loaded ammo mass: corregir conservación de masa antes de que Carry Weight gobierne locomoción.
+2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC.
+3. `IMPL-0021` Localized Limb Impairment, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
 
 No introducir Encumbrance entre F8A y su comparación, porque velocidad NPC ya participa en las condiciones de accuracy y contaminaría la medición.
 

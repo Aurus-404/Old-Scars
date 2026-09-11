@@ -5,6 +5,7 @@ using OldScars.Core.Combat;
 using OldScars.Core.Data;
 using OldScars.Core.Data.Definitions;
 using OldScars.Core.Items;
+using OldScars.Core.Visuals;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -302,11 +303,20 @@ namespace OldScars.Core.Actors
 
         private static void ApplyDebugColor(GameObject actor, SandboxCombatAffiliation affiliation)
         {
-            Renderer renderer = actor != null ? actor.GetComponentInChildren<Renderer>() : null;
-            if (renderer != null)
-                renderer.material.color = affiliation == SandboxCombatAffiliation.Blue
-                    ? new Color(0.16f, 0.42f, 1f)
-                    : new Color(0.9f, 0.12f, 0.08f);
+            if (actor == null)
+                return;
+
+            Color color = affiliation == SandboxCombatAffiliation.Blue
+                ? new Color(0.16f, 0.42f, 1f)
+                : new Color(0.9f, 0.12f, 0.08f);
+            Renderer[] renderers = actor.GetComponentsInChildren<Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer == null || renderer.GetComponentInParent<EquippedVisualInstanceMarker>() != null)
+                    continue;
+                renderer.material.color = color;
+            }
         }
 
         private static bool TryResolveSpawnPosition(Vector3 origin, long seed, out Vector3 position, out string error)

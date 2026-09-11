@@ -3689,3 +3689,10 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Revisión dedicada inicial atendida en diagnostics; re-review final limpio. Compile Runtime/Editor y diff checks PASS. Un intento de Unity no inició por timeout IPC de Package Manager; reintento posterior exitoso. Persisten warnings previos de paquetes/APIs fuera del cambio; no se declara Console manual limpia.
 - ProjectSettings/ProjectSettings.asset user-owned preservado byte-for-byte: SHA-256 `034E692F54521A2491E132945191829F4BA6716778C04F881A63247D701DD51C`, excluido de staging/commits. Documentación reconciliada por separado; Development Log append-only.
 - P3 DONE/PUBLISHED; ISSUE-0020 RESOLVED; IMPL-0014 DONE. Próximo paso exacto P4 Prueba 3.3, no iniciado. F8, Invincible, Carry Weight y aceptación manual integrada de M41 permanecen fuera de este cierre.
+
+## 2026-09-10 — IMPL-0016 Equipment visuals humanoides DONE / ACCEPTED
+
+- La composición runtime vincula explícitamente el `ActorEquipmentComponent` real con `EntityEquipmentVisualSynchronizer` y `EntityVisualRigRuntime` desde la misma raíz de representación; Player conserva el mismo seam authored. Los visuales sólo consumen snapshots y no crean ni modifican Equipment.
+- `humanoid_standard` refleja crowbar, Lee-Enfield y small backpack en sus sockets existentes. Equip, unequip, reemplazo y rebuild no duplican visuales ni mutan Equipment; el warning `has no IEquipmentVisualSource` no aparece en representaciones correctamente vinculadas.
+- La corrección de tint Blue/Red aplica color a todos los renderers corporales y excluye cualquier subárbol `EquippedVisualInstanceMarker`, sin depender del orden de hijos y conservando la cápsula legacy.
+- Unity Runtime/Editor compile, `IMPL-0016 Equipment Visual Runtime Wiring Diagnostics` y `M41.2 Basic Equipment & Weapon Coverage Diagnostics` `PASS`, sin errores en la consola proporcional. Mauro confirmó aceptación visual manual: Blue/crowbar, Red/Lee-Enfield y small backpack correctos, sin tint sobre Equipment. `ProjectSettings/ProjectSettings.asset` permanece como cambio local ajeno fuera del cierre.

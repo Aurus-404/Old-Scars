@@ -183,12 +183,11 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0016 — Integrar visuales de equipment en `humanoid_standard`
 
-- **Estado:** `PLANNED`.
+- **Estado:** `DONE / ACCEPTED`.
 - **Fecha/origen:** 2026-09-03 — Prueba 3 runtime warnings.
-- **Qué queremos:** permitir que la representación humana runtime exponga el seam visual necesario para que Equipment real sincronice visuales cuando exista contenido/attachment correspondiente.
-- **Por qué:** Equipment existe pero la representation debug no siempre lo refleja.
-- **Trigger/dependencias:** después de cerrar NPC Foundation/aim, o antes sólo si un gate concreto exige arma físicamente visible.
-- **Límites:** no convertir F7 en IK/animation system ni crear otra autoridad de Equipment.
+- **Resolución:** la composición runtime vincula explícitamente el `ActorEquipmentComponent` real con el `EntityEquipmentVisualSynchronizer` y el `EntityVisualRigRuntime` de la misma representación. Player conserva el mismo seam authored. El tint debug Blue/Red recorre renderers corporales y excluye subárboles `EquippedVisualInstanceMarker`.
+- **Validación:** compile Runtime/Editor, diagnóstico IMPL-0016 y cobertura M41.2 `PASS`; aceptación manual Blue/Red confirmó crowbar, Lee-Enfield y small backpack visibles, sin tint de Equipment, sin duplicados ni warning de source faltante.
+- **Límites:** sin IK, animation, sockets nuevos, materiales de armas ni otra autoridad de Equipment.
 
 ## IMPL-0017 — Timed Bandaging V1 compartido y self-treatment NPC
 

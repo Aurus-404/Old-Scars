@@ -179,11 +179,11 @@ NPC Foundation V1 se cierra sólo con aceptación manual de Mauro.
 
 ### 10. P10 — Equipment visuals humanoides
 
-Estado: `PLANNED AFTER M41`.
+Estado: `DONE / ACCEPTED` — adelantado por necesidad de validación visual.
 
-Integrar Equipment real en `humanoid_standard` usando el seam visual existente. Sin nuevo Equipment system, IK ni animación final.
+Equipment real quedó integrado en `humanoid_standard` mediante el seam visual existente. Player/NPC comparten el contrato; el tint debug corporal excluye visuals equipados. Sin nuevo Equipment system, IK ni animación final.
 
-Puede adelantarse sólo si una validación concreta exige ver físicamente el arma; para Prueba 3.3 basta identificación debug inequívoca.
+Compile, diagnóstico IMPL-0016, cobertura M41.2 y aceptación visual manual Blue/Red `PASS`.
 
 Referencia: `IMPL-0016`.
 

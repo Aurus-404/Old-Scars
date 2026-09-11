@@ -101,12 +101,12 @@ Cambio deliberado respecto de wording anterior: KO dwell se ejecuta antes de KO 
 
 Orden sistémico aprobado:
 
-- Equipment visuals humanoides cuando convenga para lectura visual;
+- Equipment visuals humanoides: `IMPL-0016 DONE / ACCEPTED`, adelantado por validación visual;
 - corregir `ISSUE-0022` loaded ammo mass;
 - implementar `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC;
 - implementar `IMPL-0021` Localized Limb Impairment después de Encumbrance.
 
-Equipment visuals y loaded ammo mass pueden intercambiar posición. Loaded ammo mass sí debe resolverse antes de Encumbrance.
+Loaded ammo mass debe resolverse antes de Encumbrance.
 
 No introducir Encumbrance entre F8A y sus comparaciones: velocidad NPC participa en las condiciones de accuracy y contaminaría la medición.
 
