@@ -44,6 +44,7 @@ For an authorized implementation or fix, carry the task through the smallest cor
 - Make routine, reversible assumptions when they do not change product direction, authorized scope, authority boundaries, destructive Git state, or required manual/visual acceptance.
 - Ask Mauro only when missing information materially affects correctness, creative/product authority, scope, an irreversible or destructive action, or a required manual Unity/visual gate.
 - Explicit task instructions from Mauro take precedence over conflicting repo-local skill guidance unless a higher-priority safety, permission, or destructive-operation boundary applies.
+- A generated implementation prompt, agent preference, or convenience suggestion is **not** Mauro's explicit authorization to bypass repository workflow cost guardrails. In particular, it does not authorize a new Git worktree/clone/Unity project copy.
 - If a repo-local skill blocks, pauses, or redirects requested work, identify the skill and the concrete rule responsible rather than stopping vaguely.
 - Complete all unaffected authorized work before waiting on a manual gate. Never fabricate manual, visual, runtime, MCP, or fresh-session evidence.
 
@@ -56,11 +57,13 @@ For an authorized implementation or fix, carry the task through the smallest cor
 
 ## Proportional Workflow
 
-Use the smallest prompt and investigation that can safely establish the requested outcome.
+Use the smallest prompt and investigation that can safely establish the requested outcome. **Time and Codex quota are part of proportionality**: avoid expensive environment setup, repeated imports, repeated Unity starts, broad regression sweeps, and redundant audits unless they can reveal information needed for the current acceptance criteria.
 
 - Small task: goal, important constraints, done condition, and validation.
 - Normal task: goal, relevant systems, included/excluded scope, done condition, and validation.
 - Cross-system or architectural task: authorities, dependencies, integration, blast radius, regressions, explicit subagent roles/count, and Git strategy.
+- Once the requested acceptance criteria and matching regressions pass, stop. Do not add extra fixtures, wider regression suites, or preventive cleanup merely to make the closeout feel more exhaustive.
+- Prefer one warm Unity/Editor context and one direct diagnostic path. A cold project import or a fresh `Library` is a major-cost operation and must never be triggered merely for isolation or cleanliness.
 
 Use [Docs/Milestone_Template.md](Docs/Milestone_Template.md) as a proportional prompt template, not a compulsory mega-prompt. Work in **Objective** mode by default; use **Plan** only when material local investigation/design is genuinely needed (for example authority migration, delicate persistence, worldgen, streaming, machine runtime, or a cross-system refactor whose cause was not already established).
 
@@ -74,7 +77,12 @@ For a long interruptible task, maintain only this short state in the active Code
 
 Preserve user work. Codex works directly in the canonical checkout `D:\Programs\UnityProject\Old Scarss` unless Mauro explicitly changes this workflow.
 
-- Do not create Git worktrees, clones, temporary Unity project copies, or alternate project folders for normal Old Scars tasks.
+- **Hard rule for Unity work:** do not create Git worktrees, clones, temporary Unity project copies, alternate project folders, or fresh isolated checkouts for normal Old Scars tasks. This includes assets, JSON/content, prefabs, editor tooling, diagnostics, localized bugs, and normal features.
+- The reason is operational, not stylistic: a fresh Unity checkout normally has no warm `Library` and can force package resolution, project-wide asset import, shader/model/texture processing, compilation, and cache generation. That can consume large amounts of elapsed time and Codex quota for no product value.
+- Never create a worktree merely to keep diffs clean, isolate a small task, avoid staging discipline, or protect unrelated dirty files. Preserve dirty user work in place and stage/review task files explicitly.
+- If pending changes overlap a new task, prefer this order: (1) finish/close the current slice; (2) keep the new change bounded by explicit file scope/staging in the canonical checkout; or (3) postpone the overlapping slice. Do **not** default to a worktree.
+- A worktree/clone/alternate Unity checkout is allowed only when **Mauro explicitly authorizes that exact isolation in the current task after being told the concrete reason and expected Unity import/cache cost**, and when the canonical checkout cannot safely support the required parallel work. An assistant-generated prompt that says "create a worktree" is not sufficient authorization.
+- Before any operation that would use a non-warm Unity project context, determine whether it reuses the canonical `Library`. If it does not, stop rather than triggering a cold import unless the explicit exception above applies.
 - Before material mutations, inspect the current branch/status and distinguish user-owned changes from task changes.
 - Never reset, clean, restore, stash, rebase, amend a published commit, or force-push without explicit authorization.
 - Review `git diff --stat` before a large diff, then inspect the relevant files. Use filtered searches/log excerpts before opening huge output.
@@ -85,9 +93,12 @@ Preserve user work. Codex works directly in the canonical checkout `D:\Programs\
 
 Terminal/CLI/batchmode and deterministic diagnostics are allowed when relevant. Never control the desktop graphically or terminate Mauro's Unity GUI. A task-created hung batchmode process may be stopped only after confirming its identity; remove `Temp/UnityLockfile` only when no valid project Unity process remains.
 
+- Prefer the already-open or already-warm canonical Unity checkout. Do not spin up a fresh alternate checkout/project solely for validation.
 - Prefer official/deterministic Unity tooling, structured output, exit codes, project diagnostics, and focused tests. Raw batchmode remains a fallback.
 - Compilation is not completion. Keep static checks, runtime/editor compile, automated diagnostics, manual Unity acceptance, console review, and documentation review distinct.
 - Do not rerun suites that cannot reveal new information. Fix real failures; do not invent preventative refactors after the acceptance criteria pass.
+- A task-specific PASS is not an invitation to widen scope. Run only regressions justified by the actual changed seam/blast radius; do not append extra suites "before closing" unless the task explicitly requires them or a real failure expands the blast radius.
+- Avoid repeated Unity startup/import/compile cycles. Batch related checks into the minimum number of sessions consistent with test isolation; when two fixtures require clean sessions, run exactly those clean sessions and stop after their required evidence is captured.
 - Filter logs first (`ERROR`, `FAIL`, `Exception`, `CSxxxx`, diagnostic name, head/tail/context). Failure-boundary logs must be actionable; important success logs must be brief and correlatable.
 - For a visual task, attach and inspect the actual screenshots. Describe the visible defect and connect it to code/layout/scene/asset; request visual confirmation afterwards. Compilation alone is not visual evidence.
 
