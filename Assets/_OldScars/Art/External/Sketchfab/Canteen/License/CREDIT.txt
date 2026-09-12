@@ -1,0 +1,9 @@
+Asset name: Canteen
+Author: Not included in the downloaded source archive or local download metadata
+Source URL: https://sketchfab.com/ (exact model page was not retained locally)
+License: Not included in the downloaded source archive or local download metadata
+Attribution requirements: Unknown; resolve the exact author, model page and license before any shipping use
+Usage in Old Scars: temporary development world-visual placeholder for core:water_bottle_01
+Source archive: D:\Descargas\canteen.zip
+Source archive SHA-256: FD420767E9A954EE4A44907808DC26DC75B0E84565B66F30C173D88CB6A562B5
+Modified: no; original model and textures are retained byte-for-byte under Source. Unity materials and prefabs are derived assets.

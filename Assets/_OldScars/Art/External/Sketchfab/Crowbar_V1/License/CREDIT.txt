@@ -1,0 +1,9 @@
+Asset name: Crowbar V1
+Author: SketchyBot (@SketchyB0t_3D_Fabrication)
+Source URL: https://sketchfab.com/3d-models/crowbar-v1-c73cba6efd314c18ada06824138af010
+License: Sketchfab Free Standard License, as listed on the source page
+Usage in Old Scars: temporary development placeholder for core:rusted_crowbar_01
+Source archive: crowbar-v1.zip
+Source archive SHA-256: 118536AA2DFAA3F124DD9611E5458910FF0F9820DB936897D6B8E1902B883A3D
+Modified: no - original model and textures are retained byte-for-byte under Source; Unity materials and prefabs are derived assets
+Notes: source page marks this model NoAI; do not use the source files as input to generative AI tools. Not intended as final shipping art.

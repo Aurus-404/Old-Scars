@@ -1,0 +1,194 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8748375241196880921
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5427253470158613387}
+  - component: {fileID: 61602564312247098}
+  - component: {fileID: 8310958069471566470}
+  - component: {fileID: 7264786176484282194}
+  - component: {fileID: 4231026855931776440}
+  - component: {fileID: 5147334082940698547}
+  m_Layer: 6
+  m_Name: PFB_WorldItem_steel_helmet_01
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5427253470158613387
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8748375241196880921}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5937960498292123102}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &61602564312247098
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8748375241196880921}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.36000004, y: 0.14785443, z: 0.1821033}
+  m_Center: {x: 0, y: 0.07892722, z: 0.000000007450581}
+--- !u!54 &8310958069471566470
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8748375241196880921}
+  serializedVersion: 5
+  m_Mass: 1.35
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &7264786176484282194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8748375241196880921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b86dd43b64c94a0d9e847e8f5f8e3f1d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Items.WorldItemPickup
+  itemDefinitionId: steel_helmet_01
+  authoredItemInstanceId:
+--- !u!114 &4231026855931776440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8748375241196880921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abc08d7155ea8ca4bac5c1d34d584b54, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectTags
+  tags:
+  - world_item
+  - pickupable
+  - inspectable
+--- !u!114 &5147334082940698547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8748375241196880921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b23f84c3d1a44a6b9fd8d2e987b351c0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Interactions.WorldObjectDebugInfo
+  displayName: Casco de acero
+  inspectText: "Protecci\xF3n b\xE1sica de cabeza para pruebas de cobertura regional."
+  conditionalInspectionTexts: []
+--- !u!1001 &1579897134829498048
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5427253470158613387}
+    m_Modifications:
+    - target: {fileID: 4599239896651259997, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_Name
+      value: Visual
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+--- !u!4 &5937960498292123102 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5155270883436890910, guid: 092516f9d5b97c74ebc8479b6181bac0, type: 3}
+  m_PrefabInstance: {fileID: 1579897134829498048}
+  m_PrefabAsset: {fileID: 0}

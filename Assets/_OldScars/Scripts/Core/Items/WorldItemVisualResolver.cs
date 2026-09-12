@@ -72,10 +72,10 @@ namespace OldScars.Core.Items
             switch (canonicalId)
             {
                 case "core:rusted_crowbar_01":
-                    return "PFB_VIS_Rusted_Crowbar_PSX";
+                    return "PFB_VIS_Rusted_Crowbar_V1_World";
 
                 case "core:lee_enfield_rifle_01":
-                    return "PFB_VIS_Lee_Enfield_PSX";
+                    return "PFB_VIS_Lee_Enfield_RetroBolt_PS2_World";
 
                 case "core:ammo_303_british_01":
                     return "PFB_VIS_Ammo_303_PSX";

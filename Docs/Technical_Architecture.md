@@ -379,6 +379,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - Parts y sockets son Local IDs declarados dentro de `VisualRigProfileDefinition`. Capabilities, visual assets, item visual profiles y attachment poses pertenecen a familias globales de Definition y usan Content IDs canónicos. Offsets y compatibilidad no se hardcodean en el synchronizer.
 - `IVisualAssetProvider` separa asset keys data-driven de la carga. El slice actual implementa solamente el provider `builtin`; AssetBundles y Mod Kit no forman parte del contrato actual.
 - Visuales equipados son presentacion reemplazable: no contienen gameplay, storage, ownership, colliders ni rigidbodies.
+- `RigidEquipmentPoseTunerWindow` enumera perfiles rígidos equipables desde GameData, valida su prefab/rig/socket y guarda offsets mediante `AttachmentPoseDefinition`; no conoce IDs concretos ni escribe Equipment. El rig humano authored expone `back`, `waist`, `sling`, `hand_left`, `hand_right`, `head` y `eyes` para Player/NPC mediante el mismo perfil.
 
 ## UI Y Superficie Funcional Actual
 

@@ -3696,3 +3696,9 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - `humanoid_standard` refleja crowbar, Lee-Enfield y small backpack en sus sockets existentes. Equip, unequip, reemplazo y rebuild no duplican visuales ni mutan Equipment; el warning `has no IEquipmentVisualSource` no aparece en representaciones correctamente vinculadas.
 - La corrección de tint Blue/Red aplica color a todos los renderers corporales y excluye cualquier subárbol `EquippedVisualInstanceMarker`, sin depender del orden de hijos y conservando la cápsula legacy.
 - Unity Runtime/Editor compile, `IMPL-0016 Equipment Visual Runtime Wiring Diagnostics` y `M41.2 Basic Equipment & Weapon Coverage Diagnostics` `PASS`, sin errores en la consola proporcional. Mauro confirmó aceptación visual manual: Blue/crowbar, Red/Lee-Enfield y small backpack correctos, sin tint sobre Equipment. `ProjectSettings/ProjectSettings.asset` permanece como cambio local ajeno fuera del cierre.
+
+## 2026-09-12 — IMPL-0016.1 / 1A / 2 / 3 visual placeholder passes DONE / ACCEPTED
+
+- Crowbar V1 y Retro PS2 Bolt Action Rifle reemplazan sus placeholders sin cambiar identidades gameplay; Bandage, Canteen y Canned Food usan world visuals externos, mientras Ammo Boxes permanece bloqueado por falta de una identidad gameplay adecuada.
+- Canvas Belt, M36/Steel Helmet y Work Goggles reutilizan Equipment, `ItemVisualProfile`, `VisualAsset`, sockets `waist/head/eyes` y `AttachmentPose`; el Pose Tuner rígido los descubre junto con crowbar, Lee-Enfield y small backpack sin IDs hardcodeados.
+- Runtime/Editor compile, GameData, Pose Tuner Diagnostics, catálogo rígido, siete sockets, referencias/IDs y `git diff --check` `PASS`. Aceptación manual final: Belt, M36, Goggles y crowbar runtime `PASS`. Sin `Missing Transform binding` ni `has no IEquipmentVisualSource`; `ProjectSettings.runInBackground` continúa como cambio local ajeno fuera del commit.

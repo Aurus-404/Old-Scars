@@ -38,6 +38,75 @@
       "secondary_grip_binding": "Grip_Secondary",
       "fallback_visual": "debug_box",
       "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "core:bandage_visual",
+      "item_definition_id": "core:bandage_01",
+      "world_asset_key": "core:bandage_world",
+      "equipped_asset_key": "core:bandage_world",
+      "socket_policy": "equipment_slot",
+      "required_socket_capabilities": ["core:hold_primary"],
+      "fallback_visual": "debug_box",
+      "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "core:water_bottle_visual",
+      "item_definition_id": "core:water_bottle_01",
+      "world_asset_key": "core:canteen_world",
+      "equipped_asset_key": "core:canteen_world",
+      "socket_policy": "equipment_slot",
+      "required_socket_capabilities": ["core:hold_primary"],
+      "fallback_visual": "debug_box",
+      "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "core:food_ration_visual",
+      "item_definition_id": "core:food_ration_01",
+      "world_asset_key": "core:canned_food_world",
+      "equipped_asset_key": "core:canned_food_world",
+      "socket_policy": "equipment_slot",
+      "required_socket_capabilities": ["core:hold_primary"],
+      "fallback_visual": "debug_box",
+      "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "core:canvas_belt_visual",
+      "item_definition_id": "core:canvas_belt_01",
+      "world_asset_key": "core:canvas_belt_world",
+      "equipped_asset_key": "core:canvas_belt_equipped",
+      "socket_policy": "equipment_slot",
+      "required_socket_capabilities": ["core:mount_cosmetic"],
+      "persistent_pose_id": "core:canvas_belt_human_waist_pose",
+      "fallback_visual": "debug_box",
+      "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "core:steel_helmet_visual",
+      "item_definition_id": "core:steel_helmet_01",
+      "world_asset_key": "core:steel_helmet_world",
+      "equipped_asset_key": "core:steel_helmet_equipped",
+      "socket_policy": "equipment_slot",
+      "required_socket_capabilities": ["core:mount_armor"],
+      "persistent_pose_id": "core:steel_helmet_human_head_pose",
+      "fallback_visual": "debug_box",
+      "enabled": true
+    },
+    {
+      "type": "item_visual_profile",
+      "id": "core:work_goggles_visual",
+      "item_definition_id": "core:work_goggles_01",
+      "world_asset_key": "core:work_goggles_world",
+      "equipped_asset_key": "core:work_goggles_equipped",
+      "socket_policy": "equipment_slot",
+      "required_socket_capabilities": ["core:mount_cosmetic"],
+      "persistent_pose_id": "core:work_goggles_human_eyes_pose",
+      "fallback_visual": "debug_box",
+      "enabled": true
     }
   ]
 }

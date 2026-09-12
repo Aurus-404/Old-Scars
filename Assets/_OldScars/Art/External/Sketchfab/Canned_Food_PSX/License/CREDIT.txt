@@ -1,0 +1,9 @@
+Asset name: Canned Food PSX
+Author: Not included in the downloaded source archive or local download metadata
+Source URL: https://sketchfab.com/ (exact model page was not retained locally)
+License: Not included in the downloaded source archive or local download metadata
+Attribution requirements: Unknown; resolve the exact author, model page and license before any shipping use
+Usage in Old Scars: temporary development world-visual placeholder for core:food_ration_01
+Source archive: D:\Descargas\canned-food-psx.zip
+Source archive SHA-256: CCF7EE474B1B8848C084077E9AF3161E70E38699B3251396BEC073CBA1D2B549
+Modified: no; original model and texture are retained byte-for-byte under Source. Unity materials and prefabs are derived assets.

@@ -1,0 +1,9 @@
+Asset name: Bandage
+Author: Not included in the downloaded source archive or local download metadata
+Source URL: https://sketchfab.com/ (exact model page was not retained locally)
+License: Not included in the downloaded source archive or local download metadata
+Attribution requirements: Unknown; resolve the exact author, model page and license before any shipping use
+Usage in Old Scars: temporary development world-visual placeholder for core:bandage_01
+Source archive: D:\Descargas\bandage.zip
+Source archive SHA-256: 0B57C89F04A8D5FD2ECE2030B9B6694E3ABA1CE6C1CCAD4B62A081200AB7069D
+Modified: no; original model and textures are retained byte-for-byte under Source. Unity materials and prefabs are derived assets.

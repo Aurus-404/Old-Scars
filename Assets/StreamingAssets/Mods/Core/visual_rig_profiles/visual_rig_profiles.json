@@ -33,6 +33,20 @@
           "enabled": true
         },
         {
+          "id": "human_head_socket",
+          "part_id": "torso",
+          "role": "head",
+          "capabilities": ["core:mount_armor", "core:mount_cosmetic"],
+          "enabled": true
+        },
+        {
+          "id": "human_eyes_socket",
+          "part_id": "torso",
+          "role": "eyes",
+          "capabilities": ["core:mount_cosmetic"],
+          "enabled": true
+        },
+        {
           "id": "human_hand_left_socket",
           "part_id": "arm_left",
           "role": "hand_left",
@@ -51,6 +65,8 @@
         { "equipment_slot_id": "core:back", "socket_role": "back" },
         { "equipment_slot_id": "core:waist", "socket_role": "waist" },
         { "equipment_slot_id": "core:sling", "socket_role": "sling" },
+        { "equipment_slot_id": "core:head", "socket_role": "head" },
+        { "equipment_slot_id": "core:eyes", "socket_role": "eyes" },
         { "equipment_slot_id": "core:hand_left", "socket_role": "hand_left" },
         { "equipment_slot_id": "core:hand_right", "socket_role": "hand_right" }
       ]

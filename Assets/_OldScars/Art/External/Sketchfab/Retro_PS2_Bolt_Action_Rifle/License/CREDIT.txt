@@ -1,0 +1,9 @@
+Asset name: Retro Ps2 Bolt Action Rifle
+Author: Tsar Games (@borymaster3)
+Source URL: https://sketchfab.com/3d-models/retro-ps2-bolt-action-rifle-a4343252d6eb4093b8217783f66d026a
+License: Creative Commons Attribution (CC BY), as listed on the source page
+Usage in Old Scars: temporary development placeholder for core:lee_enfield_rifle_01
+Source archive: retro-ps2-bolt-action-rifle.zip
+Source archive SHA-256: AB8DDE78E0E91E949979C6F12141F9B0BD795FB2D902010F11CB82C3367AB0BB
+Modified: no - original model and textures are retained byte-for-byte under Source; Unity materials and prefabs are derived assets
+Notes: the downloaded archive references an MTL file that is not present; Old Scars derives a URP material from the supplied color, normal and roughness/metalness textures. Not intended as final shipping art.

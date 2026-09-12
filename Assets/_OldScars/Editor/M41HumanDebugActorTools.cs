@@ -176,14 +176,17 @@ namespace OldScars.EditorTools
         private static void ConfigureRig(GameObject root, GameObject model)
         {
             Transform spine = FindDescendant(model.transform, "spine_02");
+            Transform head = FindDescendant(model.transform, "head");
             Transform handLeft = FindDescendant(model.transform, "hand_l");
             Transform handRight = FindDescendant(model.transform, "hand_r");
-            if (spine == null || handLeft == null || handRight == null)
-                throw new InvalidOperationException("Existing human model is missing spine_02, hand_l or hand_r.");
+            if (spine == null || head == null || handLeft == null || handRight == null)
+                throw new InvalidOperationException("Existing human model is missing spine_02, head, hand_l or hand_r.");
 
             Transform back = CreateSocket(spine, "OS_SOCKET_Back");
             Transform waist = CreateSocket(spine, "OS_SOCKET_Waist");
             Transform sling = CreateSocket(spine, "OS_SOCKET_Sling");
+            Transform headSocket = CreateSocket(head, "OS_SOCKET_Head");
+            Transform eyes = CreateSocket(head, "OS_SOCKET_Eyes");
             Transform left = CreateSocket(handLeft, "OS_SOCKET_HandLeft");
             Transform right = CreateSocket(handRight, "OS_SOCKET_HandRight");
 
@@ -201,6 +204,8 @@ namespace OldScars.EditorTools
                     new VisualSocketBinding("human_back_socket", back),
                     new VisualSocketBinding("human_waist_socket", waist),
                     new VisualSocketBinding("human_sling_socket", sling),
+                    new VisualSocketBinding("human_head_socket", headSocket),
+                    new VisualSocketBinding("human_eyes_socket", eyes),
                     new VisualSocketBinding("human_hand_left_socket", left),
                     new VisualSocketBinding("human_hand_right_socket", right)
                 });

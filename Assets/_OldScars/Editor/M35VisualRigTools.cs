@@ -17,13 +17,13 @@ namespace OldScars.EditorTools
     {
         private const string MenuRoot = "Old Scars/Visuals/M35/";
         private const string SurvivalModelPath = "Assets/_OldScars/Art/External/Sketchfab/Survival_PSX/Source/Survival/Models/Survival.fbx";
-        private const string CrowbarWorldPrefabPath = "Assets/_OldScars/Art/External/Sketchfab/Crowbar_PSX_LowPoly/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Rusted_Crowbar_PSX.prefab";
-        private const string RifleWorldPrefabPath = "Assets/_OldScars/Art/External/Sketchfab/Survival_PSX/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Lee_Enfield_PSX.prefab";
+        private const string CrowbarWorldPrefabPath = "Assets/_OldScars/Art/External/Sketchfab/Crowbar_V1/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Rusted_Crowbar_V1_World.prefab";
+        private const string RifleWorldPrefabPath = "Assets/_OldScars/Art/External/Sketchfab/Retro_PS2_Bolt_Action_Rifle/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Lee_Enfield_RetroBolt_PS2_World.prefab";
         private const string SurvivalVisualsDirectory = "Assets/_OldScars/Art/External/Sketchfab/Survival_PSX/Prefabs/Resources/OldScarsVisuals";
         private const string BackpackWorldPath = SurvivalVisualsDirectory + "/PFB_VIS_Small_Backpack_World_PSX.prefab";
         private const string BackpackEquippedPath = SurvivalVisualsDirectory + "/PFB_VIS_Small_Backpack_Equipped_PSX.prefab";
-        private const string RifleHeldPath = SurvivalVisualsDirectory + "/PFB_VIS_Lee_Enfield_Held_PSX.prefab";
-        private const string CrowbarHeldPath = "Assets/_OldScars/Art/External/Sketchfab/Crowbar_PSX_LowPoly/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Rusted_Crowbar_Held_PSX.prefab";
+        private const string RifleHeldPath = "Assets/_OldScars/Art/External/Sketchfab/Retro_PS2_Bolt_Action_Rifle/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Lee_Enfield_RetroBolt_PS2_Held.prefab";
+        private const string CrowbarHeldPath = "Assets/_OldScars/Art/External/Sketchfab/Crowbar_V1/Prefabs/Resources/OldScarsVisuals/PFB_VIS_Rusted_Crowbar_V1_Held.prefab";
         private const string DebugCargoPrefabPath = "Assets/_OldScars/Debug/Visuals/PFB_DEBUG_CargoRig_M35.prefab";
 
         private static void ConfigureSelectedHumanRig()
@@ -51,13 +51,16 @@ namespace OldScars.EditorTools
             }
 
             Transform spine = FindDescendant(actorRoot.transform, "spine_02");
+            Transform head = FindDescendant(actorRoot.transform, "head");
             Transform handLeft = FindDescendant(actorRoot.transform, "hand_l");
             Transform handRight = FindDescendant(actorRoot.transform, "hand_r");
-            if (spine == null || handLeft == null || handRight == null)
+            if (spine == null || head == null || handLeft == null || handRight == null)
             {
                 var missingBones = new List<string>();
                 if (spine == null)
                     missingBones.Add("spine_02");
+                if (head == null)
+                    missingBones.Add("head");
                 if (handLeft == null)
                     missingBones.Add("hand_l");
                 if (handRight == null)
@@ -79,6 +82,8 @@ namespace OldScars.EditorTools
             Transform back = GetOrCreateSocket(spine, "OS_SOCKET_Back");
             Transform waist = GetOrCreateSocket(spine, "OS_SOCKET_Waist");
             Transform sling = GetOrCreateSocket(spine, "OS_SOCKET_Sling");
+            Transform headSocket = GetOrCreateSocket(head, "OS_SOCKET_Head");
+            Transform eyes = GetOrCreateSocket(head, "OS_SOCKET_Eyes");
             Transform left = GetOrCreateSocket(handLeft, "OS_SOCKET_HandLeft");
             Transform right = GetOrCreateSocket(handRight, "OS_SOCKET_HandRight");
 
@@ -96,6 +101,8 @@ namespace OldScars.EditorTools
                     new VisualSocketBinding("human_back_socket", back),
                     new VisualSocketBinding("human_waist_socket", waist),
                     new VisualSocketBinding("human_sling_socket", sling),
+                    new VisualSocketBinding("human_head_socket", headSocket),
+                    new VisualSocketBinding("human_eyes_socket", eyes),
                     new VisualSocketBinding("human_hand_left_socket", left),
                     new VisualSocketBinding("human_hand_right_socket", right)
                 });
@@ -140,23 +147,29 @@ namespace OldScars.EditorTools
             EnsureAssetFolder(SurvivalVisualsDirectory);
             GenerateBackpackWorld();
             GenerateBackpackEquipped();
+            GenerateWeaponVisualPrefabs();
+            Debug.Log("[M35VisualRigTools] Generated backpack world/equipped and held crowbar/rifle visual prefabs.");
+        }
+
+        internal static void GenerateWeaponVisualPrefabs()
+        {
             GenerateEquippedWrapper(
                 CrowbarWorldPrefabPath,
                 CrowbarHeldPath,
-                "PFB_VIS_Rusted_Crowbar_Held_PSX",
+                "PFB_VIS_Rusted_Crowbar_V1_Held",
                 "core:rusted_crowbar_visual",
                 true,
                 false);
             GenerateEquippedWrapper(
                 RifleWorldPrefabPath,
                 RifleHeldPath,
-                "PFB_VIS_Lee_Enfield_Held_PSX",
+                "PFB_VIS_Lee_Enfield_RetroBolt_PS2_Held",
                 "core:lee_enfield_visual",
                 true,
                 true);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[M35VisualRigTools] Generated backpack world/equipped and held crowbar/rifle visual prefabs.");
+            Debug.Log("[M35VisualRigTools] Generated held crowbar/rifle visual prefabs.");
         }
 
         private static void GenerateDebugCargoRig()
@@ -524,7 +537,7 @@ namespace OldScars.EditorTools
             }
         }
 
-        private static string BuildPoseId(string visualProfileId, string rigProfileId, string socketId)
+        internal static string BuildPoseId(string visualProfileId, string rigProfileId, string socketId)
         {
             if (!ContentId.TryParse(visualProfileId, out ContentId visual, out string visualError))
                 throw new InvalidOperationException($"Invalid visual profile Global Content ID '{visualProfileId}': {visualError}.");
@@ -539,7 +552,7 @@ namespace OldScars.EditorTools
             return pose.Canonical;
         }
 
-        private static Float3Definition ToDefinition(Vector3 value)
+        internal static Float3Definition ToDefinition(Vector3 value)
         {
             return new Float3Definition { x = value.x, y = value.y, z = value.z };
         }

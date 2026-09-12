@@ -29,10 +29,35 @@ namespace OldScars.Core.Visuals
             string socketId,
             string socketRole)
         {
-            if (database == null || visualProfile == null)
+            if (!TryResolveDefinition(
+                    database,
+                    visualProfile,
+                    rigProfileId,
+                    rigFamilyId,
+                    socketId,
+                    socketRole,
+                    out AttachmentPoseDefinition best))
                 return AttachmentPoseValue.Identity;
 
-            AttachmentPoseDefinition best = null;
+            return new AttachmentPoseValue(
+                ToVector(best.local_position, Vector3.zero),
+                ToVector(best.local_rotation, Vector3.zero),
+                ToVector(best.local_scale, Vector3.one));
+        }
+
+        public static bool TryResolveDefinition(
+            GameDatabase database,
+            ItemVisualProfileDefinition visualProfile,
+            string rigProfileId,
+            string rigFamilyId,
+            string socketId,
+            string socketRole,
+            out AttachmentPoseDefinition definition)
+        {
+            definition = null;
+            if (database == null || visualProfile == null)
+                return false;
+
             int bestScore = int.MinValue;
             foreach (AttachmentPoseDefinition pose in database.GetAllAttachmentPoses())
             {
@@ -47,17 +72,15 @@ namespace OldScars.Core.Visuals
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    best = pose;
+                    definition = pose;
                 }
             }
 
-            if (best == null || bestScore < 0)
-                return AttachmentPoseValue.Identity;
+            if (bestScore >= 0 && definition != null)
+                return true;
 
-            return new AttachmentPoseValue(
-                ToVector(best.local_position, Vector3.zero),
-                ToVector(best.local_rotation, Vector3.zero),
-                ToVector(best.local_scale, Vector3.one));
+            definition = null;
+            return false;
         }
 
         private static int Score(

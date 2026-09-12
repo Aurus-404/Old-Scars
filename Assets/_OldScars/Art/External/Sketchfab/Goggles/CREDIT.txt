@@ -1,0 +1,8 @@
+Asset: Goggles
+Author: Not included in the provided source archive; verify before redistribution.
+Source: https://sketchfab.com/3d-models/goggles-eed10614b28d4b9692fc3af550f05890
+License: Not included in the provided source archive; verify before redistribution.
+Attribution required: Unknown; verify before redistribution.
+Original file: goggles.zip
+Original SHA-256: E6AF20FACB183E84419B45B495DF5295F79CC807637D19693960FBABC4DF91A7
+Notes: The source URL is reconstructed from the locally preserved Sketchfab archive identifier. The original file is preserved unmodified under Original/.

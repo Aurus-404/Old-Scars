@@ -1469,6 +1469,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 34060390}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1187873824
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1187873825}
+  m_Layer: 0
+  m_Name: OS_SOCKET_Eyes
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1187873825
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1187873824}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1453140796}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1214738395
 GameObject:
   m_ObjectHideFlags: 0
@@ -1514,6 +1545,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1225014546
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1225014547}
+  m_Layer: 0
+  m_Name: OS_SOCKET_Head
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1225014547
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1225014546}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1453140796}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1248067453
 PrefabInstance:
@@ -1712,8 +1774,19 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -7338050205949528730, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1403501688}
+    - targetCorrespondingSourceObject: {fileID: 532123921119294453, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1225014547}
+    - targetCorrespondingSourceObject: {fileID: 532123921119294453, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1187873825}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
+--- !u!4 &1453140796 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 532123921119294453, guid: b62b47e47bbafeb44bd7b29cef339ee4, type: 3}
+  m_PrefabInstance: {fileID: 1453140795}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1564854443 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 146d638aec8f4538aaa7de5955ee271e, type: 3}
@@ -3773,6 +3846,10 @@ MonoBehaviour:
     target: {fileID: 1571722710}
   - socketId: human_hand_right_socket
     target: {fileID: 1403501688}
+  - socketId: human_head_socket
+    target: {fileID: 1225014547}
+  - socketId: human_eyes_socket
+    target: {fileID: 1187873825}
 --- !u!114 &2700000015
 MonoBehaviour:
   m_ObjectHideFlags: 0

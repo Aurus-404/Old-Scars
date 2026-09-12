@@ -19,28 +19,91 @@
       "id": "core:rusted_crowbar_world",
       "asset_key": "core:rusted_crowbar_world",
       "provider_id": "builtin",
-      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Rusted_Crowbar_PSX"
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Rusted_Crowbar_V1_World"
     },
     {
       "type": "visual_asset",
       "id": "core:rusted_crowbar_held",
       "asset_key": "core:rusted_crowbar_held",
       "provider_id": "builtin",
-      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Rusted_Crowbar_Held_PSX"
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Rusted_Crowbar_V1_Held"
     },
     {
       "type": "visual_asset",
       "id": "core:lee_enfield_world",
       "asset_key": "core:lee_enfield_world",
       "provider_id": "builtin",
-      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Lee_Enfield_PSX"
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Lee_Enfield_RetroBolt_PS2_World"
     },
     {
       "type": "visual_asset",
       "id": "core:lee_enfield_held",
       "asset_key": "core:lee_enfield_held",
       "provider_id": "builtin",
-      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Lee_Enfield_Held_PSX"
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Lee_Enfield_RetroBolt_PS2_Held"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:bandage_world",
+      "asset_key": "core:bandage_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Bandage_World"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:canteen_world",
+      "asset_key": "core:canteen_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Canteen_World"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:canned_food_world",
+      "asset_key": "core:canned_food_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Canned_Food_PSX_World"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:canvas_belt_world",
+      "asset_key": "core:canvas_belt_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Canvas_Belt_World"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:canvas_belt_equipped",
+      "asset_key": "core:canvas_belt_equipped",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Canvas_Belt_Equipped"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:steel_helmet_world",
+      "asset_key": "core:steel_helmet_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Steel_Helmet_World"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:steel_helmet_equipped",
+      "asset_key": "core:steel_helmet_equipped",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Steel_Helmet_Equipped"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:work_goggles_world",
+      "asset_key": "core:work_goggles_world",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Work_Goggles_World"
+    },
+    {
+      "type": "visual_asset",
+      "id": "core:work_goggles_equipped",
+      "asset_key": "core:work_goggles_equipped",
+      "provider_id": "builtin",
+      "provider_asset_id": "OldScarsVisuals/PFB_VIS_Work_Goggles_Equipped"
     }
   ]
 }

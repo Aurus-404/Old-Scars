@@ -1,0 +1,8 @@
+Asset: M36 Stahlhelm Model
+Author: Not included in the provided source archive; verify before redistribution.
+Source: https://sketchfab.com/3d-models/m36-stahlhelm-model-c93fcfcce1604b44ab7f5217cbf07200
+License: Not included in the provided source archive; verify before redistribution.
+Attribution required: Unknown; verify before redistribution.
+Original file: m36-stahlhelm-model.zip
+Original SHA-256: D31D7438456B81DD9F96D658DA5CCA2495D7632D6DE6F6F1CE321AE34C00435B
+Notes: The source URL is reconstructed from the locally preserved Sketchfab archive identifier. The original file is preserved unmodified under Original/.

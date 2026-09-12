@@ -26,9 +26,9 @@
       "visual_profile_id": "core:rusted_crowbar_visual",
       "rig_family_id": "humanoid_standard",
       "socket_role": "hand_left",
-      "local_position": { "x": -0.009, "y": 0.120, "z": -0.150 },
-      "local_rotation": { "x": 2.939, "y": -99.096, "z": -77.579 },
-      "local_scale": { "x": 0.5638575, "y": 0.5638575, "z": 0.5638575 }
+      "local_position": { "x": -0.051, "y": -0.047, "z": -0.24 },
+      "local_rotation": { "x": 35.63501, "y": 57.47566, "z": 46.60158 },
+      "local_scale": { "x": 1, "y": 1, "z": 1 }
     },
     {
       "type": "attachment_pose",
@@ -36,9 +36,9 @@
       "visual_profile_id": "core:rusted_crowbar_visual",
       "rig_family_id": "humanoid_standard",
       "socket_role": "hand_right",
-      "local_position": { "x": 0.061, "y": 0.125, "z": -0.136 },
-      "local_rotation": { "x": 2.939, "y": -99.096, "z": -77.579 },
-      "local_scale": { "x": 0.5638575, "y": 0.5638575, "z": 0.5638575 }
+      "local_position": { "x": 0.057, "y": 0.003, "z": -0.202 },
+      "local_rotation": { "x": 36.8301773, "y": 296.8037, "z": 305.648071 },
+      "local_scale": { "x": 1, "y": 1, "z": 1 }
     },
     {
       "type": "attachment_pose",
@@ -46,9 +46,39 @@
       "visual_profile_id": "core:lee_enfield_visual",
       "rig_profile_id": "core:human_standard_visual_rig",
       "socket_role": "hand_right",
-      "local_position": { "x": 0.267, "y": 0.289, "z": -0.005 },
-      "local_rotation": { "x": 4.257, "y": 186.1, "z": 182.634 },
-      "local_scale": { "x": 1.0, "y": 1.0, "z": 1.0 }
+      "local_position": { "x": 0.139, "y": 0.4, "z": 0.337 },
+      "local_rotation": { "x": 331.611725, "y": 260.3562, "z": 209.742981 },
+      "local_scale": { "x": 1, "y": 1, "z": 1 }
+    },
+    {
+      "type": "attachment_pose",
+      "id": "core:canvas_belt_human_waist_pose",
+      "visual_profile_id": "core:canvas_belt_visual",
+      "rig_profile_id": "core:human_standard_visual_rig",
+      "socket_role": "waist",
+      "local_position": { "x": -0.021, "y": -0.24, "z": -0.014 },
+      "local_rotation": { "x": 9.180099, "y": 4.684836E-08, "z": 5.83500366E-07 },
+      "local_scale": { "x": 0.6037581, "y": 0.446965, "z": 0.423906058 }
+    },
+    {
+      "type": "attachment_pose",
+      "id": "core:steel_helmet_human_head_pose",
+      "visual_profile_id": "core:steel_helmet_visual",
+      "rig_profile_id": "core:human_standard_visual_rig",
+      "socket_role": "head",
+      "local_position": { "x": 0.178, "y": 0.119, "z": -0.004 },
+      "local_rotation": { "x": 348.706482, "y": 6.899248E-08, "z": -6.978043E-07 },
+      "local_scale": { "x": 1.8, "y": 1.8, "z": 1.8 }
+    },
+    {
+      "type": "attachment_pose",
+      "id": "core:work_goggles_human_eyes_pose",
+      "visual_profile_id": "core:work_goggles_visual",
+      "rig_profile_id": "core:human_standard_visual_rig",
+      "socket_role": "eyes",
+      "local_position": { "x": -0.0016, "y": 0.1096, "z": 0.0338 },
+      "local_rotation": { "x": 0, "y": 0, "z": 0 },
+      "local_scale": { "x": 0.791736841, "y": 0.8, "z": 0.945942938 }
     }
   ]
 }

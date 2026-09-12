@@ -1,0 +1,9 @@
+Asset: Belt
+Author: SimpleMan (Sketchfab: postal1443)
+Source: https://sketchfab.com/3d-models/belt-14c017540bd64fda812557411a24b0d9
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+Attribution required: Yes
+Original file: Belt.usdz
+Original SHA-256: 631689E8BE53B12EC992A2A9CA010DF4A0B1897AF37ED0428462B82F5CD46024
+Notes: Provenance and license metadata are embedded in the provided USDZ. The original file is preserved unmodified under Original/.

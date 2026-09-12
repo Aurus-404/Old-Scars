@@ -185,9 +185,9 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 - **Estado:** `DONE / ACCEPTED`.
 - **Fecha/origen:** 2026-09-03 — Prueba 3 runtime warnings.
-- **Resolución:** la composición runtime vincula explícitamente el `ActorEquipmentComponent` real con el `EntityEquipmentVisualSynchronizer` y el `EntityVisualRigRuntime` de la misma representación. Player conserva el mismo seam authored. El tint debug Blue/Red recorre renderers corporales y excluye subárboles `EquippedVisualInstanceMarker`.
-- **Validación:** compile Runtime/Editor, diagnóstico IMPL-0016 y cobertura M41.2 `PASS`; aceptación manual Blue/Red confirmó crowbar, Lee-Enfield y small backpack visibles, sin tint de Equipment, sin duplicados ni warning de source faltante.
-- **Límites:** sin IK, animation, sockets nuevos, materiales de armas ni otra autoridad de Equipment.
+- **Resolución:** la composición runtime vincula explícitamente el `ActorEquipmentComponent` real con el `EntityEquipmentVisualSynchronizer` y el `EntityVisualRigRuntime` de la misma representación. Player conserva el mismo seam authored. El tint debug Blue/Red recorre renderers corporales y excluye subárboles `EquippedVisualInstanceMarker`. Los passes visuales derivados reemplazan placeholders de crowbar/Lee-Enfield, agregan Bandage/Canteen/Canned Food world-only y cubren Canvas Belt/M36/Work Goggles mediante los perfiles, sockets y `AttachmentPose` existentes; el tuner rígido descubre contenido por datos, no por item hardcodeado.
+- **Validación:** compile Runtime/Editor, GameData, diagnóstico IMPL-0016, cobertura M41.2, Pose Tuner y catálogo rígido consolidado `PASS`; aceptación manual confirmó crowbar, Lee-Enfield, small backpack, Belt, M36 y Goggles, sin tint de Equipment, duplicados ni warning de source faltante.
+- **Límites:** sin IK, animation, procedural hand placement, nueva autoridad de Equipment ni identidad improvisada para Ammo Boxes.
 
 ## IMPL-0017 — Timed Bandaging V1 compartido y self-treatment NPC
 
