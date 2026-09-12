@@ -21,19 +21,19 @@ No es una lista de bugs ni de implementaciones pequeñas:
 
 Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renombran retrospectivamente y una coding unit/intervención dentro de un milestone no consume automáticamente un nuevo ID.
 
-## Estado de producción — 2026-09-03
+## Estado de producción — 2026-09-12
 
 | Campo | Estado canónico |
 | --- | --- |
 | Milestone grande cerrado más reciente | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 |
 | Milestone grande activo | M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 |
-| Estado M41.4 | `IN PROGRESS — IMPLEMENTED BASELINE; POST-PLAYTEST SANITATION / PRUEBA 3 CORRECTIONS ACTIVE` |
+| Estado M41.4 | `IN PROGRESS — F8A/B/C DONE; P4 MANUAL INTEGRATION GATE PENDING` |
 | Persistence Ready | `APPROVED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
-| Próximo trabajo | P4 Prueba 3.3 → F8A Aim Bias Evidence; P2 y P3 DONE / PUBLISHED |
-| Después | F8B/C condicional → F8D/E → Player Debug/Observability closeout → QA integrado → decisión explícita antes de otro sistema grande |
+| Próximo trabajo | P4 Prueba 3.3 — aceptación manual integrada; F8A/B/C DONE / PUBLISHED; ISSUE-0008 RESOLVED |
+| Después | P7 Player Debug Invincible → F10 Observability V2 → QA integrada / cleanup; F8D sólo con evidencia residual, F8E sólo por consumers reales |
 
 ### Qué significa el estado actual de M41.4
 
@@ -46,7 +46,7 @@ M41.4 **no está esperando ser implementado desde cero**. El baseline de affilia
 - F6 — LostContact/Search V1;
 - F7 — representación humana + hitboxes anatómicos explícitos.
 
-Prueba 3/3.1/3.2 confirmó gran parte de esas correcciones en ejecución real y detectó nuevos problemas de tooling/KO que deben resolverse antes de medir aim con rigor. El detalle vive en `NPC_AI_Sanitation_Plan.md` y `Prueba_3_Findings.md`.
+Prueba 3/3.1/3.2 confirmó gran parte de esas correcciones en ejecución real. P2/P3 y F8A/B/C ya están cerrados; el gate de aceptación manual integrada P4 sigue pendiente. El estado operativo vive en `Current_Milestone.md` y la cola exacta en `Next_Sprints.md`.
 
 El gate `AI Ready` aprobado en M41.1 **no se reabre**: estas correcciones pertenecen a integración/game feel/QA del bloque M41.4 y no implican que Navigation/Perception foundation haya dejado de estar validada.
 
@@ -69,24 +69,20 @@ Correction Pass:
   3. minimum real-time KO dwell (P2, DONE / PUBLISHED: 9ca0335)
   4. KO / combat-memory continuity
     ↓
-Prueba 3.3 — 1 Blue vs 1 Red limpio
+F8A/B/C — DONE / PUBLISHED; ISSUE-0008 RESOLVED
     ↓
-F8A — Aim Bias Evidence
+P4 — Prueba 3.3; aceptación manual integrada NEXT
     ↓
-F8B — Primary Aim Point genérico, sólo si evidencia
+P7 — Player Debug Invincible
     ↓
-F8C — before/after controlado
+P8 — F10 Observability V2
     ↓
-F8D — review pequeño de accuracy
-    ↓
-F8E — cleanup legacy capsule/anatomy
-    ↓
-F9/F10 — completar Player Debug + Observability V2
-    ↓
-F11–F15 — QA integrado / game feel / cleanup
+P9 — QA integrada / game feel / cleanup
     ↓
 Decisión explícita antes de otro sistema grande
 ```
+
+F8A/B/C se completaron como slice controlada separada. Eso no acredita ni reemplaza el gate manual integrado P4. F8D no queda abierto por inercia tras el resultado pareado; F8E sólo se considera si hay consumers legacy concretos.
 
 Las fases/subfases anteriores son **coding units dentro del cierre M41.4/NPC Foundation**, no nuevos milestones reservados.
 
@@ -129,7 +125,7 @@ Dirección objetivo:
 
 `Target → Primary Aim Point → shooter focus/context error → weapon → PhysicalShotPathResolver → actual hit → receiver`.
 
-El shooter no debe conocer `Torso` ni anatomía/especie concreta para encontrar un center-mass razonable. `ISSUE-0008` sigue `SUSPECTED` hasta F8A/8C; Prueba 3 no reprodujo cualitativamente el patrón extremo de sólo piernas, pero la muestra no alcanza para cerrarlo.
+El shooter no debe conocer `Torso` ni anatomía/especie concreta para encontrar un center-mass razonable. `ISSUE-0008` quedó `RESOLVED` con el seam mínimo `ActorPrimaryAimPoint` y la evidencia pareada F8C; causa, cifras y validación están en `Issue_Registry.md`. No se retuneó accuracy.
 
 ### KO / memoria mínima de combate
 

@@ -8,7 +8,7 @@ Este archivo es el snapshot operativo breve. `Project_Roadmap.md` conserva IDs/d
 
 Estado operativo:
 
-`IN PROGRESS — P3 DONE/PUBLISHED; NEXT P4 PRUEBA 3.3`
+`IN PROGRESS — P3 DONE/PUBLISHED; F8A/B/C DONE/PUBLISHED; NEXT P4 PRUEBA 3.3`
 
 Plan activo: `NPC_AI_Sanitation_Plan.md`.
 
@@ -42,7 +42,7 @@ P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aa
 
 F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
 
-## P2 y P3 cerrados — próximo paso exacto P4
+## P2, P3 y targeting F8 cerrados — próximo paso exacto P4
 
 P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED** el 2026-09-07 en `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Condition compartida Player/NPC; Core `5 s` es tuning inicial de prueba, no balance final. Current Slice v1 conserva restante y continuidad de recuperación; offline no consume el mínimo y un save legacy que deriva Unconscious inicia el mínimo completo. Diagnostic P2, sesión Play nueva y siete regresiones proporcionales PASS. No sustituye aceptación manual integrada de M41.
 
@@ -50,15 +50,17 @@ P3 — KO / combat-memory continuity: **DONE / PUBLISHED** el 2026-09-07 en `394
 
 Próximo: **P4 — Prueba 3.3**. No iniciado; aceptación manual integrada de M41 pendiente.
 
+F8A Aim Bias Evidence, F8B Generic Primary Aim Point y F8C Controlled Paired Before/After están `DONE / PASS / PUBLISHED`. `ISSUE-0008` queda `RESOLVED`: el detalle causal y la evidencia pareada están en `Issue_Registry.md`. No se retuneó accuracy. Estos diagnostics no sustituyen la aceptación manual integrada pendiente de P4.
+
 ## Orden operativo aprobado para cerrar M41
 
 1. **P1 — F6 DONE / ACCEPTED / PUBLISHED**, Correction Pass B cerrado.
 2. **P2 — minimum real-time KO dwell: DONE / PUBLISHED**; physiology sigue siendo autoridad después del mínimo.
 3. **P3 — KO / combat-memory continuity: DONE / PUBLISHED**; identidad/contexto mínimo separado del threat activo y sin posición oculta.
 4. **P4 — Prueba 3.3**: 1 Blue vs 1 Red, Player Invisible ON, observabilidad simultánea, KO/recovery/contexto interpretable.
-5. **P5 — F8A Aim Bias Evidence**: medir antes de cambiar aim/accuracy.
-6. **P6 — F8B/C y F8D sólo si la evidencia lo justifica**: Primary Aim Point genérico y comparación controlada; ningún retuning por intuición.
-7. **P7 — Player Debug Invincible**: pipeline físico/médico real continúa, pero QA puede bloquear el desenlace terminal Dead. OFF = gameplay normal.
+5. **P5 — F8A Aim Bias Evidence: DONE / PASS / PUBLISHED**; `ISSUE-0008 RESOLVED`.
+6. **P6 — F8B Generic Primary Aim Point + F8C paired control: DONE / PASS / PUBLISHED**; sin retuning. F8D no está iniciado ni autorizado por inercia.
+7. **P7 — Player Debug Invincible**: permanece después de P4; pipeline físico/médico real continúa, pero QA puede bloquear el desenlace terminal Dead. OFF = gameplay normal.
 8. **P8 — completar Observability V2/F10** sobre el mismo tooling, incluyendo targeting/shot evidence cuando existan esos contratos.
 9. **P9 — migración legacy + QA integrada + aceptación manual + cleanup** y cierre formal de NPC Foundation V1.
 
@@ -69,7 +71,7 @@ M41 no se considera DONE sólo por compilación o diagnostics aislados. Requiere
 - F6 aceptado y publicado;
 - KO dwell y KO memory coherentes;
 - Prueba 3.3 aceptada;
-- `ISSUE-0008` con conclusión sustentada y before/after si hubo corrección;
+- `ISSUE-0008 RESOLVED` con causa y before/after pareado en `Issue_Registry.md`;
 - Invincible usable para QA Player sin romper OFF;
 - F10 suficiente para explicar percepción/aim/hits/KO;
 - consumers legacy migrados cuando corresponda;
@@ -87,7 +89,7 @@ La secuencia sistémica aprobada es:
 2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC.
 3. `IMPL-0021` Localized Limb Impairment, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
 
-No introducir Encumbrance entre F8A y su comparación, porque velocidad NPC ya participa en las condiciones de accuracy y contaminaría la medición.
+No introducir Encumbrance en comparaciones futuras de accuracy, porque velocidad NPC participa en sus condiciones. F8A/F8C ya cerraron ISSUE-0008 sin retuning.
 
 ## Carry Weight — contrato de producto ya fijado
 
@@ -106,7 +108,6 @@ Antes de este bloque debe resolverse `ISSUE-0022` para que recargar/disparar no 
 
 ## Issues activos relevantes
 
-- `ISSUE-0008` — posible sesgo de impactos piernas/pies; medir en F8A antes de tocar gameplay.
 - `ISSUE-0023` — posible desajuste eye origin/representación humana; SUSPECTED.
 - `ISSUE-0012` — falta Player Debug Invincible.
 - `ISSUE-0022` — munición cargada deja de contribuir correctamente a la masa agregada.

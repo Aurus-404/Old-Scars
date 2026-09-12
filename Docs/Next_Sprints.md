@@ -2,7 +2,7 @@
 
 Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Secuencia operativa aprobada — 2026-09-06
+## Secuencia operativa vigente — 2026-09-12
 
 ### 1. P1 — F6 cerrado
 
@@ -56,7 +56,7 @@ Referencia: `IMPL-0014`, `ISSUE-0020`.
 
 ### 4. P4 — Prueba 3.3 limpia
 
-Estado: `NEXT — GATE BEFORE F8A`. No iniciado.
+Estado: `NEXT — GATE M41`. Sigue pendiente la aceptación manual integrada; los diagnostics F8 completados no sustituyen este gate.
 
 Escenario:
 
@@ -76,45 +76,17 @@ Gate:
 
 ### 5. P5 — F8A Aim Bias Evidence
 
-Estado: `AFTER PRUEBA 3.3`.
+Estado: `DONE / PASS / PUBLISHED`. Evidencia y resultado en `Issue_Registry.md`; `ISSUE-0008 RESOLVED`. Sin tuning de accuracy.
 
-No cambiar gameplay.
+### 6. P6 — F8B Generic Primary Aim Point + F8C paired control
 
-Capturar por shot, de forma correlacionada y reproducible:
+Estado: `DONE / PASS / PUBLISHED`. Se conserva el seam target-side mínimo y el fallback legacy para targets sin punto. Las condiciones y transiciones F8C están registradas en `Issue_Registry.md`.
 
-- target/TargetId;
-- aim source;
-- aim point actual;
-- proposed center-mass relevante;
-- focus/current spread;
-- shot origin/direction;
-- hit collider/hit point;
-- BodyRegion o miss;
-- seed/condiciones.
-
-No tocar Focus, spread, distance/movement penalties, burst, damage, .303 ni anatomy durante la medición.
-
-Gate: concluir si `ISSUE-0008` depende materialmente del base aim point o si la evidencia apunta a otra causa.
-
-### 6. P6 — F8B/C y F8D sólo si corresponde
-
-Estado: `CONDITIONAL`.
-
-Si F8A justifica cambiar el punto base:
-
-- introducir sólo el Primary Aim Point target-side mínimo;
-- humano → center-mass razonable;
-- futuros targets → su punto equivalente;
-- shooter no inspecciona Torso/especie;
-- sin weak points/scoring/head targeting.
-
-Después repetir before/after con mismas condiciones.
-
-F8D review de accuracy sólo ocurre si quedan problemas demostrados después de F8C. No retunear por intuición.
+F8D no está iniciado ni es el siguiente trabajo: sólo se reabre una revisión pequeña si aparece evidencia concreta de un problema residual. No retunear por intuición.
 
 ### 7. P7 — Player Debug Invincible
 
-Estado: `AFTER F8 TARGETING STABILIZATION`.
+Estado: `AFTER P4 MANUAL INTEGRATION GATE`; el targeting F8 ya está estabilizado para ISSUE-0008.
 
 Objetivo QA:
 

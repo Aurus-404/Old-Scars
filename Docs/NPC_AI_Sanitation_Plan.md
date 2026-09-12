@@ -227,7 +227,7 @@ Una identidad efímera en Encounter, sin posición ni nueva autoridad. Ventana `
 
 ## P4 — Prueba 3.3
 
-**Estado:** `NEXT — GATE BEFORE F8A`. No iniciado.
+**Estado:** `NEXT — GATE M41`. Aceptación manual integrada aún pendiente; F8A/B/C se completaron con sus gates focalizados y no sustituyen esta prueba.
 
 1 Blue vs 1 Red:
 
@@ -243,39 +243,17 @@ Un run sin KO no valida recovery.
 
 ## P5 — F8A Aim Bias Evidence
 
-**Estado:** `AFTER P4`.
-
-No cambiar gameplay.
-
-Instrumentar evidencia correlacionada por shot:
-
-- target;
-- aim source/point;
-- proposed center-mass;
-- focus/spread;
-- origin/direction;
-- hit collider/point;
-- region/miss;
-- seed/condiciones.
-
-La instrumentación útil debe poder evolucionar después hacia F10, no crear un observador paralelo descartable si puede evitarse.
+**Estado:** `DONE / PASS / PUBLISHED`; `ISSUE-0008 RESOLVED`. Causa y evidencia F8A/F8C: `Issue_Registry.md`. No se retuneó accuracy.
 
 ## P6 — F8B/C; F8D sólo si evidencia lo exige
 
-Si F8A confirma que el base aim point contribuye materialmente:
+**Estado F8B/C:** `DONE / PASS / PUBLISHED`. El seam target-side mínimo se conserva; firearms consumen el punto authored y el fallback legacy sólo cubre targets sin punto. Evidencia pareada en `Issue_Registry.md`.
 
-- introducir Primary Aim Point genérico target-side;
-- humano → center-mass razonable;
-- futuros targets → equivalente propio;
-- sin weak points/scoring/head targeting.
-
-Después repetir before/after con mismas condiciones.
-
-F8D sólo revisa accuracy residual con evidencia; no es refactor automático.
+F8D no está iniciado ni se abre automáticamente. Sólo revisar accuracy residual si aparece evidencia concreta; no es refactor automático.
 
 ## P7 — Player Debug Invincible
 
-**Estado:** `AFTER TARGETING STABILIZATION`.
+**Estado:** `AFTER P4 MANUAL INTEGRATION GATE`; F8 targeting ya está estabilizado para ISSUE-0008.
 
 Invincible ON mantiene:
 
@@ -322,7 +300,7 @@ NPC Foundation V1 sólo cierra cuando:
 - P1 publicado/aceptado;
 - P2/P3 cumplen contratos;
 - Prueba 3.3 aceptada;
-- `ISSUE-0008` tiene conclusión sustentada y before/after si hubo fix;
+- `ISSUE-0008 RESOLVED`, con evidencia before/after pareada en `Issue_Registry.md`;
 - Invincible funciona ON/OFF;
 - F10 permite explicar resultados;
 - Search/Bandaging/Reload/Perception/ownership siguen pasando;

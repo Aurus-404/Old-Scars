@@ -3702,3 +3702,8 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Crowbar V1 y Retro PS2 Bolt Action Rifle reemplazan sus placeholders sin cambiar identidades gameplay; Bandage, Canteen y Canned Food usan world visuals externos, mientras Ammo Boxes permanece bloqueado por falta de una identidad gameplay adecuada.
 - Canvas Belt, M36/Steel Helmet y Work Goggles reutilizan Equipment, `ItemVisualProfile`, `VisualAsset`, sockets `waist/head/eyes` y `AttachmentPose`; el Pose Tuner rígido los descubre junto con crowbar, Lee-Enfield y small backpack sin IDs hardcodeados.
 - Runtime/Editor compile, GameData, Pose Tuner Diagnostics, catálogo rígido, siete sockets, referencias/IDs y `git diff --check` `PASS`. Aceptación manual final: Belt, M36, Goggles y crowbar runtime `PASS`. Sin `Missing Transform binding` ni `has no IEquipmentVisualSource`; `ProjectSettings.runInBackground` continúa como cambio local ajeno fuera del commit.
+
+## 2026-09-12 — M41 F8A/F8B/F8C targeting slice DONE / PUBLISHED
+
+- F8A/B/C `PASS`; ISSUE-0008 `RESOLVED`. Causa, corrección y cifras del control pareado quedan registradas en `Issue_Registry.md`; no se retuneó accuracy. Commit único de cierre: `fix(combat): add target-side primary aim point`.
+- Runtime/Editor compile y F8C paired diagnostic `PASS`; no se repitió Unity durante este closeout. Próximo gate M41 según el estado documentado: P4, Prueba 3.3 de aceptación manual integrada; no se considera satisfecha por los diagnostics focalizados.

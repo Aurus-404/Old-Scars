@@ -190,6 +190,8 @@ Sólo si 8A confirma que el seam actual contribuye al problema: introducir el pu
 
 Repetir exactamente la muestra de 8A con mismos seeds/condiciones. No retunear spread, damage ni anatomy. Resolver `ISSUE-0008` sólo si la distribución queda explicada y el sesgo anómalo desaparece o se demuestra otra causa.
 
+**Estado al 2026-09-12:** 8A/8B/8C `PASS / PUBLISHED`; F8C pareado resolvió `ISSUE-0008`. Causa y evidencia medida en `Issue_Registry.md`; no hubo retuning de accuracy.
+
 ### 8D — Accuracy Simplification Review
 
 Revisar uno por uno Focus, distance, target/shooter movement, burst y weapon spread. No implementar cambios por defecto; cambiar sólo lo que la evidencia muestre redundante/incorrecto.

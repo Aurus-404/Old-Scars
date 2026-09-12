@@ -27,15 +27,6 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 
 ## Issues activos
 
-### ISSUE-0008 — Posible sesgo de impactos hacia piernas/pies
-- **Tipo/estado/severidad:** `BUG` · `SUSPECTED` · `P1 / ORANGE`
-- **Origen:** Prueba 2, 2026-09-01.
-- **Síntoma:** muestra manual inicial concentrada en piernas/pies.
-- **Evidencia actual:** F7 agregó anatomía física explícita y diagnostic 6/6; Prueba 3 mostró múltiples Torso/Arm/Leg y no reprodujo cualitativamente el patrón extremo, pero todavía no existe muestra NPC estadística limpia.
-- **Hipótesis fuerte:** firearm aim sigue usando `ActorLocomotionCollider.bounds.center`, más bajo que center-mass humano; spread radial normal puede amplificarlo.
-- **Plan:** después de Correction Pass + Prueba 3.3, F8A instrumenta aim source/point, spread, direction, collider/region/miss. F8B/C sólo cambian a Primary Aim Point genérico si evidencia lo justifica.
-- **No hacer:** retunear spread/damage/anatomy por intuición.
-
 ### ISSUE-0012 — Falta modo debug Invincible
 - **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`
 - **Origen:** post-Prueba 2.
@@ -68,6 +59,15 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 ---
 
 ## Issues resueltos / historial
+
+### ISSUE-0008 — Sesgo de impactos hacia piernas/pies
+- **Tipo/estado/severidad:** `BUG` · `RESOLVED` · `P1 / ORANGE`
+- **Origen/síntoma:** Prueba 2, 2026-09-01; impactos NPC concentrados en piernas/pies.
+- **Causa demostrada:** el aim de firearms usaba `ActorLocomotionCollider.bounds.center`, a `-0.18 m` del centro del collider Torso en el humano authored. El spread existente amplificaba ese punto de partida bajo.
+- **Corrección/publicación:** F8B añade el seam target-side mínimo `ActorPrimaryAimPoint` y un único punto authored center-mass en `humanoid_standard`; `HumanEncounterAIController` lo usa para firearms y conserva el fallback legacy sólo para targets sin punto. `PhysicalOrigin`, melee y los valores de accuracy/spread/focus/damage/anatomy no cambiaron. Publicado en `dev` como `fix(combat): add target-side primary aim point` (cierre F8A/F8B/F8C, 2026-09-12).
+- **Evidencia F8A:** 120 shots legacy en 75 seeds; 68 Torso, 15 LeftLeg, 14 RightLeg, 17 Miss y 6 Ground/world. Runtime/Editor compile y diagnóstico F8A PASS.
+- **Evidencia F8C pareada:** 120 seeds únicos; 120 LEGACY + 120 PRIMARY, exactamente un primer shot por condición y `aim_sample_sequence == 1`. LEGACY: Torso 71, Left/RightArm 0, Legs 30, Head 0, Miss 12, Ground/world 7. PRIMARY: Torso 110, LeftArm 1, RightArm/Legs/Head 0, Miss 9, Ground/world 0. Transiciones: Leg→Torso 28, Leg→Miss 2, Torso→Torso 71, Torso→Leg 0, Miss→Torso 4, Miss→Miss 7, Ground/world→Torso 7, Miss→LeftArm 1. Aim point `-0.18 m → 0.00 m`; mean/max absolute paired spread delta `0.000061°`. Seed, sequence, focus, movement, firearm, ammo, position y shot origin pasaron equivalencia.
+- **Validación:** F8A/F8B/F8C y Runtime/Editor compile `PASS`; ISSUE-0008 se resuelve por comparación controlada. No se retuneó accuracy ni se abrió F8D.
 
 ### ISSUE-0020 — Incapacidad temporal borra contexto de enemigo y reinicia el combate
 - **Tipo/estado/severidad:** `BUG` · `RESOLVED` · `P1 / ORANGE`

@@ -788,7 +788,9 @@ namespace OldScars.Core.Actors
             Collider targetCollider = SelectTargetCollider(threat);
             if (targetCollider == null)
                 return;
-            Vector3 attackPoint = targetCollider.bounds.center;
+            Vector3 attackPoint = firearm != null
+                ? ResolveFirearmAimPoint(threat, targetCollider)
+                : targetCollider.bounds.center;
             float distance = FlatDistance(transform.position, attackPoint);
             float engagementRange = firearm != null ? Mathf.Min(firearm.range, preferredCombatDistance) : melee.melee_range;
             float physicalDistance = firearm != null
@@ -820,7 +822,9 @@ namespace OldScars.Core.Actors
             Collider targetCollider = SelectTargetCollider(threat);
             if (targetCollider == null)
                 return;
-            Vector3 aimPoint = targetCollider.bounds.center;
+            Vector3 aimPoint = firearm != null
+                ? ResolveFirearmAimPoint(threat, targetCollider)
+                : targetCollider.bounds.center;
 
             if (firearm != null)
             {
@@ -953,6 +957,16 @@ namespace OldScars.Core.Actors
                 closestHeight = heightDistance;
             }
             return selected;
+        }
+
+        private static Vector3 ResolveFirearmAimPoint(ActorRuntimeIdentity target, Collider legacyCollider)
+        {
+            ActorPrimaryAimPoint primaryAimPoint = target != null
+                ? target.GetComponentInChildren<ActorPrimaryAimPoint>(false)
+                : null;
+            if (primaryAimPoint != null)
+                return primaryAimPoint.Point.position;
+            return legacyCollider != null ? legacyCollider.bounds.center : target.transform.position;
         }
 
         private void EnterInactive(string reason)
