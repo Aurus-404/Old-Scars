@@ -13,7 +13,7 @@ This document is a compact navigation reference. It does not define a second set
 | Implemented C# authority, services, persistence, identity, ownership, transactions | [Technical_Architecture.md](Technical_Architecture.md) |
 | Content schemas, IDs, validation, mod loading | [DataDriven_JSON_Rules.md](DataDriven_JSON_Rules.md) |
 | Gate criteria, evidence, and risk register | [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md) |
-| Durable agent workflow | [../AGENTS.md](../AGENTS.md) and repo-local skills |
+| Durable agent workflow, Git/checkout strategy, Unity validation cost guardrails | [../AGENTS.md](../AGENTS.md) and repo-local skills |
 
 ## Technical Invariants To Locate Before Changing Them
 
@@ -36,3 +36,5 @@ Do not treat a past milestone label as a future restriction: M36-M41 foundations
 ## Optional Tooling
 
 Unity MCP uses a reachable Editor Pipeline server. That technical requirement does not make Unity CLI or Pipeline a general Old Scars workflow dependency.
+
+For Unity workspace/checkouts and validation-cost decisions, follow `AGENTS.md` and `$old-scars-unity-validation`. The canonical warm checkout is the default; alternate/cold Unity checkouts are an explicitly authorized exception, not a routine isolation technique.
