@@ -25,6 +25,7 @@ namespace OldScars.Core.Actors
         private PlayerMovementController movementController;
         private ActorRuntimeIdentity playerIdentity;
         private ActorDebugAiAcquisitionExclusion playerAiAcquisitionExclusion;
+        private ActorDebugInvincible playerInvincible;
         private ActorStaminaComponent stamina;
         private CameraRigController cameraRig;
         private Camera gameplayCamera;
@@ -157,6 +158,9 @@ namespace OldScars.Core.Actors
             playerAiAcquisitionExclusion = playerIdentity != null
                 ? playerIdentity.GetComponent<ActorDebugAiAcquisitionExclusion>()
                 : null;
+            playerInvincible = playerIdentity != null
+                ? playerIdentity.GetComponent<ActorDebugInvincible>()
+                : null;
             stamina = movement != null ? movement.Stamina : null;
             cameraRig = camera;
             gameplayCamera = playerCamera;
@@ -257,6 +261,7 @@ namespace OldScars.Core.Actors
                 movementController.ResetDebugMovementMultiplier();
 
             DrawAiAcquisitionExclusionControl();
+            DrawInvincibleControl();
 
             if (stamina == null)
             {
@@ -560,6 +565,8 @@ namespace OldScars.Core.Actors
                 playerIdentity = actorNeeds.GetComponent<ActorRuntimeIdentity>();
             if (playerAiAcquisitionExclusion == null && playerIdentity != null)
                 playerAiAcquisitionExclusion = playerIdentity.GetComponent<ActorDebugAiAcquisitionExclusion>();
+            if (playerInvincible == null && playerIdentity != null)
+                playerInvincible = playerIdentity.GetComponent<ActorDebugInvincible>();
             if (stamina == null && movementController != null)
                 stamina = movementController.Stamina;
             if (gameplayCamera == null)
@@ -588,6 +595,24 @@ namespace OldScars.Core.Actors
             GUILayout.Label(requested
                 ? "AI acquisition: EXCLUDED (debug)"
                 : "AI acquisition: ELIGIBLE");
+        }
+
+        private void DrawInvincibleControl()
+        {
+            if (playerIdentity == null)
+            {
+                GUILayout.Label("Invincible: <PLAYER IDENTITY NONE>");
+                return;
+            }
+
+            if (playerInvincible == null)
+                playerInvincible = playerIdentity.gameObject.AddComponent<ActorDebugInvincible>();
+
+            bool current = playerInvincible.IsInvincible;
+            bool requested = GUILayout.Toggle(current, "Invincible");
+            if (requested != current)
+                playerInvincible.SetInvincible(requested);
+            GUILayout.Label("Invincible: " + (requested ? "ON" : "OFF"));
         }
 
         private void HandleTeleportInput()

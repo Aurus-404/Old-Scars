@@ -7,6 +7,8 @@ namespace OldScars.Core.Actors
     [RequireComponent(typeof(ActorMedicalStateComponent))]
     public sealed class ActorHealthComponent : MonoBehaviour
     {
+        private const float DebugProtectedVitalIntegrityFloor = 0.001f;
+
         public const string AliveActorTag = "alive_actor";
         public const string DamagedActorTag = "damaged_actor";
         public const string LowHealthActorTag = "low_health_actor";
@@ -35,6 +37,8 @@ namespace OldScars.Core.Actors
         public float VitalIntegrity => currentHealth;
         public float LowHealthThreshold => lowHealthThreshold;
         public bool IsDead => currentHealth <= 0f;
+        public bool IsTerminalDeathProtected =>
+            GetComponent<ActorDebugInvincible>()?.IsInvincible == true;
 
         private void Awake()
         {
@@ -63,7 +67,8 @@ namespace OldScars.Core.Actors
                 return false;
 
             float previousHealth = currentHealth;
-            currentHealth = Mathf.Clamp(currentHealth - amount, 0f, maxHealth);
+            currentHealth = ProtectTerminalVitalIntegrity(
+                Mathf.Clamp(currentHealth - amount, 0f, maxHealth), previousHealth);
 
             if (IsDead)
                 ProcessDeath();
@@ -150,8 +155,17 @@ namespace OldScars.Core.Actors
 
         public void Kill()
         {
-            currentHealth = 0f;
-            ProcessDeath();
+            if (IsDead)
+            {
+                ProcessDeath();
+                return;
+            }
+
+            currentHealth = ProtectTerminalVitalIntegrity(0f, currentHealth);
+            if (IsDead)
+                ProcessDeath();
+            else
+                SyncLivingTags();
         }
 
         public void ApplyInitialHealth(float newMaxHealth, float newCurrentHealth)
@@ -215,6 +229,13 @@ namespace OldScars.Core.Actors
         }
 
         private static bool FinitePositive(float value) => Finite(value) && value > 0f;
+
+        private float ProtectTerminalVitalIntegrity(float candidate, float previous)
+        {
+            return candidate <= 0f && IsTerminalDeathProtected
+                ? Mathf.Min(previous, DebugProtectedVitalIntegrityFloor)
+                : candidate;
+        }
 
         private void ProcessDeath()
         {

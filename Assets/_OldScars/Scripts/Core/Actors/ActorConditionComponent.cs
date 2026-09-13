@@ -32,6 +32,8 @@ namespace OldScars.Core.Actors
     [DisallowMultipleComponent]
     public sealed class ActorConditionComponent : MonoBehaviour
     {
+        private const float DebugProtectedBloodFractionMargin = 0.0001f;
+
         private const float PainPressureWeight = 0.45f;
         private const float CirculatoryPressureWeight = 0.9f;
         private const float BluntTraumaFactor = 0.65f;
@@ -183,6 +185,12 @@ namespace OldScars.Core.Actors
             else if (bloodFraction > fatalBloodFraction && bloodFraction < 1f)
                 bloodFraction = Mathf.Min(1f, bloodFraction + bloodRecoveryPerGameHour * elapsedHours);
             transientTrauma = Mathf.Max(0f, transientTrauma - traumaRecoveryPerGameHour * elapsedHours);
+
+            if (bloodFraction <= fatalBloodFraction && health?.IsTerminalDeathProtected == true)
+            {
+                health.Kill();
+                bloodFraction = Mathf.Min(1f, fatalBloodFraction + DebugProtectedBloodFractionMargin);
+            }
 
             bool changed = !Mathf.Approximately(previousBlood, bloodFraction) ||
                            !Mathf.Approximately(previousTrauma, transientTrauma);
