@@ -56,6 +56,21 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Impacto/alcance:** el comportamiento vuelve incoherente usar x100 durante combate activo, pero no invalida P2/P3 y no bloquea M41/F8. La mecánica x100 puede no sobrevivir al producto final.
 - **Plan:** dejar registrado y no corregir ahora. Si el fast-forward se conserva, definir primero su contrato; evitar retunear medicina, KO o AI sólo para compensar este tooling.
 
+### ISSUE-0026 — Comparación 30v30 Blue/Red con orden de spawn invertido pendiente
+- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`
+- **Origen:** primera prueba manual 30 Blue vs 30 Red, 2026-09-12; Red terminó con 8 supervivientes y Blue con 0.
+- **Límite de la evidencia:** una sola corrida no sirve para atribuir ventaja a una afiliación. `SandboxNpcController` comparte `spawnSequence`, por lo que spawnear primero 30 Blue y luego 30 Red asigna bloques distintos de seeds deterministas, posiciones y loadouts; la primera corrida además mostró diferencias de armas, munición y armadura entre bandos.
+- **Plan:** cuando la telemetry de combate esté disponible, ejecutar dos pruebas manuales comparables con mismo world/sandbox seed y escenario: A) 30 Blue → 30 Red; B) reset completo y 30 Red → 30 Blue. Dejar 5–10 minutos o hasta eliminación de un bando. Comparar ganador/supervivientes, roster/loadouts, munición/armadura, shots, hit rate, distancia/spread y distribución anatómica.
+- **No hacer:** retunear afiliaciones, armas, accuracy o AI a partir de una única 30v30.
+
+### ISSUE-0027 — Variedad anatómica de impactos en combate dinámico aún no validada
+- **Tipo/estado/severidad:** `DESIGN_DEBT` · `SUSPECTED` · `P2 / YELLOW`
+- **Origen:** cierre F8A/F8B/F8C + revisión posterior de distribución, 2026-09-12/13.
+- **Evidencia actual:** `ISSUE-0008` quedó resuelto al reemplazar el centro de `ActorLocomotionCollider` por `ActorPrimaryAimPoint`; la comparación pareada eliminó el sesgo bajo. Sin embargo, el fixture controlado de primer disparo a ~10 m/full focus produjo PRIMARY con 110 Torso, 1 LeftArm y 0 Head/Legs, por lo que todavía falta comprobar si en combate dinámico real aparecen brazos/cabeza con variedad razonable.
+- **Límite:** esto NO reabre `ISSUE-0008` ni demuestra por sí solo un bug de accuracy; el fixture F8C estaba diseñado para aislar el aim point, no para representar una batalla completa.
+- **Plan:** medir primero con telemetry en las dos 30v30 invertidas: Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg/Miss/World, junto con distancia, focus, spread y movimiento. Si Head/Arms siguen siendo anecdóticos bajo condiciones dinámicas, investigar en este orden geometría/exposición de hitboxes, distancia/movimiento/context penalties y spread; cambiar tuning sólo con evidencia.
+- **No hacer:** RNG artificial por parte del cuerpo, porcentajes hardcodeados de Head/Arms, volver a apuntar al locomotion center o retunear spread antes de medir.
+
 ---
 
 ## Issues resueltos / historial
