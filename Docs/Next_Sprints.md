@@ -2,7 +2,7 @@
 
 Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Secuencia operativa vigente — 2026-09-12
+## Secuencia operativa vigente — 2026-09-13
 
 ### 1. P1 — F6 cerrado
 
@@ -56,7 +56,7 @@ Referencia: `IMPL-0014`, `ISSUE-0020`.
 
 ### 4. P4 — Prueba 3.3 limpia
 
-Estado: `NEXT — GATE M41`. Sigue pendiente la aceptación manual integrada; los diagnostics F8 completados no sustituyen este gate.
+Estado: `DONE / ACCEPTED`. Mauro confirmó que esta validación manual ya se realizó. No se repitió durante P7 y no se agrega evidencia ficticia.
 
 Escenario:
 
@@ -86,7 +86,7 @@ F8D no está iniciado ni es el siguiente trabajo: sólo se reabre una revisión 
 
 ### 7. P7 — Player Debug Invincible
 
-Estado: `AFTER P4 MANUAL INTEGRATION GATE`; el targeting F8 ya está estabilizado para ISSUE-0008.
+Estado: `DONE / PASS / PUBLISHED` — `c96900589816239bfdf6553fba699bca6b79a54f`; el targeting F8 ya estaba estabilizado para ISSUE-0008.
 
 Objetivo QA:
 
@@ -112,7 +112,7 @@ Referencia: `IMPL-0009`, `ISSUE-0012`.
 
 ### 8. P8 — Completar Observability V2 / F10
 
-Estado: `AFTER F8 EVIDENCE CONTRACTS EXIST`.
+Estado: `NEXT EXACT STEP`; P4 está aceptado y P7 validado.
 
 Evolucionar el mismo tooling de P1/F8A:
 
@@ -129,7 +129,7 @@ Read-only. No segunda autoridad de Perception/Combat.
 
 ### 9. P9 — Legacy migration + QA integrada + cierre M41
 
-Estado: `AFTER P4–P8`.
+Estado: `AFTER P8`.
 
 Migrar sólo consumers reales que todavía dependan de representation/anatomy legacy.
 

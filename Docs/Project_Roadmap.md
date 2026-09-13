@@ -21,19 +21,19 @@ No es una lista de bugs ni de implementaciones pequeñas:
 
 Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renombran retrospectivamente y una coding unit/intervención dentro de un milestone no consume automáticamente un nuevo ID.
 
-## Estado de producción — 2026-09-12
+## Estado de producción — 2026-09-13
 
 | Campo | Estado canónico |
 | --- | --- |
 | Milestone grande cerrado más reciente | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 |
 | Milestone grande activo | M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 |
-| Estado M41.4 | `IN PROGRESS — F8A/B/C DONE; P4 MANUAL INTEGRATION GATE PENDING` |
+| Estado M41.4 | `IN PROGRESS — P4 ACCEPTED; F8A/B/C + P7 PUBLISHED; P8 NEXT` |
 | Persistence Ready | `APPROVED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
-| Próximo trabajo | P4 Prueba 3.3 — aceptación manual integrada; F8A/B/C DONE / PUBLISHED; ISSUE-0008 RESOLVED |
-| Después | P7 Player Debug Invincible → F10 Observability V2 → QA integrada / cleanup; F8D sólo con evidencia residual, F8E sólo por consumers reales |
+| Próximo trabajo | P8 — F10 Observability V2; P4 ACCEPTED, P7 DONE/PASS/PUBLISHED, ISSUE-0012 RESOLVED |
+| Después | P9 QA integrada / cleanup; F8D sólo con evidencia residual, F8E sólo por consumers reales |
 
 ### Qué significa el estado actual de M41.4
 
@@ -46,7 +46,7 @@ M41.4 **no está esperando ser implementado desde cero**. El baseline de affilia
 - F6 — LostContact/Search V1;
 - F7 — representación humana + hitboxes anatómicos explícitos.
 
-Prueba 3/3.1/3.2 confirmó gran parte de esas correcciones en ejecución real. P2/P3 y F8A/B/C ya están cerrados; el gate de aceptación manual integrada P4 sigue pendiente. El estado operativo vive en `Current_Milestone.md` y la cola exacta en `Next_Sprints.md`.
+Prueba 3/3.1/3.2 confirmó gran parte de esas correcciones en ejecución real. P2/P3 y F8A/B/C ya están cerrados; Mauro confirmó P4 Prueba 3.3 como realizada/aceptada. P7 Player Debug Invincible está validado y publicado en `c96900589816239bfdf6553fba699bca6b79a54f`. El estado operativo vive en `Current_Milestone.md` y la cola exacta en `Next_Sprints.md`.
 
 El gate `AI Ready` aprobado en M41.1 **no se reabre**: estas correcciones pertenecen a integración/game feel/QA del bloque M41.4 y no implican que Navigation/Perception foundation haya dejado de estar validada.
 
@@ -71,18 +71,18 @@ Correction Pass:
     ↓
 F8A/B/C — DONE / PUBLISHED; ISSUE-0008 RESOLVED
     ↓
-P4 — Prueba 3.3; aceptación manual integrada NEXT
+P4 — Prueba 3.3 DONE / ACCEPTED
     ↓
-P7 — Player Debug Invincible
+P7 — Player Debug Invincible DONE / PASS / PUBLISHED
     ↓
-P8 — F10 Observability V2
+P8 — F10 Observability V2 NEXT
     ↓
 P9 — QA integrada / game feel / cleanup
     ↓
 Decisión explícita antes de otro sistema grande
 ```
 
-F8A/B/C se completaron como slice controlada separada. Eso no acredita ni reemplaza el gate manual integrado P4. F8D no queda abierto por inercia tras el resultado pareado; F8E sólo se considera si hay consumers legacy concretos.
+F8A/B/C se completaron como slice controlada separada y no acreditaron por sí mismos el gate manual integrado P4; Mauro confirmó P4 separadamente. F8D no queda abierto por inercia tras el resultado pareado; F8E sólo se considera si hay consumers legacy concretos.
 
 Las fases/subfases anteriores son **coding units dentro del cierre M41.4/NPC Foundation**, no nuevos milestones reservados.
 
@@ -161,7 +161,7 @@ El shooter no debe conocer `Torso` ni anatomía/especie concreta para encontrar 
 | M41.1 — Human Encounter AI V1 | `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` | Avoid/Flee/Fight/LostContact baseline; `AI Ready APPROVED`. |
 | M41.2 — Basic Equipment & Weapon Coverage V1 | `DONE — VALIDATED` | Commit `4f877da10dee813b0bed816194110b5a27087683`. |
 | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | `DONE — VALIDATED` | Commit `a90dc4e1a38bef69e3762e398a378a666a9f993e`. |
-| M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | `IN PROGRESS — POST-PLAYTEST SANITATION` | Baseline implementado; Prueba 2→F2–F7; Prueba 3 correction pass activo. |
+| M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | `IN PROGRESS — P8 OBSERVABILITY NEXT` | Baseline implementado; P4 aceptado; F8A/B/C y P7 cerrados; P8/P9 pendientes. |
 
 ## Foundations open-world ya validadas
 
@@ -220,8 +220,8 @@ La dirección open-world permanece aprobada, pero no está autorizada para conti
 | Spike volumétrico | Deformable Volumetric Terrain Foundation | `VALIDATED` | terrain 3D deformable technical evidence. |
 | Tramo jugable | M41.2 | `DONE` | equipment/firearms coverage. |
 | Tramo jugable | M41.3 | `DONE` | NPC sandbox/loadouts. |
-| Tramo jugable activo | M41.4 | `IN PROGRESS — POST-PLAYTEST SANITATION` | combat/AI integration/game feel. |
-| Review activo | Prueba 3 / NPC Foundation review | `IN PROGRESS — CORRECTIONS REQUIRED` | cerrar defectos encontrados antes de otro sistema grande. |
+| Tramo jugable activo | M41.4 | `IN PROGRESS — P8 OBSERVABILITY NEXT` | combat/AI integration/game feel. |
+| Review activo | Prueba 3 / NPC Foundation review | `IN PROGRESS — P4 ACCEPTED; P8/P9 PENDING` | completar observability, QA integrada y cleanup antes de otro sistema grande. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | historia estructurada acotada. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | persistencia world state general. |
 | 9 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | blueprint local/materialización autorada. |

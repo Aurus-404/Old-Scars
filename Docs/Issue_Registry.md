@@ -27,12 +27,6 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 
 ## Issues activos
 
-### ISSUE-0012 — Falta modo debug Invincible
-- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`
-- **Origen:** post-Prueba 2.
-- **Plan:** después de estabilizar KO y F8 targeting. Pipeline real detection→shot→region→wounds/trauma/bleeding/condition continúa, pero QA puede bloquear coherentemente terminal Dead. OFF = gameplay normal.
-- **Riesgo conocido:** no basta con saltar `ProcessDeath`; `IsDead`, lifecycle y fatal blood loss deben seguir consistentes.
-
 ### ISSUE-0022 — Loaded ammo desaparece del cálculo de carry mass
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`
 - **Origen:** auditoría Carry Weight + revisión de repo, 2026-09-06.
@@ -74,6 +68,13 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 ---
 
 ## Issues resueltos / historial
+
+### ISSUE-0012 — Falta modo debug Invincible
+- **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P2 / YELLOW`.
+- **Origen/causa:** post-Prueba 2; QA necesitaba observar wounds/bleeding/pain/trauma/KO reales sin que `Dead` terminara prematuramente la prueba. Saltar sólo `ProcessDeath` habría contradicho Vital Integrity, lifecycle, tags y fatal blood.
+- **Resolución:** `ActorDebugInvincible` es un marker Player-oriented, efímero y no persistido. `ActorHealthComponent` conserva la autoridad terminal y limita Vital Integrity a un máximo de `0.001` sólo al intento Alive→Dead protegido, sin aumentarla. `ActorConditionComponent` conserva bleeding/KO y, después de atravesar `Condition → Health.Kill`, mantiene Blood apenas sobre `fatalBloodFraction` para que Alive, snapshot y physiology sean coherentes. OFF no cura ni resetea; la siguiente evaluación fatal vuelve a publicar Dead. Un actor ya Dead no revive y un NPC sin marker conserva el baseline.
+- **Validación:** Runtime compile `PASS`; Editor compile `PASS`; `M41 Player Debug Invincible Diagnostics: PASS`; `Actor Consciousness & Incapacitation Diagnostics: PASS`. Sin cambios a AI/Perception/Combat/accuracy/KO dwell/persistence schema.
+- **Commit funcional:** `c96900589816239bfdf6553fba699bca6b79a54f`.
 
 ### ISSUE-0008 — Sesgo de impactos hacia piernas/pies
 - **Tipo/estado/severidad:** `BUG` · `RESOLVED` · `P1 / ORANGE`
