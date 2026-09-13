@@ -4,6 +4,7 @@ using System.Reflection;
 using OldScars.Core;
 using OldScars.Core.Actors;
 using OldScars.Core.ApplicationShell;
+using OldScars.Core.Combat;
 using OldScars.Core.Data;
 using OldScars.Core.Persistence;
 using OldScars.Core.World;
@@ -41,6 +42,7 @@ namespace OldScars.Editor
         private static Vector3 movedBlueOrigin;
         private static int historicalEvidenceCount;
         private static bool redTerminated;
+        private static bool f10FixtureConfigured;
 
         static M41F6ObservabilityDiagnostics()
         {
@@ -128,7 +130,10 @@ namespace OldScars.Editor
                 case 3:
                     if (MoveBlueAndVerifyCurrentOrigin()) SetStage(4);
                     break;
-                case 4: VerifyDeadSuppression(); break;
+                case 4:
+                    if (VerifyF10TargetingAndShotEvidence()) SetStage(5);
+                    break;
+                case 5: VerifyDeadSuppression(); break;
             }
         }
 
@@ -161,6 +166,13 @@ namespace OldScars.Editor
             red = redMetadata.GetComponent<ActorRuntimeIdentity>();
             Require(blue != null && red != null && blue.IsRegistered && red.IsRegistered,
                 "Blue/Red runtime identities were not registered.");
+            ActorThreatAcquisitionController blueAcquisition = blueMetadata.GetComponent<ActorThreatAcquisitionController>();
+            ActorThreatAcquisitionController redAcquisition = redMetadata.GetComponent<ActorThreatAcquisitionController>();
+            Require(blueAcquisition != null && redAcquisition != null,
+                "F6/F10 fixture did not retain both production threat acquisition controllers.");
+            // Keep the shared visual fixture non-combatant until F10 explicitly assigns one productive threat.
+            blueAcquisition.enabled = false;
+            redAcquisition.enabled = false;
 
             Camera camera = runtime.PlayerComposition.GameplayCamera;
             Vector3 forward = Vector3.ProjectOnPlane(camera != null ? camera.transform.forward : Vector3.forward, Vector3.up);
@@ -175,6 +187,14 @@ namespace OldScars.Editor
                 "Could not find visible NavMesh positions for Blue and Red.");
             PlaceNpc(blue, bluePosition, Quaternion.LookRotation(redPosition - bluePosition));
             PlaceNpc(red, redPosition, Quaternion.LookRotation(bluePosition - redPosition));
+            HumanEncounterAIController blueAi = blueMetadata.GetComponent<HumanEncounterAIController>();
+            HumanEncounterAIController redAi = redMetadata.GetComponent<HumanEncounterAIController>();
+            string blueResponseError = null;
+            string redResponseError = null;
+            Require(blueAi != null && blueAi.TryOverrideResponse(HumanEncounterResponse.Avoid, out blueResponseError),
+                "Blue diagnostic restraint could not use the production response seam: " + blueResponseError);
+            Require(redAi != null && redAi.TryOverrideResponse(HumanEncounterResponse.Avoid, out redResponseError),
+                "Red diagnostic restraint could not use the production response seam: " + redResponseError);
             panel.SetVisibleForDiagnostics(true);
             Require(panel.IsVisible, "F6 diagnostic visibility seam did not enable presentation.");
         }
@@ -205,6 +225,172 @@ namespace OldScars.Editor
             ScreenCapture.CaptureScreenshot(SessionState.GetString(ScreenshotKey, string.Empty));
             return true;
         }
+
+        private static bool VerifyF10TargetingAndShotEvidence()
+        {
+            HumanEncounterAIController blueAi = blueMetadata.GetComponent<HumanEncounterAIController>();
+            HumanEncounterAIController redAi = redMetadata.GetComponent<HumanEncounterAIController>();
+            Require(blueAi != null && redAi != null, "F10 fixture did not retain both Encounter AI authorities.");
+            if (!f10FixtureConfigured)
+            {
+                Require(panel.CurrentWorldOverlayActorCount == 2,
+                    "Compact CURRENT actor overlay did not include both live Blue and Red actors. Count=" +
+                    panel.CurrentWorldOverlayActorCount + ".");
+                Require(SandboxNpcObservabilityPanel.TryBuildCompactActorOverlay(blueMetadata, out string blueOverlay) &&
+                        SandboxNpcObservabilityPanel.TryBuildCompactActorOverlay(redMetadata, out string redOverlay) &&
+                        blueOverlay.Contains("Blue") && redOverlay.Contains("Red") &&
+                        blueOverlay.Contains(ActorSuffix(blue.ActorInstanceId)) &&
+                        redOverlay.Contains(ActorSuffix(red.ActorInstanceId)),
+                    "Compact overlay did not preserve both affiliations and ActorInstanceId identity.");
+
+                int globalOverlayCount = panel.CurrentWorldOverlayActorCount;
+                Select(panel, blueMetadata);
+                Require(panel.Selected == blueMetadata && panel.CurrentWorldOverlayActorCount == globalOverlayCount &&
+                        SandboxNpcObservabilityPanel.TryBuildCompactActorOverlay(redMetadata, out _),
+                    "Selecting Blue removed Red from global overlay observability.");
+                Select(panel, redMetadata);
+                Require(panel.Selected == redMetadata && panel.CurrentWorldOverlayActorCount == globalOverlayCount &&
+                        SandboxNpcObservabilityPanel.TryBuildCompactActorOverlay(blueMetadata, out _),
+                    "Selecting Red removed Blue from global overlay observability.");
+                Select(panel, blueMetadata);
+                VerifyBoundedSemanticTrace();
+
+                // Keep the target alive and passive so the real Blue firearm shot exercises the production path once.
+                redAi.enabled = false;
+                ActorBehaviorController redBehavior = redMetadata.GetComponent<ActorBehaviorController>();
+                if (redBehavior != null)
+                    redBehavior.enabled = false;
+                Require(red.LifecycleState == ActorLifecycleState.Alive &&
+                        !panel.TryGetCurrentVisualOrigin(redMetadata, out _),
+                    "An alive Inactive Red actor still presented CURRENT perception evidence.");
+                Require(blueAi.TryAssignThreat(red, out string threatError),
+                    "F10 could not assign the existing production threat seam: " + threatError);
+                Require(blueAi.TryOverrideResponse(HumanEncounterResponse.Fight, out string responseError),
+                    "F10 could not select Fight through the production Encounter seam: " + responseError);
+                Require(SandboxNpcObservabilityPanel.TryGetCurrentTargetingEvidence(blueMetadata,
+                            out SandboxNpcObservabilityPanel.CurrentTargetingEvidence initialTargeting) &&
+                        initialTargeting.Threat == red &&
+                        initialTargeting.ThreatActorInstanceId == red.ActorInstanceId,
+                    "Selected inspector did not expose the productive ActorInstanceId threat.");
+                f10FixtureConfigured = true;
+                return false;
+            }
+
+            if (!panel.TryGetCapturedLatestShotEvidence(blueMetadata,
+                    out SandboxNpcObservabilityPanel.LatestShotEvidence shot))
+            {
+                if (Time.time - stageStartedAt > 25f)
+                    throw new InvalidOperationException("F10 fixture did not produce a real Blue physical shot within 25 seconds.");
+                return false;
+            }
+
+            Require(SandboxNpcObservabilityPanel.TryGetCurrentTargetingEvidence(blueMetadata,
+                        out SandboxNpcObservabilityPanel.CurrentTargetingEvidence targeting) &&
+                    targeting.Threat == red && targeting.ThreatActorInstanceId == red.ActorInstanceId,
+                "Current targeting did not retain the current live threat after a real shot.");
+            Require(targeting.HasAimPoint && Approximately(targeting.AimPoint, blueAi.CurrentAimPoint),
+                "CURRENT AIM did not match HumanEncounterAIController.CurrentAimPoint consumed by the shot.");
+            Require(Approximately(targeting.Distance, blueAi.CurrentTargetDistance) &&
+                    Approximately(targeting.Focus, blueAi.CurrentFocus) &&
+                    Approximately(targeting.EffectiveSpread, blueAi.CurrentSpreadDegrees) &&
+                    targeting.AttackCount == blueAi.AttackCount,
+                "Target distance, Focus, effective Spread, or AttackCount diverged from production AI getters.");
+            bool primaryExists = red.GetComponentInChildren<ActorPrimaryAimPoint>(false) != null;
+            Require(targeting.UsesPrimaryAimPoint == primaryExists,
+                "PRIMARY indicator did not match the current target-side ActorPrimaryAimPoint component.");
+
+            WeaponCombatResult actual = shot.Result;
+            Require(shot.Sequence == blueAi.AttackCount && shot.ShotTime == blueAi.LastShotTime &&
+                    shot.PhysicalShot.IsResolved && shot.IntendedTargetActorInstanceId == red.ActorInstanceId &&
+                    Approximately(shot.Origin, blueAi.LastShotOrigin) &&
+                    Approximately(shot.Direction, blueAi.LastShotDirection) &&
+                    shot.PhysicalShot.Termination == actual.PhysicalShot.Termination &&
+                    Approximately(shot.PhysicalShot.EndPoint, actual.PhysicalShot.EndPoint) &&
+                    shot.PhysicalShot.HitCollider == actual.PhysicalShot.HitCollider &&
+                    Nullable.Equals(shot.Region, actual.Combat.Region) &&
+                    shot.Classification == SandboxNpcObservabilityPanel.ClassifyShot(
+                        actual.PhysicalShot, actual.Combat),
+                "LAST REAL SHOT presentation diverged from the latest production WeaponCombatResult.");
+            if (shot.Classification == "MISS")
+                Require(!shot.Region.HasValue &&
+                        SandboxNpcObservabilityPanel.DescribeBodyRegion(shot.Combat) == "NONE",
+                    "MISS presentation invented a BodyRegion without a combat result.");
+            // Value-only presentation contract check; this does not fire or synthesize a weapon shot.
+            CombatResolutionResult missWithoutRegion = new CombatResolutionResult(
+                CombatResolutionCode.Miss, "No physical hit produced a combat region.");
+            Require(SandboxNpcObservabilityPanel.ClassifyShot(default, missWithoutRegion) == "MISS" &&
+                    SandboxNpcObservabilityPanel.DescribeBodyRegion(missWithoutRegion) == "NONE",
+                "MISS presentation invented a BodyRegion without a combat result.");
+            Require(SandboxNpcObservabilityPanel.DescribeBodyRegion(default(CombatResolutionResult)) == "NONE",
+                "Missing Combat.Region must remain NONE; the inspector may not infer a region from a collider or point.");
+
+            VerifyPresentationReadOnly(blueAi);
+            if (!panel.SemanticTraceContains("SHOT "))
+            {
+                if (Time.time - blueAi.LastShotTime < 1f)
+                    return false;
+                throw new InvalidOperationException("Semantic trace did not record the real shot transition.");
+            }
+            Require(panel.SemanticTraceContains(shot.Classification) && panel.SemanticTraceCount <= 12,
+                "Semantic trace omitted the real shot classification or exceeded its bounded capacity.");
+            Require(!SandboxNpcObservabilityPanel.TryGetCurrentTargetingEvidence(redMetadata, out _),
+                "Inactive Red retained misleading CURRENT targeting evidence.");
+            Debug.Log(
+                "M41 F10 Observability Diagnostics: PASS\n" +
+                "- Blue + Red compact overlay and ActorInstanceId identity; selection leaves both globally observable\n" +
+                "- Current threat, productive aim, distance, Focus, effective Spread, and AttackCount match AI getters\n" +
+                "- Real shot "+ shot.Classification + ": origin/direction/termination/endpoint/collider/Combat.Region match production result\n" +
+                "- Missing Combat.Region displays NONE; Inactive Red has no CURRENT targeting; bounded semantic trace=" +
+                panel.SemanticTraceCount + " entries\n" +
+                "- LAST query evidence remains the separate historical F6 contract");
+            return true;
+        }
+
+        private static void VerifyBoundedSemanticTrace()
+        {
+            MethodInfo addTrace = typeof(SandboxNpcObservabilityPanel).GetMethod("AddTrace",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(addTrace != null, "F10 bounded semantic trace seam was not found.");
+            for (int index = 0; index < 20; index++)
+                addTrace.Invoke(panel, new object[] { "bounded diagnostic entry " + index });
+            Require(panel.SemanticTraceCount == 12,
+                "Semantic trace must retain at most its configured 12 entries.");
+            Select(panel, redMetadata);
+            Select(panel, blueMetadata);
+        }
+
+        private static void VerifyPresentationReadOnly(HumanEncounterAIController ai)
+        {
+            ActorRuntimeIdentity threat = ai.Threat;
+            HumanEncounterAIState state = ai.State;
+            int transitions = ai.TransitionRevision;
+            int attacks = ai.AttackCount;
+            float focus = ai.CurrentFocus;
+            float spread = ai.CurrentSpreadDegrees;
+            float distance = ai.CurrentTargetDistance;
+            double shotTime = ai.LastShotTime;
+            Require(SandboxNpcObservabilityPanel.TryBuildCompactActorOverlay(blueMetadata, out _) &&
+                    SandboxNpcObservabilityPanel.TryBuildCompactActorOverlay(redMetadata, out _) &&
+                    SandboxNpcObservabilityPanel.TryGetCurrentTargetingEvidence(blueMetadata, out _) &&
+                    panel.TryGetCapturedLatestShotEvidence(blueMetadata, out _),
+                "Read-only observability projection unexpectedly hid the active fixture evidence.");
+            Require(ai.Threat == threat && ai.State == state && ai.TransitionRevision == transitions &&
+                    ai.AttackCount == attacks && ai.CurrentFocus == focus && ai.CurrentSpreadDegrees == spread &&
+                    ai.CurrentTargetDistance == distance && ai.LastShotTime == shotTime,
+                "Reading observability evidence mutated Threat, AI state, combat count, Focus, Spread, distance, or shot data.");
+        }
+
+        private static void Select(SandboxNpcObservabilityPanel targetPanel, SandboxNpcMetadata actor)
+        {
+            MethodInfo select = typeof(SandboxNpcObservabilityPanel).GetMethod("Select",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(select != null, "F10 selection presentation seam was not found.");
+            select.Invoke(targetPanel, new object[] { actor });
+        }
+
+        private static string ActorSuffix(string actorInstanceId) =>
+            string.IsNullOrEmpty(actorInstanceId) ? string.Empty :
+            actorInstanceId.Length <= 8 ? actorInstanceId : actorInstanceId.Substring(actorInstanceId.Length - 8);
 
         private static void VerifySelectionAndHistoricalSegment()
         {
@@ -273,24 +459,34 @@ namespace OldScars.Editor
                 if (Time.time - stageStartedAt < 0.35f)
                     return;
                 Require(panel.TryGetCurrentVisualOrigin(blueMetadata, out Vector3 currentBlueOrigin) &&
-                        Approximately(currentBlueOrigin, movedBlueOrigin),
-                    "F6 current eye origin did not follow Blue after movement; it may be using historical query origin.");
-                red.GetComponent<ActorBehaviorController>().EnterInactive("F6 diagnostic inactive presentation check");
-                Require(red.LifecycleState == ActorLifecycleState.Alive &&
-                        !panel.TryGetCurrentVisualOrigin(redMetadata, out _),
-                    "F6 drew CURRENT visuals for an alive Inactive actor.");
-                red.GetComponent<ActorHealthComponent>().Kill();
+                        Approximately(currentBlueOrigin, ExpectedEye(blue)),
+                    "F6 current eye origin did not follow Blue's current transform after combat setup.");
+                if (red.LifecycleState == ActorLifecycleState.Alive)
+                {
+                    red.GetComponent<ActorBehaviorController>().EnterInactive("F6 diagnostic inactive presentation check");
+                    Require(red.LifecycleState == ActorLifecycleState.Alive &&
+                            !panel.TryGetCurrentVisualOrigin(redMetadata, out _),
+                        "F6 drew CURRENT visuals for an alive Inactive actor.");
+                    red.GetComponent<ActorHealthComponent>().Kill();
+                }
+                else
+                {
+                    Require(red.LifecycleState == ActorLifecycleState.Dead &&
+                            !panel.TryGetCurrentVisualOrigin(redMetadata, out _),
+                        "F6 retained CURRENT visuals after the real shot made Red Dead.");
+                }
                 redTerminated = true;
             }
             if (Time.time - stageStartedAt < 0.7f)
                 return;
             Require(panel.CurrentWorldVisualActorCount == 1 &&
-                    !panel.TryGetCurrentVisualOrigin(redMetadata, out _),
-                "F6 drew current FOV/Gaze for a Dead Red actor.");
+                    !panel.TryGetCurrentVisualOrigin(redMetadata, out _) &&
+                    !SandboxNpcObservabilityPanel.TryGetCurrentTargetingEvidence(blueMetadata, out _),
+                "F6/F10 retained current FOV, gaze, or aim for a Dead Red actor.");
             string screenshot = SessionState.GetString(ScreenshotKey, string.Empty);
             Debug.Log(
                 "M41 F6 Observability Diagnostics: PASS\n" +
-                "- Blue + Red CURRENT FOV/Gaze concurrently eligible (manual visibility pending): " + 2 + " actors; selected inspector=" +
+                "- Blue + Red CURRENT FOV/Gaze concurrently eligible (manual visibility pending): " + 2 + " actors; selected inspector during F6 selection assertion=" +
                 red.ActorInstanceId + "\n" +
                 "- Current eye follows transform + EyeHeight after Blue movement: " + movedBlueOrigin.ToString("F2") + "\n" +
                 "- Production LAST evidence entries observed: " + historicalEvidenceCount + "\n" +
@@ -299,6 +495,7 @@ namespace OldScars.Editor
                 "- Default LAST evidence displays No evidence; actual GUI draw count=" + panel.CurrentWorldDrawnActorCount + "\n" +
                 "- Dead Red current visuals suppressed; LAST evidence remains separate when present\n" +
                 "- Batchmode screenshot: " + (File.Exists(screenshot) ? screenshot : "not available; Game-view IMGUI requires manual visual confirmation"));
+            Debug.Log("M41 F10 Observability Diagnostics: PASS - dead target no longer presents CURRENT targeting or aim.");
             SessionState.SetInt(StageKey, 99);
             EditorApplication.ExitPlaymode();
         }
@@ -332,6 +529,9 @@ namespace OldScars.Editor
         private static bool Approximately(Vector3 left, Vector3 right) =>
             (left - right).sqrMagnitude <= 0.0001f;
 
+        private static bool Approximately(float left, float right) =>
+            Mathf.Abs(left - right) <= 0.0001f;
+
         private static bool OnScreen(Vector3 point) =>
             point.z > 0f && point.x >= 0f && point.x <= 1f && point.y >= 0f && point.y <= 1f;
 
@@ -362,6 +562,7 @@ namespace OldScars.Editor
             blue = null;
             red = null;
             redTerminated = false;
+            f10FixtureConfigured = false;
             if (!string.IsNullOrWhiteSpace(failure))
                 Debug.LogError("M41 F6 Observability Diagnostics: FAIL\n" + failure);
             else if (!string.IsNullOrWhiteSpace(root))
