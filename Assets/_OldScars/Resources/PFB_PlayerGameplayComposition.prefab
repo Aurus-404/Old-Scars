@@ -1223,7 +1223,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c576b1b722c46289212684e619056fb, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::OldScars.Core.Visuals.EntityVisualRigRuntime
-  visualRigProfileId: human_standard_visual_rig
+  visualRigProfileId: core:human_standard_visual_rig
   partBindings:
   - partId: torso
     target: {fileID: 5795019472874568478}

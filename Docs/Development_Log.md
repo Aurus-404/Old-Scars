@@ -3737,3 +3737,10 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 
 - Added a permanent requirement that significant implementations receive documentation closeout and relevant test executions receive unique, durable Test IDs in append-only `Test_Log.md`; repeated runs preserve history. Test details are recorded under `TEST-20260914-001`.
 - Recorded the M41 P9 NPC-only Blue-vs-Red manual integration gate as PASS. NPC↔Player validation and the legacy `human_standard_visual_rig` lookup source review remain pending; M41 remains IN PROGRESS.
+
+## 2026-09-14 — M41.4 / P9 current visual-rig reference migration PASS
+
+- Finding from `TEST-20260914-001`: runtime used Core-only compatibility for the unqualified `human_standard_visual_rig` authored reference. Migrated the current authored ID to `core:human_standard_visual_rig` in `PFB_PlayerGameplayComposition.prefab` and `SampleScene.unity`; existing namespaced references were already correct.
+- Kept the GameDatabase legacy Core lookup path intact for schema-v1 saves and legacy authored data. No runtime code changed.
+- `TEST-20260914-002` PASS: Unity Runtime compilation, MainMenu-created WorldSession → WorldRuntime, Player safe-spawn/bind and Gameplay Runtime Ready. The current Player flow emitted no legacy visual-rig lookup warning. Other unqualified content IDs and Unity package/import warnings are listed in the Test Log and remain outside this visual-rig edit.
+- NEXT EXACT STEP: P9 second manual gate — NPC↔Player. M41 remains IN PROGRESS.
