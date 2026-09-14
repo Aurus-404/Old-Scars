@@ -3744,3 +3744,16 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Kept the GameDatabase legacy Core lookup path intact for schema-v1 saves and legacy authored data. No runtime code changed.
 - `TEST-20260914-002` PASS: Unity Runtime compilation, MainMenu-created WorldSession → WorldRuntime, Player safe-spawn/bind and Gameplay Runtime Ready. The current Player flow emitted no legacy visual-rig lookup warning. Other unqualified content IDs and Unity package/import warnings are listed in the Test Log and remain outside this visual-rig edit.
 - NEXT EXACT STEP: P9 second manual gate — NPC↔Player. M41 remains IN PROGRESS.
+
+## 2026-09-14 — M41.4 / P9 DONE / ACCEPTED / PUBLISHED; NPC Foundation V1 closeout
+
+- Documentation closeout commit: `docs: close M41 NPC foundation` (2026-09-14).
+- P9 legacy audit PASS: no current authored visual-rig consumer required a legacy targeting migration; generic fallbacks and schema-v1 compatibility were preserved. Current authored visual-rig references were migrated and validated by `TEST-20260914-002`.
+- Automated QA PASS (previously completed; not rerun during this documentation-only closeout). Manual gate records are append-only: NPC-only `TEST-20260914-001`; authored visual-rig migration `TEST-20260914-002`; NPC↔Player crowbar melee `TEST-20260914-003`; NPC↔Player Lee-Enfield firearm `TEST-20260914-004`.
+- Mauro reported NPC↔Player melee PASS: Red acquired Player, Ambient→Encounter, Idle→Alerted→Fighting, engagement navigation and productive melee medical damage; torso 2 Moderate contusions and pain; Player non-Dead with Invincible ON.
+- Mauro reported NPC↔Player firearm PASS: rifle NPC reacquired Player, fought, and physical misses/world impacts/actor hits were visible; semantic trace included LeftArm actor hit; torso puncture Severe untreated, Critical condition, slight bleeding, intense pain, vital reserve about 18.8/100; Player non-Dead. Setup caveat: initially spawned crowbar NPCs were removed after temporarily enabling Invisible-to-AI; one Red rifle NPC then fought after Player eligibility was restored. This was preconditioning, not a clean isolated spawn at t=0, and the later productive flow passed. Any manually removed NPC Dead/Unconscious log state is a setup artifact, not Player death. No Player KO is claimed.
+- Console review PASS per Mauro: OldScars/Data 0 errors/0 warnings and no relevant new AI/combat/Health/Condition/lifecycle/navigation exception; `Editor is not in automated mode` is a non-blocking tooling warning. Manual evidence is user-reported; no screenshots/exported logs were attached to these records. Unity was not rerun for this closeout.
+- Approved tooling follow-up `IMPL-0041 Player Debug — Heal All / Reset Medical State` is PLANNED / DEFERRED and is not part of M41.
+- ISSUE-0023 remains SUSPECTED; ISSUE-0026 and ISSUE-0027 remain deferred. ISSUE-0008 and ISSUE-0012 remain RESOLVED. No issue was resolved by these manual tests.
+- **M41 / M41.4 / P9: DONE / ACCEPTED / PUBLISHED (2026-09-14).** P9 is closed with the final manual gates and legacy audit above.
+- **NEXT EXACT STEP: ISSUE-0022 — Loaded Ammo Mass Conservation**, before IMPL-0020 Carry Weight / Encumbrance.

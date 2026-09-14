@@ -2,7 +2,15 @@
 
 Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Secuencia operativa vigente — 2026-09-13
+## Secuencia operativa vigente — 2026-09-14
+
+M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded as `TEST-20260914-001` through `TEST-20260914-004` in `Test_Log.md`; the rifle run's manual setup caveat is retained there. No Unity rerun was part of the documentation closeout.
+
+### Next exact step — ISSUE-0022
+
+Address **ISSUE-0022 — Loaded Ammo Mass Conservation** first. It remains OPEN / CONFIRMED and is the next defect to address. Only after it is resolved may `IMPL-0020` Carry Weight / Encumbrance begin. `IMPL-0021` follows Encumbrance. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred.
+
+### M41 closeout sequence (historical; completed 2026-09-14)
 
 ### 1. P1 — F6 cerrado
 
@@ -133,7 +141,7 @@ P8 no activa F8D ni las pruebas diferidas ISSUE-0026 (30v30) e ISSUE-0027 (distr
 
 ### 9. P9 — Legacy migration + QA integrada + cierre M41
 
-Estado: NEXT EXACT STEP.
+Estado: DONE / ACCEPTED / PUBLISHED — 2026-09-14.
 
 P9 — legacy migration + integrated QA + cleanup + formal M41 closeout.
 
@@ -149,7 +157,7 @@ Después ejecutar:
 - cleanup de instrumentation temporal y código legacy realmente sin consumers;
 - reconciliación documental.
 
-NPC Foundation V1 se cierra sólo después de completar P9 y recibir la aceptación manual final de Mauro.
+NPC Foundation V1 quedó cerrada tras completar P9 y recibir la aceptación manual final de Mauro. Véanse TEST-20260914-003/004.
 
 ---
 

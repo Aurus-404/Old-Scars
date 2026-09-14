@@ -8,7 +8,7 @@ Este archivo es el snapshot operativo breve. `Project_Roadmap.md` conserva IDs/d
 
 Estado operativo:
 
-IN PROGRESS — P4 ACCEPTED; P7/P8 DONE / PUBLISHED; NEXT P9 — LEGACY MIGRATION + INTEGRATED QA + M41 CLOSEOUT
+DONE / ACCEPTED / PUBLISHED — M41.4 and P9 closed 2026-09-14; documentation closeout commit recorded in Git history.
 
 Plan activo: `NPC_AI_Sanitation_Plan.md`.
 
@@ -56,7 +56,17 @@ P8/F10 Observability V2 quedó DONE / ACCEPTED / PUBLISHED el 2026-09-13 en comm
 
 Validación automática previa: Runtime/Editor compile, M41 F10 Observability Diagnostics y M41 F6 Observability Diagnostics PASS. Mauro confirmó aceptación visual manual: Blue/Red visibles simultáneamente, selección clara, CURRENT Gaze/FOV separado de LAST, condiciones Conscious/Incapacitated/Dead, Dead sin targeting CURRENT, shot WORLD/OBSTACLE con collider y Combat.Region NONE, semantic trace legible e inspector navegable. El clutter ocasional de líneas es aceptable para QA.
 
-## Orden operativo aprobado para cerrar M41
+## Cierre formal M41 / P9 — 2026-09-14
+
+M41.4 and P9 are DONE / ACCEPTED / PUBLISHED. Documentation closeout commit: `docs: close M41 NPC foundation` (2026-09-14). P9 completed the legacy authored visual-rig migration (`TEST-20260914-002`), automated QA, NPC-only manual integration (`TEST-20260914-001`), and NPC↔Player melee/firearm manual integration (`TEST-20260914-003` and `TEST-20260914-004`). The firearm run included the setup preconditioning documented in Test_Log; its subsequent productive acquisition and combat flow passed. Mauro reported no new blocking M41 AI/combat/health/condition/lifecycle/navigation exception. No Unity rerun was performed for this documentation closeout.
+
+P9 legacy audit found no current authored visual-rig consumer requiring a legacy targeting migration; generic fallbacks and schema-v1 compatibility remain preserved. The authored visual-rig reference migration passed. ISSUE-0023 remains SUSPECTED; ISSUE-0026/0027 remain deferred. The approved Player Debug Heal All / Reset Medical State tooling is tracked separately as IMPL-0041 PLANNED / DEFERRED.
+
+**M41: DONE / ACCEPTED / PUBLISHED. M41.4: DONE. P9: DONE / ACCEPTED / PUBLISHED.**
+
+**NEXT EXACT STEP: ISSUE-0022 — Loaded Ammo Mass Conservation**, before IMPL-0020 Carry Weight / Encumbrance.
+
+## Orden operativo aprobado para cerrar M41 (histórico)
 
 1. **P1 — F6 DONE / ACCEPTED / PUBLISHED**, Correction Pass B cerrado.
 2. **P2 — minimum real-time KO dwell: DONE / PUBLISHED**; physiology sigue siendo autoridad después del mínimo.
@@ -66,7 +76,7 @@ Validación automática previa: Runtime/Editor compile, M41 F10 Observability Di
 6. **P6 — F8B Generic Primary Aim Point + F8C paired control: DONE / PASS / PUBLISHED**; sin retuning. F8D no está iniciado ni autorizado por inercia.
 7. **P7 — Player Debug Invincible: DONE / PASS / PUBLISHED** en `c96900589816239bfdf6553fba699bca6b79a54f`; marker efímero Player-only desde F3, terminal protection coherente en Health/Condition, KO permitido y OFF normal.
 8. **P8 — Observability V2/F10: DONE / ACCEPTED / PUBLISHED**; commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280.
-9. **P9 — legacy migration + QA integrada + cleanup + cierre formal de NPC Foundation V1: NEXT EXACT STEP**.
+9. **P9 — legacy migration + QA integrada + cleanup + cierre formal de NPC Foundation V1: DONE / ACCEPTED / PUBLISHED (2026-09-14)**.
 
 ## Punto de DONE de NPC Foundation V1
 
@@ -113,7 +123,7 @@ Antes de este bloque debe resolverse `ISSUE-0022` para que recargar/disparar no 
 ## Issues activos relevantes
 
 - `ISSUE-0023` — posible desajuste eye origin/representación humana; SUSPECTED.
-- `ISSUE-0022` — munición cargada deja de contribuir correctamente a la masa agregada.
+- `ISSUE-0022` — munición cargada deja de contribuir correctamente a la masa agregada; NEXT DEFECT TO ADDRESS.
 
 ## Reglas de alcance
 

@@ -51,11 +51,11 @@ Para auditorías sistémicas amplias, Astra puede usarse como investigador/arqui
 
 No repetir auditorías exhaustivas si el repo ya estableció el seam y el próximo trabajo sólo requiere implementación/validación.
 
-## Estado de continuidad al 2026-09-13
+## Estado de continuidad al 2026-09-14
 
-Bloque activo:
+Bloque recién cerrado:
 
-`M41 — NPC Combat / AI Foundation`
+`M41 — NPC Combat / AI Foundation — CLOSED / DONE / ACCEPTED / PUBLISHED`
 
 Foundation cerrada:
 
@@ -79,7 +79,13 @@ P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aa
 
 F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. P8/F10 completo DONE / ACCEPTED / PUBLISHED; compile Runtime/Editor, F10 y F6 regression PASS; aceptación visual final de Mauro el 2026-09-13. ISSUE-0023 sigue SUSPECTED.
 
-### Secuencia operativa aprobada para cerrar M41
+### Cierre M41 / P9
+
+P9 está DONE / ACCEPTED / PUBLISHED. Los gates finales constan en `TEST-20260914-001` (NPC-only), `TEST-20260914-002` (authored visual-rig migration), `TEST-20260914-003` (NPC↔Player crowbar melee) y `TEST-20260914-004` (NPC↔Player Lee-Enfield firearm, con setup preconditioning anotado). El detalle y límites de evidencia están en `Test_Log.md`.
+
+**NEXT EXACT STEP: ISSUE-0022 — Loaded Ammo Mass Conservation.** Resolver antes de iniciar IMPL-0020.
+
+### Secuencia operativa aprobada para cerrar M41 (histórica)
 
 P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED**, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Core `5 s` inicial de prueba; restante durable en Current Slice v1, sin progreso offline y legacy seguro. P2 y regresiones proporcionales PASS.
 
@@ -93,7 +99,7 @@ P3 — KO / combat-memory continuity: **DONE / PUBLISHED**, 394d01886b8c6697ca2d
 6. F8B/C y F8D sólo según evidencia;
 7. P7 — Player Debug Invincible: DONE / PASS / PUBLISHED en c96900589816239bfdf6553fba699bca6b79a54f;
 8. P8 — Observability V2/F10: DONE / ACCEPTED / PUBLISHED en f4d07434d2b0ea0387584320c81b48dd248bd280;
-9. P9 — legacy migration + integrated QA + cleanup + formal M41 closeout: NEXT EXACT STEP.
+9. P9 — legacy migration + integrated QA + cleanup + formal M41 closeout: DONE / ACCEPTED / PUBLISHED (2026-09-14).
 
 Cambio deliberado respecto de wording anterior: KO dwell se ejecuta antes de KO memory para estabilizar primero la transición funcional que la memoria debe soportar.
 
@@ -104,7 +110,7 @@ ISSUE-0026 (30v30 inverted spawn comparison) e ISSUE-0027 (dynamic anatomical hi
 Orden sistémico aprobado:
 
 - Equipment visuals humanoides: `IMPL-0016 DONE / ACCEPTED`, adelantado por validación visual;
-- corregir `ISSUE-0022` loaded ammo mass;
+- corregir `ISSUE-0022` loaded ammo mass (NEXT EXACT STEP; OPEN / CONFIRMED);
 - implementar `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC;
 - implementar `IMPL-0021` Localized Limb Impairment después de Encumbrance.
 

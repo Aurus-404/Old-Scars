@@ -53,7 +53,6 @@ Record enough to reproduce and assess each run: date, related milestone/slice, o
   - Unity startup reported an unavailable licensing access token and duplicate assemblies from AI Assistant/Pipeline packages. No C# compile error was reported.
   - The diagnostic intentionally exercised gameplay-save capture failure and cross-world payload rejection; those expected failure branches did not prevent its final PASS.
 - Related/created issues: no issue ID assigned. The unrelated unqualified-ID warnings remain visible findings for future scoped review.
-- Next action: run the P9 NPC↔Player manual integration gate; do not close M41 until that acceptance and remaining P9 work are complete.
 
 ## P9 gate status after TEST-20260914-002
 
@@ -62,3 +61,50 @@ Record enough to reproduce and assess each run: date, related milestone/slice, o
 - Current authored visual-rig namespace migration: PASS — `TEST-20260914-002`; schema-v1 compatibility code unchanged (not separately exercised by this test).
 - NPC↔Player manual integration: PENDING.
 - M41: IN PROGRESS; P9 is not closed.
+
+Historical next action after TEST-002: run the P9 NPC↔Player manual integration gate; do not close M41 until that acceptance and remaining P9 work are complete.
+
+## TEST-20260914-003 — M41 P9 — NPC↔Player manual gate — Crowbar melee
+
+- Date: 2026-09-14
+- Milestone/slice: M41.4 / P9
+- Objective: validate real Player threat acquisition, NPC encounter transition/navigation, productive melee damage and medical reception with Invincible enabled.
+- Type: MANUAL / INTEGRATION
+- HEAD/build: not specified in the manual evidence received.
+- Scenario/setup: WorldRuntime; Player was a real target; Invisible-to-AI OFF during the productive test; Invincible ON; one Red combat NPC equipped with `core:rusted_crowbar_01`; F6/F10 available. Player did not need to kill the test NPC.
+- Actors: Red NPC `actor_22a65e6767f343179e701ce202c5538a`; Player `actor_428ff8c97755a501eb6709c3adc65ded`.
+- Expected: Red acquires Player, transitions through Encounter/Alerted/Fighting, navigates to engage, and melee damage reaches Player's productive medical pipeline without terminal death under Invincible.
+- Observed (Mauro-reported): Red acquired Player as threat; behavior owner Ambient → Encounter; Idle → Alerted → Fighting; engagement navigation worked; melee hit the Player and medical processing applied damage. Health UI showed torso with 2 Moderate contusions; real pain was present. Player remained non-Dead with Invincible ON. No relevant new runtime AI/combat/health error was observed.
+- Result: **PASS** — NPC↔Player crowbar melee manual gate.
+- Evidence: Mauro-reported WorldRuntime/F6/F10/Health UI observations. No screenshot or exported runtime log was attached to this record.
+- Warnings/findings: no KO or bleeding is claimed; neither was part of the reported evidence.
+- Related/created issues: none.
+- Next action: complete/report the firearm subtest and reconcile P9 closeout.
+
+## TEST-20260914-004 — M41 P9 — NPC↔Player manual gate — Lee-Enfield firearm
+
+- Date: 2026-09-14
+- Milestone/slice: M41.4 / P9
+- Objective: validate real Player threat acquisition, firearm physical hit/region resolution and medical damage reception with Invincible enabled.
+- Type: MANUAL / INTEGRATION
+- HEAD/build: not specified in the manual evidence received.
+- Scenario/setup: WorldRuntime; Player `actor_428ff8c97755a501eb6709c3adc65ded`; Invincible ON. Setup required preconditioning: the initial attempt continued spawning crowbar NPCs; Mauro temporarily enabled Invisible-to-AI, removed the interfering crowbar NPC, left one Red with a rifle, restored Player acquisition eligibility, then let the rifle NPC execute the productive fight. This is not represented as a clean isolated spawn from t=0; the later productive flow still tested reacquisition and combat.
+- Actor/loadout: rifle NPC `actor_d93769d4f432485687caab1f1aac2bf9`; `core:lee_enfield_rifle_01`; `.303 British` per productive observed loadout.
+- Expected: rifle NPC reacquires Player and enters combat; physical shots resolve misses/world impacts and actor hits through semantic trace, BodyRegion, wound and medical consequences; Invincible prevents terminal death without making Player invisible/peaceful.
+- Observed (Mauro-reported): rifle NPC acquired Player; Idle → Alerted → Fighting; navigation/engagement worked; Invincible did not make Player invisible or peaceful. CURRENT AIM was visible; physical shots included misses/world impacts and actor hits; semantic trace registered hits, including `ACTOR HIT | LeftArm`. Health UI later showed a severe untreated torso puncture, general Critical condition, slight bleeding and intense pain; debug vital reserve was approximately 18.8/100. Player remained non-Dead.
+- Result: **PASS** — NPC↔Player Lee-Enfield firearm manual gate.
+- Evidence: Mauro-reported WorldRuntime/F6/F10/semantic trace/Health UI/Console observations. No screenshot or exported runtime log was attached to this record.
+- Warnings/findings: setup removal may appear in the log as `Lifecycle: Dead / FunctionalState: Unconscious`; this is the manually removed crowbar NPC setup artifact, not Player death and not an Invincible failure. Console reported OldScars/Data 0 errors and 0 warnings, with no relevant new AI/combat/Health/Condition/lifecycle/navigation exception. `Editor is not in automated mode` was a non-blocking Unity/Pipeline tooling warning. Do not claim Player KO/Unconscious; automated P7 covers Invincible/KO.
+- Related/created issues: none.
+- Next action: close P9/M41; next defect is ISSUE-0022 — Loaded Ammo Mass Conservation.
+
+## P9 / M41 final gate status after TEST-20260914-004
+
+- Automated QA: PASS (previously completed; not rerun for this documentation closeout).
+- Legacy audit and current authored visual-rig migration: PASS — `TEST-20260914-002`; generic fallback/schema-v1 compatibility retained.
+- NPC-only manual integration: PASS — `TEST-20260914-001`.
+- NPC↔Player crowbar melee: PASS — `TEST-20260914-003`.
+- NPC↔Player Lee-Enfield firearm: PASS — `TEST-20260914-004`, with setup caveat recorded above.
+- Console review: PASS per Mauro's report; no new blocking M41 exception.
+- M41 / M41.4 / P9: DONE / ACCEPTED / PUBLISHED — 2026-09-14.
+- Next exact step: ISSUE-0022 — Loaded Ammo Mass Conservation.

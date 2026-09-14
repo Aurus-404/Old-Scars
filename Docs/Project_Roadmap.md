@@ -21,21 +21,21 @@ No es una lista de bugs ni de implementaciones pequeñas:
 
 Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renombran retrospectivamente y una coding unit/intervención dentro de un milestone no consume automáticamente un nuevo ID.
 
-## Estado de producción — 2026-09-13
+## Estado de producción — 2026-09-14
 
 | Campo | Estado canónico |
 | --- | --- |
-| Milestone grande cerrado más reciente | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 |
-| Milestone grande activo | M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 |
-| Estado M41.4 | IN PROGRESS — P4 ACCEPTED; F8A/B/C + P7/P8 DONE / PUBLISHED; P9 NEXT |
+| Milestone grande cerrado más reciente | M41 — NPC Combat / AI Foundation V1 (M41.4 cerrado) |
+| Milestone grande activo | Ninguno asignado tras M41; siguiente trabajo operativo ISSUE-0022 |
+| Estado M41.4 | DONE / ACCEPTED / PUBLISHED — P9 cerrado 2026-09-14 |
 | Persistence Ready | `APPROVED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
-| Próximo trabajo | P9 — legacy migration + QA integrada + cleanup + cierre M41; P8/F10 accepted/published, P4 ACCEPTED, P7 DONE/PASS/PUBLISHED, ISSUE-0012 RESOLVED |
-| Después | Decisión explícita antes de otro sistema grande; F8D sólo con evidencia residual, F8E sólo por consumers reales |
+| Próximo trabajo | ISSUE-0022 — Loaded Ammo Mass Conservation (OPEN / CONFIRMED; next defect to address) |
+| Después | IMPL-0020 Carry Weight / Encumbrance, sólo después de resolver ISSUE-0022; F8D sólo con evidencia residual, F8E sólo por consumers reales |
 
-### Qué significa el estado actual de M41.4
+### Contexto histórico del estado de M41.4 al inicio del cierre P9
 
 M41.4 **no está esperando ser implementado desde cero**. El baseline de affiliation, automatic threat acquisition, engagement por rango, combate físico e imperfect aim ya existe y fue probado. La Prueba 2 abrió un saneamiento post-implementación que produjo:
 
@@ -77,9 +77,9 @@ P7 — Player Debug Invincible DONE / PASS / PUBLISHED
     ↓
 P8 — F10 Observability V2 DONE / ACCEPTED / PUBLISHED
     ↓
-P9 — Legacy migration + QA integrada / game feel / cleanup + formal M41 closeout NEXT EXACT STEP
+P9 — Legacy migration + QA integrada / game feel / cleanup + formal M41 closeout DONE / ACCEPTED / PUBLISHED (2026-09-14)
     ↓
-Decisión explícita antes de otro sistema grande
+ISSUE-0022 — Loaded Ammo Mass Conservation NEXT EXACT STEP
 ```
 
 F8A/B/C se completaron como slice controlada separada y no acreditaron por sí mismos el gate manual integrado P4; Mauro confirmó P4 separadamente. F8D no queda abierto por inercia tras el resultado pareado; F8E sólo se considera si hay consumers legacy concretos.
@@ -161,7 +161,7 @@ El shooter no debe conocer `Torso` ni anatomía/especie concreta para encontrar 
 | M41.1 — Human Encounter AI V1 | `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` | Avoid/Flee/Fight/LostContact baseline; `AI Ready APPROVED`. |
 | M41.2 — Basic Equipment & Weapon Coverage V1 | `DONE — VALIDATED` | Commit `4f877da10dee813b0bed816194110b5a27087683`. |
 | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | `DONE — VALIDATED` | Commit `a90dc4e1a38bef69e3762e398a378a666a9f993e`. |
-| M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | IN PROGRESS — P8 DONE / ACCEPTED / PUBLISHED; P9 NEXT | Baseline, P4 y P7/P8 validados; el cierre global M41 depende de P9 y aceptación final. |
+| M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | DONE / ACCEPTED / PUBLISHED — P9 cerrado 2026-09-14 | NPC Foundation V1 cerrada tras P9, automated QA y gates manuales TEST-20260914-001..004. |
 
 ## Foundations open-world ya validadas
 
@@ -220,8 +220,8 @@ La dirección open-world permanece aprobada, pero no está autorizada para conti
 | Spike volumétrico | Deformable Volumetric Terrain Foundation | `VALIDATED` | terrain 3D deformable technical evidence. |
 | Tramo jugable | M41.2 | `DONE` | equipment/firearms coverage. |
 | Tramo jugable | M41.3 | `DONE` | NPC sandbox/loadouts. |
-| Tramo jugable activo | M41.4 | IN PROGRESS — P8 DONE; P9 NEXT | combat/AI integration/game feel. |
-| Review activo | Prueba 3 / NPC Foundation review | IN PROGRESS — P4 ACCEPTED; P8 DONE; P9 NEXT | completar QA integrada y cleanup antes de otro sistema grande. |
+| Tramo jugable cerrado | M41.4 | DONE / ACCEPTED / PUBLISHED | combat/AI integration/game feel; cierre P9 2026-09-14. |
+| Siguiente defecto | ISSUE-0022 | OPEN / CONFIRMED — NEXT DEFECT TO ADDRESS | Loaded Ammo Mass Conservation antes de Encumbrance. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | historia estructurada acotada. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | persistencia world state general. |
 | 9 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | blueprint local/materialización autorada. |

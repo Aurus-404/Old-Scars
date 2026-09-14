@@ -39,13 +39,14 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0001 — Primary Aim Point genérico del lado del target
 
-- **Estado:** `READY` condicionado a Fase 8A.
+- **Estado:** `DONE / PUBLISHED` — F8B/F8C, `ISSUE-0008 RESOLVED`.
 - **Fecha/origen:** 2026-09-03 — investigación repo + comparación Source/Unreal.
 - **Qué queremos:** un punto primario genérico que cada target/representation exponga como ubicación razonable para aim normal. Humano → center mass; futuros animales/robots → punto equivalente definido por ellos.
 - **Por qué:** `HumanEncounterAIController` no debería inspeccionar anatomía/colliders internos del target para adivinar su center mass.
 - **Trigger/dependencias:** Fase 8A debe confirmar que el aim actual contribuye materialmente a `ISSUE-0008`.
 - **Límites:** un único Primary Aim Point V1. Sin weak points, scoring, head targeting, mobility targeting, enums grandes ni manager.
 - **Relación:** NPC Sanitation F8B; `ISSUE-0008`.
+- **Resolución:** seam target-side `ActorPrimaryAimPoint` implementado y validado mediante F8B/F8C paired control; sin retuning de accuracy. Causa y evidencia en `Issue_Registry.md`.
 
 ## IMPL-0002 — Instrumentación reproducible de distribución de disparos NPC
 
@@ -436,6 +437,17 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Trigger/dependencias:** cuando ventanas/vidrio rompible y equipment protection tengan representación productiva suficiente.
 - **Límites:** no simular cada fragmento como collider permanente ni crear microcortes aleatorios por proximidad. Usar una representación de hazard acotada y eventos de contacto/interacción claros.
 - **Relación:** Localized Health, Armor/Equipment protection, world interaction, breakables y performance.
+
+## IMPL-0041 — Player Debug — Heal All / Reset Medical State
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14 — mejora de tooling aprobada por Mauro durante el cierre M41/P9.
+- **Qué queremos:** agregar un control de debug para restaurar rápidamente el estado médico del Player durante QA.
+- **Contrato preliminar:** tooling/debug only; sin UI de producción; usar las autoridades médicas existentes y sus seams productivos para restaurar coherentemente Vital, Blood, wounds, bleeding, pain, trauma y functional condition. No crear una segunda health authority ni introducir persistence nueva.
+- **Por qué:** reducir preparación repetitiva de QA médica entre escenarios sin sustituir el gameplay ni las autoridades de estado.
+- **Trigger/dependencias:** una tarea futura de tooling/QA; no bloquea el cierre de M41 ni autoriza implementación ahora.
+- **Límites:** no resucitar mediante una vía paralela, no borrar/alterar estado fuera de autoridades existentes y no añadir UI de producción.
+- **Relación:** Player Debug Invincible / Runtime Debug Tools, Health, Condition y medical authorities; fuera del alcance de M41/P9.
 
 ---
 

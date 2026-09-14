@@ -29,6 +29,7 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 
 ### ISSUE-0022 — Loaded ammo desaparece del cálculo de carry mass
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`
+- **Prioridad operativa:** NEXT DEFECT TO ADDRESS después del cierre M41/P9 (2026-09-14); resolver antes de `IMPL-0020`.
 - **Origen:** auditoría Carry Weight + revisión de repo, 2026-09-06.
 - **Síntoma/causa:** `WeaponCombatService` consume munición owned del Inventory al recargar y la firearm conserva `LoadedAmmoProfileId + LoadedRounds` como estado interno. `ItemWeightResolver` suma item definitions, cantidades y owned-storage subtrees, pero no suma `LoadedRounds`. Por lo tanto recargar puede reducir artificialmente `CurrentWeightKg`; disparar puede no reducir masa desde la representación correcta.
 - **Impacto:** hoy es una inconsistencia física; con Encumbrance podría cambiar locomoción artificialmente (por ejemplo, recargar cerca del 100% podría devolver movimiento sin descargar masa real).

@@ -283,7 +283,7 @@ ISSUE-0026 (30v30) e ISSUE-0027 (distribución anatómica) permanecen diferidos;
 
 ## P9 — Legacy migration + QA integrada + cierre M41
 
-Estado: NEXT EXACT STEP.
+Estado: DONE / ACCEPTED / PUBLISHED — 2026-09-14.
 
 Migrar sólo consumers reales de compatibility capsule/anatomy legacy.
 
@@ -299,7 +299,7 @@ Después:
 
 ### DONE global M41
 
-NPC Foundation V1 sólo cierra cuando:
+NPC Foundation V1 cerró al cumplirse los gates siguientes:
 
 - P1 publicado/aceptado;
 - P2/P3 cumplen contratos;
@@ -308,9 +308,11 @@ NPC Foundation V1 sólo cierra cuando:
 - Invincible funciona ON/OFF;
 - F10 permite explicar resultados;
 - Search/Bandaging/Reload/Perception/ownership siguen pasando;
-- pruebas NPC↔NPC y NPC↔Player funcionan en sesión fresca;
+- pruebas NPC↔NPC y NPC↔Player pasan según sus registros manuales (`TEST-20260914-001`, `TEST-20260914-003`, `TEST-20260914-004`; el setup preconditioning del rifle consta en el Test Log);
 - no quedan blockers incompatibles con el alcance;
-- Mauro aprueba el cierre.
+- Mauro aprueba el cierre (confirmado el 2026-09-14).
+
+Evidencia final: automated QA PASS; legacy audit PASS; current authored visual-rig migration PASS (`TEST-20260914-002`); NPC-only PASS (`TEST-20260914-001`); crowbar melee y Lee-Enfield firearm NPC↔Player PASS (`TEST-20260914-003/004`); console review PASS sin error bloqueante nuevo reportado. El registro manual distingue las observaciones de Mauro de una ejecución hecha por Codex. No se volvió a ejecutar Unity durante este closeout.
 
 ---
 
