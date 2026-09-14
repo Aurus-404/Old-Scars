@@ -8,7 +8,7 @@ Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.
 
 P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. P8/F10 completó el tooling diferido sobre F6 y quedó DONE / ACCEPTED / PUBLISHED el 2026-09-13; ISSUE-0023 continúa SUSPECTED.
 
 ### 2. P2 — Minimum real-time KO dwell
 
@@ -110,11 +110,11 @@ Pruebas obligatorias:
 
 Referencia: `IMPL-0009`, `ISSUE-0012`.
 
-### 8. P8 — Completar Observability V2 / F10
+### 8. P8 — Observability V2 / F10 completado
 
-Estado: `NEXT EXACT STEP`; P4 está aceptado y P7 validado.
+Estado: DONE / ACCEPTED / PUBLISHED — commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280; aceptación visual manual PASS el 2026-09-13.
 
-Evolucionar el mismo tooling de P1/F8A:
+Completado sobre el tooling existente de P1/F6:
 
 - overlay compacto multi-NPC;
 - inspector profundo del seleccionado;
@@ -127,9 +127,15 @@ Evolucionar el mismo tooling de P1/F8A:
 
 Read-only. No segunda autoridad de Perception/Combat.
 
+Runtime/Editor compile, F10 diagnostic y regresión F6 PASS. La aceptación visual confirmó Blue/Red simultáneos, selección visible, CURRENT Gaze/FOV y CURRENT/LAST diferenciados, estados Conscious/Incapacitated/Dead, último disparo WORLD/OBSTACLE con collider y Combat.Region NONE, semantic trace legible e inspector profundo navegable. El clutter ocasional es aceptable para tooling QA.
+
+P8 no activa F8D ni las pruebas diferidas ISSUE-0026 (30v30) e ISSUE-0027 (distribución anatómica). ISSUE-0022 loaded ammo mass sigue después de M41 según el roadmap.
+
 ### 9. P9 — Legacy migration + QA integrada + cierre M41
 
-Estado: `AFTER P8`.
+Estado: NEXT EXACT STEP.
+
+P9 — legacy migration + integrated QA + cleanup + formal M41 closeout.
 
 Migrar sólo consumers reales que todavía dependan de representation/anatomy legacy.
 
@@ -143,7 +149,7 @@ Después ejecutar:
 - cleanup de instrumentation temporal y código legacy realmente sin consumers;
 - reconciliación documental.
 
-NPC Foundation V1 se cierra sólo con aceptación manual de Mauro.
+NPC Foundation V1 se cierra sólo después de completar P9 y recibir la aceptación manual final de Mauro.
 
 ---
 

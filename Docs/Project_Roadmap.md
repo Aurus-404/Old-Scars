@@ -27,13 +27,13 @@ Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renom
 | --- | --- |
 | Milestone grande cerrado más reciente | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 |
 | Milestone grande activo | M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 |
-| Estado M41.4 | `IN PROGRESS — P4 ACCEPTED; F8A/B/C + P7 PUBLISHED; P8 NEXT` |
+| Estado M41.4 | IN PROGRESS — P4 ACCEPTED; F8A/B/C + P7/P8 DONE / PUBLISHED; P9 NEXT |
 | Persistence Ready | `APPROVED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
-| Próximo trabajo | P8 — F10 Observability V2; P4 ACCEPTED, P7 DONE/PASS/PUBLISHED, ISSUE-0012 RESOLVED |
-| Después | P9 QA integrada / cleanup; F8D sólo con evidencia residual, F8E sólo por consumers reales |
+| Próximo trabajo | P9 — legacy migration + QA integrada + cleanup + cierre M41; P8/F10 accepted/published, P4 ACCEPTED, P7 DONE/PASS/PUBLISHED, ISSUE-0012 RESOLVED |
+| Después | Decisión explícita antes de otro sistema grande; F8D sólo con evidencia residual, F8E sólo por consumers reales |
 
 ### Qué significa el estado actual de M41.4
 
@@ -52,7 +52,7 @@ El gate `AI Ready` aprobado en M41.1 **no se reabre**: estas correcciones perten
 
 ---
 
-P1/F6 / Correction Pass B cerrado el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. IMPL-0010 mínimo completado; F10 completo pendiente.
+P1/F6 / Correction Pass B cerrado el 2026-09-06 en 5aac763c14c399bfe09a3e925c50698658ad2716. P8/F10 completó el tooling diferido y fue aceptado visualmente por Mauro el 2026-09-13; commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280.
 
 ## Camino crítico inmediato
 
@@ -75,9 +75,9 @@ P4 — Prueba 3.3 DONE / ACCEPTED
     ↓
 P7 — Player Debug Invincible DONE / PASS / PUBLISHED
     ↓
-P8 — F10 Observability V2 NEXT
+P8 — F10 Observability V2 DONE / ACCEPTED / PUBLISHED
     ↓
-P9 — QA integrada / game feel / cleanup
+P9 — Legacy migration + QA integrada / game feel / cleanup + formal M41 closeout NEXT EXACT STEP
     ↓
 Decisión explícita antes de otro sistema grande
 ```
@@ -140,7 +140,7 @@ El shooter no debe conocer `Torso` ni anatomía/especie concreta para encontrar 
 
 - Player Invisible-to-AI se adelanta porque Prueba 3 demostró contaminación de NPC-only tests.
 - F6 necesita current-vs-last correcto y visuals multi-NPC antes de usarlo para conclusiones finas de aim/combat.
-- F9/F10 permanecen en el plan; sólo se adelantan slices mínimos necesarios para test fiable.
+- F10 Observability V2 se completó en P8; P9 conserva legacy migration, QA integrada y cleanup necesarios para el cierre. Sólo se adelantan slices mínimos necesarios para test fiable.
 
 ---
 
@@ -161,7 +161,7 @@ El shooter no debe conocer `Torso` ni anatomía/especie concreta para encontrar 
 | M41.1 — Human Encounter AI V1 | `DONE — HUMAN ENCOUNTER AI V1 VALIDATED` | Avoid/Flee/Fight/LostContact baseline; `AI Ready APPROVED`. |
 | M41.2 — Basic Equipment & Weapon Coverage V1 | `DONE — VALIDATED` | Commit `4f877da10dee813b0bed816194110b5a27087683`. |
 | M41.3 — NPC Sandbox Spawn & Randomized Loadouts V1 | `DONE — VALIDATED` | Commit `a90dc4e1a38bef69e3762e398a378a666a9f993e`. |
-| M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | `IN PROGRESS — P8 OBSERVABILITY NEXT` | Baseline implementado; P4 aceptado; F8A/B/C y P7 cerrados; P8/P9 pendientes. |
+| M41.4 — Affiliation, Range-Aware Combat & Imperfect Aim V1 | IN PROGRESS — P8 DONE / ACCEPTED / PUBLISHED; P9 NEXT | Baseline, P4 y P7/P8 validados; el cierre global M41 depende de P9 y aceptación final. |
 
 ## Foundations open-world ya validadas
 
@@ -220,8 +220,8 @@ La dirección open-world permanece aprobada, pero no está autorizada para conti
 | Spike volumétrico | Deformable Volumetric Terrain Foundation | `VALIDATED` | terrain 3D deformable technical evidence. |
 | Tramo jugable | M41.2 | `DONE` | equipment/firearms coverage. |
 | Tramo jugable | M41.3 | `DONE` | NPC sandbox/loadouts. |
-| Tramo jugable activo | M41.4 | `IN PROGRESS — P8 OBSERVABILITY NEXT` | combat/AI integration/game feel. |
-| Review activo | Prueba 3 / NPC Foundation review | `IN PROGRESS — P4 ACCEPTED; P8/P9 PENDING` | completar observability, QA integrada y cleanup antes de otro sistema grande. |
+| Tramo jugable activo | M41.4 | IN PROGRESS — P8 DONE; P9 NEXT | combat/AI integration/game feel. |
+| Review activo | Prueba 3 / NPC Foundation review | IN PROGRESS — P4 ACCEPTED; P8 DONE; P9 NEXT | completar QA integrada y cleanup antes de otro sistema grande. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | historia estructurada acotada. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | persistencia world state general. |
 | 9 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | blueprint local/materialización autorada. |

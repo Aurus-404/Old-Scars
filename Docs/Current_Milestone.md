@@ -8,7 +8,7 @@ Este archivo es el snapshot operativo breve. `Project_Roadmap.md` conserva IDs/d
 
 Estado operativo:
 
-`IN PROGRESS — P4 ACCEPTED; P7 DONE/PASS/PUBLISHED; NEXT P8 OBSERVABILITY V2/F10`
+IN PROGRESS — P4 ACCEPTED; P7/P8 DONE / PUBLISHED; NEXT P9 — LEGACY MIGRATION + INTEGRATED QA + M41 CLOSEOUT
 
 Plan activo: `NPC_AI_Sanitation_Plan.md`.
 
@@ -40,9 +40,9 @@ No reabrir estas autoridades por inercia. Una regresión real puede justificar c
 
 P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. P8/F10 completó el tooling diferido sobre F6 y quedó DONE / ACCEPTED / PUBLISHED el 2026-09-13; ISSUE-0023 continúa SUSPECTED.
 
-## P2, P3, P4, targeting F8 y P7 cerrados — próximo paso exacto P8
+## P2, P3, P4, targeting F8, P7 y P8 cerrados — próximo paso exacto P9
 
 P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED** el 2026-09-07 en `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Condition compartida Player/NPC; Core `5 s` es tuning inicial de prueba, no balance final. Current Slice v1 conserva restante y continuidad de recuperación; offline no consume el mínimo y un save legacy que deriva Unconscious inicia el mínimo completo. Diagnostic P2, sesión Play nueva y siete regresiones proporcionales PASS. No sustituye aceptación manual integrada de M41.
 
@@ -51,6 +51,10 @@ P3 — KO / combat-memory continuity: **DONE / PUBLISHED** el 2026-09-07 en `394
 P4 — Prueba 3.3: **DONE / ACCEPTED**. Mauro confirmó que esta validación manual ya se realizó; este cierre reconcilia el estado sin volver a ejecutarla ni inventar evidencia adicional.
 
 F8A Aim Bias Evidence, F8B Generic Primary Aim Point y F8C Controlled Paired Before/After están `DONE / PASS / PUBLISHED`. `ISSUE-0008` queda `RESOLVED`: el detalle causal y la evidencia pareada están en `Issue_Registry.md`. No se retuneó accuracy. Esos diagnostics no sustituyeron P4; su aceptación manual fue confirmada separadamente por Mauro.
+
+P8/F10 Observability V2 quedó DONE / ACCEPTED / PUBLISHED el 2026-09-13 en commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280. El panel F6 muestra overlay multi-NPC, targeting/aim productivo, Focus/Spread, último disparo real con collider/Combat.Region/clasificación y semantic trace bounded; no introduce autoridad de gameplay.
+
+Validación automática previa: Runtime/Editor compile, M41 F10 Observability Diagnostics y M41 F6 Observability Diagnostics PASS. Mauro confirmó aceptación visual manual: Blue/Red visibles simultáneamente, selección clara, CURRENT Gaze/FOV separado de LAST, condiciones Conscious/Incapacitated/Dead, Dead sin targeting CURRENT, shot WORLD/OBSTACLE con collider y Combat.Region NONE, semantic trace legible e inspector navegable. El clutter ocasional de líneas es aceptable para QA.
 
 ## Orden operativo aprobado para cerrar M41
 
@@ -61,8 +65,8 @@ F8A Aim Bias Evidence, F8B Generic Primary Aim Point y F8C Controlled Paired Bef
 5. **P5 — F8A Aim Bias Evidence: DONE / PASS / PUBLISHED**; `ISSUE-0008 RESOLVED`.
 6. **P6 — F8B Generic Primary Aim Point + F8C paired control: DONE / PASS / PUBLISHED**; sin retuning. F8D no está iniciado ni autorizado por inercia.
 7. **P7 — Player Debug Invincible: DONE / PASS / PUBLISHED** en `c96900589816239bfdf6553fba699bca6b79a54f`; marker efímero Player-only desde F3, terminal protection coherente en Health/Condition, KO permitido y OFF normal.
-8. **P8 — completar Observability V2/F10: NEXT EXACT STEP** sobre el mismo tooling, incluyendo targeting/shot evidence cuando existan esos contratos.
-9. **P9 — migración legacy + QA integrada + aceptación manual + cleanup** y cierre formal de NPC Foundation V1.
+8. **P8 — Observability V2/F10: DONE / ACCEPTED / PUBLISHED**; commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280.
+9. **P9 — legacy migration + QA integrada + cleanup + cierre formal de NPC Foundation V1: NEXT EXACT STEP**.
 
 ## Punto de DONE de NPC Foundation V1
 

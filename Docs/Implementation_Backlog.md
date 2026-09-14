@@ -116,32 +116,26 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0009 — Player Debug: Invincible
 
-- **Estado:** `PLANNED`.
-- **Fecha/origen:** Prueba 2.
-- **Qué queremos:** toggle que permita detection, physical hit, regions, wounds/pain/bleeding/trauma/KO reales pero bloquee coherentemente la transición terminal a Dead durante QA.
-- **Por qué:** probar NPC→Player durante períodos largos sin reiniciar la prueba.
-- **Trigger/dependencias:** después de estabilizar KO y F8 targeting; antes de QA Player final.
-- **Límites:** OFF = gameplay normal; no sustituir daño por mocks, no volver intangible al Player, no curar ni resucitar al apagar.
-- **Relación:** NPC Sanitation F9; `ISSUE-0012`.
+- **Estado:** DONE / PUBLISHED.
+- **Resolución:** P7, commit c96900589816239bfdf6553fba699bca6b79a54f. Marker efímero Player-only que protege únicamente del estado terminal Dead; Health/Condition siguen procesando daño, heridas, sangrado, dolor, trauma y KO. OFF conserva gameplay normal, sin curar ni resucitar.
+- **Validación:** Runtime/Editor compile, Player Debug Invincible diagnostic y Actor Consciousness/Incapacitation diagnostic PASS. P4 ya estaba aceptado por confirmación manual previa; no se rerunearon diagnostics de Invincible durante P8.
+- **Relación:** ISSUE-0012 RESOLVED.
 
 ## IMPL-0010 — Observability V2 multi-NPC
 
-- **Estado:** `MINIMUM SLICE DONE / ACCEPTED / PUBLISHED — FULL F10 PENDING`.
-- **Fecha/origen:** Prueba 2; prioridad elevada por Prueba 3.
-- **Qué queremos:** overlay global compacto multi-NPC + inspector profundo del seleccionado. El mínimo adelantado muestra gaze/FOV/LOS simultáneamente y distingue CURRENT vs LAST; F10 completa targeting/shot observability.
-- **Cierre mínimo:** `5aac763c14c399bfe09a3e925c50698658ad2716`; diagnostics PASS y aceptación visual manual final confirmada por Mauro el 2026-09-06.
-- **Pendiente:** F10 completo, incluyendo targeting/shot observability.
-- **Límites:** no crear debug framework general; usar datos read-only de producción; no duplicar Perception/raycasts como segunda verdad.
-- **Relación:** `ISSUE-0010`, `ISSUE-0011`, `ISSUE-0019`.
+- **Estado:** DONE / ACCEPTED / PUBLISHED.
+- **Alcance:** overlay CURRENT compacto multi-NPC e inspector profundo seleccionado; conserva CURRENT Gaze/FOV frente a LAST histórica; añade targeting/aim productivo, Primary Aim Point informativo, Focus/Spread, último disparo físico con origen/dirección, termination, endpoint, collider, Combat.Region y clasificación ACTOR HIT/MISS/WORLD-OBSTACLE; semantic trace bounded y estado Condition/KO.
+- **Cierre mínimo anterior:** 5aac763c14c399bfe09a3e925c50698658ad2716; diagnostics F6 y aceptación visual del 2026-09-06.
+- **Cierre F10:** commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280; Runtime/Editor compile, M41 F10 diagnostic y F6 regression PASS; aceptación visual manual de Mauro PASS el 2026-09-13.
+- **Límite:** tooling read-only, sin nueva autoridad de gameplay. La telemetry 30v30 y la investigación de distribución anatómica siguen diferidas en ISSUE-0026/0027.
+- **Relación:** ISSUE-0010, ISSUE-0011, ISSUE-0019 continúan RESOLVED.
 
 ## IMPL-0011 — Observabilidad de targeting/accuracy
 
-- **Estado:** `PLANNED`.
-- **Fecha/origen:** 2026-09-03.
-- **Qué queremos:** exponer target, Primary Aim Point, focus, spread, shot origin/direction, hit collider/region y miss cuando esos contratos existan.
-- **Por qué:** diagnosticar game feel sin logs masivos ni inferencias visuales.
-- **Trigger/dependencias:** F8A genera el mínimo reutilizable; F10 lo integra al tooling estable.
-- **Límites:** visualización read-only; no alterar aim.
+- **Estado:** DONE / PUBLISHED.
+- **Implementación:** threat/target ActorInstanceId, CurrentAimPoint productivo, Focus, Spread efectivo, AttackCount, LastShotOrigin/Direction, termination física, endpoint, collider, Combat.Region nullable y clasificación de hit/miss/world integrados en F6.
+- **Validación:** getters productivos comparados por F10 diagnostic; Runtime/Editor compile y F6 regression PASS; aceptación visual manual PASS el 2026-09-13. Commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280.
+- **Límite:** visualización read-only; no altera aim ni accuracy y no añade inferencia anatómica.
 
 ## IMPL-0012 — Fire-control más weapon-driven cuando existan múltiples arquetipos reales
 
@@ -168,7 +162,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Trigger/dependencias:** después de estabilizar el minimum KO dwell; antes de Prueba 3.3.
 - **Límites:** memoria no entrega posición oculta; Perception/LKP/Search siguen siendo autoridad espacial. Recordar identidad no equivale a `Threat != null` y no debe bloquear por sí solo self-treatment/AmbientTopOff. Death sigue terminal. Sin MemorySystem/blackboard/planner.
 - **Relación:** `ISSUE-0020`.
-- **Implementado/validado:** una identidad reciente en Encounter, separada de Threat y sin posición; ventana real configurable `60 s` Core provisional, pausada por incapacidad propia y renovada por observaciones legítimas. Recognition/Perception reanuda Fighting sin otro Alerted; expiry/death/invalidation/reemplazo limpia. P3 y ocho regresiones PASS, sin bloquear routine treatment ni AmbientTopOff. Próximo P4 Prueba 3.3; no ejecutado.
+- **Implementado/validado:** una identidad reciente en Encounter, separada de Threat y sin posición; ventana real configurable `60 s` Core provisional, pausada por incapacidad propia y renovada por observaciones legítimas. Recognition/Perception reanuda Fighting sin otro Alerted; expiry/death/invalidation/reemplazo limpia. P3 y ocho regresiones PASS, sin bloquear routine treatment ni AmbientTopOff. P4 Prueba 3.3 fue confirmado manualmente como realizado y aceptado por Mauro; no se repitió durante P8 ni se agregó evidencia nueva.
 
 ## IMPL-0015 — Minimum real-time knockout dwell
 

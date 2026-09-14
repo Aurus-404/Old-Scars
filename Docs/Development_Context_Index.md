@@ -51,7 +51,7 @@ Para auditorías sistémicas amplias, Astra puede usarse como investigador/arqui
 
 No repetir auditorías exhaustivas si el repo ya estableció el seam y el próximo trabajo sólo requiere implementación/validación.
 
-## Estado de continuidad al 2026-09-07
+## Estado de continuidad al 2026-09-13
 
 Bloque activo:
 
@@ -77,25 +77,27 @@ Capacidades recientes también cerradas:
 
 P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. P8/F10 completo DONE / ACCEPTED / PUBLISHED; compile Runtime/Editor, F10 y F6 regression PASS; aceptación visual final de Mauro el 2026-09-13. ISSUE-0023 sigue SUSPECTED.
 
 ### Secuencia operativa aprobada para cerrar M41
 
 P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED**, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Core `5 s` inicial de prueba; restante durable en Current Slice v1, sin progreso offline y legacy seguro. P2 y regresiones proporcionales PASS.
 
-P3 — KO / combat-memory continuity: **DONE / PUBLISHED**, `394d01886b8c6697ca2d492c4450282f561ba688`. Memory != Threat; una identidad sin posición en Encounter, ventana real `60 s` Core provisional pausada sólo por incapacidad propia, reacquisition legítima y cleanup terminal. P3 y ocho regresiones PASS. Siguiente trabajo P4 Prueba 3.3, no iniciado; aceptación manual integrada de M41 pendiente.
+P3 — KO / combat-memory continuity: **DONE / PUBLISHED**, 394d01886b8c6697ca2d492c4450282f561ba688. Memory != Threat; una identidad sin posición en Encounter, ventana real 60 s Core provisional pausada sólo por incapacidad propia, reacquisition legítima y cleanup terminal. P3 y ocho regresiones PASS. P4 Prueba 3.3 fue aceptado manualmente después; P7/P8 también están cerrados. El próximo paso exacto es P9.
 
 1. F6 / Correction Pass B cerrado, aceptado y publicado;
 2. minimum real-time KO dwell cerrado y publicado;
 3. P3 — KO / combat-memory continuity cerrado y publicado;
-4. P4 — Prueba 3.3 1 Blue vs 1 Red limpia, próximo;
+4. P4 — Prueba 3.3: DONE / ACCEPTED por confirmación manual de Mauro;
 5. F8A Aim Bias Evidence;
 6. F8B/C y F8D sólo según evidencia;
-7. Player Debug Invincible;
-8. completar Observability V2/F10;
-9. legacy migration + QA integrada + aceptación manual + cierre M41.
+7. P7 — Player Debug Invincible: DONE / PASS / PUBLISHED en c96900589816239bfdf6553fba699bca6b79a54f;
+8. P8 — Observability V2/F10: DONE / ACCEPTED / PUBLISHED en f4d07434d2b0ea0387584320c81b48dd248bd280;
+9. P9 — legacy migration + integrated QA + cleanup + formal M41 closeout: NEXT EXACT STEP.
 
 Cambio deliberado respecto de wording anterior: KO dwell se ejecuta antes de KO memory para estabilizar primero la transición funcional que la memoria debe soportar.
+
+ISSUE-0026 (30v30 inverted spawn comparison) e ISSUE-0027 (dynamic anatomical hit distribution) siguen diferidos. F8D sólo se reabre con evidencia; ISSUE-0022 loaded ammo mass queda después de M41 según roadmap.
 
 ### Después de M41
 

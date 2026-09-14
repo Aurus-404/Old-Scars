@@ -185,13 +185,13 @@ Cambios de KO/Search deben preservar esta continuidad o registrar regresión rea
 
 ---
 
-# Secuencia operativa aprobada — 2026-09-06
+# Secuencia operativa aprobada — actualizada 2026-09-13
 
 ## P1 — Correction Pass B / F6 cerrado
 
 P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
 
-F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. IMPL-0010 minimum slice completado; F10 completo pendiente. Posible desajuste eye origin/representación humana separado en ISSUE-0023, sin resolver.
+F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. P8/F10 completó el tooling diferido sobre F6 y quedó DONE / ACCEPTED / PUBLISHED el 2026-09-13; ISSUE-0023 continúa SUSPECTED.
 
 ## P2 — Minimum real-time KO dwell
 
@@ -227,7 +227,7 @@ Una identidad efímera en Encounter, sin posición ni nueva autoridad. Ventana `
 
 ## P4 — Prueba 3.3
 
-**Estado:** `NEXT — GATE M41`. Aceptación manual integrada aún pendiente; F8A/B/C se completaron con sus gates focalizados y no sustituyen esta prueba.
+**Estado:** DONE / ACCEPTED. Mauro confirmó previamente que Prueba 3.3 se realizó; no se repitió ni se agregó evidencia nueva durante P8.
 
 1 Blue vs 1 Red:
 
@@ -253,7 +253,7 @@ F8D no está iniciado ni se abre automáticamente. Sólo revisar accuracy residu
 
 ## P7 — Player Debug Invincible
 
-**Estado:** `AFTER P4 MANUAL INTEGRATION GATE`; F8 targeting ya está estabilizado para ISSUE-0008.
+**Estado:** DONE / PASS / PUBLISHED — P7, commit c96900589816239bfdf6553fba699bca6b79a54f. P4 fue aceptado manualmente antes; Invincible preserva KO y las reglas OFF normales.
 
 Invincible ON mantiene:
 
@@ -267,19 +267,23 @@ OFF = gameplay normal, sin curación ni resurrección implícita.
 
 ## P8 — F10 Observability V2 completa
 
-Construir encima de P1/P5:
+**Estado:** DONE / ACCEPTED / PUBLISHED — commit funcional f4d07434d2b0ea0387584320c81b48dd248bd280.
 
-- overlay multi-NPC compacto;
-- inspector seleccionado;
-- targeting/aim point;
-- focus/spread;
-- shot origin/direction;
-- collider/region/miss;
-- traces útiles.
+Completado sobre el panel F6 existente:
 
-Read-only; ninguna autoridad nueva.
+- overlay compacto global Blue/Red con identidad, estado de encounter y Condition;
+- inspector de target/threat, CurrentAimPoint productivo, Focus, Spread y AttackCount;
+- último disparo físico con origen/dirección, termination, endpoint, collider, Combat.Region nullable y clasificación hit/miss/world;
+- semantic trace acotado y lectura de Condition/KO;
+- ninguna nueva autoridad de gameplay y ninguna evaluación duplicada de Perception o Combat.
+
+Runtime/Editor compile, F10 Observability diagnostic y F6 regression PASS. Mauro dio aceptación visual manual PASS el 2026-09-13: Blue/Red visibles, selección clara, CURRENT Gaze/FOV y CURRENT/LAST diferenciados, Conscious/Incapacitated/Dead, Dead sin targeting CURRENT engañoso, shot WORLD/OBSTACLE con collider y Combat.Region NONE, semantic trace legible e inspector navegable. El clutter ocasional de líneas es aceptable para QA.
+
+ISSUE-0026 (30v30) e ISSUE-0027 (distribución anatómica) permanecen diferidos; P8 no activa F8D.
 
 ## P9 — Legacy migration + QA integrada + cierre M41
+
+Estado: NEXT EXACT STEP.
 
 Migrar sólo consumers reales de compatibility capsule/anatomy legacy.
 

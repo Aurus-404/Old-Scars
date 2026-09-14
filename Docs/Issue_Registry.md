@@ -91,7 +91,7 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Corrección/publicación:** P3, `394d01886b8c6697ca2d492c4450282f561ba688`, 2026-09-07. Una identidad/contexto reciente en Encounter, separada de Threat, sin posición. Ambos lados conservan continuidad; no hay ataques deliberados al KO. Reacquisition exige Recognition/Perception y retoma Fighting sin otro Alerted.
 - **Expiración:** `recent_enemy_memory_seconds`, `60 s` Core provisional, no balance final; tiempo real pausado sólo por incapacidad propia y renovado por observaciones legítimas. Expiry/death/invalidation/reemplazo limpia. No MemorySystem ni Search nueva.
 - **Validación:** P3 PASS: KO con rival armado, tratamiento y AmbientTopOff con memoria, recovery visible/oculto, reconocimiento gradual, ausencia de posición oculta, expiración, muerte, retirada del runtime y reemplazo. Ocho regresiones PASS: P2, Human Encounter, Behavior ownership, Search, Gaze/Perception, Timed Bandaging, Opportunistic Reload y M38 lifecycle. Fixture Human Encounter actualizado a continuidad real sin relajar percepción/LKP; sin cambio de gameplay adicional.
-- **Siguiente:** P4 Prueba 3.3, no iniciado; aceptación manual integrada de M41 pendiente.
+- **Siguiente:** P9 legacy migration + integrated QA + cleanup + formal M41 closeout.
 
 ### ISSUE-0021 — Knockout/Unconscious sin minimum real-time dwell
 - **Tipo/estado/severidad:** `DESIGN_DEBT` · `RESOLVED` · `P1 / ORANGE`
@@ -99,7 +99,7 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Corrección/publicación:** P2, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`, 2026-09-07. Gate por episodio en Condition compartida Player/NPC; Core `5 s` inicial de prueba, no balance final. No extiende Incapacitated ni fuerza wake-up; physiology y Death continúan.
 - **Persistencia:** Current Slice v1 guarda restante/continuidad; offline no consume el mínimo. Legacy que deriva Unconscious recibe mínimo completo, sin migración de schema.
 - **Validación:** P2 x1 `5.001 s`, x100 `5.002 s`, configuración `0.3 s`, sesión Play nueva con `4.000 s` preservados después de más de `6 s` offline, invalid preflight/rollback exacto; Consciousness, Collapse, M39, M38, Human Encounter, Behavior ownership y Timed Bandaging/NPC Self-Treatment PASS.
-- **Continuidad posterior:** P3 / `ISSUE-0020` DONE/PUBLISHED; siguiente P4 Prueba 3.3, no iniciado.
+- **Continuidad posterior:** P3 / ISSUE-0020 DONE/PUBLISHED; P4 fue aceptado manualmente y el próximo paso operativo es P9 después de P8.
 
 ### ISSUE-0024 — Fixture de collapse enviaba navegación fuera de Behavior ownership
 - **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P2 / YELLOW`
@@ -112,14 +112,14 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Origen:** Prueba 2; reconfirmado Prueba 3.
 - **Síntoma:** sólo un NPC seleccionado recibe world visuals útiles; comparar ambos lados exige ciclar F6.
 - **Corrección/publicación:** `5aac763c14c399bfe09a3e925c50698658ad2716`; CURRENT multi-NPC independiente del inspector, LAST histórico separado sin geometría actual del blocker y Dead/Inactive sin CURRENT engañoso.
-- **Validación:** F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro el 2026-09-06. Correction Pass B cerrado; F10 completo pendiente.
+- **Validación:** F6 Observability, Gaze/Perception y LostContact/Search PASS; P8/F10 actualizó el tooling global/targeting, Runtime/Editor compile, F10 diagnostic y F6 regression PASS; Mauro dio aceptación visual el 2026-09-13. Commit F10 f4d07434d2b0ea0387584320c81b48dd248bd280. El issue continúa RESOLVED.
 
 ### ISSUE-0011 — Inspector F6 demasiado dependiente de selección
 - **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P2 / YELLOW`
 - **Origen:** Prueba 2/3.
 - **Síntoma:** estados simultáneos son difíciles de comparar.
 - **Corrección/publicación:** `5aac763c14c399bfe09a3e925c50698658ad2716`; CURRENT multi-NPC independiente del inspector, LAST histórico separado sin geometría actual del blocker y Dead/Inactive sin CURRENT engañoso.
-- **Validación:** F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro el 2026-09-06. Correction Pass B cerrado; F10 completo pendiente.
+- **Validación:** F6 Observability, Gaze/Perception y LostContact/Search PASS; P8/F10 actualizó el tooling global/targeting, Runtime/Editor compile, F10 diagnostic y F6 regression PASS; Mauro dio aceptación visual el 2026-09-13. Commit F10 f4d07434d2b0ea0387584320c81b48dd248bd280. El issue continúa RESOLVED.
 
 ### ISSUE-0019 — F6 presenta snapshots históricos como percepción actual
 - **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P1 / ORANGE`
@@ -127,7 +127,7 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Síntoma:** FOV/LOS puede quedar atrás del NPC, parecer salir del piso/desaparecer; Dead/Inactive puede seguir mostrando `Perceived` histórico.
 - **Causa publicada:** tooling consume `LastPerception`/`LastAcquisitionPerception` + `ObserverOrigin` snapshot y no diferencia claramente CURRENT vs LAST. No implica que perception productiva vea desde el origen viejo.
 - **Corrección/publicación:** `5aac763c14c399bfe09a3e925c50698658ad2716`; CURRENT multi-NPC independiente del inspector, LAST histórico separado sin geometría actual del blocker y Dead/Inactive sin CURRENT engañoso.
-- **Validación:** F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro el 2026-09-06. Correction Pass B cerrado; F10 completo pendiente.
+- **Validación:** F6 Observability, Gaze/Perception y LostContact/Search PASS; P8/F10 actualizó el tooling global/targeting, Runtime/Editor compile, F10 diagnostic y F6 regression PASS; Mauro dio aceptación visual el 2026-09-13. Commit F10 f4d07434d2b0ea0387584320c81b48dd248bd280. El issue continúa RESOLVED.
 
 ### ISSUE-0001 — Blue/Red no realizaban roaming efectivo Idle
 - **Estado:** `RESOLVED / P0`.
