@@ -3732,3 +3732,8 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - La telemetry de combate 30v30 local se preservó y no se publicó. ISSUE-0026 (30v30 inverted spawn comparison) e ISSUE-0027 (dynamic anatomical hit distribution) siguen diferidos; F8D no se reactiva sin evidencia; loaded ammo mass permanece después de M41 según roadmap.
 - ISSUE-0010, ISSUE-0011 e ISSUE-0019 permanecen RESOLVED; ISSUE-0023 permanece SUSPECTED. P4 permanece DONE / ACCEPTED por confirmación previa; P7 permanece DONE / PASS / PUBLISHED. No se rerunearon P4 ni los diagnostics de P7.
 - NEXT EXACT STEP: P9 — legacy migration + integrated QA + cleanup + formal M41 closeout. M41.4 continúa IN PROGRESS hasta P9 y la aceptación final.
+
+## 2026-09-14 — Durable test evidence rule and P9 manual gate record
+
+- Added a permanent requirement that significant implementations receive documentation closeout and relevant test executions receive unique, durable Test IDs in append-only `Test_Log.md`; repeated runs preserve history. Test details are recorded under `TEST-20260914-001`.
+- Recorded the M41 P9 NPC-only Blue-vs-Red manual integration gate as PASS. NPC↔Player validation and the legacy `human_standard_visual_rig` lookup source review remain pending; M41 remains IN PROGRESS.

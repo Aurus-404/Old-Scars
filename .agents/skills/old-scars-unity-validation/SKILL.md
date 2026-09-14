@@ -19,6 +19,8 @@ Read the affected contracts and identify the actual validation seam before execu
 ## Validation Procedure
 
 - Prefer the project-proven deterministic path: focused diagnostics, structured output, exit codes, and relevant tests. Unity CLI/Pipeline may be used when already available and useful, but are not a workflow dependency; raw Unity batchmode remains a fallback.
+- Give every relevant test execution or gate a unique `TEST-YYYYMMDD-NNN` ID and append its durable record to `Docs/Test_Log.md`. This includes meaningful diagnostics, manual/integration/regression runs, playtests, comparisons, balance/telemetry checks, visual acceptance, and milestone gates; do not create entries for routine isolated compiles that are not meaningful tests.
+- Record PASS/FAIL/PARTIAL/INCONCLUSIVE explicitly and reference available evidence and findings. A passing run does not discard warnings or follow-ups. Every rerun gets a new Test ID; never overwrite an earlier test result. Keep `Docs/Test_Log.md` append-only, and let `Docs/Development_Log.md` summarize completed work and reference Test IDs as needed.
 - Prefer an already-open or already-warm canonical Editor context when it can perform the needed checks safely. Avoid repeated Unity startups/import/compile cycles.
 - The configured Unity MCP bridge needs a reachable Editor Pipeline server. Keep `com.unity.pipeline` only while this project accepts MCP for real work; neither Pipeline nor the globally installed CLI is a universal Old Scars prerequisite.
 - Compile the affected Runtime/Editor surfaces, run the direct diagnostic, and run only regressions that match the systemic blast radius. Keep automated, fresh-session/manual Unity, Console, and visual acceptance as separate evidence.

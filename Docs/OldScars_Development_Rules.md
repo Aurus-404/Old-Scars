@@ -9,11 +9,19 @@ This document is a compact navigation reference. It does not define a second set
 | Product direction, decision pending, design baseline | [Game_Design_Document.md](Game_Design_Document.md), with Mauro as final authority |
 | Milestone ID, state, dependency, gate | [Project_Roadmap.md](Project_Roadmap.md) |
 | Active operational state and next real work | [Current_Milestone.md](Current_Milestone.md), [Next_Sprints.md](Next_Sprints.md) |
-| Historical evidence | [Development_Log.md](Development_Log.md), append-only |
+| Completed work history | [Development_Log.md](Development_Log.md), append-only |
+| Significant test executions and gates | [Test_Log.md](Test_Log.md), append-only; each execution has a unique Test ID |
 | Implemented C# authority, services, persistence, identity, ownership, transactions | [Technical_Architecture.md](Technical_Architecture.md) |
 | Content schemas, IDs, validation, mod loading | [DataDriven_JSON_Rules.md](DataDriven_JSON_Rules.md) |
 | Gate criteria, evidence, and risk register | [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md) |
 | Durable agent workflow, Git/checkout strategy, Unity validation cost guardrails | [../AGENTS.md](../AGENTS.md) and repo-local skills |
+
+## Documentation Completion And Test Evidence
+
+- A significant implementation or fix is not DONE until its documentation closeout is complete.
+- Every relevant test execution or gate must be recorded in `Test_Log.md` with a unique `TEST-YYYYMMDD-NNN` ID. Relevant work includes automated diagnostics, manual and integration tests, regressions, playtests, comparisons, balance/telemetry tests, visual acceptance, and milestone gates. Routine isolated compiles that are not meaningful tests are excluded.
+- Each entry states its result explicitly (`PASS`, `FAIL`, `PARTIAL`, or `INCONCLUSIVE`) and references available evidence, findings, related issues, and next action. A passing test may still reveal warnings or follow-up work; retain those findings.
+- The log is append-only. Each rerun is a new execution with a new Test ID, and later runs do not replace or erase earlier results. `Development_Log.md` remains the completed-work history and can reference Test IDs without copying their full records.
 
 ## Technical Invariants To Locate Before Changing Them
 

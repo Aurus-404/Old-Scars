@@ -108,6 +108,10 @@ Use `$old-scars-unity-validation` for Unity validation and `$old-scars-persisten
 
 Update only documentation whose truth changed. Keep the Development Log append-only; do not rewrite historical statuses. Use `$old-scars-milestone-closeout` for a milestone, significant refactor, or other closeout that needs review and publication.
 
+- A significant implementation or fix is not DONE until its documentation closeout is complete.
+- Every relevant test execution or gate must receive a unique `TEST-YYYYMMDD-NNN` ID and a durable result entry in [Docs/Test_Log.md](Docs/Test_Log.md). This includes meaningful automated diagnostics, manual/integration/regression tests, playtests, comparisons, balance/telemetry checks, visual acceptance, and milestone gates; routine isolated compiles that are not meaningful tests do not need entries.
+- `Test_Log.md` is append-only. Record PASS/FAIL/PARTIAL/INCONCLUSIVE explicitly, reference the evidence available, and preserve findings even when a run passes. Re-runs are new executions with new Test IDs; a later result never erases or overwrites an earlier one. `Development_Log.md` remains the history of completed work and may reference Test IDs rather than duplicate test details.
+
 When an implementation reveals a future mechanic/improvement rather than a defect, put it in [Docs/Implementation_Backlog.md](Docs/Implementation_Backlog.md), not in the milestone roadmap and not as a fake bug. When a real defect is discovered, use [Docs/Issue_Registry.md](Docs/Issue_Registry.md).
 
 The technical-contract map is [Docs/OldScars_Development_Rules.md](Docs/OldScars_Development_Rules.md). It is a navigation reference, not a second workflow policy.
