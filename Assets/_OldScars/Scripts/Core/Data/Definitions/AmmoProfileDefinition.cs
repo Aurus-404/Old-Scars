@@ -2,7 +2,8 @@ namespace OldScars.Core.Data.Definitions
 {
     /// <summary>
     /// Immutable ammunition behavior loaded from JSON.
-    /// Item storage owns quantities; this profile owns caliber and base damage.
+    /// Item storage owns loose quantities; this profile owns the canonical
+    /// physical mass of one round plus its ballistic and medical behavior.
     /// </summary>
     [System.Serializable]
     public sealed class AmmoProfileDefinition
@@ -11,6 +12,7 @@ namespace OldScars.Core.Data.Definitions
         public string id;
         public string display_name;
         public string caliber_tag;
+        public float round_weight_kg = float.NaN;
         public string wound_type;
         public float wound_severity;
         public float bleeding_rate_per_game_hour;

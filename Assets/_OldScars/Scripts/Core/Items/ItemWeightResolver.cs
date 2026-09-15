@@ -106,8 +106,50 @@ namespace OldScars.Core.Items
             if (!TryGetDefinitionWeight(item.DefinitionId, quantity, out _, out totalWeightKg, out error))
                 return false;
 
-            if (!item.HasOwnedStorage || quantity == 0)
+            if (quantity == 0)
                 return true;
+
+            if (item.HasFirearmState)
+            {
+                if (quantity != 1 || entry.Quantity != 1 || item.MaxStack != 1)
+                {
+                    error = $"Firearm item '{item.InstanceId}' must be a non-stackable quantity-1 entry because it owns mutable loaded-ammo state.";
+                    return false;
+                }
+
+                if (item.LoadedRounds > 0)
+                {
+                    if (string.IsNullOrWhiteSpace(item.LoadedAmmoProfileId))
+                    {
+                        error = $"Firearm item '{item.InstanceId}' has {item.LoadedRounds} loaded round(s) without an ammo profile id.";
+                        return false;
+                    }
+
+                    GameDatabase database = GameDataManager.Instance.Database;
+                    AmmoProfileDefinition ammo = database != null
+                        ? database.GetAmmoProfile(item.LoadedAmmoProfileId)
+                        : null;
+                    if (ammo == null)
+                    {
+                        error = $"Firearm item '{item.InstanceId}' references loaded ammo profile '{item.LoadedAmmoProfileId}' which was not found.";
+                        return false;
+                    }
+
+                    double roundWeightKg = ammo.round_weight_kg;
+                    double loadedAmmoWeightKg = roundWeightKg * item.LoadedRounds;
+                    if (!IsFinite(roundWeightKg) || roundWeightKg <= 0d ||
+                        !IsFinite(loadedAmmoWeightKg) || loadedAmmoWeightKg <= 0d)
+                    {
+                        error = $"Loaded ammo profile '{ammo.id}' produced invalid internal mass for {item.LoadedRounds} round(s).";
+                        return false;
+                    }
+
+                    totalWeightKg += loadedAmmoWeightKg;
+                }
+            }
+
+            if (!item.HasOwnedStorage)
+                return IsFinite(totalWeightKg);
 
             if (quantity != 1 || entry.Quantity != 1 || item.MaxStack != 1)
             {

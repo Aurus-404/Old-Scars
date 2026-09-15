@@ -16,6 +16,7 @@ namespace OldScars.Core.Data.Validation
     /// </summary>
     public sealed class DataValidator
     {
+        private const float AmmoWeightEpsilonKg = 0.000001f;
         private const string EffectTargetTarget = "target";
         private const int MaxItemStorageDimension = 64;
         private static readonly HashSet<string> RuntimeHealthTags = new HashSet<string>
@@ -1384,8 +1385,15 @@ namespace OldScars.Core.Data.Validation
             {
                 RequireGlobalContentId(item.ammo_profile_id, "ammo_profile_id", ctx);
 
-                if (database.GetAmmoProfile(item.ammo_profile_id) == null)
+                AmmoProfileDefinition ammoProfile = database.GetAmmoProfile(item.ammo_profile_id);
+                if (ammoProfile == null)
+                {
                     report.Error($"{ctx}: 'ammo_profile_id' references '{item.ammo_profile_id}' which was not loaded.");
+                }
+                else if (!TryValidateAmmoItemRoundWeight(item, ammoProfile, out string weightError))
+                {
+                    report.Error(weightError);
+                }
 
                 if (item.max_stack <= 1)
                     report.Error($"{ctx}: ammo items must be stackable with 'max_stack' > 1.");
@@ -1407,6 +1415,39 @@ namespace OldScars.Core.Data.Validation
                 if (item.max_stack != 1)
                     report.Error($"{ctx}: armor items must declare 'max_stack' exactly 1.");
             }
+        }
+
+        public static bool TryValidateAmmoItemRoundWeight(
+            ItemDefinition item,
+            AmmoProfileDefinition ammoProfile,
+            out string error)
+        {
+            string itemId = SafeId(item != null ? item.id : null);
+            string profileId = SafeId(ammoProfile != null ? ammoProfile.id : null);
+            if (item?.physical == null || !item.physical.weight_kg.HasValue ||
+                !FinitePositive(item.physical.weight_kg.Value))
+            {
+                error = $"Item '{itemId}': ammo item physical.weight_kg must be present, finite and > 0.";
+                return false;
+            }
+
+            if (ammoProfile == null || !FinitePositive(ammoProfile.round_weight_kg))
+            {
+                error = $"Item '{itemId}': referenced AmmoProfile '{profileId}' has invalid round_weight_kg '{(ammoProfile != null ? ammoProfile.round_weight_kg : float.NaN)}'.";
+                return false;
+            }
+
+            float itemWeightKg = item.physical.weight_kg.Value;
+            if (Math.Abs(itemWeightKg - ammoProfile.round_weight_kg) > AmmoWeightEpsilonKg)
+            {
+                error =
+                    $"Item '{itemId}': ammo item physical.weight_kg '{itemWeightKg}' must match AmmoProfile " +
+                    $"'{profileId}' round_weight_kg '{ammoProfile.round_weight_kg}' within {AmmoWeightEpsilonKg} kg.";
+                return false;
+            }
+
+            error = null;
+            return true;
         }
 
         private void ValidateItemEquip(ItemDefinition item, string ctx)
@@ -1744,6 +1785,9 @@ namespace OldScars.Core.Data.Validation
 
                 if (string.IsNullOrWhiteSpace(profile.display_name))
                     report.Error($"{ctx}: 'display_name' is required.");
+
+                if (!FinitePositive(profile.round_weight_kg))
+                    report.Error($"{ctx}: 'round_weight_kg' is required and must be finite and > 0 (got {profile.round_weight_kg}).");
 
                 RequireLocalId(profile.caliber_tag, "caliber_tag", ctx);
                 if (!string.IsNullOrWhiteSpace(profile.caliber_tag) && !tags.IsValid(profile.caliber_tag))
