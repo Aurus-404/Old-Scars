@@ -1,6 +1,6 @@
 # Old Scars — Approved Mechanics / Tooling — 2026-09-14
 
-Documento de continuidad para decisiones aprobadas durante brainstorming. No crea milestones ni altera `Next_Sprints.md`. Debe reconciliarse con `Implementation_Backlog.md` en el próximo documentation closeout.
+Documento de continuidad para decisiones aprobadas durante brainstorming. No crea milestones ni altera `Next_Sprints.md`. Reconciliado con `Implementation_Backlog.md` como `IMPL-0042`–`IMPL-0056` el 2026-09-15; las ideas aún no aprobadas quedaron en `Mechanic_Idea_Pool.md` como `IDEA-0019`–`IDEA-0029`.
 
 ## Scope decision — WorldClock / TimeScale
 
