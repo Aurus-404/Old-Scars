@@ -279,8 +279,10 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `WeaponCombatService` toma la misma instancia equipada desde `ActorEquipmentComponent`. Firearms se resuelven por `ItemDefinition.firearm_profile_id`; melee por `ItemDefinition.combat.weapon_profile`. No existe branching productivo por Lee-Enfield, `.303` o crowbar. `PhysicalShotPathResolver` recibe `firearm.range` como máximo físico temporal del hitscan, y `melee_range` limita el trace melee; los rays de cámara sólo ayudan a seleccionar dirección y las líneas debug se acotan al endpoint físico alcanzable.
 - `CombatResolutionService` expone el dispatch terminal de consecuencias. El adapter humano actual deriva una de seis regiones desde bounds/punto real, resuelve armor equipada y llama exclusivamente M39; un collider no médico queda `InvalidTarget` sin forzar al núcleo de penetración a conocer actores.
 - Cada firearm `ItemInstance` posee estado mutable `LoadedAmmoProfileId + LoadedRounds`; capacity deriva del `FirearmProfileDefinition`. La misma referencia y `InstanceId` atraviesan Equipment, drop/pickup y ownership transfers.
+- `AmmoProfileDefinition.round_weight_kg` es la autoridad física canónica de un round cargado. Cada item de ammo loose debe declarar el mismo `physical.weight_kg`; `DataValidator` rechaza valores ausentes/no positivos o divergencias mayores a `0.000001 kg`, incluso para mods con múltiples items que referencian el mismo profile.
+- `ItemWeightResolver` suma una sola vez masa base del entry, masa interna `LoadedRounds × round_weight_kg` de una firearm quantity-1 y su owned-storage subtree. Reload traslada masa loose a interna sin cambiar el total; fire consume un round y reduce exactamente esa masa; equip/storage/drop/pickup transportan el mismo `ItemInstance` y su masa interna.
 - Reload busca ammo compatible dentro del árbol real de ownership, consume exactamente el faltante y restaura el estado de arma si el backend rechaza el commit. `DebugActionProgressController` aporta la operación temporizada/cancelable; cancelar no muta ammo ni firearm.
-- Current Slice persiste el estado dentro de `ItemState.firearmState`, lo valida antes de mutar y lo restaura dentro de la misma transacción M37–M39. Omisión legacy V1 normaliza a unloaded; null presente, incompatibilidad o rounds fuera de capacidad fallan preflight. El fault post-firearm-state prueba rollback canónico.
+- Current Slice persiste el estado dentro de `ItemState.firearmState`, no la masa derivada. Lo valida antes de mutar y lo restaura dentro de la misma transacción M37–M39; al resolver peso después del load se obtiene la misma masa desde ammo profile + rounds, sin bump de schema. Omisión legacy V1 normaliza a unloaded; null presente, incompatibilidad o rounds fuera de capacidad fallan preflight. El fault post-firearm-state prueba rollback canónico.
 
 ## Armor & Penetration V1
 
@@ -317,7 +319,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `ItemOwnedStorageRuntime` implementa `IGridStorageOwner` y reutiliza `GridStorageTransferService`; no existe un backend especial de mochila.
 - `ContainerLootComponent` puebla contenido inicial mediante `GridInventoryBackend.Add`, verifica cada cantidad afectada, bindea los owners resultantes y restaura el snapshot y las reservas nuevas si falla el lote.
 - Nesting de item-owned storage permanece prohibido en el contrato v0 mediante un guard transaccional generico.
-- `ActorCarryWeightComponent` es la autoridad de capacidad. `ItemWeightResolver` suma cada entry y su subtree item-owned exactamente una vez, con proteccion contra ciclos y duplicados.
+- `ActorCarryWeightComponent` es la autoridad de capacidad. `ItemWeightResolver` suma cada entry, su masa interna de munición cargada cuando corresponde y su subtree item-owned exactamente una vez, con proteccion contra ciclos, duplicados y firearm mutable stackeada.
 - Transfers dentro del mismo root owner tienen delta cero. Entradas externas usan las politicas de peso existentes del actor.
 
 ## Actor Profiles Y Bootstrap Inicial

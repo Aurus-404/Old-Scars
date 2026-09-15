@@ -3757,3 +3757,14 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - ISSUE-0023 remains SUSPECTED; ISSUE-0026 and ISSUE-0027 remain deferred. ISSUE-0008 and ISSUE-0012 remain RESOLVED. No issue was resolved by these manual tests.
 - **M41 / M41.4 / P9: DONE / ACCEPTED / PUBLISHED (2026-09-14).** P9 is closed with the final manual gates and legacy audit above.
 - **NEXT EXACT STEP: ISSUE-0022 — Loaded Ammo Mass Conservation**, before IMPL-0020 Carry Weight / Encumbrance.
+
+## 2026-09-15 — ISSUE-0022 Loaded Ammo Mass Conservation DONE / RESOLVED / PUBLISHED
+
+- Diseño: `AmmoProfileDefinition.round_weight_kg` es la autoridad física canónica por round porque `LoadedAmmoProfileId` identifica el tipo cargado sin depender de cuál `ItemDefinition` compatible aparezca primero. Core `.303` conserva `0.025 kg`; no hubo retuning.
+- Runtime/data: `ItemWeightResolver` suma masa base + `LoadedRounds × round_weight_kg` + owned-storage subtree, una sola vez y sólo para firearm quantity-1. Profile faltante/inválido falla explícitamente. `DataValidator` exige profile positivo y coherencia de cada ammo item dentro de `0.000001 kg`, aplicable también a mods.
+- Conservación: reload parcial/completo/cancelado y movimientos dentro del mismo root mantienen masa; fire reduce exactamente la masa de cada round; drop/pickup transfiere arma + masa interna. Current Slice conserva `LoadedAmmoProfileId + LoadedRounds`; la masa se deriva después de load, sin schema bump ni persistence duplicada.
+- Diagnóstico focalizado nuevo + meta. Primer run `TEST-20260915-001` FAIL por falta de espacio contiguo para la mochila del fixture; Play Mode descartó mutaciones. Fixture acotado corregido y `TEST-20260915-002` PASS. Gate directo Carry Weight/ItemWeightResolver `TEST-20260915-003` PASS. M40 combat/reload/fresh-session/rollback `TEST-20260915-004` PASS.
+- Unity `6000.4.6f1`: Runtime/Editor compile PASS; Core data 0 errors/0 warnings en los diagnostics. Manual visual N/A: todos los criterios son numéricos/estado. Warnings de licencia, packages duplicados y APIs obsoletas permanecen fuera del scope.
+- Commit funcional `481183ddfac82f9ff9e547da6c72a1af13ecc088`. No se tocaron WeaponCombatService, ActorCarryWeightComponent, ownership, movement/stamina, reload NPC ni persistence schema.
+- ISSUE-0022 `DONE / RESOLVED / PUBLISHED`. M41 permanece `DONE / ACCEPTED / PUBLISHED`; IMPL-0020 sigue PLANNED y no fue iniciado.
+- **NEXT EXACT STEP: IMPL-0020 — Carry Weight / Encumbrance.**

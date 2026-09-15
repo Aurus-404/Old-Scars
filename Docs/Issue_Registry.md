@@ -27,16 +27,6 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 
 ## Issues activos
 
-### ISSUE-0022 — Loaded ammo desaparece del cálculo de carry mass
-- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`
-- **Prioridad operativa:** NEXT DEFECT TO ADDRESS después del cierre M41/P9 (2026-09-14); resolver antes de `IMPL-0020`.
-- **Origen:** auditoría Carry Weight + revisión de repo, 2026-09-06.
-- **Síntoma/causa:** `WeaponCombatService` consume munición owned del Inventory al recargar y la firearm conserva `LoadedAmmoProfileId + LoadedRounds` como estado interno. `ItemWeightResolver` suma item definitions, cantidades y owned-storage subtrees, pero no suma `LoadedRounds`. Por lo tanto recargar puede reducir artificialmente `CurrentWeightKg`; disparar puede no reducir masa desde la representación correcta.
-- **Impacto:** hoy es una inconsistencia física; con Encumbrance podría cambiar locomoción artificialmente (por ejemplo, recargar cerca del 100% podría devolver movimiento sin descargar masa real).
-- **Riesgo de solución:** `LoadedAmmoProfileId` no necesariamente identifica una única `ItemDefinition` en presencia de mods; no elegir arbitrariamente “el primer item” compatible.
-- **Plan:** resolver después de cerrar M41 y ANTES de `IMPL-0020` Carry Weight / Encumbrance. Validar reload parcial/completo, fire, rollback, equipment/storage y save/load.
-- **No hacer:** cambiar política de reload NPC, introducir cargadores físicos o weapon framework nuevo por este bug.
-
 ### ISSUE-0023 — Posible desajuste Perception eye origin / representación humana
 - **Tipo/estado/severidad:** `BUG` · `SUSPECTED` · `P2 / YELLOW`.
 - **Origen:** cierre P1/F6, 2026-09-06; candidato separado indicado por Mauro.
@@ -69,6 +59,15 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 ---
 
 ## Issues resueltos / historial
+
+### ISSUE-0022 — Loaded ammo desaparecía del cálculo de carry mass
+- **Tipo/estado/severidad:** `BUG` · `RESOLVED` · `P1 / ORANGE`.
+- **Origen/causa:** auditoría Carry Weight, 2026-09-06. Reload consumía ammo owned y la convertía en `ItemInstance.LoadedRounds`, pero `ItemWeightResolver` sólo sumaba masa base, quantity y owned-storage subtree.
+- **Resolución:** `AmmoProfileDefinition.round_weight_kg` es la autoridad física canónica por round. `ItemWeightResolver` suma `LoadedRounds × round_weight_kg` como masa interna de la firearm y rechaza profile faltante/inválido o firearm mutable stackeada. No busca un `ItemDefinition` compatible y por tanto no depende del orden de mods.
+- **Validación de datos:** todo ammo item debe tener `physical.weight_kg > 0` y coincidir con el profile dentro de `0.000001 kg`; Core `.303` conserva `0.025 kg`. Divergencias producen error con ambos IDs.
+- **Conservación/persistencia:** reload parcial/completo y cancelado, equip/unequip, storage owned, drop/pickup, fire simple/múltiple/seco y Current Slice fueron verificados. Save conserva profile ID + rounds; la masa sigue derivada, sin schema migration ni blob duplicado.
+- **Validación/commit:** `TEST-20260915-001` a `TEST-20260915-004`; commit funcional `481183ddfac82f9ff9e547da6c72a1af13ecc088`.
+- **Resultado:** `DONE / RESOLVED / PUBLISHED`; `IMPL-0020` queda como próximo paso exacto.
 
 ### ISSUE-0012 — Falta modo debug Invincible
 - **Tipo/estado/severidad:** `TOOLING` · `RESOLVED` · `P2 / YELLOW`.

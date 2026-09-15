@@ -51,7 +51,7 @@ Para auditorías sistémicas amplias, Astra puede usarse como investigador/arqui
 
 No repetir auditorías exhaustivas si el repo ya estableció el seam y el próximo trabajo sólo requiere implementación/validación.
 
-## Estado de continuidad al 2026-09-14
+## Estado de continuidad al 2026-09-15
 
 Bloque recién cerrado:
 
@@ -83,7 +83,9 @@ F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor P
 
 P9 está DONE / ACCEPTED / PUBLISHED. Los gates finales constan en `TEST-20260914-001` (NPC-only), `TEST-20260914-002` (authored visual-rig migration), `TEST-20260914-003` (NPC↔Player crowbar melee) y `TEST-20260914-004` (NPC↔Player Lee-Enfield firearm, con setup preconditioning anotado). El detalle y límites de evidencia están en `Test_Log.md`.
 
-**NEXT EXACT STEP: ISSUE-0022 — Loaded Ammo Mass Conservation.** Resolver antes de iniciar IMPL-0020.
+ISSUE-0022 — Loaded Ammo Mass Conservation quedó **DONE / RESOLVED / PUBLISHED** en `481183ddfac82f9ff9e547da6c72a1af13ecc088`, con gates `TEST-20260915-001` a `TEST-20260915-004`.
+
+**NEXT EXACT STEP: IMPL-0020 — Carry Weight / Encumbrance.** Permanece PLANNED y no fue iniciado por el cierre de ISSUE-0022.
 
 ### Secuencia operativa aprobada para cerrar M41 (histórica)
 
@@ -110,7 +112,7 @@ ISSUE-0026 (30v30 inverted spawn comparison) e ISSUE-0027 (dynamic anatomical hi
 Orden sistémico aprobado:
 
 - Equipment visuals humanoides: `IMPL-0016 DONE / ACCEPTED`, adelantado por validación visual;
-- corregir `ISSUE-0022` loaded ammo mass (NEXT EXACT STEP; OPEN / CONFIRMED);
+- `ISSUE-0022` loaded ammo mass: DONE / RESOLVED / PUBLISHED;
 - implementar `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC;
 - implementar `IMPL-0021` Localized Limb Impairment después de Encumbrance.
 

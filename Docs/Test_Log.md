@@ -108,3 +108,63 @@ Historical next action after TEST-002: run the P9 NPC↔Player manual integratio
 - Console review: PASS per Mauro's report; no new blocking M41 exception.
 - M41 / M41.4 / P9: DONE / ACCEPTED / PUBLISHED — 2026-09-14.
 - Next exact step: ISSUE-0022 — Loaded Ammo Mass Conservation.
+
+## TEST-20260915-001 — ISSUE-0022 — Loaded ammo mass diagnostic first execution
+
+- Date: 2026-09-15
+- Milestone/slice: ISSUE-0022 — Loaded Ammo Mass Conservation.
+- Objective: validate canonical round mass, reload/fire conservation, ownership transfers, drop/pickup, invalid states and Current Slice restore through production authorities.
+- Type: AUTOMATED / INTEGRATION / EXPECTED-HISTORY FAIL.
+- HEAD/build: `d92123ff7b5694c2b1cf4bd5272f6e55c85bccb4` plus the scoped ISSUE-0022 working tree later committed as `481183ddfac82f9ff9e547da6c72a1af13ecc088`; Unity `6000.4.6f1`, canonical checkout/Library, batchmode `-nographics`.
+- Setup: `LoadedAmmoMassConservationDiagnostics`; Core Lee-Enfield, `.303` ammo/profile, real Player ownership/equipment/carry component, productive reload/fire/drop/pickup and Current Slice services.
+- Expected: all conservation and transfer cases pass and the diagnostic restores its initial snapshot.
+- Observed: data contract, cancel, partial/full reload, loaded rifle `4.45 kg`, save/load and equip/unequip cases passed before fixture setup attempted to add `core:medium_backpack_01`; the authored personal grid had no contiguous space for its `4x5` footprint.
+- Result: **FAIL** — diagnostic fixture could not create the backpack; no mass-contract failure observed.
+- Evidence: `Logs/Issue0022_LoadedAmmoMass.log`; final verdict `Loaded Ammo Mass Conservation Diagnostics: FAIL` with `NoGridSpace` immediately before the fixture exception.
+- Findings: Play Mode discarded runtime mutations. The fixture, not gameplay, required deterministic grid preparation.
+- Next action: clear temporary personal entries after the already-verified save/load stage, use the small backpack, rerun with a new Test ID.
+
+## TEST-20260915-002 — ISSUE-0022 — Loaded ammo mass conservation diagnostic
+
+- Date: 2026-09-15
+- Milestone/slice: ISSUE-0022 — Loaded Ammo Mass Conservation.
+- Objective: prove physical mass conservation and deterministic mod-safe round mass across the complete focused matrix.
+- Type: AUTOMATED / INTEGRATION / REGRESSION.
+- HEAD/build: same scoped implementation committed as `481183ddfac82f9ff9e547da6c72a1af13ecc088`; Unity `6000.4.6f1`, canonical checkout/Library, batchmode `-nographics`.
+- Setup: empty firearm + 7 loose rounds; cancelled reload; insufficient/partial `0→7`; full `7→10` with 10 loose; one/multiple misses; dry fire; equip/unequip; loaded rifle into/out of owned small backpack; drop/pickup; Current Slice write/load; two mod item fixtures referencing one ammo profile; explicit item/profile mismatch and missing loaded profile.
+- Expected: reload and same-root moves preserve total; one shot changes mass by `-0.025 kg`; 10-round rifle resolves `4.2 + 0.25 = 4.45 kg`; drop/pickup transfers `4.45 kg`; save/load preserves state and derived mass; ambiguous item ordering is irrelevant; invalid data/state is rejected.
+- Observed: all assertions passed, initial snapshot cleanup compared equivalent, and Core data loaded with 0 errors/0 warnings.
+- Result: **PASS**.
+- Evidence: `Logs/Issue0022_LoadedAmmoMass_Rerun.log`; `Loaded Ammo Mass Conservation Diagnostics: PASS`.
+- Findings: no manual visual gate is applicable; all acceptance criteria are numeric/state contracts.
+- Next action: run M40 combat weapons regression and complete closeout.
+
+## TEST-20260915-003 — ISSUE-0022 — Carry Weight / ItemWeightResolver regression gate
+
+- Date: 2026-09-15
+- Milestone/slice: ISSUE-0022; IMPL-0020 remains unstarted.
+- Objective: verify the existing carry snapshot authority counts loaded ammo once across direct equipment, personal inventory, owned-storage subtree and world transfer boundaries.
+- Type: AUTOMATED / COMPONENT-INTEGRATION REGRESSION.
+- HEAD/build: same execution/build as `TEST-20260915-002`, committed as `481183ddfac82f9ff9e547da6c72a1af13ecc088`.
+- Setup: `ActorCarryWeightComponent.GetSnapshot` through the focused diagnostic; 4.2 kg rifle, 10 × 0.025 kg rounds, equip/unequip, owned backpack, drop/pickup and invalid profile state.
+- Expected: `4.45 kg` loaded entry; zero same-root delta; exact `4.45 kg` drop/pickup delta; no double count; invalid profile is not treated as zero.
+- Observed: all carry-weight assertions in the focused execution passed. The repo has no separate historical Carry Weight diagnostic entrypoint, so this durable subgate records the direct authority coverage rather than inventing another suite.
+- Result: **PASS**.
+- Evidence: `Logs/Issue0022_LoadedAmmoMass_Rerun.log`; focused diagnostic final PASS and source assertions in `LoadedAmmoMassConservationDiagnostics`.
+- Findings: no Encumbrance behavior, capacity policy or locomotion was changed/tested.
+- Next action: keep IMPL-0020 separate; run M40 regression for the firearm seam.
+
+## TEST-20260915-004 — ISSUE-0022 — M40 Combat Weapons regression
+
+- Date: 2026-09-15
+- Milestone/slice: ISSUE-0022 regression of M40 firearm/reload/persistence authority.
+- Objective: ensure the new derived internal mass does not regress productive combat weapons behavior.
+- Type: AUTOMATED / REGRESSION / FRESH-SESSION ROUND-TRIP.
+- HEAD/build: scoped implementation committed as `481183ddfac82f9ff9e547da6c72a1af13ecc088`; Unity `6000.4.6f1`, canonical checkout/Library, batchmode `-nographics`.
+- Setup: existing `M40CombatWeaponsDiagnostics.Run`, two Play sessions; partial/full/cancel reload, dry fire, world obstruction, actor hit, miss, drop/pickup, firearm save/load, legacy unloaded payload, semantic preflight failures and injected post-firearm-state rollback.
+- Expected: existing M40 verdict PASS with exact firearm state/round consumption and rollback behavior.
+- Observed: Core data loaded with 0 errors/0 warnings; expected injected apply failure rolled back; final M40 verdict PASS.
+- Result: **PASS**.
+- Evidence: `Logs/Issue0022_M40_Regression.log`; `M40.0 Combat Resolution & Weapons Diagnostics: PASS`.
+- Findings: package duplicate-assembly and licensing token/entitlement messages remain preexisting tooling warnings; no C# compile error or diagnostic failure.
+- Next action: documentation closeout, scoped commit, push and synchronization verification.

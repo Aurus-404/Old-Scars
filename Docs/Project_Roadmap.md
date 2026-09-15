@@ -21,19 +21,20 @@ No es una lista de bugs ni de implementaciones pequeñas:
 
 Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renombran retrospectivamente y una coding unit/intervención dentro de un milestone no consume automáticamente un nuevo ID.
 
-## Estado de producción — 2026-09-14
+## Estado de producción — 2026-09-15
 
 | Campo | Estado canónico |
 | --- | --- |
 | Milestone grande cerrado más reciente | M41 — NPC Combat / AI Foundation V1 (M41.4 cerrado) |
-| Milestone grande activo | Ninguno asignado tras M41; siguiente trabajo operativo ISSUE-0022 |
+| Milestone grande activo | Ninguno asignado tras M41; siguiente trabajo operativo IMPL-0020 |
 | Estado M41.4 | DONE / ACCEPTED / PUBLISHED — P9 cerrado 2026-09-14 |
 | Persistence Ready | `APPROVED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
 | Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
-| Próximo trabajo | ISSUE-0022 — Loaded Ammo Mass Conservation (OPEN / CONFIRMED; next defect to address) |
-| Después | IMPL-0020 Carry Weight / Encumbrance, sólo después de resolver ISSUE-0022; F8D sólo con evidencia residual, F8E sólo por consumers reales |
+| Próximo trabajo | IMPL-0020 — Carry Weight / Encumbrance (PLANNED / READY TO START) |
+| Dependencia cerrada | ISSUE-0022 — Loaded Ammo Mass Conservation DONE / RESOLVED / PUBLISHED, `481183ddfac82f9ff9e547da6c72a1af13ecc088` |
+| Después | IMPL-0021 Localized Limb Impairment; F8D sólo con evidencia residual, F8E sólo por consumers reales |
 
 ### Contexto histórico del estado de M41.4 al inicio del cierre P9
 
@@ -79,7 +80,9 @@ P8 — F10 Observability V2 DONE / ACCEPTED / PUBLISHED
     ↓
 P9 — Legacy migration + QA integrada / game feel / cleanup + formal M41 closeout DONE / ACCEPTED / PUBLISHED (2026-09-14)
     ↓
-ISSUE-0022 — Loaded Ammo Mass Conservation NEXT EXACT STEP
+ISSUE-0022 — Loaded Ammo Mass Conservation DONE / RESOLVED / PUBLISHED
+    ↓
+IMPL-0020 — Carry Weight / Encumbrance NEXT EXACT STEP
 ```
 
 F8A/B/C se completaron como slice controlada separada y no acreditaron por sí mismos el gate manual integrado P4; Mauro confirmó P4 separadamente. F8D no queda abierto por inercia tras el resultado pareado; F8E sólo se considera si hay consumers legacy concretos.
@@ -221,7 +224,7 @@ La dirección open-world permanece aprobada, pero no está autorizada para conti
 | Tramo jugable | M41.2 | `DONE` | equipment/firearms coverage. |
 | Tramo jugable | M41.3 | `DONE` | NPC sandbox/loadouts. |
 | Tramo jugable cerrado | M41.4 | DONE / ACCEPTED / PUBLISHED | combat/AI integration/game feel; cierre P9 2026-09-14. |
-| Siguiente defecto | ISSUE-0022 | OPEN / CONFIRMED — NEXT DEFECT TO ADDRESS | Loaded Ammo Mass Conservation antes de Encumbrance. |
+| Defecto post-M41 cerrado | ISSUE-0022 | DONE / RESOLVED / PUBLISHED | Loaded Ammo Mass Conservation cerrada antes de Encumbrance; commit `481183ddfac82f9ff9e547da6c72a1af13ecc088`. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | historia estructurada acotada. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | persistencia world state general. |
 | 9 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | blueprint local/materialización autorada. |

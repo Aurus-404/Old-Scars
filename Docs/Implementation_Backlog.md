@@ -210,12 +210,12 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0020 — Carry Weight / Encumbrance compartido
 
-- **Estado:** `READY AFTER M41 + ISSUE-0022`.
+- **Estado:** `PLANNED / READY TO START` — M41 e ISSUE-0022 ya están cerrados; NEXT EXACT STEP.
 - **Fecha/origen:** 2026-09-06 — decisión de producto + auditoría profunda de repo/Astra.
 - **Qué queremos:** redefinir Carry Capacity como capacidad física de transporte, NO como límite de storage. Player y NPC comparten el mismo contrato locomotor.
 - **Contrato aprobado:** `0..75%` sin penalización; `>75%..100%` penalización progresiva; `100%` aún móvil; `>100%` traslación cero. Inventory/transfer/drop/equipment/use/reload/treatment siguen bajo sus propias autoridades y pueden operar sobrecargados.
 - **Por qué:** el hard limit actual mezcla storage acceptance con consecuencia física; además futuros Leg Impairment y Encumbrance deben componerse sin acoplar Carry/Medical.
-- **Trigger/dependencias:** cerrar M41/F8 para no contaminar accuracy; resolver primero `ISSUE-0022` loaded ammo mass.
+- **Trigger/dependencias:** satisfechas: M41/F8 cerrados e `ISSUE-0022` loaded ammo mass RESOLVED/PUBLISHED.
 - **Límites:** sin Strength, stats, backpack capacity modifiers, cache global, Limb Impairment ni rebalanceo de accuracy. `Overloaded != Incapacitated`.
 - **Riesgos conocidos:** retirar todos los vetos/clamps de peso sin romper grid/stack/access/ownership/rollback; NPC spawn sin Carry actual; sprint falso; Search deadline y Navigation reversible; restore sobrecargado debe conservar items.
 

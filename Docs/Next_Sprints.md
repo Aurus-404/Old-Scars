@@ -2,13 +2,13 @@
 
 Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Secuencia operativa vigente — 2026-09-14
+## Secuencia operativa vigente — 2026-09-15
 
 M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded as `TEST-20260914-001` through `TEST-20260914-004` in `Test_Log.md`; the rifle run's manual setup caveat is retained there. No Unity rerun was part of the documentation closeout.
 
-### Next exact step — ISSUE-0022
+### Next exact step — IMPL-0020
 
-Address **ISSUE-0022 — Loaded Ammo Mass Conservation** first. It remains OPEN / CONFIRMED and is the next defect to address. Only after it is resolved may `IMPL-0020` Carry Weight / Encumbrance begin. `IMPL-0021` follows Encumbrance. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred.
+**ISSUE-0022 — Loaded Ammo Mass Conservation** is DONE / RESOLVED / PUBLISHED in `481183ddfac82f9ff9e547da6c72a1af13ecc088`; its gates are `TEST-20260915-001` through `TEST-20260915-004`. The next exact step is **IMPL-0020 — Carry Weight / Encumbrance**. It remains PLANNED and was not started by the issue closeout. `IMPL-0021` follows Encumbrance. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred.
 
 ### M41 closeout sequence (historical; completed 2026-09-14)
 
@@ -137,7 +137,7 @@ Read-only. No segunda autoridad de Perception/Combat.
 
 Runtime/Editor compile, F10 diagnostic y regresión F6 PASS. La aceptación visual confirmó Blue/Red simultáneos, selección visible, CURRENT Gaze/FOV y CURRENT/LAST diferenciados, estados Conscious/Incapacitated/Dead, último disparo WORLD/OBSTACLE con collider y Combat.Region NONE, semantic trace legible e inspector profundo navegable. El clutter ocasional es aceptable para tooling QA.
 
-P8 no activa F8D ni las pruebas diferidas ISSUE-0026 (30v30) e ISSUE-0027 (distribución anatómica). ISSUE-0022 loaded ammo mass sigue después de M41 según el roadmap.
+P8 no activa F8D ni las pruebas diferidas ISSUE-0026 (30v30) e ISSUE-0027 (distribución anatómica). ISSUE-0022 loaded ammo mass se cerró después de M41 en `481183ddfac82f9ff9e547da6c72a1af13ecc088`.
 
 ### 9. P9 — Legacy migration + QA integrada + cierre M41
 
@@ -175,13 +175,13 @@ Referencia: `IMPL-0016`.
 
 ### 11. P11 — Loaded ammo mass
 
-Estado: `REQUIRED BEFORE ENCUMBRANCE`.
+Estado: `DONE / RESOLVED / PUBLISHED` — `481183ddfac82f9ff9e547da6c72a1af13ecc088`, 2026-09-15.
 
 Problema confirmado por código: reload consume ammo owned del Inventory y la firearm guarda `LoadedAmmoProfileId + LoadedRounds`, pero el resolver de peso no suma esa munición cargada. Recargar puede reducir masa calculada artificialmente.
 
 Resolver la conservación de masa sin elegir arbitrariamente “el primer item” compatible con un ammo profile en presencia de mods.
 
-Gate: reload/disparo/save-load conservan masa coherente.
+Gate: reload parcial/completo/cancelado conserva masa; fire reduce `round_weight_kg`; equip/storage/drop/pickup y save/load conservan el mismo estado y masa derivada. PASS en `TEST-20260915-001` a `TEST-20260915-004` (el primer fixture FAIL queda preservado en el log).
 
 Referencia: `ISSUE-0022`.
 
@@ -189,7 +189,7 @@ P10 y P11 pueden intercambiar posición; P11 sí debe preceder Encumbrance.
 
 ### 12. P12 — Carry Weight / Encumbrance compartido
 
-Estado: `READY AFTER M41 + ISSUE-0022`.
+Estado: `PLANNED / READY TO START — NEXT EXACT STEP`.
 
 Contrato aprobado:
 

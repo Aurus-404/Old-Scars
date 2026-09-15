@@ -42,7 +42,7 @@ P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aa
 
 F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. P8/F10 completó el tooling diferido sobre F6 y quedó DONE / ACCEPTED / PUBLISHED el 2026-09-13; ISSUE-0023 continúa SUSPECTED.
 
-## P2, P3, P4, targeting F8, P7 y P8 cerrados — próximo paso exacto P9
+## P2, P3, P4, targeting F8, P7, P8 y P9 cerrados
 
 P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED** el 2026-09-07 en `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Condition compartida Player/NPC; Core `5 s` es tuning inicial de prueba, no balance final. Current Slice v1 conserva restante y continuidad de recuperación; offline no consume el mínimo y un save legacy que deriva Unconscious inicia el mínimo completo. Diagnostic P2, sesión Play nueva y siete regresiones proporcionales PASS. No sustituye aceptación manual integrada de M41.
 
@@ -64,7 +64,9 @@ P9 legacy audit found no current authored visual-rig consumer requiring a legacy
 
 **M41: DONE / ACCEPTED / PUBLISHED. M41.4: DONE. P9: DONE / ACCEPTED / PUBLISHED.**
 
-**NEXT EXACT STEP: ISSUE-0022 — Loaded Ammo Mass Conservation**, before IMPL-0020 Carry Weight / Encumbrance.
+ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el 2026-09-15; commit funcional `481183ddfac82f9ff9e547da6c72a1af13ecc088`, gates `TEST-20260915-001` a `TEST-20260915-004`. M41 permanece cerrado.
+
+**NEXT EXACT STEP: IMPL-0020 — Carry Weight / Encumbrance.** Sigue PLANNED; no iniciado por este cierre.
 
 ## Orden operativo aprobado para cerrar M41 (histórico)
 
@@ -99,7 +101,7 @@ La secuencia sistémica aprobada es:
 
 `IMPL-0016` Equipment visuals humanoides fue adelantado por necesidad de validación visual y quedó `DONE / ACCEPTED` sin alterar Equipment ni combat.
 
-1. `ISSUE-0022` loaded ammo mass: corregir conservación de masa antes de que Carry Weight gobierne locomoción.
+1. `ISSUE-0022` loaded ammo mass: DONE / RESOLVED / PUBLISHED; conservación corregida antes de Encumbrance.
 2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC.
 3. `IMPL-0021` Localized Limb Impairment, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
 
@@ -118,12 +120,11 @@ Carry Capacity NO es límite de almacenamiento.
 - Player y NPC deben compartir el contrato;
 - `Overloaded` no equivale a `Incapacitated`.
 
-Antes de este bloque debe resolverse `ISSUE-0022` para que recargar/disparar no cambie masa de forma artificial.
+La dependencia `ISSUE-0022` ya está resuelta: reload conserva masa y cada round disparado reduce exactamente su masa canónica.
 
 ## Issues activos relevantes
 
 - `ISSUE-0023` — posible desajuste eye origin/representación humana; SUSPECTED.
-- `ISSUE-0022` — munición cargada deja de contribuir correctamente a la masa agregada; NEXT DEFECT TO ADDRESS.
 
 ## Reglas de alcance
 
