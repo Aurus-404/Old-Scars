@@ -245,6 +245,22 @@ Una idea sólo debe promocionarse a `Implementation_Backlog.md` cuando Mauro la 
 - **Intención:** consumers como linternas/radios podrían aceptar instancias proveedoras compatibles (pilas, acumuladores, etc.) que conservan su cantidad/carga al cambiar de dispositivo.
 - **Relación:** debe resolverse como parte del contrato Provider/Consumer aprobado, no como EnergySystem paralelo ni como generalización forzada de `WeaponCombatService`.
 
+## IDEA-0031 — Aplicador debug de daño controlado
+
+- **Origen:** brainstorming 2026-09-14, idea 11.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** una herramienta debug podría permitir elegir `Wound Type` + `Severity` y aplicar el resultado a un actor mediante selección/raycast del cursor, sin necesidad de disparar o preparar items específicos.
+- **Valor potencial:** acelerar QA médico, regiones corporales, impairment futuro y pruebas de save/load sobre estados de daño exactos.
+- **Límite:** debe entrar por las autoridades productivas de Health/Medical; nunca mutar campos internos como segunda autoridad debug.
+
+## IDEA-0032 — Reconsiderar WorldClock/TimeScale acelerado sólo si vuelve a entrar en la visión
+
+- **Origen:** decisión de scope 2026-09-14, derivada de la idea 5 de la segunda tanda.
+- **Estado:** `OPEN IDEA / VERY LOW CONFIDENCE — NO WORK NOW`.
+- **Intención:** conservar la posibilidad futura de acelerar tiempo/world simulation si aparece un caso de producto claro.
+- **Decisión actual:** no seguir corrigiendo, ampliando ni diseñando gameplay alrededor de x10/x100 por inercia. Actualmente no entra en la visión prioritaria de Old Scars.
+- **Relación:** el comportamiento incoherente observado con WorldClock acelerado sigue documentado en `Issue_Registry.md`; esta entrada no lo convierte en trabajo pendiente.
+
 ---
 
 ## Regla de promoción
