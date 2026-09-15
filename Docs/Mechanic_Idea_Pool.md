@@ -161,6 +161,106 @@ Una idea sólo debe promocionarse a `Implementation_Backlog.md` cuando Mauro la 
 - **Restricción conocida:** depende de que presión/neumáticos tengan gameplay suficiente; no diseñarlo anticipadamente.
 - **Por decidir:** relación con damage de vehículo, reparación, tiempo de pérdida y feedback al jugador.
 
+## IDEA-0019 — Presets reproducibles de escenarios QA
+
+- **Origen:** brainstorming 2026-09-14, idea 1.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** describir escenarios de prueba repetibles con actores, posiciones, loadouts, flags y seed para que Codex pueda reconstruirlos sin preparación manual cuando Mauro no está.
+- **Por decidir:** formato mínimo y si el beneficio justifica mantener presets explícitos.
+
+## IDEA-0020 — Assertions de invariantes runtime
+
+- **Origen:** brainstorming 2026-09-14, idea 4.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** comprobar contratos que nunca deberían romperse, por ejemplo rounds negativos, una misma InstanceId con dos owners o un actor Dead ejecutando combate.
+- **Restricción conocida:** no confundir ausencia de assertion failures con PASS funcional y no llenar gameplay con checks costosos.
+
+## IDEA-0021 — Diff semántico de saves
+
+- **Origen:** brainstorming 2026-09-14, idea 8.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** comparar dos saves por cambios de dominio/entidad en vez de diff textual: ownership, ammo, condition, doors, containers, world state, etc.
+- **Por decidir:** utilidad real frente al coste de mantener lectores semánticos por schema.
+
+## IDEA-0022 — Validador global de contratos de prefab
+
+- **Origen:** brainstorming 2026-09-14, idea 9.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** generalizar diagnostics ya existentes para validar automáticamente que todos los prefabs de una familia cumplan su contrato requerido.
+- **Nota:** Old Scars ya posee diagnostics específicos de world/equipment visuals; esto sólo sería una generalización futura, no un framework nuevo inmediato.
+
+## IDEA-0023 — Reporte global de cobertura visual de contenido
+
+- **Origen:** brainstorming 2026-09-14, idea 10.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** informar cuántas definitions poseen world visual/equipment visual/fallback/assets faltantes cuando el catálogo sea grande.
+- **Por decidir:** implementar sólo cuando el volumen de contenido haga costosa la inspección manual.
+
+## IDEA-0024 — Detector de dependencias accidentales de fixtures/escenas debug
+
+- **Origen:** brainstorming 2026-09-14, idea 13.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** detectar systems productivos que funcionan sólo porque una escena debug contiene accidentalmente un GameObject, singleton o fixture necesario.
+- **Por decidir:** probablemente se valide mejor con una escena mínima limpia que con análisis estático universal.
+
+## IDEA-0025 — Comparador semántico de definitions entre commits
+
+- **Origen:** brainstorming 2026-09-14, idea 15.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** resumir cambios data-driven por Definition/campo en vez de mostrar sólo líneas JSON modificadas.
+- **Por decidir:** valor frente a Git diff normal cuando aumente el catálogo.
+
+## IDEA-0026 — Auditor de allocations/LINQ en hot paths
+
+- **Origen:** brainstorming 2026-09-14, idea 28.
+- **Estado:** `OPEN IDEA / VERY LOW CONFIDENCE`.
+- **Intención:** investigar allocations frecuentes dentro de Update/perception/combat sólo si profiling demuestra GC pressure real.
+- **Restricción conocida:** no prohibir LINQ globalmente ni crear tooling preventivo sin evidencia.
+
+## IDEA-0027 — Separación estricta de diagnostics en builds productivas
+
+- **Origen:** brainstorming 2026-09-14, idea 29.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** conservar tooling rico en Editor/Development Build y garantizar que trazas/overlays costosos puedan desaparecer o dormir en release sin alterar gameplay.
+- **Nota:** gran parte de los diagnostics actuales ya vive bajo `Editor`; falta decidir sólo para runtime debug tooling.
+
+## IDEA-0028 — Deprecación/migración explícita de Content IDs
+
+- **Origen:** brainstorming 2026-09-14, idea 33.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** permitir transiciones controladas `old_id -> new_id` para saves/mods cuando cambie contenido público, con warnings y migración en vez de rotura silenciosa.
+- **Por decidir:** adoptar cuando modding/saves públicos hagan necesaria compatibilidad real.
+
+## IDEA-0029 — Capabilities tipadas de herramientas
+
+- **Origen:** brainstorming 2026-09-14, idea 34, aclarada junto a 43/49/50.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** una herramienta puede declarar capacidades como `cutting`, `prying` o `hammering` con niveles, separadas de su durabilidad actual.
+- **Relación:** la dirección aprobada de calidad/capacidad vs durabilidad y requisitos composables puede absorber esta idea; no crear un sistema `toolQuality` global separado.
+
+## IDEA-0030 — Slots/compatibilidad para recursos Provider/Consumer
+
+- **Origen:** brainstorming 2026-09-14, idea 40, aclarada junto a 38–39.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** consumers como linternas/radios podrían aceptar instancias proveedoras compatibles (pilas, acumuladores, etc.) que conservan su cantidad/carga al cambiar de dispositivo.
+- **Relación:** debe resolverse como parte del contrato Provider/Consumer aprobado, no como EnergySystem paralelo ni como generalización forzada de `WeaponCombatService`.
+
+## IDEA-0031 — Aplicador debug de daño controlado
+
+- **Origen:** brainstorming 2026-09-14, idea 11.
+- **Estado:** `OPEN IDEA / LOW CONFIDENCE`.
+- **Intención:** una herramienta debug podría permitir elegir `Wound Type` + `Severity` y aplicar el resultado a un actor mediante selección/raycast del cursor, sin necesidad de disparar o preparar items específicos.
+- **Valor potencial:** acelerar QA médico, regiones corporales, impairment futuro y pruebas de save/load sobre estados de daño exactos.
+- **Límite:** debe entrar por las autoridades productivas de Health/Medical; nunca mutar campos internos como segunda autoridad debug.
+
+## IDEA-0032 — Reconsiderar WorldClock/TimeScale acelerado sólo si vuelve a entrar en la visión
+
+- **Origen:** decisión de scope 2026-09-14, derivada de la idea 5 de la segunda tanda.
+- **Estado:** `OPEN IDEA / VERY LOW CONFIDENCE — NO WORK NOW`.
+- **Intención:** conservar la posibilidad futura de acelerar tiempo/world simulation si aparece un caso de producto claro.
+- **Decisión actual:** no seguir corrigiendo, ampliando ni diseñando gameplay alrededor de x10/x100 por inercia. Actualmente no entra en la visión prioritaria de Old Scars.
+- **Relación:** el comportamiento incoherente observado con WorldClock acelerado sigue documentado en `Issue_Registry.md`; esta entrada no lo convierte en trabajo pendiente.
+
 ---
 
 ## Regla de promoción

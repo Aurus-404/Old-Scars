@@ -3758,6 +3758,13 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - **M41 / M41.4 / P9: DONE / ACCEPTED / PUBLISHED (2026-09-14).** P9 is closed with the final manual gates and legacy audit above.
 - **NEXT EXACT STEP: ISSUE-0022 — Loaded Ammo Mass Conservation**, before IMPL-0020 Carry Weight / Encumbrance.
 
+## 2026-09-15 — Brainstorming mechanics reconciliation
+
+- Reconciled the approved 2026-09-14 brainstorming decisions into `Implementation_Backlog.md` as `IMPL-0042`–`IMPL-0056`, grouping related requirements into bounded reusable contracts rather than one framework per idea.
+- Preserved eleven explained, tentative or not-yet-approved proposals in `Mechanic_Idea_Pool.md` as `IDEA-0019`–`IDEA-0029`. These do not authorize implementation or change roadmap order.
+- Kept the scope decision that accelerated TimeScale/WorldClock receives no current work and a clean Console/compile never equals functional PASS.
+- No runtime, assets, roadmap gates, Current Milestone or Next Sprints changed. NEXT EXACT STEP remains the authority already recorded by the active milestone documentation; this closeout does not promote backlog work.
+
 ## 2026-09-15 — ISSUE-0022 Loaded Ammo Mass Conservation DONE / RESOLVED / PUBLISHED
 
 - Diseño: `AmmoProfileDefinition.round_weight_kg` es la autoridad física canónica por round porque `LoadedAmmoProfileId` identifica el tipo cargado sin depender de cuál `ItemDefinition` compatible aparezca primero. Core `.303` conserva `0.025 kg`; no hubo retuning.
