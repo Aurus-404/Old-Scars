@@ -586,6 +586,69 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Trigger/dependencias:** UI productiva de inventario/equipment y contratos de transferencia/acciones estables.
 - **Límites:** Favorite/Lock no cambia ownership; permite override explícito; sin score único inventado ni una segunda capa de reglas en UI.
 
+## IMPL-0057 — Health UI anatómica con acciones médicas contextuales
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-15 — playtest/capturas de `Another Dead World`; aprobado por Mauro como referencia a adaptar a Old Scars.
+- **Qué queremos:** una pantalla de salud con silueta corporal segmentada y lectura visual de las regiones afectadas. Seleccionar o hacer click contextual sobre una parte lesionada debe abrir sólo las acciones médicas realmente disponibles para esa región y estado —por ejemplo inspeccionar, vendar u otros tratamientos que existan productivamente— junto con un resumen compacto de variables médicas globales relevantes.
+- **Autoridad:** la UI consulta Health/Medical/Interaction existentes para conocer lesiones y acciones disponibles; no decide por sí misma qué tratamiento es válido ni aplica efectos directamente.
+- **Por qué:** concentra diagnóstico y tratamiento en la zona afectada, mantiene la información legible y evita llenar la pantalla con botones médicos permanentes.
+- **Trigger/dependencias:** próxima expansión de la UI productiva de Health/medicine sobre las heridas localizadas y tratamientos existentes.
+- **Límites:** sin segunda anatomía, sin lógica médica duplicada en UI, sin acciones hardcodeadas por región y sin exponer información que el actor no debería conocer según las reglas futuras de percepción/diagnóstico.
+- **Relación:** Localized Health, `ActorMedicalStateComponent`, `ActorWoundTreatmentController`, contextual actions e Inventory/medical items.
+
+## IMPL-0058 — Retícula de dispersión y estabilidad del aim del Player
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-15 — playtest/capturas de `Another Dead World`; aprobado por Mauro como referencia de gunplay.
+- **Qué queremos:** representar el punto central de aim y una zona/círculo de dispersión que comunique el error angular productivo del disparo. Al mantener la puntería y ganar estabilidad la zona puede reducirse; movimiento, postura, estado físico y propiedades del arma sólo deben modificarla cuando esos factores existan realmente en la autoridad de aim.
+- **Contrato:** el proyectil sigue resolviéndose físicamente mediante la autoridad de armas/balística. La retícula visualiza el mismo spread productivo; no introduce un porcentaje de impacto, una tirada paralela ni una segunda RNG de precisión.
+- **Por qué:** comunica de forma inmediata la diferencia entre dónde intenta apuntar el personaje y dónde puede terminar el disparo sin convertir el combate en hit chance abstracto.
+- **Trigger/dependencias:** después de estabilizar el contrato productivo de aim/accuracy y al construir la UX final de firearm aiming del Player.
+- **Límites:** sin auto-aim, snap-to-target, porcentaje de acierto ni factores de precisión inventados sólo para animar la UI. El tamaño/velocidad exactos son tuning futuro.
+- **Relación:** `IMPL-0003`, `IMPL-0004`, `IMPL-0035`, firearms, Player controls y ballistics.
+
+## IMPL-0059 — Debug visual de LOS y ruta real de navegación
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-15 — playtest/capturas de `Another Dead World`; aprobado por Mauro para tooling/F6.
+- **Qué queremos:** para un actor seleccionado, visualizar el LOS actual hasta el punto consultado indicando claramente tramo libre, primer bloqueo y obstáculo responsable. La navegación debe dibujar la ruta realmente resuelta por el sistema como polyline a través de sus corners/steering points, no una línea recta ficticia actor→destino.
+- **Por qué:** permite distinguir rápidamente un fallo de decisión/IA de un fallo de percepción, geometría o pathfinding y observar cómo el agente pretende rodear obstáculos.
+- **Trigger/dependencias:** próxima ampliación relevante de F6/Runtime Debug Tools o primer bug de navegación/LOS cuya causa requiera esta evidencia.
+- **Límites:** tooling read-only; reutilizar resultados/corners de las autoridades existentes y evitar recalcular rutas sólo para dibujarlas. Toggles y budgets deben impedir allocations/coste significativo fuera del debug activo.
+- **Relación:** `IMPL-0010`, `IMPL-0011`, Perception/LOS, Navigation/NavMesh y Runtime Debug Tools.
+
+## IMPL-0060 — Historial cronológico por NPC para observabilidad
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-15 — playtest/capturas de `Another Dead World`; aprobado por Mauro como extensión futura de observabilidad.
+- **Qué queremos:** al seleccionar un NPC, poder consultar un historial temporal acotado de eventos semánticos relevantes: cambios de estado/behavior, adquisición o pérdida de target, acciones, movimiento significativo, combate, tratamiento y futuras interacciones económicas/sociales cuando existan. Debe mostrar timestamps/orden causal suficiente para reconstruir qué hizo el agente antes de un resultado extraño.
+- **Por qué:** el estado CURRENT explica qué ocurre ahora; un historial por actor permite reconstruir por qué llegó allí sin depender del Console Log global ni de miles de líneas mezcladas entre NPCs.
+- **Trigger/dependencias:** cuando Observability V2 necesite ampliar su semantic trace o nuevos dominios de NPC hagan insuficiente el snapshot actual.
+- **Límites:** inicialmente debug/QA, buffer bounded y eventos estructurados; no registrar cada frame, no convertir el log en memoria de gameplay y no crear una segunda autoridad de comportamiento.
+- **Relación:** `IMPL-0010`, `IMPL-0042`, F6/Observability, NPC behavior y futuros trade/social consumers.
+
+## IMPL-0061 — Interacciones sociales ligeras NPC↔NPC
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-15 — playtest/capturas de `Another Dead World`; aprobado por Mauro como dirección futura.
+- **Qué queremos:** permitir que NPCs ejecuten interacciones sociales simples entre sí cuando exista un consumer real: acercarse/orientarse, pausar otra conducta compatible, intercambiar un evento social y mostrar feedback discreto como una burbuja breve. Saludos, conversación, comercio, avisos o intercambio de información se agregan sólo a medida que sus sistemas productivos existan.
+- **Por qué:** hace visibles relaciones entre agentes y ayuda a que los NPC parezcan habitantes del mundo en vez de unidades que sólo reaccionan al Player.
+- **Trigger/dependencias:** primer sistema social/económico productivo que necesite una interacción NPC↔NPC observable.
+- **Límites:** no aprobar todavía simulación de diálogo libre, LLM runtime, relationship framework universal, schedules sociales complejos ni contenido/lore generado automáticamente. Reutilizar behavior ownership y acciones existentes.
+- **Relación:** NPC behavior, future economy/trade, settlements/social simulation y UI feedback.
+
+## IMPL-0062 — Navegación de menús descubrible y quick-access compacto
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-15 — playtest/capturas de `Another Dead World`; aprobado por Mauro como referencia de UX.
+- **Qué queremos:** mantener accesos visibles y discretos a las pantallas principales para que Inventario, Salud y otros menús aprobados no dependan exclusivamente de memorizar hotkeys; las hotkeys siguen existiendo y pueden mostrarse en tooltip. La misma UX puede incluir una barra compacta de accesos rápidos para objetos/acciones disponibles.
+- **Quick access:** cualquier hotbar debe ser sólo una presentación del acceso productivo permitido por Inventory/Equipment. Debe respetar `IMPL-0028`: holsters, slings, bandoleras u otros carriers determinan qué puede extraerse rápido; la barra no crea slots mágicos ni una autoridad paralela.
+- **Por qué:** mejora descubribilidad y lectura inmediata sin abandonar la dirección de UI poco invasiva de Old Scars.
+- **Trigger/dependencias:** construcción/iteración de la shell de UI productiva y primer consumer real del quick access derivado de equipment.
+- **Límites:** barra pequeña/no invasiva, sin duplicar `InventoryUISessionController`, input, inventory/equipment authority ni llenar el HUD con todos los sistemas disponibles.
+- **Relación:** `IMPL-0028`, `IMPL-0057`, Inventory/UI session, Equipment y Player input.
+
 
 ---
 
