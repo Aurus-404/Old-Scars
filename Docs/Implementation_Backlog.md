@@ -449,6 +449,144 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Límites:** no resucitar mediante una vía paralela, no borrar/alterar estado fuera de autoridades existentes y no añadir UI de producción.
 - **Relación:** Player Debug Invincible / Runtime Debug Tools, Health, Condition y medical authorities; fuera del alcance de M41/P9.
 
+
+## IMPL-0042 — Export automático de Console Log por sesión Play/Stop
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-14/15 — segunda tanda de brainstorming; aprobado por Mauro.
+- **Qué queremos:** generar al terminar cada sesión Play/Stop un archivo `.txt` único en una carpeta estable de logs accesible a Codex, conservando el Console Log completo y metadatos mínimos de la ejecución.
+- **Por qué:** permitir análisis posterior y QA fuera de casa sin depender del buffer efímero de la Console.
+- **Trigger/dependencias:** próxima ampliación de tooling de pruebas.
+- **Límites:** un log limpio no equivale a PASS; rotación/retención acotada; no registrar por frame información adicional costosa.
+- **Relación:** `Test_Log.md`, diagnostics y evidencia durable.
+
+## IMPL-0043 — Save/load de estados transitorios dirigido por eventos
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — idea 6, aprobada como regla futura de QA.
+- **Qué queremos:** fixtures Codex que, al observar una transición relevante configurada (KO, reload, treatment, equip/transfer u otra), capturen inmediatamente, carguen y verifiquen continuidad.
+- **Por qué:** detectar estados transitorios que funcionan en vivo pero se pierden o duplican al persistir.
+- **Trigger/dependencias:** cada sistema debe tener snapshot/restore productivo y una transición concreta que justifique el fixture.
+- **Límites:** no guardar ante cualquier cambio ni crear una segunda autoridad de estado; cada prueba declara su trigger y aceptación.
+
+## IMPL-0044 — Auditoría y presupuesto del sistema de saves
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — idea 7, aprobada por Mauro.
+- **Qué queremos:** medir tamaño total y contribución por dominio/entidad, comparar crecimiento en escenarios controlados e investigar optimización sólo con evidencia.
+- **Por qué:** prevenir saves innecesariamente grandes y localizar qué datos dominan el coste.
+- **Trigger/dependencias:** cuando exista suficiente contenido persistente o se observe crecimiento relevante.
+- **Límites:** no comprimir, rediseñar schemas ni eliminar datos preventivamente sin medición y pruebas de compatibilidad.
+
+## IMPL-0045 — Pruebas de frontera y entradas inválidas
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — idea 12, aprobada como práctica futura de QA.
+- **Qué queremos:** probar thresholds justo por debajo/en/encima y entradas fuera de rango, incluidos negativos cuando sea técnicamente posible, verificando rechazo, clamp o comportamiento seguro según contrato.
+- **Por qué:** los fallos aparecen con frecuencia en límites y datos corruptos, no sólo en valores nominales.
+- **Trigger/dependencias:** contrato productivo estable y valores de frontera identificables.
+- **Límites:** no tratar todo negativo como válido; cada test documenta la respuesta esperada y no sustituye pruebas funcionales.
+
+## IMPL-0046 — Debug spawner de world items y fixtures
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-14/15 — idea 14 reformulada y aprobada por Mauro.
+- **Qué queremos:** permitir seleccionar ítem, cantidad y disposición para spawnear instancias reales directamente sobre el suelo, sin pasar por capacidad de inventario; extensión posterior opcional a estructuras/fixtures.
+- **Por qué:** preparar lotes de QA, físicas, loot e interacción de manera rápida.
+- **Trigger/dependencias:** tarea futura de Runtime Debug Tools.
+- **Límites:** usar factories/identidad productivas, aplicar límites explícitos y no generar instancias mágicas sin ownership/world state válido.
+
+## IMPL-0047 — Old Scars Performance Observatory
+
+- **Estado:** `PLANNED`.
+- **Fecha/origen:** 2026-09-14/15 — fusión aprobada de ideas 16–20 y counters relacionados.
+- **Qué queremos:** HUD/recorder opt-in con gráfico temporal de FPS, frame time, TPS/frecuencias relevantes, GC, actividad de loops, physics queries, layer interactions, rigidbodies awake/sleep y counters de dominios Old Scars; marcar y correlacionar spikes.
+- **Por qué:** convertir caídas de rendimiento en evidencia causal reproducible.
+- **Trigger/dependencias:** antes de escalar población/contenido o ante una regresión medible.
+- **Límites:** counters baratos, muestreo configurable y tooling fuera de Release; no instrumentar todo permanentemente ni optimizar sin bottleneck observado.
+
+## IMPL-0048 — Auditorías de física, materiales y presupuesto humanoide
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — ideas 21–24, aprobadas por Mauro.
+- **Qué queremos:** detectar rigidbodies que no duermen por jitter, uso accidental de `.material`, materiales equivalentes duplicados y crecimiento estructural de humanoides (renderers, materials, transforms, colliders y componentes).
+- **Por qué:** localizar costes silenciosos que escalan con loot y NPCs.
+- **Trigger/dependencias:** integrar primero con evidencia del Performance Observatory o una escena representativa.
+- **Límites:** reportar antes de corregir; no fusionar assets con intención visual distinta ni alterar física productiva automáticamente.
+
+## IMPL-0049 — Pruebas largas de memoria y lifecycle
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — ideas 26–27, aprobadas por Mauro.
+- **Qué queremos:** sesiones controladas de 5/15/30 minutos con snapshots y object counts, más detección de listeners/subscriptions huérfanos tras despawn/destroy.
+- **Por qué:** encontrar crecimiento sostenido, callbacks fantasma y objetos retenidos.
+- **Trigger/dependencias:** escenarios repetibles con spawn/despawn y baseline comparable.
+- **Límites:** no afirmar leak sólo por memoria reservada; requerir evidencia de retención o crecimiento reproducible.
+
+## IMPL-0050 — Trazabilidad y validación del contenido data-driven/modded
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — ideas 30–32, aprobadas por Mauro.
+- **Qué queremos:** provenance del valor efectivo (Core/base → overrides/mods → runtime), reporte de conflictos/referencias inválidas/orden de carga y herramienta `Who uses this?`.
+- **Por qué:** explicar de dónde proviene una configuración y cambiar contenido sin romper consumidores invisibles.
+- **Trigger/dependencias:** cuando el loader de mods y registries tenga overrides públicos suficientemente estables.
+- **Límites:** una autoridad de resolución; tooling read-only primero; no crear un segundo registry ni inferir compatibilidad semántica no declarada.
+
+## IMPL-0051 — Crafting flexible, contextual y multietapa física
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — ideas 35–37, aprobadas y refinadas por Mauro.
+- **Qué queremos:** recetas que acepten item exacto/categoría/tag, requisitos contextuales concretos (mesa, calor, agua, superficie) y cadenas de recetas mediante ítems intermedios normales, persistibles y lootables.
+- **Por qué:** permitir alternativas, estaciones significativas y procesos recuperables sin workflow engine especial.
+- **Trigger/dependencias:** foundation productiva de crafting y primer conjunto pequeño de recetas reales.
+- **Límites:** requisitos tipados, validación central y transaccional; no tables universales obligatorias ni estados ocultos paralelos a ItemInstance.
+
+## IMPL-0052 — Dispositivos activos y recursos intercambiables Provider/Consumer
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — ideas 38–40, aprobadas y consolidadas por Mauro.
+- **Qué queremos:** dispositivos/estructuras On/Off que consumen recursos; proveedores son instancias intercambiables que conservan tipo/cantidad y consumers declaran compatibilidad/tasa (pilas, combustible y casos futuros).
+- **Por qué:** reutilizar el mismo principio físico de cargadores persistentes sin porcentajes mágicos embebidos en cada dispositivo.
+- **Trigger/dependencias:** primer consumer real, probablemente luz/fuente de calor, y ownership/slots persistentes.
+- **Límites:** no generalizar Firearm/WeaponCombatService de forma preventiva; empezar con un recurso y consumer concretos.
+
+## IMPL-0053 — Temporizadores físicos configurables
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — idea 41, aprobada por Mauro.
+- **Qué queremos:** relojes, alarmas y timers como objetos físicos configurables que emiten una señal al vencer.
+- **Por qué:** sirven como recordatorio diegético, cocina, coordinación y distracción.
+- **Trigger/dependencias:** sistema mínimo de dispositivos activos/señales y un consumer jugable.
+- **Límites:** sin scheduler global de automatizaciones arbitrarias ni HUD mágico obligatorio.
+
+## IMPL-0054 — Contrato acotado de objetos dañables y rompibles
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — idea 42, dirección aprobada por Mauro con control de scope.
+- **Qué queremos:** permitir que objetos relevantes cambien completa o parcialmente al recibir daño: luces, puertas, ventanas, obstrucciones, vallas, postes, paredes, árboles, cajas y otros consumers justificados.
+- **Por qué:** un mundo físicamente interactuable y consecuencias tácticas legibles.
+- **Trigger/dependencias:** primer objeto productivo cuya destrucción aporte interacción real.
+- **Límites:** estados/partes authored y contratos simples; no prometer destrucción procedural universal ni producir fragmentos físicos persistentes sin budget.
+
+## IMPL-0055 — Requisitos composables, capacidades y costes de acciones
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — consolidación aprobada de ideas 34, 43, 44, 49 y 50.
+- **Qué queremos:** acciones con requisitos tipados mínimos; herramientas declaran capacidades por dominio separadas de durabilidad; la condición degrada gradualmente eficiencia/capacidad y las acciones consumen cargas/recursos de forma transaccional.
+- **Por qué:** muchas interacciones reutilizables sin una clase especial por herramienta/acción y sin el salto perfecto-a-roto.
+- **Trigger/dependencias:** primer consumer real de crafting/reparación/interacción.
+- **Límites:** conjunto pequeño ampliado sólo por consumers reales; validación central; no score global `toolQuality`, RNG arbitrario ni doble consumo.
+
+## IMPL-0056 — Organización y seguridad UX del inventario/equipment
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Fecha/origen:** 2026-09-14/15 — ideas 45–48, aprobadas por Mauro.
+- **Qué queremos:** nombres/etiquetas de contenedores, Favorite/Lock contra acciones masivas accidentales, motivos estructurados de rechazo provenientes de la autoridad y comparación contextual de equipment por diferencias relevantes.
+- **Por qué:** reducir errores del jugador y hacer visibles reglas reales sin duplicar validación.
+- **Trigger/dependencias:** UI productiva de inventario/equipment y contratos de transferencia/acciones estables.
+- **Límites:** Favorite/Lock no cambia ownership; permite override explícito; sin score único inventado ni una segunda capa de reglas en UI.
+
+
 ---
 
 ## Regla de mantenimiento
