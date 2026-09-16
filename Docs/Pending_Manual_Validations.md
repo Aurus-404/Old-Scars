@@ -144,3 +144,70 @@ Cuando estos gates se ejecuten:
 3. actualizar `Docs/Development_Log.md` append-only;
 4. si compile + reset vivo + dead-safety pasan, actualizar `IMPL-0041` a `DONE / ACCEPTED / PUBLISHED`;
 5. reconciliar `Docs/Current_Milestone.md` / `Docs/Next_Sprints.md` sólo si su snapshot operativo lo requiere.
+
+---
+
+## IMPL-0042 — Export automático de Console Log por sesión Play/Stop
+
+**Estado:** `IMPLEMENTED ON DEV / VALIDATION PENDING`
+
+**Fecha del handoff:** 2026-09-16
+
+**Implementación publicada:** `PlaySessionConsoleLogExporter` es tooling Editor-only. Empieza a registrar al salir de Edit Mode, continúa durante Play y el teardown hasta volver a Edit Mode, y guarda un `.txt` único por sesión en:
+
+`Documents\Unity Logs`
+
+El path real se resuelve con `Environment.SpecialFolder.MyDocuments`, por lo que en Windows normalmente será equivalente a:
+
+`C:\Users\<usuario>\Documents\Unity Logs`
+
+Contrato actual:
+
+- un archivo por sesión con nombre `OldScars_Play_yyyy-MM-dd_HH-mm-ss-fff.txt`;
+- registra cada mensaje recibido por `Application.logMessageReceivedThreaded` con timestamp local, `LogType`, texto y stack trace cuando existe;
+- escribe header con fecha local/UTC, proyecto, versión Unity, escena activa y Enter Play Mode options;
+- escribe footer al volver a Edit Mode con fin, duración y motivo;
+- escribe de forma incremental, por lo que un cierre inesperado puede dejar un archivo útil aunque falte footer;
+- sobrevive assembly/domain reload usando `SessionState` y vuelve a abrir el mismo archivo en append;
+- mantiene como máximo 50 logs propios `OldScars_Play_*.txt`; la limpieza no toca otros archivos de `Documents\Unity Logs`;
+- incluye menú `Tools > Old Scars > QA > Open Unity Logs Folder` y acceso al log de la sesión actual;
+- no agrega logging por frame ni cambia gameplay.
+
+### Gate A — Editor compile
+
+**Estado:** `NOT RUN / PENDING`
+
+1. sincronizar `dev` en el checkout canónico sin perder cambios locales ajenos;
+2. abrir/reutilizar Unity caliente;
+3. confirmar Editor compile sin errores nuevos.
+
+### Gate B — One Play/Stop export
+
+**Estado:** `NOT RUN / PENDING`
+
+1. entrar en Play una vez;
+2. producir al menos un `Log`, un `Warning` o un evento normal ya existente;
+3. salir de Play;
+4. abrir `Documents\Unity Logs`;
+5. confirmar que existe un nuevo `OldScars_Play_*.txt`;
+6. confirmar header, mensajes de la sesión y footer.
+
+### Gate C — Uniqueness / second session
+
+**Estado:** `NOT RUN / PENDING`
+
+Ejecutar una segunda sesión Play/Stop y confirmar que genera otro archivo distinto sin sobrescribir el primero.
+
+### Gate D — Reload continuity
+
+**Estado:** `NOT RUN / PENDING`
+
+Si resulta práctico, provocar un assembly/domain reload durante Play o usar la configuración de reload vigente y confirmar que el mismo archivo sigue en append y no se parte accidentalmente en dos sesiones.
+
+### Recordatorio obligatorio al validar IMPL-0042
+
+1. crear `TEST-*` nuevos sólo cuando estas pruebas realmente se ejecuten;
+2. registrar evidencia/ruta de los archivos generados en `Docs/Test_Log.md`;
+3. actualizar `Docs/Development_Log.md` append-only;
+4. si compile + export + uniqueness pasan, marcar IMPL-0042 `DONE / ACCEPTED / PUBLISHED`; Reload continuity puede ser gate obligatorio si la configuración vigente realmente recarga dominio durante Play;
+5. un Console Log limpio NO equivale por sí solo a PASS de un playtest: sigue siendo evidencia, no veredicto.
