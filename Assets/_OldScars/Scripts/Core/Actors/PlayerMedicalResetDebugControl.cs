@@ -1,3 +1,4 @@
+using OldScars.Core.Interactions;
 using UnityEngine;
 
 namespace OldScars.Core.Actors
@@ -46,8 +47,10 @@ namespace OldScars.Core.Actors
             GUILayout.Label("PLAYER MEDICAL DEBUG");
 
             bool previousEnabled = GUI.enabled;
-            GUI.enabled = previousEnabled && TryResolveAuthorities(
-                out _, out _, out _, out string availabilityFailure);
+            string availabilityFailure = null;
+            bool authoritiesAvailable = TryResolveAuthorities(
+                out _, out _, out _, out availabilityFailure);
+            GUI.enabled = previousEnabled && authoritiesAvailable;
             if (GUILayout.Button("Heal All / Reset Medical State", GUILayout.Height(24f)))
             {
                 if (TryResetPlayerMedicalState(out string failure))
