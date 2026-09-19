@@ -3775,3 +3775,12 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Commit funcional `481183ddfac82f9ff9e547da6c72a1af13ecc088`. No se tocaron WeaponCombatService, ActorCarryWeightComponent, ownership, movement/stamina, reload NPC ni persistence schema.
 - ISSUE-0022 `DONE / RESOLVED / PUBLISHED`. M41 permanece `DONE / ACCEPTED / PUBLISHED`; IMPL-0020 sigue PLANNED y no fue iniciado.
 - **NEXT EXACT STEP: IMPL-0020 — Carry Weight / Encumbrance.**
+
+## 2026-09-19 — Regla permanente de scope de implementacion cerrable
+
+- Se adopta una regla operativa permanente: un solo scope de implementacion activo, pequeno, explicito y con `DONE` verificable.
+- Ninguna feature, sistema, fix no bloqueante o refactor nuevo puede implementarse antes de cerrar el scope activo mediante implementacion, validacion, documentation closeout, review, commit, push, verificacion `HEAD == origin/dev` con divergencia `0/0` y registro de `NEXT EXACT STEP`.
+- Brainstorming y planes futuros siguen permitidos, pero se registran en `Implementation_Backlog.md` o `Mechanic_Idea_Pool.md` sin codigo ni promocion automatica a la cola activa.
+- Un hallazgo solo puede ampliar temporalmente el scope si es una dependencia critica demostrable para alcanzar los criterios de aceptacion vigentes; debe limitarse al minimo, documentarse y devolver el trabajo al objetivo original.
+- La regla no reduce la vision final de Old Scars; reduce el trabajo simultaneo y evita acumular sistemas parcialmente terminados.
+- Se reconcilia el ejemplo citado con el estado real: M41, Invisible to AI, Player Debug Invincible e ISSUE-0022 estan cerrados. Tras cerrar cualquier validacion pendiente que siga vigente, el siguiente y unico scope implementable es `IMPL-0020 — Carry Weight / Encumbrance`; `IMPL-0021` y el resto permanecen en cola.
