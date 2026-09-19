@@ -8,6 +8,22 @@ Este documento desarrolla criterios de salida, evidencia, deuda y riesgos para l
 
 Mauro conserva la autoridad creativa y de producto. [Game_Design_Document.md](Game_Design_Document.md) contiene el baseline de diseño revisado; el GDD Maestro v3.1 se conserva intacto como fuente historica y de diseño auditada. [Technical_Architecture.md](Technical_Architecture.md) documenta los contratos tecnicos vigentes despues de contrastarlos con el codigo real. [Open_World_Architecture.md](Open_World_Architecture.md) documenta la dirección futura aprobada sin convertirla en estado implementado.
 
+## Regla Permanente De Scope De Implementacion Cerrable
+
+Old Scars puede conservar una vision amplia, pero el trabajo de implementacion activo debe ser pequeno, explicito y terminable.
+
+- Debe existir un solo scope de implementacion activo.
+- Antes de iniciarlo se fijan objetivo, limites, criterios de aceptacion, validacion requerida y punto de `DONE`.
+- No se inicia otra feature, sistema, fix no bloqueante ni refactor mientras ese scope no complete: implementacion -> validacion -> documentation closeout -> review -> commit -> push -> verificar `HEAD == origin/dev` y divergencia `0/0` -> registrar `NEXT EXACT STEP`.
+- Descubrir una idea, mejora o sistema relacionado no lo incorpora al scope activo. Se registra en `Implementation_Backlog.md` o `Mechanic_Idea_Pool.md`, segun corresponda, sin codigo ni cambio de orden.
+- Planear trabajo futuro esta permitido; implementarlo en paralelo no.
+- Una excepcion solo existe si aparece una dependencia critica sin la cual el scope activo no puede alcanzar sus criterios de aceptacion. Debe documentarse la evidencia del bloqueo, limitarse al minimo necesario y regresar al scope original.
+- Bugs, hallazgos y oportunidades no criticos se difieren. No se usa “ya que estamos” como justificacion.
+- Un grupo futuro de features puede planearse como secuencia, pero se ejecuta y cierra una por vez. La siguiente no pasa a activa hasta que la anterior este publicada y reconciliada documentalmente.
+- `Current_Milestone.md` y `Next_Sprints.md` deben nombrar el unico scope activo y separar explicitamente lo activo de lo siguiente y de lo diferido.
+
+Esta regla limita el scope de implementacion, no la vision final del juego.
+
 ## Regla De Aprobacion
 
 Un gate puede aprobarse solamente cuando:
