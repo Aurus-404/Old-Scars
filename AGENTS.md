@@ -23,6 +23,17 @@ Before changing a feature, inspect the relevant authorities, interfaces, service
 - Do not begin an unauthorized milestone or expand gameplay, data, persistence, or scenes merely for convenience.
 - Sunk cost is not a reason to preserve a bad seam. Remove or replace obsolete coordination/compatibility after its real consumers have migrated and tests prove the replacement.
 
+## Technical Engineering Heuristics
+
+Treat these as default engineering heuristics, not dogma and not authorization to expand scope.
+
+- Reuse one domain rule when several entities truly share the same rule. Prefer small focused components/services plus events/interfaces for different reactions, but do not create an abstraction merely because two code blocks look similar. DRY must not produce a speculative universal manager.
+- In hot paths, avoid repeated component discovery, per-frame instantiation/allocations, unnecessary LINQ/enumeration churn, and broad world scans when stable references or bounded queries are available. Cache only references whose lifecycle/ownership makes the cache correct; invalidation cost and stale references are part of the design.
+- Choose algorithms from the actual consumer and evidence. A*, Dijkstra, BFS, spatial hash/uniform grid, quadtree/octree, Unity Physics broadphase, caching and scheduling are tools, not project-wide defaults. Profile before replacing an existing working seam.
+- Keep visual geometry and collision geometry conceptually separate. For dynamic bodies, prefer primitives or compound colliders when they represent the shape adequately; for complex geometry, use a dedicated simplified collider when justified. A static MeshCollider can be valid; never classify it as wrong solely because it is a MeshCollider.
+- Treat alpha blending as a potential GPU/overdraw cost, not an automatic defect. Alpha clip/dithering is a candidate for fades/occlusion/vegetation when visual quality permits and profiling supports it; validate temporal stability, aliasing, shadows and the active render path before standardizing it.
+- Performance changes require a representative budget or measured bottleneck. Do not introduce trees, caches, pooling, Jobs/Burst/GPU paths, custom pathfinding, or lower-level physics/rendering complexity only because they are theoretically faster.
+
 ## Research-First Routing
 
 Do not spend Codex quota re-auditing a repository problem when the cause can be established from GitHub/repository review outside Codex and the task already provides that evidence.
