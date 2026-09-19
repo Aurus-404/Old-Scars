@@ -107,6 +107,19 @@ La secuencia sistémica aprobada es:
 
 No introducir Encumbrance en comparaciones futuras de accuracy, porque velocidad NPC participa en sus condiciones. F8A/F8C ya cerraron ISSUE-0008 sin retuning.
 
+## Regla operativa — un solo scope activo y cerrable
+
+A partir de 2026-09-19, la vision amplia del proyecto no autoriza trabajo paralelo. Debe existir un unico scope de implementacion activo, con limites y `DONE` verificable. Una idea nueva puede planearse o registrarse en backlog, pero no implementarse hasta cerrar y publicar el scope activo.
+
+Solo puede incorporarse trabajo no previsto cuando sea una dependencia critica demostrable para completar el scope vigente. Esa excepcion debe registrarse, limitarse al minimo necesario y devolver el trabajo al objetivo original.
+
+Aplicacion al estado actual:
+
+- M41, Invisible to AI, Player Debug Invincible e ISSUE-0022 Loaded Ammo Mass Conservation permanecen cerrados; no forman una lista abierta.
+- Antes de abrir trabajo nuevo, deben reconciliarse/cerrarse las validaciones pendientes que realmente sigan vigentes en el checkout canonico.
+- Despues, el unico scope implementable es `IMPL-0020 — Carry Weight / Encumbrance`.
+- `IMPL-0021` y cualquier otra idea permanecen en cola hasta que IMPL-0020 complete implementacion, validacion, documentation closeout, review, commit, push, verificacion de sincronizacion y nuevo `NEXT EXACT STEP`.
+
 ## Carry Weight — contrato de producto ya fijado
 
 Carry Capacity NO es límite de almacenamiento.
