@@ -10,6 +10,20 @@ M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded a
 
 **ISSUE-0022 — Loaded Ammo Mass Conservation** is DONE / RESOLVED / PUBLISHED in `481183ddfac82f9ff9e547da6c72a1af13ecc088`; its gates are `TEST-20260915-001` through `TEST-20260915-004`. The next exact step is **IMPL-0020 — Carry Weight / Encumbrance**. It remains PLANNED and was not started by the issue closeout. `IMPL-0021` follows Encumbrance. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred.
 
+### Regla de ejecucion del siguiente scope
+
+No convertir esta cola en trabajo simultaneo. Una vez reconciliadas las validaciones pendientes reales del checkout canonico, `IMPL-0020` sera el unico scope de implementacion activo. Debe definirse y cerrarse como slice terminable antes de iniciar `IMPL-0021` o cualquier backlog.
+
+Durante `IMPL-0020`:
+
+- ideas nuevas: documentar y diferir;
+- planes futuros: permitidos, sin implementacion;
+- bugs no bloqueantes: registrar y diferir;
+- dependencia critica: admitir solo con evidencia, scope minimo y retorno inmediato a `IMPL-0020`;
+- no abrir refactors, tooling o sistemas adyacentes por conveniencia.
+
+El siguiente item no se activa hasta completar implementacion, validacion, documentation closeout, review, commit, push, `HEAD == origin/dev`, divergencia `0/0` y `NEXT EXACT STEP`.
+
 ### M41 closeout sequence (historical; completed 2026-09-14)
 
 ### 1. P1 — F6 cerrado
