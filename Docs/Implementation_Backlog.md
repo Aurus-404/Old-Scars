@@ -508,11 +508,11 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 ## IMPL-0048 — Auditorías de física, materiales y presupuesto humanoide
 
 - **Estado:** `PLANNED / DEFERRED`.
-- **Fecha/origen:** 2026-09-14/15 — ideas 21–24, aprobadas por Mauro.
-- **Qué queremos:** detectar rigidbodies que no duermen por jitter, uso accidental de `.material`, materiales equivalentes duplicados y crecimiento estructural de humanoides (renderers, materials, transforms, colliders y componentes).
-- **Por qué:** localizar costes silenciosos que escalan con loot y NPCs.
+- **Fecha/origen:** 2026-09-14/15 — ideas 21–24, aprobadas por Mauro; ampliado 2026-09-19 con el compendio técnico.
+- **Qué queremos:** detectar rigidbodies que no duermen por jitter, uso accidental de `.material`, materiales equivalentes duplicados, crecimiento estructural de humanoides (renderers, materials, transforms, colliders y componentes), colliders innecesariamente complejos y casos donde un `MeshCollider` reutiliza la malla visual detallada sin una razón técnica justificada.
+- **Por qué:** localizar costes silenciosos que escalan con loot y NPCs, y evitar que la complejidad visual se convierta por accidente en complejidad física.
 - **Trigger/dependencias:** integrar primero con evidencia del Performance Observatory o una escena representativa.
-- **Límites:** reportar antes de corregir; no fusionar assets con intención visual distinta ni alterar física productiva automáticamente.
+- **Límites:** reportar antes de corregir; no fusionar assets con intención visual distinta ni alterar física productiva automáticamente. Para cuerpos dinámicos, favorecer primitivas/compound colliders cuando representen bien la forma; para geometría compleja, evaluar collider dedicado simplificado. Un MeshCollider estático complejo no se considera incorrecto por definición: medir coste y necesidad antes de reemplazarlo.
 
 ## IMPL-0049 — Pruebas largas de memoria y lifecycle
 
@@ -665,8 +665,31 @@ Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe ref
 - **Prioridad y secuencia:** esta integración es el **siguiente gran scope autorizado** una vez que `IMPL-0020 — Carry Weight / Encumbrance` complete implementación, validación, documentation closeout, review, commit, push, verificación `HEAD == origin/dev` / divergencia `0/0` y registre su nuevo `NEXT EXACT STEP`. No interrumpe ni se ejecuta en paralelo con IMPL-0020. `IMPL-0021 — Localized Limb Impairment` vuelve a la cola posterior.
 - **Ejecución acotada:** esta entrada es una prioridad/umbrella de planificación, no permiso para abrir todas sus fases a la vez. Al activarse debe dividirse en slices terminables y cerrarse una por una. El primer slice debe auditar el seam de integración actual y establecer/validar identidad estable world-addressable de terrain chunks antes de ampliar streaming, persistencia o contenido.
 - **Ruta técnica de referencia:** audit/integration gate → stable terrain chunk identity → baseline procedural volumétrico multi-chunk → streaming V1 → persistent terrain mutation V1 → autoridad unificada de mutation → profiling/scheduling → LOD sólo cuando exista consumer real → features locales/geología/cuevas y roads/sites únicamente en scopes posteriores justificados.
+- **Candidato de meshing/density field:** evaluar Marching Cubes —o una extracción de isosuperficie equivalente— como candidato para el baseline volumétrico multi-chunk. El campo de densidad debe usar coordenadas world-addressable estables; una excavación/impacto modifica sólo la región intersectada, marca dirty los chunks afectados y sus bordes vecinos cuando corresponda, y reconstruye mesh/collider únicamente donde cambió la densidad. Esto **no congela Marching Cubes como mesher final**: debe compararse con el backend volumétrico vigente y validarse en seams de chunk, persistencia y profiling antes de adoptar una representación productiva.
 - **Acceptance de producto objetivo:** una misma seed/world reproduce el baseline; el Player puede recorrer terrain procedural materializado por chunks; una mutation afecta sólo chunks intersectados; deformaciones sobreviven save/unload/reload; collider y navegación permanecen coherentes; cambios locales no mutan ni rerollean el MacroGeography/world truth comprometido.
 - **Límites:** no whole-world dense voxel array; no mesh gigante por sector; no fluids, derrumbes estructurales, mining loop, geología/cuevas completas ni building-foundation simulation dentro del primer scope; no congelar chunk size, voxel spacing, mesher final, Jobs/Burst/GPU, Transvoxel/LOD ni formato final de compaction sin profiling/consumer real.
 - **Autoridad técnica:** `Docs/Procedural_Worldgen_Deformable_Terrain_Research_2026-09-16.md`, `Docs/Deformable_Terrain_Foundation.md`, `Docs/Open_World_Architecture.md` y `Docs/Technical_Architecture.md`.
 - **Relación:** Open World Rebaseline; Macro World Plan / Elevation / Water / Climate / Environment-Biomes foundations; Deformable Volumetric Terrain Foundation.
+
+## IMPL-0064 — Escalado de consultas espaciales y particionamiento por evidencia
+
+- **Estado:** `PLANNED / DEFERRED — PROFILE FIRST`.
+- **Fecha/origen:** 2026-09-19 — Compendio Técnico Old Scars; aprobado por Mauro como idea útil a conservar.
+- **Qué queremos:** evitar que percepción, proximidad, colisiones lógicas, loot/NPC awareness u otros consumers futuros escalen mediante comparaciones `N×N` cuando la población o densidad del mundo lo vuelva medible. Evaluar según el caso spatial hash/uniform grid, quadtree, octree, broadphase/Physics queries, caches acotadas y scheduling/staggering.
+- **Por qué:** con cientos o miles de entidades, el coste dominante puede ser cuántas parejas se consultan y con qué frecuencia, no el comportamiento individual de cada actor.
+- **Trigger/dependencias:** profiling o stress test representativo que demuestre coste material de consultas espaciales; preferentemente evidencia producida por `IMPL-0047 — Performance Observatory`.
+- **Criterio de elección:** no fijar Quadtree/Octree/A* por documento o intuición. Elegir la estructura más simple que satisfaga distribución espacial, frecuencia de altas/bajas/movimiento, radios de consulta y presupuesto real. Para mundo mayormente terrestre, una uniform grid/spatial hash debe considerarse junto a árboles espaciales.
+- **Límites:** sin `GlobalSpatialManager` universal preventivo, sin migrar Navigation/Perception por limpieza, sin rebuild completo por frame y sin optimización si el baseline ya cumple budget.
+- **Relación:** `IMPL-0047`, Navigation, Perception, Physics, future population/world streaming.
+
+## IMPL-0065 — Fade/occlusion con alpha clip o dithering orientado a overdraw
+
+- **Estado:** `PLANNED / DEFERRED — VISUAL + PROFILE GATE`.
+- **Fecha/origen:** 2026-09-19 — Compendio Técnico Old Scars; aprobado por Mauro como idea útil a conservar.
+- **Qué queremos:** evaluar shaders de alpha clip/dithering para fades donde la transparencia blended sea costosa o innecesaria, especialmente ocultamiento de paredes/techos entre cámara y Player, vegetación y otros consumers que toleren el patrón visual. El objetivo es conservar un path más compatible con depth/opaque rendering cuando la calidad lo permita.
+- **Por qué:** múltiples capas transparentes pueden aumentar overdraw; el estilo visual retro/2000s de Old Scars puede tolerar dithering mejor que una dirección fotorrealista, pero la decisión debe validarse en movimiento.
+- **Trigger/dependencias:** primer consumer productivo de fade/occlusion o evidencia de GPU/fill-rate relevante en una escena representativa.
+- **Validación esperada:** comparar coste GPU/overdraw y estabilidad visual frente al material actual; revisar popping, ruido/patrón, sombras, aliasing y comportamiento con el antialiasing/render path vigente.
+- **Límites:** dithering no es reemplazo universal de transparencias, no se afirma que elimine todo overdraw y no debe imponerse a materiales cuya función visual requiera blending real.
+- **Relación:** Building Visibility/interior occlusion, PC_Renderer/URP, vegetation/rendering y `IMPL-0047`.
 
