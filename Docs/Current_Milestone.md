@@ -68,6 +68,8 @@ ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el
 
 **NEXT EXACT STEP: IMPL-0020 — Carry Weight / Encumbrance.** Sigue PLANNED; no iniciado por este cierre.
 
+**NEXT AUTHORIZED AFTER CLOSURE: IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable.** Prioridad alta; no puede iniciarse hasta cerrar y publicar completamente IMPL-0020.
+
 ## Orden operativo aprobado para cerrar M41 (histórico)
 
 1. **P1 — F6 DONE / ACCEPTED / PUBLISHED**, Correction Pass B cerrado.
@@ -102,8 +104,9 @@ La secuencia sistémica aprobada es:
 `IMPL-0016` Equipment visuals humanoides fue adelantado por necesidad de validación visual y quedó `DONE / ACCEPTED` sin alterar Equipment ni combat.
 
 1. `ISSUE-0022` loaded ammo mass: DONE / RESOLVED / PUBLISHED; conservación corregida antes de Encumbrance.
-2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC.
-3. `IMPL-0021` Localized Limb Impairment, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
+2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC — único scope implementable actual.
+3. `IMPL-0063` Integración productiva Worldgen procedural + terreno volumétrico deformable — `HIGH PRIORITY / AUTHORIZED NEXT`, activable sólo tras el cierre total de IMPL-0020 y ejecutada en slices acotadas.
+4. `IMPL-0021` Localized Limb Impairment vuelve a cola posterior, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
 
 No introducir Encumbrance en comparaciones futuras de accuracy, porque velocidad NPC participa en sus condiciones. F8A/F8C ya cerraron ISSUE-0008 sin retuning.
 
@@ -118,7 +121,8 @@ Aplicacion al estado actual:
 - M41, Invisible to AI, Player Debug Invincible e ISSUE-0022 Loaded Ammo Mass Conservation permanecen cerrados; no forman una lista abierta.
 - Antes de abrir trabajo nuevo, deben reconciliarse/cerrarse las validaciones pendientes que realmente sigan vigentes en el checkout canonico.
 - Despues, el unico scope implementable es `IMPL-0020 — Carry Weight / Encumbrance`.
-- `IMPL-0021` y cualquier otra idea permanecen en cola hasta que IMPL-0020 complete implementacion, validacion, documentation closeout, review, commit, push, verificacion de sincronizacion y nuevo `NEXT EXACT STEP`.
+- `IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable` queda autorizado como siguiente prioridad, pero permanece inactivo hasta que IMPL-0020 complete implementacion, validacion, documentation closeout, review, commit, push, verificacion de sincronizacion y nuevo `NEXT EXACT STEP`.
+- `IMPL-0021` y cualquier otra idea permanecen detrás de IMPL-0063 salvo una re-priorización explícita posterior.
 
 ## Carry Weight — contrato de producto ya fijado
 

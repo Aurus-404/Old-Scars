@@ -31,10 +31,10 @@ Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renom
 | Persistence Ready | `APPROVED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
-| Open World Rebaseline | `APPROVED DESIGN DIRECTION — PARTIALLY IMPLEMENTED FOUNDATIONS` |
+| Open World Rebaseline | `APPROVED — IMPL-0063 AUTHORIZED NEXT AFTER IMPL-0020` |
 | Próximo trabajo | IMPL-0020 — Carry Weight / Encumbrance (PLANNED / READY TO START) |
 | Dependencia cerrada | ISSUE-0022 — Loaded Ammo Mass Conservation DONE / RESOLVED / PUBLISHED, `481183ddfac82f9ff9e547da6c72a1af13ecc088` |
-| Después | IMPL-0021 Localized Limb Impairment; F8D sólo con evidencia residual, F8E sólo por consumers reales |
+| Después | IMPL-0063 — Worldgen procedural + terreno volumétrico deformable (`HIGH PRIORITY / AUTHORIZED NEXT AFTER IMPL-0020`); IMPL-0021 vuelve a cola posterior; F8D sólo con evidencia residual, F8E sólo por consumers reales |
 
 ### Contexto histórico del estado de M41.4 al inicio del cierre P9
 
@@ -203,7 +203,7 @@ El backend runtime vigente del spike volumétrico es la implementación publicad
 
 ## Open World Rebaseline — dirección futura aprobada
 
-La dirección open-world permanece aprobada, pero no está autorizada para continuar automáticamente antes de cerrar el bloque NPC actual.
+La dirección open-world permanece aprobada. La integración productiva `IMPL-0063 — Worldgen procedural + terreno volumétrico deformable` queda explícitamente **autorizada como siguiente gran prioridad después de cerrar IMPL-0020**. Esta autorización no permite interrumpir ni ejecutar trabajo en paralelo con el scope activo, y no desbloquea automáticamente el resto de milestones open-world.
 
 | Orden | Unidad | Estado | Dependencia / propósito |
 | --- | --- | --- | --- |
@@ -225,6 +225,7 @@ La dirección open-world permanece aprobada, pero no está autorizada para conti
 | Tramo jugable | M41.3 | `DONE` | NPC sandbox/loadouts. |
 | Tramo jugable cerrado | M41.4 | DONE / ACCEPTED / PUBLISHED | combat/AI integration/game feel; cierre P9 2026-09-14. |
 | Defecto post-M41 cerrado | ISSUE-0022 | DONE / RESOLVED / PUBLISHED | Loaded Ammo Mass Conservation cerrada antes de Encumbrance; commit `481183ddfac82f9ff9e547da6c72a1af13ecc088`. |
+| Prioridad siguiente autorizada | IMPL-0063 — Procedural Worldgen + Deformable Volumetric Terrain | `HIGH PRIORITY / AUTHORIZED NEXT AFTER IMPL-0020` | Productizar el seam entre world truth procedural/ecológicamente coherente y terrain volumétrico deformable, chunked, streamable y persistentemente mutable. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | historia estructurada acotada. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | persistencia world state general. |
 | 9 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | blueprint local/materialización autorada. |
@@ -233,7 +234,7 @@ La dirección open-world permanece aprobada, pero no está autorizada para conti
 | 12 | ID TBD — Connected First Playable | `PLANNED — NOT AUTHORIZED` | A→B→A con mutations/save/fresh load. |
 | 13 | ID TBD — Open World Playtest & Roadmap Rebaseline | `PLANNED — NOT AUTHORIZED` | evidencia para nueva priorización. |
 
-Nada de esta tabla autoriza continuar por inercia. La representación/algoritmo productivo final de terrain, LOD, geología, mining loop, fluid dynamics y budgets siguen sin congelarse por el simple hecho de existir un spike validado.
+La autorización explícita anterior aplica **sólo a IMPL-0063 y sólo después del cierre completo de IMPL-0020**. Los milestones 7–13 y cualquier expansión no incluida en el scope acotado de IMPL-0063 permanecen sin autorización automática. La representación/algoritmo productivo final de terrain, LOD, geología, mining loop, fluid dynamics y budgets siguen sin congelarse por el simple hecho de existir un spike validado.
 
 ---
 

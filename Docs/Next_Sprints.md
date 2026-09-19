@@ -8,11 +8,11 @@ M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded a
 
 ### Next exact step — IMPL-0020
 
-**ISSUE-0022 — Loaded Ammo Mass Conservation** is DONE / RESOLVED / PUBLISHED in `481183ddfac82f9ff9e547da6c72a1af13ecc088`; its gates are `TEST-20260915-001` through `TEST-20260915-004`. The next exact step is **IMPL-0020 — Carry Weight / Encumbrance**. It remains PLANNED and was not started by the issue closeout. `IMPL-0021` follows Encumbrance. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred.
+**ISSUE-0022 — Loaded Ammo Mass Conservation** is DONE / RESOLVED / PUBLISHED in `481183ddfac82f9ff9e547da6c72a1af13ecc088`; its gates are `TEST-20260915-001` through `TEST-20260915-004`. The next exact step is **IMPL-0020 — Carry Weight / Encumbrance**. It remains PLANNED and was not started by the issue closeout. **IMPL-0063 — Worldgen procedural + terreno volumétrico deformable** is the `HIGH PRIORITY / AUTHORIZED NEXT` scope after IMPL-0020 closes completely. `IMPL-0021` returns to the queue behind IMPL-0063. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred.
 
 ### Regla de ejecucion del siguiente scope
 
-No convertir esta cola en trabajo simultaneo. Una vez reconciliadas las validaciones pendientes reales del checkout canonico, `IMPL-0020` sera el unico scope de implementacion activo. Debe definirse y cerrarse como slice terminable antes de iniciar `IMPL-0021` o cualquier backlog.
+No convertir esta cola en trabajo simultaneo. Una vez reconciliadas las validaciones pendientes reales del checkout canonico, `IMPL-0020` sera el unico scope de implementacion activo. Debe definirse y cerrarse como slice terminable antes de activar `IMPL-0063` o cualquier otro backlog. `IMPL-0063` ya está autorizado como siguiente prioridad, pero no puede comenzar anticipadamente.
 
 Durante `IMPL-0020`:
 
@@ -224,9 +224,17 @@ Navigation debe distinguir orden/path válido de bloqueo físico por carga; Sear
 
 Referencia: `IMPL-0020`.
 
-### 13. P13 — Localized Limb Impairment
+### 13. P13 — Procedural Worldgen + Deformable Volumetric Terrain Productization
 
-Estado: `PLANNED AFTER ENCUMBRANCE`.
+Estado: `HIGH PRIORITY / AUTHORIZED NEXT AFTER IMPL-0020`.
+
+Objetivo: productizar el seam ya investigado entre el world truth procedural determinista/ecológicamente coherente y la foundation volumétrica deformable. No es un permiso para implementar todo de una vez: debe abrirse mediante slices terminables, empezando por audit/integration gate + stable terrain chunk identity, y luego avanzar sólo tras cerrar cada slice.
+
+Referencia: `IMPL-0063`, `Procedural_Worldgen_Deformable_Terrain_Research_2026-09-16.md`.
+
+### 14. P14 — Localized Limb Impairment
+
+Estado: `PLANNED AFTER IMPL-0063`.
 
 Usar heridas reales existentes como causa funcional, sin limb HP paralelo.
 
@@ -243,6 +251,7 @@ Referencia: `IMPL-0021`.
 
 ## No iniciar todavía
 
+- IMPL-0063 antes de que IMPL-0020 esté completamente cerrado/publicado y el `NEXT EXACT STEP` haya sido actualizado;
 - Encumbrance antes de cerrar M41/F8;
 - weapon-driven fire-control sin varios arquetipos reales;
 - weapon viability/fallback sin tarea propia;

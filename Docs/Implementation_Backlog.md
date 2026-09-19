@@ -221,7 +221,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0021 — Localized Limb Impairment
 
-- **Estado:** `PLANNED AFTER IMPL-0020`.
+- **Estado:** `PLANNED AFTER IMPL-0063`.
 - **Fecha/origen:** 2026-09-06 — dirección de producto ya aprobada.
 - **Qué queremos:** que heridas localizadas reales produzcan consecuencias funcionales sin introducir limb HP paralelo.
 - **Dirección:** piernas afectan locomoción/sprint; brazos afectan handling/reload/melee cuando sus reglas y consumers estén definidos. Bandaging reduce bleeding, no repara automáticamente impairment.
@@ -655,3 +655,18 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 ## Regla de mantenimiento
 
 Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe referenciar su ID. Cuando se implemente y valide, puede pasar a `DONE` o eliminarse sólo si no aporta historial. Bugs reales van a `Issue_Registry.md`, no se duplican aquí como features.
+
+## IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable
+
+- **Estado:** `HIGH PRIORITY / AUTHORIZED NEXT AFTER IMPL-0020`.
+- **Fecha/origen:** 2026-09-19 — autorización explícita de Mauro sobre la investigación cerrada el 2026-09-16.
+- **Qué queremos:** productizar la unión entre el world truth procedural determinista ya existente y la representación volumétrica deformable ya validada. El terrain runtime debe materializar de forma estable la elevación/landforms, agua/costas, clima, humedad/temperatura, Macro Environment/Biome Regions y contexto de roads/sites, conservando esa coherencia ambiental/ecológica mientras permite modificación local en tiempo real.
+- **Terrain deformable esperado:** excavación, cráteres, trincheras, túneles laterales y futuras operaciones equivalentes deben resolverse como mutaciones localizadas sobre terrain volumétrico 3D, con mesh/collider/navigation coherentes, persistencia durable y streaming/unload/reload reproducible.
+- **Prioridad y secuencia:** esta integración es el **siguiente gran scope autorizado** una vez que `IMPL-0020 — Carry Weight / Encumbrance` complete implementación, validación, documentation closeout, review, commit, push, verificación `HEAD == origin/dev` / divergencia `0/0` y registre su nuevo `NEXT EXACT STEP`. No interrumpe ni se ejecuta en paralelo con IMPL-0020. `IMPL-0021 — Localized Limb Impairment` vuelve a la cola posterior.
+- **Ejecución acotada:** esta entrada es una prioridad/umbrella de planificación, no permiso para abrir todas sus fases a la vez. Al activarse debe dividirse en slices terminables y cerrarse una por una. El primer slice debe auditar el seam de integración actual y establecer/validar identidad estable world-addressable de terrain chunks antes de ampliar streaming, persistencia o contenido.
+- **Ruta técnica de referencia:** audit/integration gate → stable terrain chunk identity → baseline procedural volumétrico multi-chunk → streaming V1 → persistent terrain mutation V1 → autoridad unificada de mutation → profiling/scheduling → LOD sólo cuando exista consumer real → features locales/geología/cuevas y roads/sites únicamente en scopes posteriores justificados.
+- **Acceptance de producto objetivo:** una misma seed/world reproduce el baseline; el Player puede recorrer terrain procedural materializado por chunks; una mutation afecta sólo chunks intersectados; deformaciones sobreviven save/unload/reload; collider y navegación permanecen coherentes; cambios locales no mutan ni rerollean el MacroGeography/world truth comprometido.
+- **Límites:** no whole-world dense voxel array; no mesh gigante por sector; no fluids, derrumbes estructurales, mining loop, geología/cuevas completas ni building-foundation simulation dentro del primer scope; no congelar chunk size, voxel spacing, mesher final, Jobs/Burst/GPU, Transvoxel/LOD ni formato final de compaction sin profiling/consumer real.
+- **Autoridad técnica:** `Docs/Procedural_Worldgen_Deformable_Terrain_Research_2026-09-16.md`, `Docs/Deformable_Terrain_Foundation.md`, `Docs/Open_World_Architecture.md` y `Docs/Technical_Architecture.md`.
+- **Relación:** Open World Rebaseline; Macro World Plan / Elevation / Water / Climate / Environment-Biomes foundations; Deformable Volumetric Terrain Foundation.
+
