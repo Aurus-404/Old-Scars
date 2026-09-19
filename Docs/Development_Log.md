@@ -3784,3 +3784,13 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Un hallazgo solo puede ampliar temporalmente el scope si es una dependencia critica demostrable para alcanzar los criterios de aceptacion vigentes; debe limitarse al minimo, documentarse y devolver el trabajo al objetivo original.
 - La regla no reduce la vision final de Old Scars; reduce el trabajo simultaneo y evita acumular sistemas parcialmente terminados.
 - Se reconcilia el ejemplo citado con el estado real: M41, Invisible to AI, Player Debug Invincible e ISSUE-0022 estan cerrados. Tras cerrar cualquier validacion pendiente que siga vigente, el siguiente y unico scope implementable es `IMPL-0020 — Carry Weight / Encumbrance`; `IMPL-0021` y el resto permanecen en cola.
+
+## 2026-09-19 — Reconciliación del Compendio Técnico: backlog + heurísticas de ingeniería
+
+- Se revisó el `Compendio Técnico Old Scars` como fuente de ideas, no como autoridad técnica automática.
+- Se promovieron al backlog dos mejoras aprobadas y acotadas: `IMPL-0064` para escalado de consultas espaciales con profiling previo y `IMPL-0065` para evaluar alpha clip/dithering en fades/occlusion con gate visual + GPU. `IMPL-0048` amplía su auditoría a complejidad de colliders y uso accidental de malla visual detallada como collider.
+- `IMPL-0063` conserva Marching Cubes/extracción de isosuperficie como candidato de meshing para el baseline volumétrico multi-chunk, con dirty-region/chunk rebuild y seams/persistencia/profiling obligatorios antes de congelar el mesher final.
+- `AGENTS.md` incorpora heurísticas durables: compartir reglas de dominio sin sobre-abstraer DRY; evitar trabajo/allocations repetidos en hot paths cuando exista un seam correcto; seleccionar A*/Dijkstra/BFS/estructuras espaciales por consumer y evidencia; separar geometría visual/física; y tratar dithering/transparencia como decisiones medibles, no dogmas.
+- No se promovió pathfinding 3D arbitrario sobre paredes/techos porque Old Scars no tiene un consumer actual que lo justifique. Tampoco se adoptó “A* en 90% de los casos”, Quadtree/Octree o dithering como defaults universales.
+- Este cierre es documental: no modifica runtime, assets, Roadmap, `Current_Milestone.md` ni `Next_Sprints.md`. `IMPL-0020 — Carry Weight / Encumbrance` sigue siendo el único scope implementable actual; `IMPL-0063` sigue autorizado sólo después de su cierre completo.
+
