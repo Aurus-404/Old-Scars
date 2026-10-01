@@ -6,13 +6,13 @@ Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.
 
 M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded as `TEST-20260914-001` through `TEST-20260914-004` in `Test_Log.md`; the rifle run's manual setup caveat is retained there. No Unity rerun was part of the documentation closeout.
 
-### Next exact step — IMPL-0063
+### Next exact step — IMPL-0066
 
-**IMPL-0020 — Carry Weight / Encumbrance** is DONE / ACCEPTED / PUBLISHED (2026-10-01). Shared derived Carry consequences, storage migration, real Player/NPC movement, reversible navigation, bounded Search pause, overloaded restore and mass/identity regressions are covered by `TEST-20261001-002/004/005/006/008/009/010`; earlier FAIL records remain. **NEXT EXACT STEP: IMPL-0063 — Procedural Worldgen + Deformable Volumetric Terrain Productization**, starting with its bounded audit/integration gate + stable terrain chunk identity slice. IMPL-0063 was not implemented in this task. `IMPL-0021` remains behind it. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred; unrelated local IMPL-0061 gates remain separate.
+**IMPL-0020 — Carry Weight / Encumbrance** is DONE / ACCEPTED / PUBLISHED (2026-10-01). Automated gates remain valid and Mauro's manual playtest confirmed the base locomotion consequence, while exposing a backpack product follow-up. **NEXT EXACT STEP: IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables**: independent grid geometry, per-container maximum content weight and data-driven ergonomic effective-load reduction only while correctly equipped. Physical mass remains conserved. After IMPL-0066 closes, **IMPL-0063** resumes as the high-priority next scope with its bounded audit/integration + stable terrain chunk identity slice. `IMPL-0021` remains behind IMPL-0063.
 
 ### Regla de ejecucion del siguiente scope
 
-No convertir esta cola en trabajo simultaneo. IMPL-0020 completó sus gates y cierre. La próxima tarea debe delimitar la primera slice terminable de IMPL-0063 y tratar explícitamente las validaciones locales pendientes ajenas; no abrir el backlog entero ni asumir aceptado IMPL-0061.
+No convertir esta cola en trabajo simultaneo. IMPL-0020 completó su scope técnico; el playtest manual abrió sólo IMPL-0066 como follow-up terminable. Cerrar IMPL-0066 antes de abrir la primera slice de IMPL-0063; no abrir el backlog entero ni asumir aceptado IMPL-0061.
 
 Durante el siguiente scope acotado:
 
@@ -224,9 +224,21 @@ Implementado: Navigation retiene el path válido durante pausa por Carry; Search
 
 Referencia: `IMPL-0020`.
 
+### 12.1 — Follow-up Carry/Storage — IMPL-0066
+
+Estado: `PLANNED / AUTHORIZED NEXT` — derivado de aceptación manual del 2026-10-01.
+
+Objetivo acotado: separar tres propiedades data-driven de mochilas/contenedores equipables: (1) grid/footprint, (2) peso máximo de contenido que el contenedor acepta y (3) reducción ergonómica de carga efectiva sólo mientras esté correctamente equipado. La masa física de items y contenido no cambia; el límite de kg pertenece al storage y no al actor.
+
+Acceptance: grid y límite de kg funcionan de forma independiente; una mochila equipada puede reducir Encumbrance del contenido sin modificar masa; desequiparla elimina la reducción; transfer/equipment/rollback/persistence siguen conservando identidad y masa; debug UI hace observable el contrato.
+
+Límites: sin Strength/stats, sin aumento global de Carry Capacity, sin rotura de mochila, sin nested containers nuevos y sin framework general de modifiers. Valores exactos de kg/reducción son tuning futuro.
+
+Referencia: `IMPL-0066`.
+
 ### 13. P13 — Procedural Worldgen + Deformable Volumetric Terrain Productization
 
-Estado: `HIGH PRIORITY / NEXT EXACT STEP` — tras cierre IMPL-0020. Primera slice acotada; no implementada todavía.
+Estado: `HIGH PRIORITY / NEXT AFTER IMPL-0066` — la prioridad se conserva, pero la primera slice no se abre hasta cerrar el follow-up manual de Carry/Storage. No implementada todavía.
 
 Objetivo: productizar el seam ya investigado entre el world truth procedural determinista/ecológicamente coherente y la foundation volumétrica deformable. No es un permiso para implementar todo de una vez: debe abrirse mediante slices terminables, empezando por audit/integration gate + stable terrain chunk identity, y luego avanzar sólo tras cerrar cada slice.
 
@@ -251,7 +263,7 @@ Referencia: `IMPL-0021`.
 
 ## No iniciar todavía
 
-- IMPL-0063 antes de que IMPL-0020 esté completamente cerrado/publicado y el `NEXT EXACT STEP` haya sido actualizado;
+- IMPL-0063 antes de cerrar/publicar IMPL-0066 y devolverle explícitamente el `NEXT EXACT STEP`;
 - Encumbrance antes de cerrar M41/F8;
 - weapon-driven fire-control sin varios arquetipos reales;
 - weapon viability/fallback sin tarea propia;
