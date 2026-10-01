@@ -3814,3 +3814,16 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - La reducción representa distribución de carga/correas/soporte, no desaparición de masa. La mochila misma pesa al 100%; su contenido puede contribuir con un multiplicador menor a Encumbrance sólo cuando el contenedor está correctamente equipado.
 - No se autorizaron todavía valores finales de capacidad/reducción, rotura de mochilas, Strength/stats, aumento global de Carry Capacity ni un framework universal de modifiers.
 - Este registro es documental. IMPL-0066 todavía no está implementado ni validado.
+
+## 2026-10-01 — IMPL-0066 manual playtest parcial y follow-ups de Inventory UX
+
+- Mauro ejecutó una sesión manual en `Assets/Scenes/SampleScene.unity` sobre la implementación local todavía no publicada de IMPL-0066. El runtime arrancó y el playtest no mostró una excepción funcional asociada a Carry/Equipment durante equip→unequip→equip de la misma mochila.
+- Evidencia funcional observada: con mochila pequeña de `1.50 kg` y rifle automático de `4.80 kg`, el rifle fuera de la mochila produjo `Masa física 6.30 kg / Carga efectiva 6.30 kg`; al moverlo al owned storage de la mochila equipada, la masa física permaneció `6.30 kg` y la carga efectiva bajó a `5.34 kg`. Esto coincide exactamente con el multiplicador provisional `0.80`: `1.50 + 4.80 × 0.80 = 5.34`.
+- Esta observación confirma el seam central de ergonomía para el caso probado: mover contenido a un carrier equipado no destruye masa física y sí reduce la carga efectiva. NO constituye todavía aceptación manual completa de IMPL-0066.
+- Hallazgo confirmado `ISSUE-0028`: seleccionar un item dentro de la ventana flotante del owned storage resalta el item allí, pero no actualiza `Selected Personal Item` ni sus stats/acciones en el panel principal.
+- Hallazgo confirmado `ISSUE-0029`: el export de la sesión identifica el encabezado como `# IMPL-0042` aunque la prueba actual era IMPL-0066; el contenido del log sigue siendo útil, pero el metadata de scope es engañoso.
+- Mauro aprobó dos follow-ups de UX sin expandir el scope activo: `IMPL-0067` mantiene WASD/sprint y camera orbit con Inventory abierto cuando el input ocurre fuera de superficies UI; `IMPL-0068` permite arrastrar un item directamente sobre una mochila/container item para transferirlo al owned storage usando la misma autoridad transaccional existente.
+- Quedan pendientes antes de aceptar/cerrar IMPL-0066: validar límite estructural de la mochila pequeña en 20 kg y rechazo del siguiente ingreso sin partial transfer, volver a aceptar después de retirar contenido, save/load con carrier equipado y comparación/tuning manual pequeña-mediana-grande.
+- Los findings anteriores son evidencia/continuidad. No marcan IMPL-0066 DONE, no publican su implementación local y no cambian la secuencia: IMPL-0066 sigue activo; IMPL-0063 permanece después de su cierre.
+- El `TEST-*` manual formal debe agregarse al retomar el checkout local junto con los TEST-20261001-012..016 todavía no publicados, para preservar el orden append-only sin inventar IDs remotos fuera de secuencia.
+

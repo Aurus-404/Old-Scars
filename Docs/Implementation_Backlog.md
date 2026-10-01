@@ -709,3 +709,31 @@ Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe ref
 - **Límites:** sin Strength/stats, sin aumento global de Carry Capacity por mochila, sin sistema universal de modifiers, sin nesting nuevo, sin rotura/durabilidad de contenedores en esta slice y sin tocar `ItemWeightResolver` para falsificar masa.
 - **Relación:** follow-up de aceptación manual de `IMPL-0020`; `ItemStorageProfileDefinition`, `ItemOwnedStorageRuntime`, Equipment, `ActorCarryWeightComponent`, Inventory/transfer, Persistence y debug inventory UI.
 - **Prioridad:** cerrar esta slice acotada antes de abrir `IMPL-0063`. `IMPL-0063` conserva su prioridad alta y vuelve a ser NEXT EXACT STEP tras cerrar/publicar IMPL-0066.
+
+## IMPL-0067 — Input de movimiento/cámara compatible con Inventory abierto
+
+- **Estado:** `PLANNED / AUTHORIZED`.
+- **Fecha/origen:** 2026-10-01 — playtest manual de IMPL-0066; aprobado por Mauro.
+- **Qué queremos:** permitir que el Player siga usando locomoción y cámara mientras Inventory está abierto siempre que el input no esté siendo consumido por una superficie/control UI.
+- **Contrato:** `WASD` y sprint siguen pasando a locomoción con Inventory abierto; RMB/orbit de cámara debe funcionar cuando el gesto comienza fuera de Inventory, floating storages, menús contextuales, botones o controles equivalentes. Clicks/drag/scroll iniciados dentro de UI siguen perteneciendo a UI y no deben filtrarse al mundo/cámara.
+- **Focus de texto:** campos que capturan teclado, como filtros/debug inputs, mantienen prioridad mientras tienen focus; no convertir typing en movimiento accidental.
+- **Por qué:** Inventory en Old Scars no necesita ser una pausa modal total; permite revisar/organizar carga mientras el personaje sigue desplazándose y evita que una ventana grande bloquee cámara aunque el puntero esté fuera.
+- **Implementación esperada:** reutilizar la autoridad actual de input/UI hit-testing/modalidad; no crear un segundo sistema de input ni excepciones por panel concreto.
+- **Validación:** movimiento y sprint con Inventory abierto; RMB camera fuera de UI; UI bloquea world/camera input sólo sobre sus superficies; drag/context menus/text focus no filtran acciones.
+- **Límites:** no rediseñar HUD, no cambiar pause/time scale, no hacer click-through de UI ni alterar acciones de gameplay fuera del routing de input.
+- **Relación:** Inventory/UI session, Player input, camera input, `IMPL-0056`.
+- **Prioridad:** registrado como follow-up; no cambia el NEXT EXACT STEP actual ni abre trabajo paralelo a IMPL-0066.
+
+## IMPL-0068 — Drag directo de item sobre contenedor item-owned
+
+- **Estado:** `PLANNED / AUTHORIZED`.
+- **Fecha/origen:** 2026-10-01 — playtest manual de IMPL-0066; aprobado por Mauro.
+- **Qué queremos:** al arrastrar un item desde Player Grid y soltarlo sobre el rectángulo/item visual de una mochila u otro container con owned storage accesible, interpretar el drop como transferencia a ese storage sin exigir abrir primero su ventana flotante.
+- **Contrato:** esto es únicamente un atajo de UX. La transferencia debe seguir pasando por `GridStorageTransferService` y conservar los mismos guards/autoridades: grid/footprint, stack, capacidad estructural en kg, no-nesting, access, identity, ownership, snapshots y rollback.
+- **Failure UX:** si el item no entra por geometría, kg, nesting, stack u otra regla productiva, la fuente no cambia y se muestra el motivo existente; no crear una ruta especial que fuerce o clamplee contenido.
+- **Por qué:** convierte la mochila visible en un destino natural de drag-and-drop y reduce pasos repetitivos sin duplicar lógica de inventory.
+- **Validación:** personal→carrier por drop directo, rechazo atómico, stack/quantity correcto, carrier equipado y no equipado cuando el storage sea accesible, y coherencia con la ventana flotante.
+- **Límites:** sin nested containers nuevos, sin auto-packing especial, sin transferencias mágicas fuera del storage accesible y sin segunda autoridad de drag/transfer.
+- **Relación:** Inventory Grid Drag, item-owned storage, `GridStorageTransferService`, IMPL-0066 e `IMPL-0056`.
+- **Prioridad:** registrado como follow-up; no cambia el NEXT EXACT STEP actual ni abre trabajo paralelo a IMPL-0066.
+

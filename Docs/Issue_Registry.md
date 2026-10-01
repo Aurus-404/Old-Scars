@@ -56,6 +56,22 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Plan:** medir primero con telemetry en las dos 30v30 invertidas: Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg/Miss/World, junto con distancia, focus, spread y movimiento. Si Head/Arms siguen siendo anecdóticos bajo condiciones dinámicas, investigar en este orden geometría/exposición de hitboxes, distancia/movimiento/context penalties y spread; cambiar tuning sólo con evidencia.
 - **No hacer:** RNG artificial por parte del cuerpo, porcentajes hardcodeados de Head/Arms, volver a apuntar al locomotion center o retunear spread antes de medir.
 
+
+### ISSUE-0028 — Selección en storage flotante no alimenta el inspector principal
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** playtest manual de `IMPL-0066` en `Assets/Scenes/SampleScene.unity`, 2026-10-01.
+- **Síntoma:** al abrir el storage propio de una mochila y seleccionar un item dentro de la ventana flotante, el item queda resaltado en esa grilla pero el panel principal `Selected Personal Item` continúa vacío y no muestra stats/identidad/acciones del item seleccionado.
+- **Impacto:** la selección del owned-storage queda visualmente aislada del inspector/contexto principal; no se observó pérdida de item, masa, ownership ni fallo de transferencia.
+- **Plan:** investigar/reutilizar la selección canónica existente como `owner + InstanceId` (o seam equivalente) para que Player Grid y item-owned storage alimenten el mismo detalle sin crear una segunda autoridad de selección. Corregir en tarea propia; no ampliar IMPL-0066 por inercia.
+- **Evidencia:** capturas del playtest muestran el rifle seleccionado dentro de `Mochila pequeña` mientras el panel principal sigue en `Click an item in the grid.`.
+
+### ISSUE-0029 — Export de Play Session atribuye la sesión al scope IMPL-0042
+- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** log exportado durante el playtest manual de IMPL-0066, 2026-10-01.
+- **Síntoma:** el archivo `OldScars_Play_*.txt` comienza con `# IMPL-0042` aunque la sesión corresponde a IMPL-0066.
+- **Impacto:** no afecta gameplay ni el contenido capturado, pero puede atribuir evidencia futura al scope equivocado y volver ambiguo el historial de QA.
+- **Plan:** revisar el metadata/header de `PlaySessionConsoleLogExporter`; si el scope está hardcodeado, volverlo neutral o derivarlo de una fuente explícita sin convertir el logger en autoridad de milestone. No corregir dentro de IMPL-0066 salvo que bloquee evidencia.
+
 ---
 
 ## Issues resueltos / historial

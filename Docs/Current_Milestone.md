@@ -70,6 +70,8 @@ ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el
 
 **FOLLOW-UP DE ACEPTACIÓN MANUAL — IMPL-0066 PLANNED / AUTHORIZED NEXT.** El playtest manual de Mauro confirmó la consecuencia locomotora base de IMPL-0020 y detectó una carencia de producto en mochilas: hoy el contenido conserva la misma carga efectiva dentro/fuera de la mochila. IMPL-0066 agregará, sin reabrir el hard limit del actor, tres propiedades independientes para contenedores equipables: grid espacial, peso máximo de contenido y reducción ergonómica data-driven de la carga efectiva mientras estén correctamente equipados.
 
+**PLAYTEST PARCIAL IMPL-0066 — 2026-10-01.** La implementación local no publicada mostró conservación de masa física y reducción de carga efectiva correcta en el caso mochila pequeña + rifle (`6.30 kg physical → 5.34 kg effective` con multiplier `0.80`). La aceptación sigue PENDING: faltan límite estructural/reingreso, save-load y tuning comparativo. Los hallazgos `ISSUE-0028` (selección en floating owned-storage) y `ISSUE-0029` (scope incorrecto en export de Play log) quedan registrados fuera del scope; las mejoras aprobadas `IMPL-0067` y `IMPL-0068` también quedan en backlog y NO alteran el orden operativo actual.
+
 **NEXT EXACT STEP: IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables.** Cerrar el follow-up de mochilas derivado del playtest antes de abrir otro scope.
 
 **NEXT AFTER IMPL-0066: IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable.** Conserva prioridad alta y su primera slice sigue siendo audit/integration gate + stable terrain chunk identity. IMPL-0021 permanece detrás de IMPL-0063.
