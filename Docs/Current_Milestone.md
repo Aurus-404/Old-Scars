@@ -172,7 +172,7 @@ No iniciar ahora:
 - cover/squad/hearing/schedules;
 - weak-point scoring/head targeting;
 - full ballistics/drop/wind;
-- Strength/stats o backpack carry modifiers;
+- Strength/stats o modifiers que aumenten globalmente la Carry Capacity del actor; la ergonomía específica de contenedores está separada y registrada en `IMPL-0066`;
 - Limb HP paralelo;
 - blood tracking AI/footprints/puddles;
 - weapon viability/fallback sin tarea propia.
