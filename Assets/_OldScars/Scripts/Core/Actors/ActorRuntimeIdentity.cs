@@ -347,6 +347,7 @@ namespace OldScars.Core.Actors
 
                 root.AddComponent<InventoryComponent>();
                 root.AddComponent<ActorItemOwnershipComponent>();
+                root.AddComponent<ActorCarryWeightComponent>();
                 ActorEquipmentComponent equipment = root.AddComponent<ActorEquipmentComponent>();
                 EntityEquipmentVisualSynchronizer equipmentVisuals =
                     root.GetComponent<EntityEquipmentVisualSynchronizer>();

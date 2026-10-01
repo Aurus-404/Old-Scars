@@ -26,7 +26,6 @@ namespace OldScars.Core.Items
             ExactTransferWouldMerge,
             IncompatibleStack,
             StackFull,
-            CarryWeightLimitExceeded,
             StalePlan,
             CommitFailed,
             OwnedStorageNotEmpty
@@ -39,8 +38,7 @@ namespace OldScars.Core.Items
         public int AffectedQuantity { get; }
         public int ActualTransferredQuantity => AffectedQuantity;
         public int SourceRemainingQuantity { get; }
-        public bool WasLimitedByWeight { get; }
-        public int WeightLimitQuantity { get; }
+
         public string SourceInstanceId { get; }
         public string DestinationInstanceId { get; }
         public int MergedQuantity { get; }
@@ -67,9 +65,7 @@ namespace OldScars.Core.Items
             GridPlacement[] updatedPlacements,
             string[] removedPlacementInstanceIds,
             bool usedFallbackFootprint,
-            int sourceRemainingQuantity = -1,
-            bool wasLimitedByWeight = false,
-            int weightLimitQuantity = -1)
+            int sourceRemainingQuantity = -1)
         {
             Status = status;
             Failure = failure;
@@ -86,8 +82,7 @@ namespace OldScars.Core.Items
             RemovedPlacementInstanceIds = removedPlacementInstanceIds ?? Array.Empty<string>();
             UsedFallbackFootprint = usedFallbackFootprint;
             SourceRemainingQuantity = sourceRemainingQuantity;
-            WasLimitedByWeight = wasLimitedByWeight;
-            WeightLimitQuantity = weightLimitQuantity;
+
         }
 
         internal static InventoryMutationResult Succeeded(
@@ -181,9 +176,7 @@ namespace OldScars.Core.Items
 
         internal InventoryMutationResult WithTransferMetadata(
             int requestedQuantity,
-            int sourceRemainingQuantity,
-            bool wasLimitedByWeight,
-            int weightLimitQuantity)
+            int sourceRemainingQuantity)
         {
             return new InventoryMutationResult(
                 Status,
@@ -200,9 +193,7 @@ namespace OldScars.Core.Items
                 UpdatedPlacements,
                 RemovedPlacementInstanceIds,
                 UsedFallbackFootprint,
-                sourceRemainingQuantity,
-                wasLimitedByWeight,
-                weightLimitQuantity);
+                sourceRemainingQuantity);
         }
     }
 }

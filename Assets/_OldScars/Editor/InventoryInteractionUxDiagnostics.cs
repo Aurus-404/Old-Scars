@@ -70,9 +70,9 @@ namespace OldScars.EditorTools
 
                 ItemInstance quickTransfer = source.AddItemByDefinitionId("core:water_bottle_01", 3);
                 InventoryMutationResult firstUnit = GridStorageTransferService.TransferQuantityAuto(
-                    source, player, quickTransfer.InstanceId, 1, true, GridStorageTransferQuantityPolicy.Exact, default);
+                    source, player, quickTransfer.InstanceId, 1, true, default);
                 InventoryMutationResult secondUnit = GridStorageTransferService.TransferQuantityAuto(
-                    source, player, quickTransfer.InstanceId, 1, true, GridStorageTransferQuantityPolicy.Exact, default);
+                    source, player, quickTransfer.InstanceId, 1, true, default);
                 Require(firstUnit.Success && secondUnit.Success, "two exact one-unit transfers succeed", errors);
                 Require(GetQuantity(source, quickTransfer.InstanceId) == 1, "one-unit transfers preserve source remainder", errors);
                 Require(GetTotalQuantity(player) == 2, "one-unit transfers merge at destination", errors);
@@ -80,7 +80,7 @@ namespace OldScars.EditorTools
                 ItemInstance shiftTransfer = source.AddItemByDefinitionId("core:water_bottle_01", 3);
                 InventoryMutationResult stackTransfer = GridStorageTransferService.TransferStackAuto(
                     source, player, shiftTransfer.InstanceId,
-                    GridStorageTransferService.GetAutomaticQuantityPolicy(source, player), default);
+                    default);
                 Require(stackTransfer.Success && !source.TryGetEntryByInstanceId(shiftTransfer.InstanceId, out _, out _),
                     "stack quick transfer remains available", errors);
             }

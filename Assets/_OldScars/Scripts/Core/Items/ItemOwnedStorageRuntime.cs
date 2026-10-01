@@ -9,7 +9,7 @@ namespace OldScars.Core.Items
     /// One spatial storage owned by one runtime ItemInstance.
     /// </summary>
     public sealed class ItemOwnedStorageRuntime : IGridStorageOwner, IGridStorageTransferEndpoint,
-        IGridStorageIncomingGuard, ICarryWeightLimitedOwner
+        IGridStorageIncomingGuard
     {
         public const string NestedStorageRejectionMessage = "No podés guardar un contenedor dentro de otro contenedor.";
 
@@ -53,7 +53,6 @@ namespace OldScars.Core.Items
         public string GridInitializationError => gridRuntime.InitializationError;
         public int ContentVersion => gridRuntime.Backend.StorageVersion;
         public int LayoutVersion => gridRuntime.Backend.LayoutVersion;
-        public bool HasCarryWeightLimit => ResolveCarryWeightOwner() != null;
 
         GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => gridRuntime.Backend;
 
@@ -103,42 +102,6 @@ namespace OldScars.Core.Items
         public bool IsInstanceEquipped(string instanceId)
         {
             return false;
-        }
-
-        public CarryWeightSnapshot GetCarryWeightSnapshot()
-        {
-            ICarryWeightLimitedOwner owner = ResolveCarryWeightOwner();
-            return owner != null
-                ? owner.GetCarryWeightSnapshot()
-                : CarryWeightSnapshot.Invalid("The item-owned storage has no carry-limited actor root owner.");
-        }
-
-        public CarryWeightAcceptance EvaluateIncomingWeight(string definitionId, int quantity)
-        {
-            ICarryWeightLimitedOwner owner = ResolveCarryWeightOwner();
-            return owner != null ? owner.EvaluateIncomingWeight(definitionId, quantity) : CarryWeightAcceptance.Unlimited();
-        }
-
-        public CarryWeightQuantityLimit EvaluateIncomingQuantityLimit(string definitionId, int requestedQuantity)
-        {
-            ICarryWeightLimitedOwner owner = ResolveCarryWeightOwner();
-            return owner != null
-                ? owner.EvaluateIncomingQuantityLimit(definitionId, requestedQuantity)
-                : new CarryWeightQuantityLimit(true, requestedQuantity, requestedQuantity, 0d, 0d, double.PositiveInfinity, null);
-        }
-
-        public CarryWeightAcceptance EvaluateIncomingEntry(ItemStorageEntry entry, int quantity)
-        {
-            ICarryWeightLimitedOwner owner = ResolveCarryWeightOwner();
-            return owner != null ? owner.EvaluateIncomingEntry(entry, quantity) : CarryWeightAcceptance.Unlimited();
-        }
-
-        public CarryWeightQuantityLimit EvaluateIncomingEntryQuantityLimit(ItemStorageEntry entry, int requestedQuantity)
-        {
-            ICarryWeightLimitedOwner owner = ResolveCarryWeightOwner();
-            return owner != null
-                ? owner.EvaluateIncomingEntryQuantityLimit(entry, requestedQuantity)
-                : new CarryWeightQuantityLimit(true, requestedQuantity, requestedQuantity, 0d, 0d, double.PositiveInfinity, null);
         }
 
         bool IGridStorageIncomingGuard.CanAcceptIncoming(ItemStorageEntry entry, int quantity, out string reason)
@@ -192,13 +155,6 @@ namespace OldScars.Core.Items
             }
 
             return total;
-        }
-
-        private ICarryWeightLimitedOwner ResolveCarryWeightOwner()
-        {
-            return ItemOwnedStorageRegistry.Instance.TryResolveRootOwner(ContainerInstanceId, out object rootOwner, out _)
-                ? rootOwner as ICarryWeightLimitedOwner
-                : null;
         }
 
         private static ItemDefinition ResolveDefinition(string definitionId)

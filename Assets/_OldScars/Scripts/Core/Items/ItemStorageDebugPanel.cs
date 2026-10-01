@@ -918,7 +918,6 @@ namespace OldScars.Core.Items
                 request.SourceOwner,
                 occupant.Item.OwnedStorage,
                 request.SourceInstanceId,
-                GridStorageTransferQuantityPolicy.Exact,
                 new GridStorageTransferContext(executionContext, action));
             if (!transfer.Success)
                 return new InventoryEquipmentDropResult(false, transfer.Message ?? "No se pudo guardar el objeto.");
@@ -1558,14 +1557,14 @@ namespace OldScars.Core.Items
             CarryWeightSnapshot snapshot = targetInventory.GetCarryWeightSnapshot();
             if (snapshot.IsValid)
             {
-                GUILayout.Label($"Carry: {snapshot.CurrentWeightKg:0.00} / {snapshot.SoftCapacityKg:0.00} kg");
-                GUILayout.Label($"Hard limit: {snapshot.HardLimitKg:0.00} kg");
-                GUILayout.Label($"Encumbrance: {snapshot.EncumbranceRatio * 100d:0}% — {snapshot.State}");
+                GUILayout.Label($"Carry: {snapshot.CurrentWeightKg:0.00} / {snapshot.CarryCapacityKg:0.00} kg");
+                GUILayout.Label($"Movement factor: {snapshot.LocomotionFactor:0.00}");
+                GUILayout.Label($"Encumbrance: {snapshot.LoadRatio * 100d:0}% — {snapshot.State}");
                 return;
             }
 
             GUILayout.Label("Carry: unavailable");
-            GUILayout.Label("Hard limit: --");
+            GUILayout.Label("Movement factor: --");
             GUILayout.Label("Encumbrance: -- — Invalid");
         }
 
@@ -1889,13 +1888,6 @@ namespace OldScars.Core.Items
             sessionController?.CloseContextMenu();
             IGridStorageOwner externalOwner = GetActiveExternalOwner();
             string sourceInstanceId = result.SourceInstanceId;
-            if (result.WasLimitedByWeight && result.SourceRemainingQuantity > 0 && tookToPersonal &&
-                externalOwner != null && externalOwner.TryGetEntryByInstanceId(sourceInstanceId, out _, out _))
-            {
-                externalGridView.SelectInstance(sourceInstanceId);
-                sessionController?.Selection.SelectExternalFromContext(sourceInstanceId);
-                return;
-            }
 
             string destinationInstanceId = result.DestinationInstanceId;
             if (tookToPersonal && !string.IsNullOrWhiteSpace(destinationInstanceId) &&
@@ -1975,19 +1967,15 @@ namespace OldScars.Core.Items
 
         private InventoryMutationResult TransferStack(IGridStorageOwner source, IGridStorageOwner target, string instanceId)
         {
-            GridStorageTransferQuantityPolicy quantityPolicy =
-                GridStorageTransferService.GetAutomaticQuantityPolicy(source, target);
+
             InventoryMutationResult result = GridStorageTransferService.TransferStackAuto(
                 source,
                 target,
                 instanceId,
-                quantityPolicy,
                 new GridStorageTransferContext(executionContext, action));
             toast.Show(
                 result.Success
-                    ? result.WasLimitedByWeight
-                        ? $"Tomaste {result.ActualTransferredQuantity} de {result.RequestedQuantity}. Límite de peso alcanzado."
-                        : $"Transferred stack x{result.AffectedQuantity}."
+                    ? $"Transferred stack x{result.AffectedQuantity}."
                     : result.Message ?? "No se pudo transferir el stack.",
                 result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
             ReconcileSelections();

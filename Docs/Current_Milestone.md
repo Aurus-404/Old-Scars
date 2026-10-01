@@ -66,9 +66,11 @@ P9 legacy audit found no current authored visual-rig consumer requiring a legacy
 
 ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el 2026-09-15; commit funcional `481183ddfac82f9ff9e547da6c72a1af13ecc088`, gates `TEST-20260915-001` a `TEST-20260915-004`. M41 permanece cerrado.
 
-**NEXT EXACT STEP: IMPL-0020 — Carry Weight / Encumbrance.** Sigue PLANNED; no iniciado por este cierre.
+**IMPL-0020 — Carry Weight / Encumbrance compartido: DONE / ACCEPTED / PUBLISHED — 2026-10-01.** Carry deriva masa/capacidad/estado/factor; no limita storage. Player/NPC comparten ralentización y pausa reversible; Search conserva presupuesto durante overload; restore conserva todos los items. Gates `TEST-20261001-002/004/005/006/008/009/010`; manual/visual N/A. Los cambios locales previos de IMPL-0061 siguen fuera de este cierre.
 
-**NEXT AUTHORIZED AFTER CLOSURE: IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable.** Prioridad alta; no puede iniciarse hasta cerrar y publicar completamente IMPL-0020.
+**NEXT EXACT STEP: IMPL-0063 — Procedural Worldgen + Deformable Volumetric Terrain Productization.** Abrir sólo su primera slice acotada de audit/integration gate + stable terrain chunk identity; no implementado por IMPL-0020.
+
+**NEXT AUTHORIZED: IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable.** Prioridad alta; IMPL-0020 cerrado. IMPL-0021 permanece detrás de IMPL-0063.
 
 ## Orden operativo aprobado para cerrar M41 (histórico)
 
@@ -104,8 +106,8 @@ La secuencia sistémica aprobada es:
 `IMPL-0016` Equipment visuals humanoides fue adelantado por necesidad de validación visual y quedó `DONE / ACCEPTED` sin alterar Equipment ni combat.
 
 1. `ISSUE-0022` loaded ammo mass: DONE / RESOLVED / PUBLISHED; conservación corregida antes de Encumbrance.
-2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC — único scope implementable actual.
-3. `IMPL-0063` Integración productiva Worldgen procedural + terreno volumétrico deformable — `HIGH PRIORITY / AUTHORIZED NEXT`, activable sólo tras el cierre total de IMPL-0020 y ejecutada en slices acotadas.
+2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC — DONE / ACCEPTED / PUBLISHED.
+3. `IMPL-0063` Integración productiva Worldgen procedural + terreno volumétrico deformable — `HIGH PRIORITY / AUTHORIZED NEXT`, NEXT EXACT STEP tras el cierre de IMPL-0020; ejecutar en slices acotadas.
 4. `IMPL-0021` Localized Limb Impairment vuelve a cola posterior, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
 
 No introducir Encumbrance en comparaciones futuras de accuracy, porque velocidad NPC participa en sus condiciones. F8A/F8C ya cerraron ISSUE-0008 sin retuning.
@@ -120,8 +122,8 @@ Aplicacion al estado actual:
 
 - M41, Invisible to AI, Player Debug Invincible e ISSUE-0022 Loaded Ammo Mass Conservation permanecen cerrados; no forman una lista abierta.
 - Antes de abrir trabajo nuevo, deben reconciliarse/cerrarse las validaciones pendientes que realmente sigan vigentes en el checkout canonico.
-- Despues, el unico scope implementable es `IMPL-0020 — Carry Weight / Encumbrance`.
-- `IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable` queda autorizado como siguiente prioridad, pero permanece inactivo hasta que IMPL-0020 complete implementacion, validacion, documentation closeout, review, commit, push, verificacion de sincronizacion y nuevo `NEXT EXACT STEP`.
+- IMPL-0020 completó su scope propio; la siguiente tarea es la primera slice acotada de IMPL-0063, sin aceptar ni publicar cambios locales ajenos.
+- `IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable` es NEXT EXACT STEP después del cierre/publicación IMPL-0020; este cierre no implementa IMPL-0063.
 - `IMPL-0021` y cualquier otra idea permanecen detrás de IMPL-0063 salvo una re-priorización explícita posterior.
 
 ## Carry Weight — contrato de producto ya fijado

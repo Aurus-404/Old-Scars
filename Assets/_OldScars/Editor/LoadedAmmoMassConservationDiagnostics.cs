@@ -39,6 +39,8 @@ namespace OldScars.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)
                 throw new InvalidOperationException("Loaded ammo mass diagnostics require idle Edit Mode.");
 
+            Require(M36ItemIdentityDiagnostics.RunAndLog().Passed,
+                "Existing identity/committed-ownership/rollback regression failed.");
             ValidateDataContractFixtures();
             ClearSession();
             string root = Path.Combine(Path.GetTempPath(), "OldScars_Issue0022_" + Guid.NewGuid().ToString("N"));
@@ -94,6 +96,10 @@ namespace OldScars.Editor
             DebugActionProgressController progress = UnityEngine.Object.FindAnyObjectByType<DebugActionProgressController>();
             Require(ownership != null && inventory != null && equipment != null && carry != null && progress != null,
                 "Player fixture lacks ownership, inventory, equipment, carry-weight or action-progress authority.");
+
+            float initialCapacity = carry.BaseCarryCapacityKg;
+            typeof(ActorCarryWeightComponent).GetField("baseCarryCapacityKg",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(carry, 1f);
 
             CurrentSliceSaveData initial = Capture("initial");
             Write(InitialSlot, initial);
@@ -163,11 +169,11 @@ namespace OldScars.Editor
                 "Could not create item-owned backpack storage.");
             double beforeBackpackMove = Weight(carry);
             InventoryMutationResult intoBackpack = GridStorageTransferService.TransferStackAuto(
-                inventory, backpackStorage, rifle.InstanceId, GridStorageTransferQuantityPolicy.Exact, default);
+                inventory, backpackStorage, rifle.InstanceId, default);
             Require(intoBackpack.Success && Nearly(Weight(carry), beforeBackpackMove),
                 "Moving loaded firearm into owned backpack changed carried mass: " + intoBackpack.Message);
             InventoryMutationResult outOfBackpack = GridStorageTransferService.TransferStackAuto(
-                backpackStorage, inventory, rifle.InstanceId, GridStorageTransferQuantityPolicy.Exact, default);
+                backpackStorage, inventory, rifle.InstanceId, default);
             Require(outOfBackpack.Success && Nearly(Weight(carry), beforeBackpackMove),
                 "Moving loaded firearm out of owned backpack changed carried mass: " + outOfBackpack.Message);
             EquipRifle(equipment, inventory, rifle.InstanceId);
@@ -213,6 +219,10 @@ namespace OldScars.Editor
             Require(pickupResult.hasResult && Nearly(Weight(carry), beforeDrop),
                 "Picking up loaded rifle did not restore its full internal mass: " + pickupResult.body);
 
+            Require(carry.State == CarryWeightState.Overloaded,
+                "Mass regression did not actually exercise an overloaded actor.");
+            typeof(ActorCarryWeightComponent).GetField("baseCarryCapacityKg",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(carry, initialCapacity);
             CurrentSliceLoadResult cleanup = CurrentSliceLoadService.Load(InitialSlot, Store());
             Require(cleanup.Success, "Initial-state cleanup failed: " + cleanup.Failure);
             CurrentSliceComparisonResult comparison = CurrentSliceSnapshotService.Compare(initial, Capture("cleanup"));

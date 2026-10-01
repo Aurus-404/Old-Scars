@@ -20,6 +20,7 @@ namespace OldScars.Core.Interactions
         private CharacterController characterController;
         private ActorStaminaComponent stamina;
         private ActorConditionComponent condition;
+        private ActorCarryWeightComponent carryWeight;
         private Vector3 requestedMovementDirection;
         private float verticalVelocity;
         private bool sprintRequested;
@@ -31,12 +32,14 @@ namespace OldScars.Core.Interactions
         public float DebugMovementMultiplier => debugMovementMultiplier;
         public float EffectiveMovementSpeed => Mathf.Max(0f, moveSpeed) *
                                                (IsSprinting ? Mathf.Max(1f, sprintMultiplier) : 1f) *
-                                               debugMovementMultiplier;
+                                               debugMovementMultiplier * CarryLocomotionFactor;
+        public float CarryLocomotionFactor => carryWeight != null ? carryWeight.LocomotionFactor : 1f;
 
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
             stamina = GetComponent<ActorStaminaComponent>();
+            carryWeight = GetComponent<ActorCarryWeightComponent>();
             condition = GetComponent<ActorConditionComponent>();
             debugMovementMultiplier = 1f;
         }
@@ -135,7 +138,7 @@ namespace OldScars.Core.Interactions
 
             ApplyGravity();
             IsSprinting = sprintRequested && requestedMovementDirection.sqrMagnitude > 0f &&
-                          stamina != null && stamina.CanSprint;
+                          CarryLocomotionFactor > 0f && stamina != null && stamina.CanSprint;
             Vector3 positionBeforeMove = transform.position;
             Vector3 displacement = requestedMovementDirection * EffectiveMovementSpeed * Time.deltaTime;
             displacement.y = verticalVelocity * Time.deltaTime;

@@ -65,12 +65,17 @@ namespace OldScars.Core.Actors
         private ActorRuntimeIdentity identity;
         private ActorConditionComponent condition;
         private bool configured;
+        private ActorCarryWeightComponent carryWeight;
+        private float configuredSpeed;
         private Vector3 requestedDestination;
         private Vector3 resolvedDestination;
 
         public ActorNavigationState State { get; private set; } = ActorNavigationState.Idle;
         public ActorNavigationFailure Failure { get; private set; } = ActorNavigationFailure.None;
         public bool IsConfigured => configured;
+        public float ConfiguredSpeed => configuredSpeed;
+        public bool IsCarryTranslationBlocked => carryWeight != null &&
+            carryWeight.GetSnapshot().State == OldScars.Core.Items.CarryWeightState.Overloaded;
         public bool HasDestination { get; private set; }
         public Vector3 Destination => resolvedDestination;
         public NavMeshAgent Agent => agent != null ? agent : GetComponent<NavMeshAgent>();
@@ -112,6 +117,7 @@ namespace OldScars.Core.Actors
                 Fail(ActorNavigationFailure.NotOnNavMesh, "Actor is no longer on a NavMesh.");
                 return;
             }
+            ApplyCarryLocomotion();
             if (agent.pathPending)
                 return;
             if (agent.pathStatus != NavMeshPathStatus.PathComplete)
@@ -122,6 +128,8 @@ namespace OldScars.Core.Actors
 
             float tolerance = Mathf.Max(agent.stoppingDistance, MinimumArrivalTolerance) + MinimumArrivalTolerance;
             if (float.IsInfinity(agent.remainingDistance) || agent.remainingDistance > tolerance)
+                return;
+            if (IsCarryTranslationBlocked)
                 return;
             if (agent.velocity.sqrMagnitude > 0.01f)
                 return;
@@ -149,6 +157,7 @@ namespace OldScars.Core.Actors
                 return false;
             }
 
+            configuredSpeed = speed;
             agent.speed = speed;
             agent.acceleration = acceleration;
             agent.angularSpeed = angularSpeed;
@@ -193,10 +202,10 @@ namespace OldScars.Core.Actors
             if (!agent.SetPath(path))
                 return Reject(ActorNavigationFailure.AgentRejected, "NavMeshAgent rejected the complete path.", out result);
 
-            agent.isStopped = false;
             HasDestination = true;
             State = ActorNavigationState.Moving;
             Failure = ActorNavigationFailure.None;
+            ApplyCarryLocomotion();
             result = Result("Navigation order accepted.");
             LogTransition("MOVING", $"Requested: {Format(destination)}\n  Resolved: {Format(resolvedDestination)}");
             return true;
@@ -251,6 +260,18 @@ namespace OldScars.Core.Actors
                 identity = GetComponent<ActorRuntimeIdentity>();
             if (condition == null)
                 condition = GetComponent<ActorConditionComponent>();
+            if (carryWeight == null)
+                carryWeight = GetComponent<ActorCarryWeightComponent>();
+        }
+
+        private void ApplyCarryLocomotion()
+        {
+            // isStopped retains the complete path; unloading resumes that same order.
+            float factor = carryWeight != null ? carryWeight.LocomotionFactor : 1f;
+            agent.speed = configuredSpeed * factor;
+            agent.isStopped = factor <= 0f;
+            if (factor <= 0f)
+                agent.velocity = Vector3.zero;
         }
 
         private void ResetAgentPath()

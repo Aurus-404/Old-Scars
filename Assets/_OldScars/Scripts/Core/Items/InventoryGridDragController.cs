@@ -303,9 +303,7 @@ namespace OldScars.Core.Items
             }
 
             bool transferOne = requestedQuantity == 1;
-            GridStorageTransferQuantityPolicy quantityPolicy = transferOne
-                ? GridStorageTransferQuantityPolicy.Exact
-                : GridStorageTransferService.GetAutomaticQuantityPolicy(source.Owner, target.Owner);
+
             InventoryMutationResult result = transferOne
                 ? GridStorageTransferService.TransferQuantityAuto(
                     source.Owner,
@@ -313,34 +311,20 @@ namespace OldScars.Core.Items
                     instanceId,
                     1,
                     true,
-                    quantityPolicy,
                     transferContext)
                 : GridStorageTransferService.TransferStackAuto(
                     source.Owner,
                     target.Owner,
                     instanceId,
-                    quantityPolicy,
                     transferContext);
             SetStatus(
                 result.Success && transferOne
                     ? "Transferred 1 unit."
                     : result.Success
-                    ? result.WasLimitedByWeight
-                        ? $"Transferidas {result.ActualTransferredQuantity} de {result.RequestedQuantity} unidades por límite de peso."
-                        : $"Transferred stack x{result.AffectedQuantity}."
+                    ? $"Transferred stack x{result.AffectedQuantity}."
                     : result.Message ?? "No se pudo transferir el stack.",
                 result.Success ? InventoryToastSeverity.Success : InventoryToastSeverity.Error);
-            if (result.Success && result.WasLimitedByWeight && result.SourceRemainingQuantity > 0)
-            {
-                source.View.ReconcileSelection(source.Owner);
-                target.View.ReconcileSelection(target.Owner);
-                source.View.SelectInstance(result.SourceInstanceId);
-                ActiveOwner = source.Owner;
-            }
-            else
-            {
-                ReconcileAfterTransfer(source, target, result);
-            }
+            ReconcileAfterTransfer(source, target, result);
         }
 
         private void UpdateCandidate(Vector2 mousePosition)

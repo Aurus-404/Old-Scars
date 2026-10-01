@@ -47,8 +47,6 @@ namespace OldScars.Core.Items
                 return InvalidPreview(equipment, source, failure, error, instanceId);
             if (entry.Quantity != 1)
                 return InvalidPreview(equipment, source, EquipmentFailureCode.InvalidQuantity, "Equipped items must have quantity 1.", instanceId);
-            if (!CanAcceptIncomingWeight(equipment.PersonalInventory, entry, out string weightError))
-                return InvalidPreview(equipment, source, EquipmentFailureCode.StorageMutationFailed, weightError, instanceId);
 
             ItemDefinition definition = EquipmentOwnedStorageTransactionService.ResolveDefinition(entry.DefinitionId);
             if (!EquipmentOwnedStorageTransactionService.IsEquipEnabled(definition))
@@ -178,8 +176,6 @@ namespace OldScars.Core.Items
                 return InvalidReplacement(equipment, source, failure, error, instanceId, requestedSlots);
             if (entry.Quantity != 1)
                 return InvalidReplacement(equipment, source, EquipmentFailureCode.InvalidQuantity, "Equipped items must have quantity 1.", instanceId, requestedSlots);
-            if (!CanAcceptIncomingWeight(equipment.PersonalInventory, entry, out string weightError))
-                return InvalidReplacement(equipment, source, EquipmentFailureCode.StorageMutationFailed, weightError, instanceId, requestedSlots);
 
             ItemDefinition definition = EquipmentOwnedStorageTransactionService.ResolveDefinition(entry.DefinitionId);
             string[] requested = EquipmentOwnedStorageTransactionService.Copy(requestedSlots);
@@ -424,24 +420,6 @@ namespace OldScars.Core.Items
 
             if (!equipment.Ownership.ValidateUniqueOwnership(out string ownershipError))
                 throw new InvalidOperationException(ownershipError ?? "FallÃ³ la validaciÃ³n de ownership.");
-        }
-
-        private static bool CanAcceptIncomingWeight(
-            InventoryComponent personal,
-            ItemStorageEntry entry,
-            out string error)
-        {
-            error = null;
-            if (personal == null || !personal.HasCarryWeightLimit)
-                return true;
-
-            CarryWeightAcceptance acceptance = personal.EvaluateIncomingEntry(entry, entry != null ? entry.Quantity : 0);
-            if (acceptance.Accepted)
-                return true;
-
-            error = acceptance.FailureReason ??
-                    $"No podÃ©s cargar ese objeto por el lÃ­mite de peso ({acceptance.ProjectedWeightKg:0.00} / {acceptance.HardLimitKg:0.00} kg).";
-            return false;
         }
 
         private static EquipmentPreview InvalidPreview(

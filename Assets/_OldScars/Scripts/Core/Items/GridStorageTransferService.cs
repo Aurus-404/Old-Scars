@@ -5,11 +5,6 @@ using UnityEngine;
 
 namespace OldScars.Core.Items
 {
-    public enum GridStorageTransferQuantityPolicy
-    {
-        Exact,
-        ClampIncomingToActorHardLimit
-    }
 
     internal interface IGridStorageTransferEndpoint
     {
@@ -46,8 +41,7 @@ namespace OldScars.Core.Items
         public int RequestedQuantity => Result != null ? Result.RequestedQuantity : 0;
         public int ActualTransferredQuantity => Result != null ? Result.ActualTransferredQuantity : 0;
         public int SourceRemainingQuantity => Result != null ? Result.SourceRemainingQuantity : -1;
-        public bool WasLimitedByWeight => Result != null && Result.WasLimitedByWeight;
-        public int WeightLimitQuantity => Result != null ? Result.WeightLimitQuantity : -1;
+
         public string SourceInstanceId => Result != null ? Result.SourceInstanceId : null;
         public string DestinationInstanceId => Result != null ? Result.DestinationInstanceId : null;
         public bool SourceWasRemoved
@@ -78,9 +72,7 @@ namespace OldScars.Core.Items
             string sourceInstanceId,
             int requestedQuantity,
             int sourceQuantity,
-            int effectiveQuantity,
-            int weightLimitQuantity,
-            bool wasLimitedByWeight)
+            int effectiveQuantity)
         {
             IsValid = isValid;
             Failure = failure;
@@ -90,8 +82,7 @@ namespace OldScars.Core.Items
             RequestedQuantity = requestedQuantity;
             SourceQuantity = sourceQuantity;
             EffectiveQuantity = effectiveQuantity;
-            WeightLimitQuantity = weightLimitQuantity;
-            WasLimitedByWeight = wasLimitedByWeight;
+
         }
 
         public bool IsValid { get; }
@@ -102,17 +93,13 @@ namespace OldScars.Core.Items
         public int RequestedQuantity { get; }
         public int SourceQuantity { get; }
         public int EffectiveQuantity { get; }
-        public int WeightLimitQuantity { get; }
-        public bool WasLimitedByWeight { get; }
 
         internal static GridStorageAutoTransferPreview Valid(
             string definitionId,
             string sourceInstanceId,
             int requestedQuantity,
             int sourceQuantity,
-            int effectiveQuantity,
-            int weightLimitQuantity,
-            bool wasLimitedByWeight)
+            int effectiveQuantity)
         {
             return new GridStorageAutoTransferPreview(
                 true,
@@ -122,9 +109,7 @@ namespace OldScars.Core.Items
                 sourceInstanceId,
                 requestedQuantity,
                 sourceQuantity,
-                effectiveQuantity,
-                weightLimitQuantity,
-                wasLimitedByWeight);
+                effectiveQuantity);
         }
 
         internal static GridStorageAutoTransferPreview Invalid(
@@ -133,9 +118,7 @@ namespace OldScars.Core.Items
             string definitionId,
             string sourceInstanceId,
             int requestedQuantity,
-            int sourceQuantity,
-            int weightLimitQuantity,
-            bool wasLimitedByWeight)
+            int sourceQuantity)
         {
             return new GridStorageAutoTransferPreview(
                 false,
@@ -145,9 +128,7 @@ namespace OldScars.Core.Items
                 sourceInstanceId,
                 requestedQuantity,
                 sourceQuantity,
-                0,
-                weightLimitQuantity,
-                wasLimitedByWeight);
+                0);
         }
     }
 
@@ -220,17 +201,6 @@ namespace OldScars.Core.Items
 
     public static class GridStorageTransferService
     {
-        public static GridStorageTransferQuantityPolicy GetAutomaticQuantityPolicy(
-            IGridStorageOwner source,
-            IGridStorageOwner target)
-        {
-            if (source == null || target == null || ItemOwnedStorageRegistry.Instance.ShareRootOwner(source, target))
-                return GridStorageTransferQuantityPolicy.Exact;
-
-            return TryResolveCarryWeightOwner(target, out ICarryWeightLimitedOwner limitedOwner) && limitedOwner.HasCarryWeightLimit
-                ? GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit
-                : GridStorageTransferQuantityPolicy.Exact;
-        }
 
         public static GridStorageMergePreview PreviewMergeIntoTarget(
             IGridStorageOwner source,
@@ -285,21 +255,6 @@ namespace OldScars.Core.Items
                 destinationInstanceId);
             if (!preview.IsValid)
                 return preview;
-
-            string definitionId = sourceEntry.DefinitionId;
-            if (TryRejectIncomingWeight(
-                    source,
-                    destination,
-                    sourceEntry,
-                    preview.TransferQuantity,
-                    out CarryWeightAcceptance acceptance))
-            {
-                return GridStorageMergePreview.Invalid(
-                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                    GetCarryWeightRejectionMessage(acceptance),
-                    sourceInstanceId,
-                    destinationInstanceId);
-            }
 
             return preview;
         }
@@ -365,19 +320,6 @@ namespace OldScars.Core.Items
             }
 
             string definitionId = sourceEntry.DefinitionId;
-            if (TryRejectIncomingWeight(
-                    source,
-                    destination,
-                    sourceEntry,
-                    currentPreview.TransferQuantity,
-                    out CarryWeightAcceptance acceptance))
-            {
-                return InventoryMutationResult.Rejected(
-                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                    GetCarryWeightRejectionMessage(acceptance),
-                    currentPreview.TransferQuantity,
-                    sourceInstanceId);
-            }
 
             GridInventoryBackend.BackendStateSnapshot sourceSnapshot = sourceEndpoint.TransferBackend.CaptureBackendState();
             GridInventoryBackend.BackendStateSnapshot destinationSnapshot = destinationEndpoint.TransferBackend.CaptureBackendState();
@@ -481,18 +423,6 @@ namespace OldScars.Core.Items
             if (!preview.IsValid)
                 return preview;
 
-            if (TryRejectIncomingWeight(
-                    source,
-                    target,
-                    sourceEntry,
-                    sourceEntry.Quantity,
-                    out CarryWeightAcceptance acceptance))
-            {
-                return GridPlacementValidationResult.Invalid(
-                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                    GetCarryWeightRejectionMessage(acceptance));
-            }
-
             return preview;
         }
 
@@ -550,19 +480,6 @@ namespace OldScars.Core.Items
             }
 
             string definitionId = sourceEntry.DefinitionId;
-            if (TryRejectIncomingWeight(
-                    source,
-                    target,
-                    sourceEntry,
-                    sourceEntry.Quantity,
-                    out CarryWeightAcceptance acceptance))
-            {
-                return InventoryMutationResult.Rejected(
-                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                    GetCarryWeightRejectionMessage(acceptance),
-                    sourceEntry.Quantity,
-                    sourceInstanceId);
-            }
 
             GridInventoryBackend.BackendStateSnapshot sourceSnapshot = sourceEndpoint.TransferBackend.CaptureBackendState();
             GridInventoryBackend.BackendStateSnapshot targetSnapshot = targetEndpoint.TransferBackend.CaptureBackendState();
@@ -633,21 +550,6 @@ namespace OldScars.Core.Items
             string sourceInstanceId,
             GridStorageTransferContext context)
         {
-            return TransferStackAuto(
-                source,
-                target,
-                sourceInstanceId,
-                GridStorageTransferQuantityPolicy.Exact,
-                context);
-        }
-
-        public static InventoryMutationResult TransferStackAuto(
-            IGridStorageOwner source,
-            IGridStorageOwner target,
-            string sourceInstanceId,
-            GridStorageTransferQuantityPolicy quantityPolicy,
-            GridStorageTransferContext context)
-        {
             if (source == null || !source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry entry) ||
                 entry == null || entry.Item == null)
             {
@@ -658,25 +560,7 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
-            return TransferQuantityAuto(source, target, sourceInstanceId, entry.Quantity, true, quantityPolicy, context);
-        }
-
-        public static InventoryMutationResult TransferQuantityAuto(
-            IGridStorageOwner source,
-            IGridStorageOwner target,
-            string sourceInstanceId,
-            int quantity,
-            bool requireExactQuantity,
-            GridStorageTransferContext context)
-        {
-            return TransferQuantityAuto(
-                source,
-                target,
-                sourceInstanceId,
-                quantity,
-                requireExactQuantity,
-                GridStorageTransferQuantityPolicy.Exact,
-                context);
+            return TransferQuantityAuto(source, target, sourceInstanceId, entry.Quantity, true, context);
         }
 
         public static GridStorageAutoTransferPreview PreviewTransferQuantityAuto(
@@ -684,7 +568,6 @@ namespace OldScars.Core.Items
             IGridStorageOwner target,
             string sourceInstanceId,
             int requestedQuantity,
-            GridStorageTransferQuantityPolicy quantityPolicy,
             GridStorageTransferContext context)
         {
             if (requestedQuantity < 1)
@@ -695,23 +578,7 @@ namespace OldScars.Core.Items
                     null,
                     sourceInstanceId,
                     requestedQuantity,
-                    0,
-                    -1,
-                    false);
-            }
-
-            if (quantityPolicy != GridStorageTransferQuantityPolicy.Exact &&
-                quantityPolicy != GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit)
-            {
-                return GridStorageAutoTransferPreview.Invalid(
-                    InventoryMutationResult.MutationFailure.InvalidArguments,
-                    $"Unsupported transfer quantity policy '{quantityPolicy}'.",
-                    null,
-                    sourceInstanceId,
-                    requestedQuantity,
-                    0,
-                    -1,
-                    false);
+                    0);
             }
 
             if (!TryResolveEndpoints(source, target, context,
@@ -725,9 +592,7 @@ namespace OldScars.Core.Items
                     null,
                     sourceInstanceId,
                     requestedQuantity,
-                    0,
-                    -1,
-                    false);
+                    0);
             }
 
             if (!source.TryGetEntryByInstanceId(sourceInstanceId, out _, out ItemStorageEntry sourceEntry) ||
@@ -739,14 +604,12 @@ namespace OldScars.Core.Items
                     null,
                     sourceInstanceId,
                     requestedQuantity,
-                    0,
-                    -1,
-                    false);
+                    0);
             }
 
             string definitionId = sourceEntry.DefinitionId;
             int sourceQuantity = sourceEntry.Quantity;
-            if (quantityPolicy == GridStorageTransferQuantityPolicy.Exact && sourceQuantity < requestedQuantity)
+            if (sourceQuantity < requestedQuantity)
             {
                 return GridStorageAutoTransferPreview.Invalid(
                     InventoryMutationResult.MutationFailure.InsufficientQuantity,
@@ -754,14 +617,11 @@ namespace OldScars.Core.Items
                     definitionId,
                     sourceInstanceId,
                     requestedQuantity,
-                    sourceQuantity,
-                    -1,
-                    false);
+                    sourceQuantity);
             }
 
             int effectiveQuantity = Math.Min(requestedQuantity, sourceQuantity);
-            int weightLimitQuantity = -1;
-            bool wasLimitedByWeight = false;
+
             if (!CanAcceptIncoming(target, sourceEntry, effectiveQuantity, out string guardReason))
             {
                 return GridStorageAutoTransferPreview.Invalid(
@@ -770,65 +630,7 @@ namespace OldScars.Core.Items
                     definitionId,
                     sourceInstanceId,
                     requestedQuantity,
-                    sourceQuantity,
-                    -1,
-                    false);
-            }
-
-            bool sharesRootOwner = ItemOwnedStorageRegistry.Instance.ShareRootOwner(source, target);
-            if (!sharesRootOwner && TryResolveCarryWeightOwner(target, out ICarryWeightLimitedOwner limitedOwner) && limitedOwner.HasCarryWeightLimit)
-            {
-                if (quantityPolicy == GridStorageTransferQuantityPolicy.ClampIncomingToActorHardLimit)
-                {
-                    CarryWeightQuantityLimit limit = limitedOwner.EvaluateIncomingEntryQuantityLimit(
-                        sourceEntry,
-                        effectiveQuantity);
-                    if (!limit.IsValid)
-                    {
-                        return GridStorageAutoTransferPreview.Invalid(
-                            InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                            "No se pudo calcular cuánto peso adicional podés cargar.",
-                            definitionId,
-                            sourceInstanceId,
-                            requestedQuantity,
-                            sourceQuantity,
-                            0,
-                            false);
-                    }
-
-                    weightLimitQuantity = limit.MaximumQuantity;
-                    wasLimitedByWeight = limit.WasLimitedByWeight;
-                    effectiveQuantity = Math.Min(effectiveQuantity, weightLimitQuantity);
-                    if (effectiveQuantity < 1)
-                    {
-                        return GridStorageAutoTransferPreview.Invalid(
-                            InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                            "No podés cargar ninguna unidad más por el límite de peso.",
-                            definitionId,
-                            sourceInstanceId,
-                            requestedQuantity,
-                            sourceQuantity,
-                            weightLimitQuantity,
-                            true);
-                    }
-                }
-                else if (TryRejectIncomingWeight(
-                             source,
-                             target,
-                             sourceEntry,
-                             effectiveQuantity,
-                             out _))
-                {
-                    return GridStorageAutoTransferPreview.Invalid(
-                        InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                        "No podés cargar esa cantidad por el límite de peso.",
-                        definitionId,
-                        sourceInstanceId,
-                        requestedQuantity,
-                        sourceQuantity,
-                        0,
-                        true);
-                }
+                    sourceQuantity);
             }
 
             GridPlacementValidationResult spatialPreview = sourceEndpoint.TransferBackend.PreviewTransferTo(
@@ -843,9 +645,7 @@ namespace OldScars.Core.Items
                     definitionId,
                     sourceInstanceId,
                     requestedQuantity,
-                    sourceQuantity,
-                    weightLimitQuantity,
-                    wasLimitedByWeight);
+                    sourceQuantity);
             }
 
             return GridStorageAutoTransferPreview.Valid(
@@ -853,9 +653,7 @@ namespace OldScars.Core.Items
                 sourceInstanceId,
                 requestedQuantity,
                 sourceQuantity,
-                effectiveQuantity,
-                weightLimitQuantity,
-                wasLimitedByWeight);
+                effectiveQuantity);
         }
 
         public static InventoryMutationResult TransferQuantityAuto(
@@ -864,7 +662,6 @@ namespace OldScars.Core.Items
             string sourceInstanceId,
             int quantity,
             bool requireExactQuantity,
-            GridStorageTransferQuantityPolicy quantityPolicy,
             GridStorageTransferContext context)
         {
             GridStorageAutoTransferPreview preview = PreviewTransferQuantityAuto(
@@ -872,7 +669,6 @@ namespace OldScars.Core.Items
                 target,
                 sourceInstanceId,
                 quantity,
-                quantityPolicy,
                 context);
             if (!preview.IsValid)
             {
@@ -883,9 +679,7 @@ namespace OldScars.Core.Items
                         sourceInstanceId)
                     .WithTransferMetadata(
                         quantity,
-                        preview.SourceQuantity,
-                        preview.WasLimitedByWeight,
-                        preview.WeightLimitQuantity);
+                        preview.SourceQuantity);
             }
 
             if (!TryResolveEndpoints(source, target, context,
@@ -898,7 +692,7 @@ namespace OldScars.Core.Items
                         error,
                         quantity,
                         sourceInstanceId)
-                    .WithTransferMetadata(quantity, preview.SourceQuantity, false, preview.WeightLimitQuantity);
+                    .WithTransferMetadata(quantity, preview.SourceQuantity);
             }
 
             GridInventoryBackend.BackendStateSnapshot sourceSnapshot = sourceEndpoint.TransferBackend.CaptureBackendState();
@@ -920,9 +714,7 @@ namespace OldScars.Core.Items
                         : preview.SourceQuantity;
                     result = result.WithTransferMetadata(
                         quantity,
-                        sourceRemainingQuantity,
-                        preview.WasLimitedByWeight,
-                        preview.WeightLimitQuantity);
+                        sourceRemainingQuantity);
 
                     if (!result.Success)
                         return result;
@@ -938,9 +730,7 @@ namespace OldScars.Core.Items
                                 result.UsedFallbackFootprint)
                             .WithTransferMetadata(
                                 quantity,
-                                preview.SourceQuantity,
-                                preview.WasLimitedByWeight,
-                                preview.WeightLimitQuantity);
+                                preview.SourceQuantity);
                         LogTransferFailure("TransferQuantityAuto", source, target, preview.DefinitionId, sourceInstanceId,
                             rolledBack, result, true, true, true, "Source and target restored after partial backend success.");
                         return rolledBack;
@@ -958,9 +748,7 @@ namespace OldScars.Core.Items
                                 result.UsedFallbackFootprint)
                             .WithTransferMetadata(
                                 quantity,
-                                preview.SourceQuantity,
-                                preview.WasLimitedByWeight,
-                                preview.WeightLimitQuantity);
+                                preview.SourceQuantity);
                         LogTransferFailure("TransferQuantityAuto", source, target, preview.DefinitionId, sourceInstanceId,
                             rolledBack, result, true, true, true, "Source and target restored after ownership reconciliation failure.");
                         return rolledBack;
@@ -990,9 +778,7 @@ namespace OldScars.Core.Items
                             result != null && result.UsedFallbackFootprint)
                         .WithTransferMetadata(
                             quantity,
-                            preview.SourceQuantity,
-                            preview.WasLimitedByWeight,
-                            preview.WeightLimitQuantity);
+                            preview.SourceQuantity);
                     LogTransferFailure("TransferQuantityAuto", source, target, preview.DefinitionId, sourceInstanceId,
                         rolledBack, result, true, true, rollbackSucceeded,
                         rollbackSucceeded ? "Source and target restored." : "Rollback failed; inspect failure details.");
@@ -1034,33 +820,6 @@ namespace OldScars.Core.Items
             return true;
         }
 
-        private static bool TryRejectIncomingWeight(
-            IGridStorageOwner source,
-            IGridStorageOwner destination,
-            ItemStorageEntry entry,
-            int quantity,
-            out CarryWeightAcceptance acceptance)
-        {
-            acceptance = default;
-            if (ItemOwnedStorageRegistry.Instance.ShareRootOwner(source, destination))
-                return false;
-
-            if (!TryResolveCarryWeightOwner(destination, out ICarryWeightLimitedOwner limitedOwner) || !limitedOwner.HasCarryWeightLimit)
-                return false;
-
-            acceptance = limitedOwner.EvaluateIncomingEntry(entry, quantity);
-            return !acceptance.Accepted;
-        }
-
-        private static bool TryResolveCarryWeightOwner(
-            IGridStorageOwner destination,
-            out ICarryWeightLimitedOwner limitedOwner)
-        {
-            object rootOwner = ItemOwnedStorageRegistry.Instance.ResolveRootOwner(destination);
-            limitedOwner = rootOwner as ICarryWeightLimitedOwner;
-            return limitedOwner != null;
-        }
-
         private static bool CanAcceptIncoming(
             IGridStorageOwner destination,
             ItemStorageEntry entry,
@@ -1070,14 +829,6 @@ namespace OldScars.Core.Items
             reason = null;
             return !(destination is IGridStorageIncomingGuard guard) ||
                    guard.CanAcceptIncoming(entry, quantity, out reason);
-        }
-
-        private static string GetCarryWeightRejectionMessage(CarryWeightAcceptance acceptance)
-        {
-            return acceptance.Accepted
-                ? null
-                : $"No podés cargar esa cantidad por el límite de peso " +
-                  $"({acceptance.ProjectedWeightKg:0.00} / {acceptance.HardLimitKg:0.00} kg).";
         }
 
         private static string RestoreUnexpectedCommitFailure(

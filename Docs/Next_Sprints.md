@@ -2,24 +2,24 @@
 
 Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Secuencia operativa vigente — 2026-09-15
+## Secuencia operativa vigente — 2026-10-01
 
 M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded as `TEST-20260914-001` through `TEST-20260914-004` in `Test_Log.md`; the rifle run's manual setup caveat is retained there. No Unity rerun was part of the documentation closeout.
 
-### Next exact step — IMPL-0020
+### Next exact step — IMPL-0063
 
-**ISSUE-0022 — Loaded Ammo Mass Conservation** is DONE / RESOLVED / PUBLISHED in `481183ddfac82f9ff9e547da6c72a1af13ecc088`; its gates are `TEST-20260915-001` through `TEST-20260915-004`. The next exact step is **IMPL-0020 — Carry Weight / Encumbrance**. It remains PLANNED and was not started by the issue closeout. **IMPL-0063 — Worldgen procedural + terreno volumétrico deformable** is the `HIGH PRIORITY / AUTHORIZED NEXT` scope after IMPL-0020 closes completely. `IMPL-0021` returns to the queue behind IMPL-0063. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred.
+**IMPL-0020 — Carry Weight / Encumbrance** is DONE / ACCEPTED / PUBLISHED (2026-10-01). Shared derived Carry consequences, storage migration, real Player/NPC movement, reversible navigation, bounded Search pause, overloaded restore and mass/identity regressions are covered by `TEST-20261001-002/004/005/006/008/009/010`; earlier FAIL records remain. **NEXT EXACT STEP: IMPL-0063 — Procedural Worldgen + Deformable Volumetric Terrain Productization**, starting with its bounded audit/integration gate + stable terrain chunk identity slice. IMPL-0063 was not implemented in this task. `IMPL-0021` remains behind it. Keep ISSUE-0023 SUSPECTED and ISSUE-0026/0027 deferred; unrelated local IMPL-0061 gates remain separate.
 
 ### Regla de ejecucion del siguiente scope
 
-No convertir esta cola en trabajo simultaneo. Una vez reconciliadas las validaciones pendientes reales del checkout canonico, `IMPL-0020` sera el unico scope de implementacion activo. Debe definirse y cerrarse como slice terminable antes de activar `IMPL-0063` o cualquier otro backlog. `IMPL-0063` ya está autorizado como siguiente prioridad, pero no puede comenzar anticipadamente.
+No convertir esta cola en trabajo simultaneo. IMPL-0020 completó sus gates y cierre. La próxima tarea debe delimitar la primera slice terminable de IMPL-0063 y tratar explícitamente las validaciones locales pendientes ajenas; no abrir el backlog entero ni asumir aceptado IMPL-0061.
 
-Durante `IMPL-0020`:
+Durante el siguiente scope acotado:
 
 - ideas nuevas: documentar y diferir;
 - planes futuros: permitidos, sin implementacion;
 - bugs no bloqueantes: registrar y diferir;
-- dependencia critica: admitir solo con evidencia, scope minimo y retorno inmediato a `IMPL-0020`;
+- dependencia critica: admitir solo con evidencia, scope minimo y retorno inmediato al scope activo;
 - no abrir refactors, tooling o sistemas adyacentes por conveniencia.
 
 El siguiente item no se activa hasta completar implementacion, validacion, documentation closeout, review, commit, push, `HEAD == origin/dev`, divergencia `0/0` y `NEXT EXACT STEP`.
@@ -203,7 +203,7 @@ P10 y P11 pueden intercambiar posición; P11 sí debe preceder Encumbrance.
 
 ### 12. P12 — Carry Weight / Encumbrance compartido
 
-Estado: `PLANNED / READY TO START — NEXT EXACT STEP`.
+Estado: `DONE / ACCEPTED / PUBLISHED` — 2026-10-01; gates `TEST-20261001-002/004/005/006/008/009/010`.
 
 Contrato aprobado:
 
@@ -218,15 +218,15 @@ Contrato aprobado:
 - restore sobrecargado conserva items;
 - descargar recupera movimiento.
 
-Debe retirar todos los vetos/clamps de peso de Inventory/Transfer/Equipment sin romper grid, ownership, rollback ni access.
+Implementado: vetos/clamps físicos retirados de Inventory/Transfer/Equipment; grid, ownership, rollback y access conservados.
 
-Navigation debe distinguir orden/path válido de bloqueo físico por carga; Search no debe convertir sobrecarga temporal en falso path failure/deadline imposible.
+Implementado: Navigation retiene el path válido durante pausa por Carry; Search pausa sólo el presupuesto de viaje por overload y conserva deadlines/failures legítimos.
 
 Referencia: `IMPL-0020`.
 
 ### 13. P13 — Procedural Worldgen + Deformable Volumetric Terrain Productization
 
-Estado: `HIGH PRIORITY / AUTHORIZED NEXT AFTER IMPL-0020`.
+Estado: `HIGH PRIORITY / NEXT EXACT STEP` — tras cierre IMPL-0020. Primera slice acotada; no implementada todavía.
 
 Objetivo: productizar el seam ya investigado entre el world truth procedural determinista/ecológicamente coherente y la foundation volumétrica deformable. No es un permiso para implementar todo de una vez: debe abrirse mediante slices terminables, empezando por audit/integration gate + stable terrain chunk identity, y luego avanzar sólo tras cerrar cada slice.
 

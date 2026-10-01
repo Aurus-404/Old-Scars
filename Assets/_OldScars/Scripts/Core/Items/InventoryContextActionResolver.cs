@@ -252,7 +252,6 @@ namespace OldScars.Core.Items
                         option.Owner,
                         instanceId,
                         entry.Quantity,
-                        GridStorageTransferQuantityPolicy.Exact,
                         transferContext);
                     if (!preview.IsValid || preview.EffectiveQuantity != entry.Quantity)
                         continue;

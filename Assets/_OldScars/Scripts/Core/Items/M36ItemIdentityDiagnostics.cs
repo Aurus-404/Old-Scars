@@ -388,7 +388,6 @@ namespace OldScars.Core.Items
                 world,
                 personal,
                 worldItem.InstanceId,
-                GridStorageTransferQuantityPolicy.Exact,
                 default);
             bool pickupPresentationCanFinalize = pickup.Success && world.GridStorageEntries.Count == 0;
             Check(

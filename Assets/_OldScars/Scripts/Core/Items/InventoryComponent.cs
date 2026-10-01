@@ -17,7 +17,7 @@ namespace OldScars.Core.Items
     /// final equipment model, pickup/drop rules, or final UI. M33.1 exposes
     /// closed placement movement for the temporary OnGUI drag interface.
     /// </summary>
-    public sealed class InventoryComponent : MonoBehaviour, IGridStorageOwner, IGridStorageTransferEndpoint, ICarryWeightLimitedOwner
+    public sealed class InventoryComponent : MonoBehaviour, IGridStorageOwner, IGridStorageTransferEndpoint
     {
         private const string NoItemId = "none";
         public const string RightHandSlotId = "right_hand";
@@ -31,8 +31,6 @@ namespace OldScars.Core.Items
         private readonly List<ItemInstance> itemInstancesView = new List<ItemInstance>();
         private GridStorageRuntime gridStorageRuntime;
         private ActorCarryWeightComponent carryWeightComponent;
-        private bool carryWeightComponentResolved;
-        private int initialContentLoadDepth;
         private bool persistenceRestorePrepared;
 
         public string RightHandItemInstanceId
@@ -58,7 +56,6 @@ namespace OldScars.Core.Items
         public string GridInitializationError => GetGridRuntime().InitializationError;
         public string GridStorageDisplayName => name;
         public IReadOnlyList<ItemStorageEntry> GridStorageEntries => storage.Entries;
-        public bool HasCarryWeightLimit => GetCarryWeightComponent() != null;
 
         GridInventoryBackend IGridStorageTransferEndpoint.TransferBackend => GetGridBackend();
         internal GridInventoryBackend InternalGridBackend => GetGridBackend();
@@ -128,15 +125,6 @@ namespace OldScars.Core.Items
                 return null;
             }
 
-            if (initialContentLoadDepth <= 0 &&
-                TryRejectIncomingWeight(definition.id, quantity, out CarryWeightAcceptance acceptance))
-            {
-                Debug.LogWarning(
-                    $"[InventoryComponent] Cannot add '{normalizedDefinitionId}' x{quantity}: " +
-                    SafeText(acceptance.FailureReason));
-                return null;
-            }
-
             InventoryMutationResult result = GetGridBackend().Add(definition, quantity);
             if (!result.Success)
             {
@@ -174,33 +162,24 @@ namespace OldScars.Core.Items
 
         public void BeginInitialContentLoad()
         {
-            initialContentLoadDepth++;
             GetGridRuntime().BeginInitialContentLoad();
         }
 
         public bool CompleteInitialContentLoad()
         {
-            try
+            bool initialized = GetGridRuntime().CompleteInitialContentLoad(out string error);
+            ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
+            if (!initialized)
             {
-                bool initialized = GetGridRuntime().CompleteInitialContentLoad(out string error);
-                ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
-                if (!initialized)
-                {
-                    Debug.LogError(
-                        "[InventoryComponent] Grid layout initialization failed after initial content load; " +
-                        "inventory remains linear and no items were changed." +
-                        $"\n  Actor: {name}" +
-                        $"\n  Requested grid: {gridWidth}x{gridHeight}" +
-                        $"\n  Reason: {SafeText(error)}");
-                }
+                Debug.LogError(
+                    "[InventoryComponent] Grid layout initialization failed after initial content load; " +
+                    "inventory remains linear and no items were changed." +
+                    $"\n  Actor: {name}" +
+                    $"\n  Requested grid: {gridWidth}x{gridHeight}" +
+                    $"\n  Reason: {SafeText(error)}");
+            }
 
-                return initialized;
-            }
-            finally
-            {
-                if (initialContentLoadDepth > 0)
-                    initialContentLoadDepth--;
-            }
+            return initialized;
         }
 
         public IReadOnlyList<ItemInstance> GetItems()
@@ -275,14 +254,6 @@ namespace OldScars.Core.Items
                 return 0;
             }
 
-            if (HasCarryWeightLimit)
-            {
-                Debug.LogWarning(
-                    "[InventoryComponent] Batch transfer is unavailable for carry-limited inventories. " +
-                    "Use individual or stack transfers so each incoming quantity is validated.");
-                return 0;
-            }
-
             int transferred = source.TransferAllTo(storage);
             if (transferred > 0)
                 BindRuntimeOwnership();
@@ -328,15 +299,6 @@ namespace OldScars.Core.Items
                     $"Cannot transfer x{quantity} from source item index {sourceIndex}.",
                     quantity,
                     sourceItem != null ? sourceItem.InstanceId : null);
-            }
-
-            if (TryRejectIncomingWeight(sourceEntry, quantity, out CarryWeightAcceptance acceptance))
-            {
-                return InventoryMutationResult.Rejected(
-                    InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded,
-                    acceptance.FailureReason,
-                    quantity,
-                    sourceItem.InstanceId);
             }
 
             InventoryMutationResult result = GetGridBackend().TransferFrom(source, sourceItem.InstanceId, quantity);
@@ -417,12 +379,6 @@ namespace OldScars.Core.Items
             }
 
             string sourceInstanceId = sourceEntry.Item.InstanceId;
-            if (targetInventory.TryRejectIncomingWeight(sourceEntry, quantity, out CarryWeightAcceptance acceptance))
-            {
-                Debug.LogWarning(
-                    $"[InventoryComponent] Inventory-to-inventory transfer failed: {SafeText(acceptance.FailureReason)}");
-                return 0;
-            }
 
             InventoryMutationResult result = GetGridBackend().TransferTo(targetInventory.GetGridBackend(), sourceInstanceId, quantity);
             if (!result.Success)
@@ -560,77 +516,7 @@ namespace OldScars.Core.Items
             ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
             return carryWeight != null
                 ? carryWeight.GetSnapshot()
-                : CarryWeightSnapshot.Invalid("Carry weight limit is not configured for this inventory owner.");
-        }
-
-        public CarryWeightAcceptance EvaluateIncomingWeight(string definitionId, int quantity)
-        {
-            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
-            return carryWeight != null
-                ? carryWeight.EvaluateIncomingWeight(definitionId, quantity)
-                : CarryWeightAcceptance.Unlimited();
-        }
-
-        public CarryWeightQuantityLimit EvaluateIncomingQuantityLimit(string definitionId, int requestedQuantity)
-        {
-            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
-            return carryWeight != null
-                ? carryWeight.EvaluateIncomingQuantityLimit(definitionId, requestedQuantity)
-                : new CarryWeightQuantityLimit(
-                    true,
-                    requestedQuantity,
-                    requestedQuantity,
-                    0d,
-                    0d,
-                    double.PositiveInfinity,
-                    null);
-        }
-
-        public CarryWeightAcceptance EvaluateIncomingEntry(ItemStorageEntry entry, int quantity)
-        {
-            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
-            return carryWeight != null
-                ? carryWeight.EvaluateIncomingEntry(entry, quantity)
-                : CarryWeightAcceptance.Unlimited();
-        }
-
-        public CarryWeightQuantityLimit EvaluateIncomingEntryQuantityLimit(ItemStorageEntry entry, int requestedQuantity)
-        {
-            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
-            return carryWeight != null
-                ? carryWeight.EvaluateIncomingEntryQuantityLimit(entry, requestedQuantity)
-                : new CarryWeightQuantityLimit(
-                    true,
-                    requestedQuantity,
-                    requestedQuantity,
-                    0d,
-                    0d,
-                    double.PositiveInfinity,
-                    null);
-        }
-
-        public bool TryGetItemWeight(
-            string definitionId,
-            int quantity,
-            out double unitWeightKg,
-            out double stackWeightKg,
-            out string error)
-        {
-            ActorCarryWeightComponent carryWeight = GetCarryWeightComponent();
-            if (carryWeight != null)
-            {
-                return carryWeight.TryGetItemWeight(
-                    definitionId,
-                    quantity,
-                    out unitWeightKg,
-                    out stackWeightKg,
-                    out error);
-            }
-
-            unitWeightKg = 0d;
-            stackWeightKg = 0d;
-            error = "Carry weight limit is not configured for this inventory owner.";
-            return false;
+                : CarryWeightSnapshot.Invalid("Carry weight is not configured for this inventory owner.");
         }
 
         public bool CanEquipIndexToRightHand(int index)
@@ -856,24 +742,6 @@ namespace OldScars.Core.Items
                 $"\n  Reason: {SafeText(gridStorageRuntime.InitializationError)}");
         }
 
-        private bool TryRejectIncomingWeight(
-            string definitionId,
-            int quantity,
-            out CarryWeightAcceptance acceptance)
-        {
-            acceptance = EvaluateIncomingWeight(definitionId, quantity);
-            return HasCarryWeightLimit && !acceptance.Accepted;
-        }
-
-        private bool TryRejectIncomingWeight(
-            ItemStorageEntry entry,
-            int quantity,
-            out CarryWeightAcceptance acceptance)
-        {
-            acceptance = EvaluateIncomingEntry(entry, quantity);
-            return HasCarryWeightLimit && !acceptance.Accepted;
-        }
-
         internal void BindRuntimeOwnership()
         {
             ItemOwnedStorageRegistry.Instance.BindEntries(storage.Entries, this);
@@ -949,11 +817,8 @@ namespace OldScars.Core.Items
 
         private void ResolveCarryWeightComponent()
         {
-            if (carryWeightComponentResolved)
-                return;
-
-            carryWeightComponent = GetComponent<ActorCarryWeightComponent>();
-            carryWeightComponentResolved = true;
+            if (carryWeightComponent == null)
+                carryWeightComponent = GetComponent<ActorCarryWeightComponent>();
         }
 
         bool IGridStorageTransferEndpoint.CanTransferOut(GridStorageTransferContext context, out string reason)

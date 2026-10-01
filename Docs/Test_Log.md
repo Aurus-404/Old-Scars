@@ -168,3 +168,102 @@ Historical next action after TEST-002: run the P9 NPC↔Player manual integratio
 - Evidence: `Logs/Issue0022_M40_Regression.log`; `M40.0 Combat Resolution & Weapons Diagnostics: PASS`.
 - Findings: package duplicate-assembly and licensing token/entitlement messages remain preexisting tooling warnings; no C# compile error or diagnostic failure.
 - Next action: documentation closeout, scoped commit, push and synchronization verification.
+
+
+## TEST-20261001-001 — IMPL-0020 — First diagnostic launch blocked by compile
+
+- Date: 2026-10-01. Type: focused automated gate attempt in canonical warm Unity 6000.4.6f1 batchmode.
+- Result: **FAIL**. Runtime compilation reported CS0103 for `definition`/`requested` in WorldItemEquipmentTransactionService; the functional fixture and Editor diagnostic did not execute.
+- Cause/fix: admission-guard removal accidentally removed adjacent slot-selection statements. Reconstructed the task-owned file from its unchanged HEAD baseline and removed only the two weight guards plus their unused helper; all legitimate slot logic retained. No ItemWeightResolver, Persistence, Medical or user-owned change was involved.
+- Evidence: `Temp/impl0020-run1.log`. This attempt does not count as a functional PASS; corrected compilation/diagnostic execution receives a new ID.
+
+## TEST-20261001-002 — IMPL-0020 — Static contract migration gate
+
+- Date: 2026-10-01. Type: STATIC / REPOSITORY CONTRACT CHECK.
+- Result: **PASS**. Exhaustive targeted searches of OldScars C#, prefabs and scenes found no remaining physical admission/clamp contracts, old state or hard-limit tuning: ICarryWeightLimitedOwner, acceptance/quantity-limit structs, CarryWeightLimitExceeded, ClampIncomingToActorHardLimit, EvaluateIncoming APIs, HardBlocked, hardLimitMultiplier or weight-limited receipt metadata.
+- Snapshot/formula: only ActorCarryWeightComponent classifies load and derives the locomotion factor. Player/Navigation consume it; debug panels display it. Default shared capacity remains 30 kg; minimum movement factor at 100% is provisional configurable 0.15, with ratio tolerance 0.000001.
+- Boundaries: diff-path check confirms Persistence, its schema, ActorCondition/Medical and ItemWeightResolver remain unchanged. Runtime spawn adds the shared Carry component after Inventory/Ownership and before profile/loadout application. Transfer mutation/rollback/identity hooks remain in the existing services.
+- Evidence: targeted repository searches and scoped diff review; compilation and real displacement/restore remain separate pending gates. Unrelated user-owned whitespace in MainMenu.unity is preserved and excluded from task checks/staging.
+
+
+## TEST-20261001-003 — IMPL-0020 — Functional fixture first execution
+
+- Date: 2026-10-01. Type: AUTOMATED / PLAY MODE / real CharacterController.
+- Result: **FAIL**. Runtime/Editor compilation completed, then the fixture failed its physical displacement assertion at exactly 100% load. It had passed state/factor checks and real displacement at 50% (1.0009 m), 75% (1.0010 m) and 87.5% (0.5757 m). Storage, NPC, Search and Persistence cases did not execute.
+- Setup caveat: this first fixture used an uncontrolled batchmode timestep and placed the CharacterController at world coordinate 1000; neither matches a deterministic representative movement measurement. No production failure cause is claimed from this run alone.
+- Next run: keep the production movement/factor code and assertions, use a controlled 1/60-second game timestep and a fixture near the origin; report precise factor/speed/dt/travel on any recurrence. No tolerance was relaxed.
+- Evidence: `Temp/impl0020-run2.log`. Historical failure retained; rerun receives a new ID.
+
+
+## TEST-20261001-004 — IMPL-0020 — Controlled physical/storage/restore execution
+
+- Date: 2026-10-01. Type: AUTOMATED / INTEGRATION / real Unity Play Mode at fixed 1/60-second game timestep, canonical Library.
+- Result: **FAIL** overall: the fixture dereferenced an optional ActorThreatAcquisitionController absent on the selected runtime profile, after all Player/Storage/Equipment/Persistence assertions passed. NPC/Search cases did not execute. Runtime/Editor compile PASS.
+- Passed evidence: Player 50% factor 1/travel 1.0000 m; 75% factor 1/travel 1.0667 m; 87.5% factor 0.575/travel 0.5750 m; exactly 100% factor 0.15/travel 0.1500 m; 100.0833% factor 0/travel 0.0000 m. Real gravity and rotation remained, fake sprint/stamina drain were absent, retained input recovered after a committed drop.
+- Passed storage: Add over capacity, full exact overweight transfer with identity, quantity/grid/no-nesting atomic rejection, same-root bag mass conservation and external bag ingress. Existing transaction/snapshot/rollback authorities were retained.
+- Passed Equipment: overload allowed personal equip/replacement, world equip/replacement and equipped-item transfer into another overloaded actor. Exact incoming/displaced IDs, unique ownership and real slot rejection were asserted.
+- Passed Persistence: real Current Slice capture/apply preserved overloaded content, quantity/identity/state comparison and derived mass; dropping content recovered the factor. No Carry save field or schema changed. Fixture capacity was intentionally configured around the scene player's existing load; shared production tuning remains 30 kg.
+- Caveat: the prior uncontrolled far-origin batch measurement failed at 100%; the unchanged production implementation passed this deterministic representative displacement measurement. No uncontrolled-framerate performance claim is made.
+- Evidence: `Temp/impl0020-run3.log`, `[IMPL0020][PLAYER/STORAGE/EQUIPMENT/PERSISTENCE]` lines. Correct optional NPC reference and run only pending Navigation/Search cases; retain this FAIL and the already observed passing seams.
+
+## TEST-20261001-005 — IMPL-0020 — Inventory Interaction UX regression
+
+- Date: 2026-10-01. Type: AUTOMATED / REGRESSION, same Play session as TEST-20261001-004.
+- Result: **PASS**. `Inventory Interaction UX Correction Diagnostics: PASS` covers external use, quantities, no implicit personal transfer, context actions, repeated exact one-unit transfers and full stack quick transfer.
+- Change to fixture: mechanical migration to transfer APIs without the retired weight-policy parameter; assertions retained.
+- Evidence: `Temp/impl0020-run3.log`. No additional broad M41 suite was run.
+
+
+## TEST-20261001-006 — IMPL-0020 — Pending Navigation/Search gates
+
+- Date: 2026-10-01. Type: AUTOMATED / PLAY MODE / focused remainder of the same Carry fixture, fixed 1/60-second game timestep.
+- Result: **PASS**. Runtime/Editor compilation PASS; `[IMPL0020][NPC]` and `[IMPL0020][SEARCH]` PASS; diagnostic completion PASS. Player/storage/restore were not repeated after TEST-20261001-004 had supplied their passing evidence.
+- NPC: real runtime composition supplied Carry at 30 kg; the configured NavMeshAgent speed matched the shared factor; real displacement slowed, then paused while preserving Moving/HasDestination/complete path with Failure None; clearing carried content automatically resumed the same path.
+- Search: production Search ownership and a real valid path were preconditioned with a frozen last-known anchor. The test shortened the initial bounded travel deadline to 0.75 s, overloaded the actor for 1.3 s, verified Navigating beyond the original deadline, then unloaded and observed physical continuation within the preserved budget. No recovery deadline reset was used. A deliberately expired unblocked deadline produced Failed, and a real off-NavMesh request retained normal Navigation failure semantics.
+- Fixture correction: optional ThreatAcquisition is guarded as in the existing Search diagnostic. The hidden target was spawned on valid NavMesh, then placed outside perception with its agent disabled, following the established fixture pattern.
+- Evidence: `Temp/impl0020-navigation.log`. Expected NAVIGATION_FAILED warning belongs to the deliberate off-NavMesh negative case; no functional exception or compiler error. This validates physical/AI contracts, not a manual visual playtest.
+
+
+## TEST-20261001-007 — IMPL-0020 — Mass regression launch blocked by shutdown lock
+
+- Date: 2026-10-01. Type: AUTOMATED REGRESSION LAUNCH / TOOLING.
+- Result: **FAIL** to launch; no mass or identity assertions executed. Unity reported another instance holding the canonical project.
+- Cause: the task-created Navigation batch process remained alive after logging diagnostic PASS and `CodeReloadManager destroyed`; a bounded wait did not release its project lock. Its exact PID/command/project/executeMethod were verified before terminating only that hung batch process and its own crash/package helpers. No user-owned Unity GUI was stopped. The stale lock was removed only after verifying no valid canonical Editor remained.
+- Evidence: `Temp/impl0020-navigation.log` (functional PASS) and `Temp/impl0020-mass-regression.log` (startup lock rejection). This does not invalidate TEST-20261001-006's observed physical/AI assertions and does not establish a gameplay failure.
+- Next: launch the mass/identity regressions on the same canonical Library with a new Test ID.
+
+
+## TEST-20261001-008 — IMPL-0020 — Identity/committed ownership/rollback regression
+
+- Date: 2026-10-01. Type: AUTOMATED / EXISTING REGRESSION, Edit Mode before the mass fixture's Play session.
+- Result: **PASS**. `M36.1 Checkpoint A Item Identity Diagnostics: PASS`.
+- Justification: transfer APIs and their weight-only receipt metadata changed; exact identity, split/merge retirement, direct/root binding, committed transfer notifications and forced equipment/ownership rollback are required matching regressions. Existing assertions were retained; the one affected API call only lost its retired policy parameter.
+- Evidence: `Logs/IMPL0020/impl0020-mass-regression-rerun.log`; the existing fixture resets its own runtime identity session before Play starts. No live user scene/session was reset.
+
+## TEST-20261001-009 — IMPL-0020 — Loaded ammo mass regression while overloaded
+
+- Date: 2026-10-01. Type: AUTOMATED / PLAY MODE / INTEGRATION / MASS REGRESSION.
+- Result: **PASS**. `Loaded Ammo Mass Conservation Diagnostics: PASS`; Runtime/Editor compile PASS.
+- Setup: existing diagnostic, existing content and unchanged mass assertions; configured scene actor capacity temporarily to 1 kg so its productive firearm/reload/equipment/drop/pickup paths operated Overloaded. Capacity restored to its initial configuration before cleanup; Carry is not saved.
+- Covered: cancelled/partial/full reload, loaded firearm exact mass, Current Slice restoration, equip/unequip, owned backpack subtree, same-root transfers, productive fire mass subtraction, dry fire, invalid ammo-profile rejection, real loaded firearm drop/pickup and initial snapshot comparison/cleanup. All existing assertions retained.
+- Evidence: `Logs/IMPL0020/impl0020-mass-regression-rerun.log`. No ItemWeightResolver or AmmoProfile changes. Navigation/Search were already covered by TEST-20261001-006, so no broad M41 suites were run.
+
+## TEST-20261001-010 — IMPL-0020 — Acceptance evidence and console review
+
+- Date: 2026-10-01. Type: ACCEPTANCE EVIDENCE REVIEW / CONSOLE REVIEW.
+- Result: **PASS** for required functional coverage across TEST-20261001-004/005/006/008/009; prior FAIL records remain. TEST-20261001-004 is an overall fixture FAIL but its earlier Player/storage/Equipment/restore assertions provide explicit passing evidence; TEST-20261001-006 completes only the pending NPC/Search gates.
+- Console: the accepted controlled Player/storage/restore run's only terminating exception was its corrected optional NPC fixture reference. The final Navigation/Search and mass/identity runs contain no compiler or functional exceptions; expected Navigation off-mesh and M36 negative-path warnings were reviewed as asserted failures. Startup package duplicate-assembly/test-assembly and licensing entitlement messages are environment diagnostics, not gameplay PASS claims.
+- Manual/visual acceptance: **N/A** for this scope. Required consequences were measured using real CharacterController displacement/gravity/rotation/stamina, NavMeshAgent path pause/resume and production transaction/restore services. Debug UI only substitutes existing read-only labels/values; no visual layout, art, scene or final HUD design is accepted by compilation or invented screenshots.
+- Environment caveat: validation ran in the canonical warm checkout with Mauro's pre-existing local Social/combat changes preserved. Those changes are excluded from IMPL-0020 publication; no isolated clean-checkout claim is made.
+- Evidence retention: available run logs copied to ignored `Logs/IMPL0020` before further Unity use. Early Temp logs may be cleared by Unity; their observed errors/threshold excerpts are durably preserved in TEST-20261001-001/003. Available controlled-run/navigation/mass logs are retained locally. No other pending manual gate (including IMPL-0061) was accepted or published by this task.
+
+
+## TEST-20261001-011 — IMPL-0020 — Final scoped publication review
+
+- Date: 2026-10-01. Type: SCOPED DIFF / DOCUMENTATION / GIT PRESERVATION REVIEW.
+- Result: **PASS**. Reviewed the complete task diff by changed seam and the 31-file staged manifest. `git diff --cached --check` passes; no unrelated assets, settings, packages, content/schema or user-owned Social/combat implementation is staged.
+- Shared staging: HumanEncounterAIController publishes only three deadline-pause lines and the three-line base-speed fallback change; its pre-existing local changes remain unstaged. Development/Test history remains append-only; only IMPL-0020 entries and changed architecture/backlog truths are staged. All 13 unrelated pre-existing tracked files are byte-identical to the post-sync preservation snapshot.
+- Contracts: final searches find no legacy physical admission/clamp APIs in staged code/prefabs. A single Carry formula serves Player/NPC/UI; no Medical coupling, mass-resolver change, schema bump or duplicated saved Carry state. Transfer receipt quantity/identity and existing transaction/rollback notification authorities remain.
+- Documentation: IMPL-0020 closed, provisional 0.15/30 kg tuning explicit, genuine manual acceptance N/A explained, earlier FAIL results retained, IMPL-0063 promoted only as the next bounded task; IMPL-0021 remains behind it. Project_Roadmap owns no newly changed truth and was not edited ceremonially.
+- Review method: direct complete scoped diff and evidence review in this zero-subagent task; no claim of an independent agent or manual Unity playtest.
+- Next action: commit the exact reviewed staged content, push dev, and verify remote equality/divergence. Preserve the intentionally dirty user-owned checkout.

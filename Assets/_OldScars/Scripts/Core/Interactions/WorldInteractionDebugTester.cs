@@ -484,7 +484,7 @@ namespace OldScars.Core.Interactions
                     destination,
                     selection.InstanceId,
                     currentEntry.Quantity,
-                    GridStorageTransferQuantityPolicy.Exact,
+
                     transferContext);
                 if (!preview.IsValid || preview.EffectiveQuantity != currentEntry.Quantity)
                     return QuickActionFailure(preview.Message ?? "El stack completo ya no cabe en el storage destino.");
@@ -501,7 +501,7 @@ namespace OldScars.Core.Interactions
                         selection.InstanceId,
                         currentEntry.Quantity,
                         true,
-                        GridStorageTransferQuantityPolicy.Exact,
+
                         transferContext);
                 }
                 catch (Exception exception)

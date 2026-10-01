@@ -210,7 +210,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0020 — Carry Weight / Encumbrance compartido
 
-- **Estado:** `PLANNED / READY TO START` — M41 e ISSUE-0022 ya están cerrados; NEXT EXACT STEP.
+- **Estado:** `DONE / ACCEPTED / PUBLISHED` — IMPL-0020 cerrado el 2026-10-01; próximo scope IMPL-0063.
 - **Fecha/origen:** 2026-09-06 — decisión de producto + auditoría profunda de repo/Astra.
 - **Qué queremos:** redefinir Carry Capacity como capacidad física de transporte, NO como límite de storage. Player y NPC comparten el mismo contrato locomotor.
 - **Contrato aprobado:** `0..75%` sin penalización; `>75%..100%` penalización progresiva; `100%` aún móvil; `>100%` traslación cero. Inventory/transfer/drop/equipment/use/reload/treatment siguen bajo sus propias autoridades y pueden operar sobrecargados.
@@ -218,6 +218,7 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 - **Trigger/dependencias:** satisfechas: M41/F8 cerrados e `ISSUE-0022` loaded ammo mass RESOLVED/PUBLISHED.
 - **Límites:** sin Strength, stats, backpack capacity modifiers, cache global, Limb Impairment ni rebalanceo de accuracy. `Overloaded != Incapacitated`.
 - **Riesgos conocidos:** retirar todos los vetos/clamps de peso sin romper grid/stack/access/ownership/rollback; NPC spawn sin Carry actual; sprint falso; Search deadline y Navigation reversible; restore sobrecargado debe conservar items.
+- **Implementación/aceptación:** autoridad compartida de Carry derivado; storage libre de veto físico; Player/NPC aplican el mismo factor, pausa Navigation reversible y presupuesto Search pausado sólo por overload. Restore conserva items; sin schema ni cambios al resolver de masa. Capacidad 30 kg y factor mínimo 0.15 a 100% son tuning inicial/provisional. Gates `TEST-20261001-002/004/005/006/008/009/010`; failures iniciales preservados. Manual/visual N/A con fundamento en Test_Log. Publicación excluye cambios locales previos de IMPL-0061.
 
 ## IMPL-0021 — Localized Limb Impairment
 

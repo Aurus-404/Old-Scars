@@ -550,7 +550,6 @@ namespace OldScars.Core.Items
                 request.SourceOwner,
                 occupant.Item.OwnedStorage,
                 request.SourceInstanceId,
-                GridStorageTransferQuantityPolicy.Exact,
                 default);
             if (!transfer.Success)
                 return new InventoryEquipmentDropResult(false, transfer.Message ?? "No se pudo guardar el objeto.");
@@ -1206,14 +1205,14 @@ namespace OldScars.Core.Items
             CarryWeightSnapshot snapshot = inventory.GetCarryWeightSnapshot();
             if (snapshot.IsValid)
             {
-                GUILayout.Label($"Carry: {snapshot.CurrentWeightKg:0.00} / {snapshot.SoftCapacityKg:0.00} kg");
-                GUILayout.Label($"Hard limit: {snapshot.HardLimitKg:0.00} kg");
-                GUILayout.Label($"Encumbrance: {snapshot.EncumbranceRatio * 100d:0}% — {snapshot.State}");
+                GUILayout.Label($"Carry: {snapshot.CurrentWeightKg:0.00} / {snapshot.CarryCapacityKg:0.00} kg");
+                GUILayout.Label($"Movement factor: {snapshot.LocomotionFactor:0.00}");
+                GUILayout.Label($"Encumbrance: {snapshot.LoadRatio * 100d:0}% — {snapshot.State}");
             }
             else
             {
                 GUILayout.Label("Carry: unavailable");
-                GUILayout.Label("Hard limit: --");
+                GUILayout.Label("Movement factor: --");
                 GUILayout.Label("Encumbrance: -- — Invalid");
             }
             GUILayout.EndVertical();
@@ -1265,7 +1264,6 @@ namespace OldScars.Core.Items
                     source,
                     target,
                     instanceId,
-                    GridStorageTransferQuantityPolicy.Exact,
                     default)
                 : GridStorageTransferService.TransferQuantityAuto(
                     source,
@@ -1273,7 +1271,6 @@ namespace OldScars.Core.Items
                     instanceId,
                     quantity,
                     true,
-                    GridStorageTransferQuantityPolicy.Exact,
                     default);
 
             toast.Show(

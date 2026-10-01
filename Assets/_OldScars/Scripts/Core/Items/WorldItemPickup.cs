@@ -94,7 +94,6 @@ namespace OldScars.Core.Items
                 sourceInstanceId,
                 quantity,
                 true,
-                GridStorageTransferQuantityPolicy.Exact,
                 default);
             if (!result.Success || result.AffectedQuantity < 1)
                 return 0;
@@ -119,7 +118,6 @@ namespace OldScars.Core.Items
                 sourceInstanceId,
                 quantity,
                 true,
-                GridStorageTransferQuantityPolicy.Exact,
                 default);
             if (!result.Success || result.AffectedQuantity < 1)
                 return 0;
@@ -252,7 +250,6 @@ namespace OldScars.Core.Items
                 item.InstanceId,
                 pickupQuantity,
                 true,
-                GridStorageTransferQuantityPolicy.Exact,
                 default);
             if (!transferResult.Success)
             {
@@ -266,9 +263,7 @@ namespace OldScars.Core.Items
                         $"\n  Failure: {DiagnosticText(transferResult.Message)}",
                         this);
                 }
-                string failureMessage = transferResult.Failure == InventoryMutationResult.MutationFailure.CarryWeightLimitExceeded
-                    ? transferResult.Message ?? "Too heavy."
-                    : $"No se pudo recoger '{SafeText(itemDefinitionId)}'.";
+                string failureMessage = $"No se pudo recoger '{SafeText(itemDefinitionId)}'.";
                 return DebugActionExecutionResult.Info("Recoger", failureMessage);
             }
 

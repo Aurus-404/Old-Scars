@@ -416,7 +416,7 @@ MonoBehaviour:
   inventoryComponent: {fileID: 1671211020046059730}
   ownershipComponent: {fileID: 8191658695296668985}
   baseCarryCapacityKg: 30
-  hardLimitMultiplier: 1.3
+  minimumMovementFactor: 0.15
 --- !u!114 &8191658695296668985
 MonoBehaviour:
   m_ObjectHideFlags: 0

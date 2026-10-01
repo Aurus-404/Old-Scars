@@ -200,7 +200,7 @@ namespace OldScars.Editor
                     "Backpack '" + backpackId + "' could not unequip transactionally.");
                 InventoryMutationResult transferOut = GridStorageTransferService.TransferStackAuto(
                     storage, inventory, storage.GridStorageEntries.Single(entry => entry.DefinitionId == ScrapItemId).Item.InstanceId,
-                    GridStorageTransferQuantityPolicy.Exact, default);
+                    default);
                 Require(transferOut.Success && storage.GridStorageEntries.Count == 0,
                     "Backpack '" + backpackId + "' transfer-out did not preserve one ownership path.");
                 Require(inventory.TryGetEntryByInstanceId(backpack.InstanceId, out int backpackIndex, out _) &&

@@ -798,16 +798,6 @@ namespace OldScars.Core.Items
                 return InvalidStorageTransfer(equipment, destination, EquipmentFailureCode.StorageMutationFailed, endpointError ?? "Destination storage rejected the transfer.", instanceId);
             if (destination is IGridStorageIncomingGuard guard && !guard.CanAcceptIncoming(entry, 1, out string guardReason))
                 return InvalidStorageTransfer(equipment, destination, EquipmentFailureCode.StorageMutationFailed, guardReason ?? "Destination storage rejected the item.", instanceId);
-            if (!ItemOwnedStorageRegistry.Instance.ShareRootOwner(equipment.PersonalInventory, destination))
-            {
-                object rootOwner = ItemOwnedStorageRegistry.Instance.ResolveRootOwner(destination);
-                if (rootOwner is ICarryWeightLimitedOwner carryOwner && carryOwner.HasCarryWeightLimit)
-                {
-                    CarryWeightAcceptance acceptance = carryOwner.EvaluateIncomingEntry(entry, 1);
-                    if (!acceptance.Accepted)
-                        return InvalidStorageTransfer(equipment, destination, EquipmentFailureCode.StorageMutationFailed, acceptance.FailureReason ?? "Destination carry weight limit exceeded.", instanceId);
-                }
-            }
 
             GridPlacementValidationResult placementPreview = equipment.Backend.PreviewTransferTo(
                 destinationEndpoint.TransferBackend,

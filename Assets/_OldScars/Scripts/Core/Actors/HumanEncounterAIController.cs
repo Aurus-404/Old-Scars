@@ -209,6 +209,9 @@ namespace OldScars.Core.Actors
                 ReleaseEncounter("Actor recovered functional capacity");
 
             double now = Time.timeAsDouble;
+            if (State == HumanEncounterAIState.Searching && !IsSearchInspecting &&
+                navigation.State == ActorNavigationState.Moving && navigation.IsCarryTranslationBlocked)
+                searchNavigationDeadline += Time.deltaTime;
             if (now >= nextDecisionTime)
             {
                 nextDecisionTime = now + decisionInterval;
@@ -502,7 +505,8 @@ namespace OldScars.Core.Actors
             searchAnchor = resolved.position;
             hasSearchAnchor = true;
             float distance = FlatDistance(transform.position, searchAnchor);
-            float speed = navigation.Agent != null ? Mathf.Max(0.1f, navigation.Agent.speed) : 0.1f;
+            float speed = navigation.Agent != null && !navigation.IsCarryTranslationBlocked
+                ? Mathf.Max(0.1f, navigation.Agent.speed) : Mathf.Max(0.1f, navigation.ConfiguredSpeed);
             searchNavigationDeadline = now + Math.Max(lostContactTimeout, distance / speed * 2f + lostContactTimeout);
             if (!behavior.TryNavigateSearch(searchAnchor))
             {
