@@ -118,14 +118,14 @@ El looteo caracteriza la forma en que el jugador obtiene recursos y posibilidade
 | Tema | Línea base revisada | Estado |
 | --- | --- | --- |
 | Género central | Supervivencia, exploración e improvisación sistémica están confirmadas. La combinación comercial exacta de etiquetas sigue abierta. | `CONFIRMED CORE / MARKET LABELS PENDING` |
-| Modo de juego | v3.1 propone un juego para un jugador. | `PENDING MAURO DECISION` |
-| Presentación | Realismo estilizado nostálgico de PC/consola de mediados/finales de los 2000 y comienzos de los 2010. El juego actual es 3D; la cámara del prototipo tiene orientación isométrica y puede rotar, pero su composición final sigue abierta. | `CONFIRMED VISUAL DIRECTION / FINAL CAMERA PENDING` |
-| Cadencia de combate | El rifle actual es un prototipo técnico debug/en tiempo real. La cadencia final requiere una decisión separada. | `DESIGN TARGET — PENDING MAURO DECISION` |
+| Modo de juego | Old Scars está confirmado como experiencia single-player. | `CONFIRMED — RECENT DECISION` |
+| Presentación | Realismo estilizado nostálgico de PC/consola de mediados/finales de los 2000 y comienzos de los 2010. El juego es 3D con cámara top-down/orbital libre alrededor del Player; RMB orbita, wheel ajusta zoom y MMB recentra. La composición artística final (framing, pitch/zoom de referencia y lectura isométrica) sigue siendo tuning, no una decisión sobre cambiar a TPS/shoulder cam. | `CONFIRMED VISUAL + CAMERA CONTROL DIRECTION / COMPOSITION TUNING PENDING` |
+| Cadencia de combate | El juego y los encuentros son en tiempo real: no hay turnos ni Action Points. El rifle actual sigue siendo un prototipo técnico; el handling, ritmo, cadencias por arma y balance final requieren specs/playtest posteriores. | `CONFIRMED REAL-TIME / DETAILED COMBAT FEEL PENDING` |
 | Palabra rectora | v3.1 propone `PENSAR`. | `PENDING MAURO DECISION` |
 | Tono | Melancolía, peligro, silencio, ruina, viaje y belleza natural sobre la destrucción están confirmados; los límites de horror y violencia todavía requieren consolidación. | `PARTIAL CONFIRMATION` |
 | Zombis | No pertenecen a Old Scars. | `CONFIRMED — RECENT DECISION` |
 | Progreso | El progreso debe ampliar opciones y alcance sin eliminar vulnerabilidad. El modelo social/logístico exacto sigue abierto. | `DESIGN TARGET` |
-| Plataforma y tienda | PC/Windows, Steam y una experiencia premium para un jugador son propuestas, no compromisos comerciales aprobados. | `PROPOSAL — PENDING MAURO DECISION` |
+| Plataforma y tienda | PC/Windows, Steam y el modelo comercial premium siguen siendo propuestas, no compromisos comerciales aprobados. El carácter single-player se confirma por separado y no depende de esta decisión comercial. | `COMMERCIAL/PLATFORM PROPOSAL — PENDING MAURO DECISION` |
 | Idiomas y clasificación | Español/inglés y 16+/M son hipótesis de planificación. | `PROPOSAL — PENDING MAURO DECISION` |
 
 ### Pilares De Diseño
@@ -348,7 +348,7 @@ PC/Windows, Steam, precio premium, tags, idiomas, clasificación, deck para publ
 
 ## Línea Base De Producción
 
-El roadmap canónico no se duplica aquí. M41.1 y `AI Ready` están cerrados; no hay milestone de implementación activo. La próxima secuencia conceptual prioriza foundations open-world y un Connected First Playable antes de reordenar los sistemas posteriores.
+El roadmap canónico no se duplica aquí. M41 / `AI Ready` están cerrados y no hay un milestone grande `Mxx` nuevo activo; el trabajo operativo vigente es la slice acotada `IMPL-0063 Stage 1`, ya VALIDATED/PUBLISHED y pendiente de revisión antes de autorizar otra fase. La secuencia conceptual continúa priorizando foundations open-world y un Connected First Playable antes de reordenar sistemas posteriores.
 
 Los IDs, estados, gates, dependencias y el camino vigente viven en [Project_Roadmap.md](Project_Roadmap.md). La arquitectura futura vive en [Open_World_Architecture.md](Open_World_Architecture.md). La evidencia y los riesgos viven en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 
@@ -363,9 +363,9 @@ Las definiciones de arsenal y vehículos fijan dirección de diseño. No adelant
 ## Cola De Decisiones Creativas Pendientes De Mauro
 
 1. combinación exacta de géneros de mercado;
-2. turnos/AP, tiempo real u otra cadencia de encuentros;
+2. handling, ritmo y balance final del combate dentro del tiempo real ya confirmado; turnos/AP no están pendientes;
 3. `PENSAR` como palabra rectora;
-4. cámara final fija o rotatable;
+4. composición artística final de la cámara top-down/orbital ya confirmada (framing, pitch/zoom de referencia y lectura visual); la órbita rotatable no está pendiente;
 5. límites tonales completos;
 6. historia exacta del colapso y rol de la enfermedad;
 7. historia, cronología y atributos abiertos de Vandor y Velgrad;
@@ -373,7 +373,7 @@ Las definiciones de arsenal y vehículos fijan dirección de diseño. No adelant
 9. rol del protagonista y semilla del abuelo/bandidos;
 10. estructura de campaña, mapa, regiones, facciones modernas y finales;
 11. reglas detalladas de daño localizado, armadura, penetración y medicina;
-12. muerte, incapacidad, checkpoints, autosave, dificultad y recuperación;
+12. detalle de incapacidad, checkpoints, autosave, dificultad y recuperación; el permadeath opcional está confirmado como opción y no como único modo;
 13. compañeros y su horizonte de lanzamiento;
 14. profundidad del refugio;
 15. alcance técnico, milestones y prioridad de los vehículos usables;
