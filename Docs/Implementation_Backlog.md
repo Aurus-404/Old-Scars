@@ -738,3 +738,16 @@ Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe ref
 - **Relación:** Inventory Grid Drag, item-owned storage, `GridStorageTransferService`, IMPL-0066, `ISSUE-0030` e `IMPL-0056`.
 - **Prioridad:** registrado como follow-up; no cambia el NEXT EXACT STEP actual ni abre trabajo paralelo a IMPL-0066.
 
+## IMPL-0069 — Drop físico del arma al morir un NPC
+
+- **Estado:** `PLANNED / AUTHORIZED`.
+- **Fecha/origen:** 2026-10-01 — idea de mecánica confirmada explícitamente por Mauro.
+- **Qué queremos:** cuando un NPC armado entra en estado `Dead`, el arma que tenía activa/equipada para combate deja de pertenecer al corpse/equipment y se materializa físicamente junto al cuerpo como un `WorldItemPickup`, lista para ser recogida mediante el flujo normal de pickup.
+- **Contrato de identidad/estado:** debe caer la misma `ItemInstance`, sin clonarla ni rerollearla. Debe conservar DefinitionId, InstanceId, condición, munición cargada y cualquier otro estado durable que ya pertenezca al arma. La transición debe reutilizar la autoridad existente de Equipment/ownership/drop en lugar de crear una ruta especial de loot.
+- **Contrato de corpse loot:** esta mecánica introduce una excepción deliberada a la continuidad histórica `PRE-DEATH BELONGINGS == CORPSE BELONGINGS`: únicamente el arma activa que se suelta pasa al mundo; el resto de pertenencias del NPC continúa en el corpse/inventory salvo que otro scope futuro defina lo contrario.
+- **Por qué:** hace que una muerte armada tenga una consecuencia física inmediata y legible, vuelve el arma parte real del escenario de combate y permite recogerla directamente del suelo sin abrir primero el inventario del cadáver.
+- **Validación mínima:** NPC armado muere → aparece exactamente un pickup del arma; el corpse deja de poseer esa instancia; recogerla transfiere la misma identidad/estado al Player; NPC desarmado no genera drop; reentradas/restore no duplican el arma; save/load conserva correctamente si el arma quedó en el suelo o fue recogida.
+- **Límites:** no soltar automáticamente backpack, ropa, armadura ni armas guardadas/holstered; no agregar impulso físico complejo, lanzamiento dramático, desarme previo a la muerte ni loot reroll dentro de esta entrada. La colocación inicial sólo necesita evitar quedar inaccesible o embebida en el corpse/terrain.
+- **Relación:** M38 Actor Lifecycle, M40 Combat/Weapons y drop/pickup existente, Equipment, ownership, `DroppedWorldItemSpawner`, `WorldItemPickup`, corpse loot y Persistence.
+- **Prioridad:** follow-up futuro; registrarlo no cambia el `NEXT EXACT STEP` ni abre trabajo paralelo al scope activo.
+
