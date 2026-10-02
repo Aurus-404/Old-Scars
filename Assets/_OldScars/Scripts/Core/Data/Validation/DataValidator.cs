@@ -1302,6 +1302,11 @@ namespace OldScars.Core.Data.Validation
                     report.Error($"{ctx}: 'display_name' is required.");
                 if (profile.width <= 0 || profile.width > MaxItemStorageDimension)
                     report.Error($"{ctx}: 'width' must be between 1 and {MaxItemStorageDimension} (got {profile.width}).");
+                if (profile.max_content_weight_kg.HasValue)
+                    RequireFinitePositive(profile.max_content_weight_kg.Value, "max_content_weight_kg", ctx);
+                if (profile.carried_weight_multiplier.HasValue &&
+                    (!FinitePositive(profile.carried_weight_multiplier.Value) || profile.carried_weight_multiplier.Value > 1f))
+                    report.Error($"{ctx}: 'carried_weight_multiplier' must be finite and in (0, 1] (got {profile.carried_weight_multiplier}).");
                 if (profile.height <= 0 || profile.height > MaxItemStorageDimension)
                     report.Error($"{ctx}: 'height' must be between 1 and {MaxItemStorageDimension} (got {profile.height}).");
             }

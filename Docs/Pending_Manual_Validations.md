@@ -211,3 +211,21 @@ Si resulta práctico, provocar un assembly/domain reload durante Play o usar la 
 3. actualizar `Docs/Development_Log.md` append-only;
 4. si compile + export + uniqueness pasan, marcar IMPL-0042 `DONE / ACCEPTED / PUBLISHED`; Reload continuity puede ser gate obligatorio si la configuración vigente realmente recarga dominio durante Play;
 5. un Console Log limpio NO equivale por sí solo a PASS de un playtest: sigue siendo evidencia, no veredicto.
+
+
+## IMPL-0066 — Container structural capacity / equipped ergonomics
+
+**Estado:** IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING (2026-10-02). Gates TEST-20261001-012/013/014/015/016 preservados; TEST-20261002-002/003 revalidación reconciliada PASS. TEST-20261002-001 registra la evidencia manual core de Mauro: ergonomía física/efectiva, límite small 20 kg, rechazo sin partial, reingreso y save/load productivo PASS. El checklist core se conserva como referencia; sólo el punto 8 sigue pendiente. Checkpoint autorizado para publicación, sin DONE ni ACCEPTED. IMPL-0063 requiere nueva autorización.
+
+Usar `Assets/Scenes/SampleScene.unity` en Play; `I` = Inventory, `F3` = Runtime Debug Tools / Item Debug. Preparar una mochila y contenido conocido con Item Debug. Small/medium/large: máximos 20/30/40 kg, contenido equipado ×0.80/0.70/0.60, provisional. No alterar perfiles para esta prueba.
+
+1. Con mochila cargada en inventario personal, comprobar que masa física = carga efectiva; observar contenido físico/max y ergonomía inactiva.
+2. Equipar mochila cargada: masa física igual; carga efectiva baja sólo por contenido. Ejemplo small: 10 kg de contenido produce 2 kg de reducción; masa propia completa.
+3. Desequipar: carga efectiva vuelve inmediatamente a la masa física.
+4. Equipar y mover contenido entre personal y mochila: masa física total igual; carga efectiva cambia según su ubicación.
+5. Llevar la mochila al máximo de contenido con celdas libres; intentar ingreso adicional y comprobar rechazo con kg actuales/máximos/entrantes, sin perder/mover parcialmente items. Ejemplo small: 800 balas .303 = 20 kg de contenido; la siguiente debe rechazarse aunque haya grid libre.
+6. Retirar suficiente contenido; comprobar que el mismo ingreso ahora funciona y que la movilidad derivada se recupera al descargar.
+7. **PASS reportado por Mauro:** MainMenu → WorldRuntime → Save Game / Load Game mediante el flujo productivo; conserva estado y carga derivada. Evidencia manual formal en TEST-20261002-001; la prueba automatizada de Current Slice no sustituye este reporte.
+8. Repetir la sensación de carga con pequeña/media/grande; Mauro acepta los valores provisionales o indica cambios concretos de tuning.
+
+Después del checkpoint: Mauro compara pequeña/media/grande y acepta o ajusta el tuning provisional (punto 8). Registrar esa nueva ejecución con TEST libre y aplicar sólo cambios autorizados. El checkpoint de implementación no cierra la aceptación de IMPL-0066 ni autoriza iniciar IMPL-0063.

@@ -324,7 +324,10 @@ Los items equipables usan alternativas completas mediante `slot_sets`:
 - Un item puede declarar opcionalmente `owned_storage_profile_id`, Global Content ID que referencia un `ItemStorageProfileDefinition` cargado desde `item_storage_profiles/*.json`.
 - Todo item con `owned_storage_profile_id` debe usar `max_stack = 1`; cada runtime `ItemInstance` crea un storage independiente y nunca comparte estado por `DefinitionId`.
 - Los perfiles usan `type: "item_storage_profile"`, `id`, `display_name`, `width` y `height`; dimensiones validas actuales: `1..64`.
-- El JSON define dimensiones y referencia. Contenido, placements, versiones, owner raiz, peso y prohibicion de nesting son estado/logica C# runtime.
+- IMPL-0066 añade `max_content_weight_kg` opcional/nullable: ausente/null = sin límite estructural de kg; si se declara, debe ser finito y `> 0`. `carried_weight_multiplier` opcional/nullable: ausente/null = `1`; si se declara, debe ser finito y estar en `(0, 1]`. DataValidator valida ambos; los perfiles externos existentes que omiten los campos siguen válidos.
+- El máximo usa masa física de contenido, incluida munición cargada, y gobierna sólo ingresos futuros por el guard del contenedor (epsilon `0.000001 kg`), sin clamp automático. La ergonomía sólo reduce la carga efectiva del contenido cuando el item está realmente equipado; su propia masa siempre cuenta al 100%. No cambia ItemWeightResolver ni la Carry Capacity del actor.
+- Core pequeña/media/grande: `20/30/40 kg` y multiplicadores `0.80/0.70/0.60`, exclusivamente tuning provisional para aceptación manual pendiente, no balance canon. Restore preserva contenido previo aunque supere el nuevo máximo; no persiste carga efectiva ni parámetros del perfil.
+- El JSON define dimensiones, referencia y parámetros estructurales/ergonómicos opcionales. Contenido, placements, versiones, owner raiz, masa derivada y prohibicion de nesting son estado/logica C# runtime.
 - M34.2 v0 permite un solo storage por item y prohibe item-owned storage dentro de otro item-owned storage. No define pockets, multiples compartimentos ni save data.
 - `ActorProfileDefinition.inventory_seed_actor_tag` es un bootstrap debug opcional para aplicar solo `initial_inventory` a un actor sin `ActorProfileComponent`; el tag debe existir, aparecer en `initial_tags`, ser unico entre profiles y tener contenido inicial.
 
@@ -338,7 +341,9 @@ Ejemplo de item-owned storage profile:
       "id": "core:backpack_small_01",
       "display_name": "Mochila pequena",
       "width": 8,
-      "height": 10
+      "height": 10,
+      "max_content_weight_kg": 20,
+      "carried_weight_multiplier": 0.80
     }
   ]
 }

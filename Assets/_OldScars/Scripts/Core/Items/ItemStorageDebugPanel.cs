@@ -638,8 +638,12 @@ namespace OldScars.Core.Items
                 personalStorageNavigator.TryGetContainerEntry(selectedId, out ItemStorageEntry containerEntry) &&
                 containerEntry?.Item?.OwnedStorage != null)
             {
-                double contentWeight = containerEntry.Item.OwnedStorage.GetContentWeightKg(out _);
-                GUILayout.Label($"Contenido: {contentWeight:0.00} kg");
+                ItemOwnedStorageRuntime storage = containerEntry.Item.OwnedStorage;
+                double contentWeight = storage.GetContentWeightKg(out string weightError);
+                string maximum = storage.MaxContentWeightKg.HasValue ? $"{storage.MaxContentWeightKg.Value:0.##} kg" : "sin límite";
+                GUILayout.Label(weightError == null ? $"Contenido físico: {contentWeight:0.00} kg / {maximum}" : $"Contenido: {weightError}");
+                bool active = actorEquipment?.IsEquipped(containerEntry.Item.InstanceId) == true;
+                GUILayout.Label($"Ergonomía: ×{storage.CarriedWeightMultiplier:0.00} ({(active ? "activa" : "inactiva")})");
             }
         }
 
@@ -1557,7 +1561,8 @@ namespace OldScars.Core.Items
             CarryWeightSnapshot snapshot = targetInventory.GetCarryWeightSnapshot();
             if (snapshot.IsValid)
             {
-                GUILayout.Label($"Carry: {snapshot.CurrentWeightKg:0.00} / {snapshot.CarryCapacityKg:0.00} kg");
+                GUILayout.Label($"Masa física: {snapshot.CurrentWeightKg:0.00} kg");
+                GUILayout.Label($"Carga efectiva: {snapshot.EffectiveLoadKg:0.00} / {snapshot.CarryCapacityKg:0.00} kg");
                 GUILayout.Label($"Movement factor: {snapshot.LocomotionFactor:0.00}");
                 GUILayout.Label($"Encumbrance: {snapshot.LoadRatio * 100d:0}% — {snapshot.State}");
                 return;

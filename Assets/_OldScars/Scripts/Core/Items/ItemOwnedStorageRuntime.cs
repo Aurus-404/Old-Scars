@@ -42,6 +42,8 @@ namespace OldScars.Core.Items
 
         public string ContainerInstanceId => containerItem.InstanceId;
         public string ProfileId => profile.id;
+        public double? MaxContentWeightKg => profile.max_content_weight_kg;
+        public float CarriedWeightMultiplier => profile.carried_weight_multiplier ?? 1f;
         public string GridStorageDisplayName => profile.display_name;
         public IReadOnlyList<ItemStorageEntry> GridStorageEntries => storage.Entries;
         public bool UsesGridLayout => gridRuntime.UsesGridLayout;
@@ -117,6 +119,28 @@ namespace OldScars.Core.Items
             {
                 reason = NestedStorageRejectionMessage;
                 return false;
+            }
+
+            if (MaxContentWeightKg.HasValue)
+            {
+                double currentKg = GetContentWeightKg(out string weightError);
+                if (weightError != null)
+                {
+                    reason = weightError;
+                    return false;
+                }
+                if (!ItemWeightResolver.TryGetEntryWeight(entry, quantity, out double incomingKg, out weightError))
+                {
+                    reason = weightError;
+                    return false;
+                }
+
+                double maximumKg = MaxContentWeightKg.Value;
+                if (currentKg + incomingKg > maximumKg + 0.000001d)
+                {
+                    reason = $"Capacidad del contenedor: {currentKg:0.###} / {maximumKg:0.###} kg; ingreso: {incomingKg:0.###} kg. Retirá contenido antes de ingresar esa cantidad.";
+                    return false;
+                }
             }
 
             return true;

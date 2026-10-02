@@ -5,21 +5,27 @@
       "id": "core:backpack_small_01",
       "display_name": "Mochila pequeña",
       "width": 8,
-      "height": 10
+      "height": 10,
+      "max_content_weight_kg": 20,
+      "carried_weight_multiplier": 0.8
     },
     {
       "type": "item_storage_profile",
       "id": "core:backpack_medium_01",
       "display_name": "Mochila intermedia",
       "width": 10,
-      "height": 12
+      "height": 12,
+      "max_content_weight_kg": 30,
+      "carried_weight_multiplier": 0.7
     },
     {
       "type": "item_storage_profile",
       "id": "core:backpack_large_01",
       "display_name": "Mochila grande",
       "width": 12,
-      "height": 14
+      "height": 14,
+      "max_content_weight_kg": 40,
+      "carried_weight_multiplier": 0.6
     }
   ]
 }

@@ -226,13 +226,13 @@ Referencia: `IMPL-0020`.
 
 ### 12.1 — Follow-up Carry/Storage — IMPL-0066
 
-Estado: `PLANNED / AUTHORIZED NEXT` — derivado de aceptación manual del 2026-10-01.
+Estado: `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING` — TEST-20261001-012/013/014/015/016 conservados; TEST-20261002-001 PASS manual core/save-load reportado por Mauro; TEST-20261002-002/003 gate reconciliado PASS. Checkpoint de implementación autorizado para publicación en dev; próxima acción: decisión comparativa de tuning pequeña/mediana/grande. No DONE ni ACCEPTED; IMPL-0063 requiere autorización posterior de Mauro.
 
 Objetivo acotado: separar tres propiedades data-driven de mochilas/contenedores equipables: (1) grid/footprint, (2) peso máximo de contenido que el contenedor acepta y (3) reducción ergonómica de carga efectiva sólo mientras esté correctamente equipado. La masa física de items y contenido no cambia; el límite de kg pertenece al storage y no al actor.
 
 Acceptance: grid y límite de kg funcionan de forma independiente; una mochila equipada puede reducir Encumbrance del contenido sin modificar masa; desequiparla elimina la reducción; transfer/equipment/rollback/persistence siguen conservando identidad y masa; debug UI hace observable el contrato.
 
-Límites: sin Strength/stats, sin aumento global de Carry Capacity, sin rotura de mochila, sin nested containers nuevos y sin framework general de modifiers. Valores exactos de kg/reducción son tuning futuro.
+Límites: sin Strength/stats, sin aumento global de Carry Capacity, sin rotura de mochila, sin nested containers nuevos y sin framework general de modifiers. Tuning provisional Core pequeña/media/grande: 20/30/40 kg y ×0.80/0.70/0.60, pendiente del feel manual; no balance canon.
 
 Referencia: `IMPL-0066`.
 

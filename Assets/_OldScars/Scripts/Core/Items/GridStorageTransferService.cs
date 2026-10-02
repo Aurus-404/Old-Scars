@@ -240,7 +240,14 @@ namespace OldScars.Core.Items
                     destinationInstanceId);
             }
 
-            if (!CanAcceptIncoming(destination, sourceEntry, sourceEntry.Quantity, out string guardReason))
+            GridStorageMergePreview preview = sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
+                destinationEndpoint.TransferBackend,
+                sourceInstanceId,
+                destinationInstanceId);
+            if (!preview.IsValid)
+                return preview;
+
+            if (!CanAcceptIncoming(destination, sourceEntry, preview.TransferQuantity, out string guardReason))
             {
                 return GridStorageMergePreview.Invalid(
                     InventoryMutationResult.MutationFailure.InvalidArguments,
@@ -248,13 +255,6 @@ namespace OldScars.Core.Items
                     sourceInstanceId,
                     destinationInstanceId);
             }
-
-            GridStorageMergePreview preview = sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
-                destinationEndpoint.TransferBackend,
-                sourceInstanceId,
-                destinationInstanceId);
-            if (!preview.IsValid)
-                return preview;
 
             return preview;
         }
@@ -297,15 +297,6 @@ namespace OldScars.Core.Items
                     sourceInstanceId);
             }
 
-            if (!CanAcceptIncoming(destination, sourceEntry, sourceEntry.Quantity, out string guardReason))
-            {
-                return InventoryMutationResult.Rejected(
-                    InventoryMutationResult.MutationFailure.InvalidArguments,
-                    guardReason,
-                    sourceEntry.Quantity,
-                    sourceInstanceId);
-            }
-
             GridStorageMergePreview currentPreview = sourceEndpoint.TransferBackend.PreviewMergeIntoTarget(
                 destinationEndpoint.TransferBackend,
                 sourceInstanceId,
@@ -316,6 +307,15 @@ namespace OldScars.Core.Items
                     currentPreview.Failure,
                     currentPreview.Message,
                     0,
+                    sourceInstanceId);
+            }
+
+            if (!CanAcceptIncoming(destination, sourceEntry, currentPreview.TransferQuantity, out string guardReason))
+            {
+                return InventoryMutationResult.Rejected(
+                    InventoryMutationResult.MutationFailure.InvalidArguments,
+                    guardReason,
+                    currentPreview.TransferQuantity,
                     sourceInstanceId);
             }
 

@@ -16,10 +16,13 @@ namespace OldScars.Core.Actors
         [SerializeField] private float baseCarryCapacityKg = 30f;
         [SerializeField, Range(0.01f, 1f)] private float minimumMovementFactor = 0.15f; // Provisional tuning at 100% capacity.
 
+        private ActorEquipmentComponent equipmentComponent;
+
         private readonly HashSet<string> loggedErrors = new HashSet<string>();
 
         public float BaseCarryCapacityKg => baseCarryCapacityKg;
         public double CurrentWeightKg => GetSnapshot().CurrentWeightKg;
+        public double EffectiveLoadKg => GetSnapshot().EffectiveLoadKg;
         public double CarryCapacityKg => baseCarryCapacityKg;
         public double LoadRatio => GetSnapshot().LoadRatio;
         public float LocomotionFactor => GetSnapshot().LocomotionFactor;
@@ -51,7 +54,10 @@ namespace OldScars.Core.Actors
             if (ownershipComponent != null && !ownershipComponent.ValidateUniqueOwnership(out string ownershipError))
                 return InvalidSnapshot(ownershipError);
 
+            if (equipmentComponent == null)
+                equipmentComponent = GetComponent<ActorEquipmentComponent>();
             double currentWeightKg = 0d;
+            double effectiveLoadKg = 0d;
             IReadOnlyList<ItemStorageEntry> entries = ownershipComponent != null
                 ? ownershipComponent.GetAllDirectEntries()
                 : inventoryComponent.Entries;
@@ -67,19 +73,36 @@ namespace OldScars.Core.Actors
                 }
 
                 currentWeightKg += stackWeightKg;
+                double effectiveEntryKg = stackWeightKg;
+                if (entry.Item.HasOwnedStorage && equipmentComponent != null &&
+                    equipmentComponent.IsEquipped(entry.Item.InstanceId))
+                {
+                    ItemOwnedStorageRuntime storage = entry.Item.OwnedStorage;
+                    double contentKg = storage.GetContentWeightKg(out error);
+                    if (error != null)
+                        return InvalidSnapshot(error);
+                    float multiplier = storage.CarriedWeightMultiplier;
+                    if (!IsFinite(multiplier) || multiplier <= 0f || multiplier > 1f)
+                        return InvalidSnapshot($"Invalid carried weight multiplier for storage '{storage.ProfileId}'.");
+                    effectiveEntryKg = stackWeightKg - contentKg + contentKg * multiplier;
+                }
+                effectiveLoadKg += effectiveEntryKg;
             }
 
             if (!IsFinite(currentWeightKg) || currentWeightKg < 0d)
                 return InvalidSnapshot($"Calculated carry weight is invalid ({currentWeightKg}).");
 
-            double ratio = currentWeightKg / capacityKg;
+            if (!IsFinite(effectiveLoadKg) || effectiveLoadKg < 0d)
+                return InvalidSnapshot($"Calculated effective load is invalid ({effectiveLoadKg}).");
+
+            double ratio = effectiveLoadKg / capacityKg;
             CarryWeightState state = ratio <= 0.75d + LimitEpsilon
                 ? CarryWeightState.Normal
                 : ratio <= 1d + LimitEpsilon ? CarryWeightState.Encumbered : CarryWeightState.Overloaded;
             float factor = state == CarryWeightState.Overloaded ? 0f
                 : state == CarryWeightState.Normal ? 1f
                 : Mathf.Lerp(1f, minimumMovementFactor, Mathf.Clamp01((float)((ratio - 0.75d) / 0.25d)));
-            return new CarryWeightSnapshot(currentWeightKg, capacityKg, ratio, state, factor, true, null);
+            return new CarryWeightSnapshot(currentWeightKg, effectiveLoadKg, capacityKg, ratio, state, factor, true, null);
         }
 
         private bool ResolveInventoryComponent()

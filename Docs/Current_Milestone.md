@@ -68,11 +68,11 @@ ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el
 
 **IMPL-0020 — Carry Weight / Encumbrance compartido: DONE / ACCEPTED / PUBLISHED — 2026-10-01.** Carry deriva masa/capacidad/estado/factor; no limita storage. Player/NPC comparten ralentización y pausa reversible; Search conserva presupuesto durante overload; restore conserva todos los items. Gates `TEST-20261001-002/004/005/006/008/009/010`; manual/visual N/A. Los cambios locales previos de IMPL-0061 siguen fuera de este cierre.
 
-**FOLLOW-UP DE ACEPTACIÓN MANUAL — IMPL-0066 PLANNED / AUTHORIZED NEXT.** El playtest manual de Mauro confirmó la consecuencia locomotora base de IMPL-0020 y detectó una carencia de producto en mochilas: hoy el contenido conserva la misma carga efectiva dentro/fuera de la mochila. IMPL-0066 agregará, sin reabrir el hard limit del actor, tres propiedades independientes para contenedores equipables: grid espacial, peso máximo de contenido y reducción ergonómica data-driven de la carga efectiva mientras estén correctamente equipados.
+**FOLLOW-UP — IMPL-0066 IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING.** La implementación separa grid, máximo estructural de contenido y carga efectiva con ergonomía sólo al equipar. CurrentWeightKg permanece físico y el save schema no cambia. Gates TEST-20261001-012/013/014/015/016 conservados; gate reconciliado TEST-20261002-002/003 PASS. Evidencia manual de Mauro en TEST-20261002-001: core, límite/reingreso y flujo productivo Save Game / Load Game PASS. Checkpoint de implementación autorizado para publicación en dev; Core 20/30/40 kg y ×0.80/0.70/0.60 siguen provisionales. No DONE ni ACCEPTED.
 
-**PLAYTEST PARCIAL IMPL-0066 — 2026-10-01.** La implementación local no publicada mostró conservación de masa física y reducción de carga efectiva correcta en el caso mochila pequeña + rifle (`6.30 kg physical → 5.34 kg effective` con multiplier `0.80`). El gate manual de capacidad estructural/reingreso también pasó: `800 × .303 = 20.00 / 20 kg`, la bala extra de `0.025 kg` fue rechazada sin partial transfer aunque quedaran celdas y, tras retirar contenido, volvió a aceptarse ingreso. La aceptación sigue PENDING únicamente por save-load manual y tuning comparativo de pequeña/mediana/grande. Los hallazgos `ISSUE-0028`, `ISSUE-0029` y `ISSUE-0030` quedan fuera del scope; `IMPL-0067` y `IMPL-0068` permanecen en backlog y NO alteran el orden operativo actual.
+**PLAYTEST PARCIAL IMPL-0066 — 2026-10-01.** La implementación local no publicada mostró conservación de masa física y reducción de carga efectiva correcta en el caso mochila pequeña + rifle (`6.30 kg physical → 5.34 kg effective` con multiplier `0.80`). El gate manual de capacidad estructural/reingreso también pasó: `800 × .303 = 20.00 / 20 kg`, la bala extra de `0.025 kg` fue rechazada sin partial transfer aunque quedaran celdas y, tras retirar contenido, volvió a aceptarse ingreso. El reporte posterior de Mauro (2026-10-02, TEST-20261002-001) confirma Save Game / Load Game por MainMenu → WorldRuntime PASS; queda pendiente únicamente el tuning comparativo de pequeña/mediana/grande. Los hallazgos `ISSUE-0028`, `ISSUE-0029` y `ISSUE-0030` quedan fuera del scope; `IMPL-0067` y `IMPL-0068` permanecen en backlog y NO alteran el orden operativo actual.
 
-**NEXT EXACT STEP: IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables.** Cerrar el follow-up de mochilas derivado del playtest antes de abrir otro scope.
+**NEXT EXACT STEP: IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables.** Mauro decide el tuning comparativo pequeña/mediana/grande tras el checkpoint; no iniciar IMPL-0063 sin nueva autorización explícita.
 
 **NEXT AFTER IMPL-0066: IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable.** Conserva prioridad alta y su primera slice sigue siendo audit/integration gate + stable terrain chunk identity. IMPL-0021 permanece detrás de IMPL-0063.
 
@@ -111,7 +111,7 @@ La secuencia sistémica aprobada es:
 
 1. `ISSUE-0022` loaded ammo mass: DONE / RESOLVED / PUBLISHED; conservación corregida antes de Encumbrance.
 2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC — DONE / ACCEPTED / PUBLISHED; playtest manual confirma la base y origina el follow-up de storage/ergonomía.
-3. `IMPL-0066` Capacidad estructural y ergonomía de contenedores equipables — `PLANNED / AUTHORIZED NEXT`; cerrar antes de worldgen.
+3. `IMPL-0066` Capacidad estructural y ergonomía de contenedores equipables — `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING`; checkpoint autorizado, aceptación final pendiente.
 4. `IMPL-0063` Integración productiva Worldgen procedural + terreno volumétrico deformable — `HIGH PRIORITY / AUTHORIZED AFTER IMPL-0066`; ejecutar en slices acotadas.
 5. `IMPL-0021` Localized Limb Impairment vuelve a cola posterior, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
 
@@ -128,7 +128,7 @@ Aplicacion al estado actual:
 - M41, Invisible to AI, Player Debug Invincible e ISSUE-0022 Loaded Ammo Mass Conservation permanecen cerrados; no forman una lista abierta.
 - Antes de abrir trabajo nuevo, deben reconciliarse/cerrarse las validaciones pendientes que realmente sigan vigentes en el checkout canonico.
 - IMPL-0020 completó su scope técnico propio; la aceptación manual posterior abrió únicamente IMPL-0066 como follow-up acotado de contenedores/ergonomía.
-- `IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables` es NEXT EXACT STEP. No iniciar IMPL-0063 hasta cerrar implementación, validación, documentación, review y publicación de IMPL-0066.
+- `IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables` es NEXT EXACT STEP. El checkpoint publica implementación y evidencia core, sin cerrar la aceptación del tuning. No iniciar IMPL-0063 sin autorización posterior de Mauro.
 - `IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable` conserva prioridad alta y pasa a NEXT AFTER IMPL-0066.
 - `IMPL-0021` y cualquier otra idea permanecen detrás de IMPL-0063 salvo una re-priorización explícita posterior.
 

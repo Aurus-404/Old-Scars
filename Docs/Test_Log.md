@@ -267,3 +267,73 @@ Historical next action after TEST-002: run the P9 NPC↔Player manual integratio
 - Documentation: IMPL-0020 closed, provisional 0.15/30 kg tuning explicit, genuine manual acceptance N/A explained, earlier FAIL results retained, IMPL-0063 promoted only as the next bounded task; IMPL-0021 remains behind it. Project_Roadmap owns no newly changed truth and was not edited ceremonially.
 - Review method: direct complete scoped diff and evidence review in this zero-subagent task; no claim of an independent agent or manual Unity playtest.
 - Next action: commit the exact reviewed staged content, push dev, and verify remote equality/divergence. Preserve the intentionally dirty user-owned checkout.
+
+
+## TEST-20261001-012 — IMPL-0066 — Focused container capacity / equipped ergonomics
+
+- Date: 2026-10-01. Type: AUTOMATED / CONNECTED UNITY EDITOR, canonical warm checkout; Unity 6000.4.6f1, SampleScene. Base cc5fc746731a9b4cf6808d25561140b4eb6bcd03 with preserved local Social/combat changes. No independent clean-checkout claim, alternate project, cold Library, GUI termination or restart.
+- Result: **PASS**. Runtime/Editor compile passed; ContainerCarryDiagnostics completed DATA/STORAGE/CARRY/PERSISTENCE assertions and exact initial Current Slice cleanup.
+- DATA: omitted JSON fields deserialize null; default unlimited max/multiplier 1, valid optional parameters and loaded Core 20/30/40 kg with 0.80/0.70/0.60. Existing DataValidator rejects max zero/negative/NaN/+Infinity/-Infinity and multiplier zero/negative/>1/NaN/+Infinity/-Infinity. Eleven intentionally emitted example:carrier validation errors are expected negative-test evidence, bounded by BEGIN/END markers, not unexpected runtime defects.
+- STORAGE: unlimited/default ingress, below/equal cap quantity ingress, atomic overweight full-stack/exact rejection with actionable kg message; independent grid-bounds failure and valid exact placement; no-nesting retained. Directed merge of a 999-round source into a 998-round destination checks/commits one round, not 999. Separate over-cap merge with stack room rejects without mutations. Loaded firearm rounds count toward max; Equipment→storage rejects over cap and commits at equal loaded mass. Failure fingerprints compare entry IDs/quantities, placements, root ownership and content/layout versions. No weight clamp or automatic partial fitting was introduced.
+- CARRY: personal→unequipped backpack preserves physical/effective mass; equip discounts only content, own mass full; unequip removes benefit immediately; equipped ingress/egress conserves physical mass and changes effective load. 75%/87.5% effective thresholds and overload use effective load, even when physical mass exceeds actor capacity. Overloaded actors can reorganize/unload; unloading restores factor. Loaded carrier drop removes complete subtree once, pickup into personal restores physical mass without ergonomics.
+- PERSISTENCE: seed a pre-existing over-cap backpack via temporarily unlimited fixture ingress, restore original Core maximum before real Current Slice capture/load; exact snapshot comparison preserves contents, equipment, identities/quantities, physical/effective derived values. Future ingress rejects while over cap, content removal remains allowed, subsequent ingress succeeds after capacity is freed. The temporary profile/carry fixture values and initial slice are restored in finally; no production persistence schema change.
+- Evidence: Logs/IMPL0066/focused-console.json and focused-result.txt; connected Editor SessionState result PASS. Functional assertions completed on the first run. Manual/game-feel/UI acceptance remains pending; tuning is provisional.
+
+## TEST-20261001-013 — IMPL-0066 — Inventory interaction UX regression
+
+- Date: 2026-10-01. Type: AUTOMATED / REGRESSION, same Play session as TEST-20261001-012.
+- Result: **PASS**. Existing InventoryInteractionUxDiagnostics unmodified: external consumable use/exact consumption, actor needs, context actions and one-unit/full-stack transfers. The new structural rule reuses the existing guard/rejection path and focused TEST-012 covers its rejection message and atomicity.
+- Evidence: Inventory Interaction UX Correction Diagnostics: PASS in Logs/IMPL0066/focused-console.json.
+
+## TEST-20261001-014 — IMPL-0066 — Identity / committed ownership / rollback regression
+
+- Date: 2026-10-01. Type: AUTOMATED / REGRESSION, Edit Mode prerequisite in existing LoadedAmmoMassConservationDiagnostics.Run().
+- Result: **PASS**. M36ItemIdentityDiagnostics.RunAndLog().Passed prerequisite succeeded before entering mass Play session. Existing split/merge/transfer identity, committed ownership binding and forced rollback assertions were retained unchanged. No exception from the prerequisite or diagnostic launch.
+- Evidence: successful connected-Editor launch of LoadedAmmoMassConservationDiagnostics.Run(), whose Require blocks entry if M36 fails; final mass PASS recorded in TEST-015. The Play transition clears the captured Console buffer, so this is prerequisite/control-flow evidence rather than a separately retained M36 console dump.
+
+## TEST-20261001-015 — IMPL-0066 — Loaded ammo physical mass conservation
+
+- Date: 2026-10-01. Type: AUTOMATED / REGRESSION, separate Play session in the same connected canonical Editor.
+- Result: **PASS**. Existing LoadedAmmoMassConservationDiagnostics unmodified, all assertions retained: partial/full/cancelled reload, equipped and owned-backpack movement, Current Slice restore, productive fire mass loss, dry-fire no mass loss, invalid loaded-profile rejection, exact loaded-rifle drop/pickup and initial-state cleanup. Actor Carry capacity temporarily 1 kg still exercises overload without vetoing actions. CurrentWeightKg remains physical despite the new effective-load derivation.
+- Evidence: Loaded Ammo Mass Conservation Diagnostics: PASS and successful issue0022_loaded/initial load records in Logs/IMPL0066/regressions-console.json. No unexpected Error/Exception/Assert in the captured regression Console. SampleScene returned to Edit Mode, not dirty.
+
+## TEST-20261001-016 — IMPL-0066 — Final compile / scoped preservation / pending-gate review
+
+- Date: 2026-10-01. Type: AUTOMATED COMPILE / STATIC REVIEW.
+- Result: **PASS**. Final Runtime/Editor recompile reports completed, failed=false, errors=[] after using existing cached Equipment references in debug readouts and correcting the diagnostic evidence output to the canonical absolute Logs path. These final edits change presentation reference reuse/output path/comments only; functional suites were not redundantly rerun.
+- Reviewed all nine changed productive files plus focused diagnostic/meta and eight changed docs. Task-only whitespace check passes. Thirteen unrelated dirty tracked files remain byte-identical to the post-sync snapshot; shared prior doc changes remain preserved. Append-only Development/Test history retained, no staged files, commit/push or protected settings/scenes mutation.
+- No physical ItemWeightResolver, persistence schema, Medical, actor admission, IDs/slot-specific carrier logic, additional modifiers or IMPL-0063 implementation. Existing Carry threshold/locomotion consumers remain unchanged; focused effective-load tests cover that changed input seam. No broad M41/whole-project rerun.
+- Evidence: Logs/IMPL0066/final-review.txt, task-manifest.json and connected recompile status. Expected TEST-012 validation errors are accounted for; no new known functional failure.
+- **Manual acceptance: PENDING / NOT EXECUTED.** Required by Mauro's IMPL-0066 request; SampleScene I/F3 checklist in Pending_Manual_Validations.md. Automated PASS does not accept tuning, mark DONE or permit final publication. NEXT EXACT STEP remains IMPL-0066 manual acceptance.
+
+- Observability limitation after final review: one additional read-only Pipeline eval of Editor scene/play state timed out at 5000 ms. No functional diagnostic or compile failed; the last successful scene/play read (after TEST-015) reported SampleScene, Edit Mode, not dirty. No retry, Unity restart or GUI control was performed. This tooling timeout does not constitute fresh scene-state confirmation.
+
+## TEST-20261002-001 — IMPL-0066 — Mauro manual core / productive save-load
+
+- Date recorded: 2026-10-02. Type: MANUAL / MAURO-REPORTED; formalizes the earlier remote playtest findings and Mauro's explicit checkpoint report. Not a new Codex-observed manual execution.
+- Result: **PASS (MANUAL CORE)**. Physical/effective ergonomics; small backpack structural maximum 20 kg; rejection over capacity with free cells and no partial transfer; ingress resumes after freeing capacity. Earlier observed fixture: 6.30 kg physical → 5.34 kg effective; 800 × .303 = 20 kg rejects the extra 0.025 kg; after removal 17.53 kg content / 19.03 kg physical / 15.52 kg effective.
+- Productive persistence: Mauro reports **PASS** through MainMenu → WorldRuntime → Save Game / Load Game. This evidence is separate from the automated Current Slice fixture. No persistence schema or derived-load state added.
+- Evidence: remote Development Log playtest entries of 2026-10-01 and Mauro's 2026-10-02 publication/checkpoint instruction. Existing ISSUE-0028/0029/0030 and IMPL-0067/0068 follow-ups remain outside this implementation.
+- **TUNING ACCEPTANCE PENDING:** comparative small/medium/large acceptance was not performed before Mauro left home. No DONE / ACCEPTED claim. Implementation checkpoint publication explicitly authorized despite that pending decision.
+
+## TEST-20261002-002 — IMPL-0066 — Reconciled focused Container Carry gate
+
+- Date: 2026-10-02, 09:21:26–09:21:39 UTC. Type: AUTOMATED / CONNECTED CANONICAL WARM UNITY 6000.4.6f1. Base 9c44c1377860ef0c47f67016954e34065a39c94f after preserving all four incoming documentation commits and unrelated local work; no source changed by reconciliation, independent clean-checkout claim, cold import, restart or GUI termination.
+- Result: **PASS**. Recompile status up_to_date, failed=false, errors=[]; focused ContainerCarryDiagnostics completed DATA/STORAGE/CARRY/PERSISTENCE and exact initial-state cleanup. Covers optional/default/invalid profile validation, independent grid/kg admission, actual directed-merge quantity, atomic rejection, loaded-ammo structural mass, equip-only ergonomics, full own mass, effective locomotion thresholds, overload/unload, loaded carrier drop/pickup and real Current Slice over-cap restore/recovery.
+- Console: eleven intentional example:carrier negative-validation errors between DATA BEGIN/END markers; no unexpected Error/Exception/Assert in the successful execution. Fresh SessionState PASS, phase empty, focused-result.txt written at 09:21:39 UTC; SampleScene returned to clean Edit Mode. Original saved MainMenu scene setup restored without saving scenes.
+- Evidence: Logs/IMPL0066/checkpoint-console-20261002.json and focused-result.txt; connected Editor recompile/SessionState result. Historical TEST-20261001-012..016 retained unchanged; loaded-ammo/M36 suites reused rather than redundantly rerun.
+- Tooling finding: an initial Pipeline launch request timed out at 20000 ms before diagnostic launch; a subsequent read confirmed MainMenu / idle / historical PASS. Only the later explicit SampleScene launch above produced this fresh PASS. No timeout is reported as a functional PASS. Background ticking was session-only; no graphical desktop control.
+
+## TEST-20261002-003 — IMPL-0066 — Reconciled embedded Inventory UX regression
+
+- Date: 2026-10-02. Type: AUTOMATED / REGRESSION, same single Play session as TEST-20261002-002.
+- Result: **PASS**. Existing InventoryInteractionUxDiagnostics unmodified, invoked by the focused gate: consumable use/exact consumption, actor needs, context actions and quantity/full-stack transfers. No separate session or broad regression sweep.
+- Evidence: Inventory Interaction UX Correction Diagnostics: PASS, console seq 5340 at 09:21:38 UTC, in Logs/IMPL0066/checkpoint-console-20261002.json.
+
+## TEST-20261002-004 — IMPL-0066 — Checkpoint scope / preservation / dedicated review
+
+- Date: 2026-10-02. Type: STATIC / PUBLICATION REVIEW. Result: **PASS**.
+- Complete task diff reviewed before staging: nine productive files, focused diagnostic/meta, eight scoped docs. Dedicated Codex review found no actionable defects in structural admission, actual merge quantity, mass conservation, equipped-only load, atomicity or unchanged persistence. Documentation-only final review entry added after that review.
+- Task-only whitespace check PASS; ItemWeightResolver, persistence/WorldSession schemas, worldgen and Packages unchanged; no global actor Carry admission limit, IMPL-0063 implementation or expanded scope. TEST-20261001-012..016 unchanged; unique test IDs and historical append-only records retained.
+- Preservation: 13 unrelated tracked and 13 unrelated untracked files byte-identical to snapshots; prior Social/combat/doc changes excluded from the checkpoint. All four incoming remote doc commits remain ancestors; remote backlog IMPL-0067/0068/0069 tail intact and Development Log remote history unchanged. Shared document staging contains only IMPL-0066 changes.
+- Evidence: scoped task-manifest, diff/stat, dedicated review output and preservation snapshots/checks retained outside Git; TEST-20261002-002/003 record the single final focused Unity execution. Implementation publication authorized with MANUAL CORE PASS / TUNING ACCEPTANCE PENDING; no DONE / ACCEPTED claim.
