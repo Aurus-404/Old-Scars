@@ -54,6 +54,7 @@ Autoridades por dominio:
 - [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección arquitectónica futura aprobada del mundo abierto, con estado explícito no implementado;
 - este documento contiene la línea base de diseño revisada y sus decisiones abiertas;
 - [DataDriven_JSON_Rules.md](DataDriven_JSON_Rules.md) define el contrato actual de JSON/datos;
+- [Lore/README.md](Lore/README.md) y las entradas `LORE-XXX` son la autoridad especializada de narrativa/worldbuilding por estado: una entrada `CANON` prevalece sobre wording histórico `PENDING` de este GDD dentro de su dominio;
 - [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md) desarrolla la evidencia de gates y el registro de riesgos;
 - el repositorio y los commits prueban qué existe técnicamente, no qué debe convertirse en el diseño final.
 
@@ -186,8 +187,8 @@ Los estados exactos de milestones siguen bajo la autoridad de [Project_Roadmap.m
 | Necesidades, tiempo y ambiente | Las presiones importan cuando alteran ruta, preparación o recuperación. | WorldClock, Hunger/Thirst y Rest/Sleep validados; bleeding consume el mismo delta. | Fatigue diferida; clima M42.0; comida/agua/ecología M42.1. |
 | Condition, repair, disassembly y crafting | Decisiones materiales distintas, no un árbol enciclopédico universal. | Condition inicial no mutable como sistema validado. | M43.0–M43.1. |
 | Skills y refugio | El progreso amplía opciones mientras la recuperación conserva costos. | No son sistemas finales. | M44.0–M44.1. |
-| IA y navegación | Comenzar con comportamiento diagnosticable de evitar, alertarse, huir o luchar. | Navegación, percepción e IA finales ausentes. | M41.0–M41.1. |
-| Mundo, contenido y narrativa | Un mundo lógico persistente, sectores grandes conectados, geografía continua, worldgen determinista, historia causal acotada y sitios/estructuras principalmente autorados. | `APPROVED DESIGN DIRECTION — NOT IMPLEMENTED`; el slice actual conserva sólo POIs/fixtures debug. | Foundations open-world `ID TBD`; M45–M47 requieren scope/sequence rebaseline. |
+| IA y navegación | Comenzar con comportamiento diagnosticable de evitar, alertarse, huir o luchar. | M41.0/M41.1 y el cierre M41 validaron Navigation, Perception, Avoid/Flee/Fight, LostContact/Search y la integración básica de combate humano; no son IA final de producción. | M41 cerrado; ampliaciones futuras sólo por scopes propios. |
+| Mundo, contenido y narrativa | Un mundo lógico persistente, sectores grandes conectados, geografía continua, worldgen determinista, historia causal acotada y sitios/estructuras principalmente autorados. | Foundations implementadas: World Session schema 7, Macro Plan/Geography/Water/Climate/Environment/Human Geography, Terrain Materialization, terrain volumétrico deformable y Stage 1 de identidad de chunks. Streaming, sector detail productivo, history y persistencia productiva de mutaciones siguen futuros. | IMPL-0063 Stage 1 VALIDATED; fases posteriores requieren revisión/autorización. |
 | Facciones | Alcance inicial: identidad, disposición y memoria mínima. | No hay sistema final. | M46.1; no hay simulación estratégica de guerra. |
 | UI, accesibilidad, arte y audio | Decisiones legibles, errores recuperables y presentación coherente con la dirección nostálgica. | Presentación debug y foundations visuales. | M45.1, M48.0 y M48.1. |
 
@@ -297,7 +298,7 @@ La dirección de diseño está confirmada, pero su implementación no se incorpo
 | Naturaleza y belleza entre ruinas | La naturaleza recupera concreto y espacios abandonados; la belleza melancólica forma parte del viaje. | `CONFIRMED — RECENT DECISION` |
 | Colapso mediante guerra por recursos y enfermedad | Diseño previo importante; causas y secuencia exactas carecen de una decisión cerrada. | `PENDING MAURO DECISION` |
 | Vandor y Velgrad | Existen y sus nombres forman parte de la dirección actual. Historia, geografía, culturas, doctrinas y cronología siguen abiertas. | `CONFIRMED — RECENT DECISION / LORE PENDING` |
-| Industria persistente y máquinas autónomas | Compatible con la dirección industrial; canon y prevalencia exactos siguen abiertos. | `DESIGN TARGET — PENDING MAURO DECISION` |
+| Industria temprana, termonita, acero térmico y armaduras motorizadas | `LORE-001` establece como CANON la industrialización temprana, termonita/acero térmico, persistencia de armadura y armaduras/exoesqueletos motorizados. El detalle exacto de computación/IA autónoma sigue abierto donde LORE-001 lo marca así. | `CANON VIA LORE-001 / COMPUTATION DETAILS PENDING` |
 | Protagonista | Comenzar siendo nadie es una propuesta de progresión, no un contrato fijo. | `PENDING MAURO DECISION` |
 | Abuelo y bandidos con cicatrices | Semilla narrativa opcional. | `PROPOSAL — PENDING MAURO DECISION` |
 | Campaña principal | Dirección más libertad; objetivo, estructura y finales abiertos. | `PENDING MAURO DECISION` |
@@ -307,7 +308,7 @@ La dirección de diseño está confirmada, pero su implementación no se incorpo
 | Compañeros | Posible propuesta sin milestone reservado. | `DEFERRED — PENDING MAURO DECISION` |
 | Vehículos | La dirección jugable y estética está confirmada; el alcance técnico y de producción requiere rebaseline. | `CONFIRMED DESIGN / OUT OF CURRENT SCOPE` |
 
-El contenido de lore debe distinguir hecho confirmado, rumor dentro del mundo, verdad desconocida y propuesta editorial. No completar la historia faltante a partir de equivalentes del mundo real ni de convenciones del género.
+El contenido de lore debe distinguir hecho confirmado, rumor dentro del mundo, verdad desconocida y propuesta editorial. `Docs/Lore/` gobierna el estado narrativo especializado; este GDD no degrada una entrada `CANON` a propuesta por estar desactualizado. No completar la historia faltante a partir de equivalentes del mundo real ni de convenciones del género.
 
 ## Presentación, UX Y Comunicación
 

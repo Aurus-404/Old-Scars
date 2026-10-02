@@ -81,7 +81,7 @@ Estas condiciones no crean un gate nuevo ni reservan milestone ID. Deben incorpo
 - content source identity/provenance mínima validada antes de crear mundos persistentes; su integración durable deberá revalidarse cuando exista World Plan/save;
 - generation compatibility explícita para sectores todavía no resueltos, sin usar silenciosamente versiones actuales;
 - identidad durable única a través de sectores activos e inactivos;
-- identity/topology/determinism, macro elevation/landforms, Macro Water y gameplay-quality globales validados; el Terrain Materialization Technical Spike demuestra consumo local derivado, pero climate/rivers y demás features cross-sector coherentes siguen requeridos antes de realización local de producción;
+- identity/topology/determinism, macro elevation/landforms, Macro Water, Macro Climate, Macro Environment/Biome Regions y gameplay-quality globales validados; Terrain Materialization + Deformable Volumetric Terrain Foundation + IMPL-0063 Stage 1 demuestran consumo local derivado e identidad de chunks, pero streaming, rivers finales/geology, sector detail y persistencia productiva de mutaciones siguen requeridos antes de realización local de producción;
 - derivación por dominios, canonical hashes y futura sector realization order independence;
 - world payload sobre M37 sin cambiar `current_slice_v1` ni crear un segundo save engine;
 - transición runtime recuperable sin confundirla con autosave policy;

@@ -1,8 +1,9 @@
-# IMPL-0068 — NPC Flee / Panic Behavior data-driven
+# IMPL-0072 — NPC Flee / Panic Behavior data-driven
 
 - **Estado:** `PLANNED / DEFERRED — AFTER CURRENT SOCIAL/BARKS CLOSEOUT`
 - **Fecha/origen:** 2026-09-19 — dirección aprobada por Mauro durante pruebas manuales de combate NPC.
 - **Naturaleza:** backlog futuro aprobado. No autoriza implementación inmediata ni trabajo paralelo al scope actual.
+- **ID note:** renumerado de un duplicado histórico `IMPL-0068` a `IMPL-0072` el 2026-10-02; `IMPL-0068` pertenece canónicamente a Drag directo de item sobre contenedor item-owned.
 
 ## Qué queremos
 
@@ -69,7 +70,7 @@ Si recibe otro disparo mientras huye:
 - el daño, heridas, bleeding, dolor, KO/death se aplican normalmente;
 - puede emitir feedback/bark compatible si la prioridad lo permite;
 - NO cancela la huida sólo para detenerse y mirar hacia la nueva dirección;
-- NO ejecuta la reacción estándar de `IMPL-0067` mientras Panic/Flee tenga prioridad.
+- NO ejecuta la reacción estándar de `IMPL-0071` mientras Panic/Flee tenga prioridad.
 
 Si el daño lo incapacita o mata, las autoridades médicas/terminales siguen ganando.
 
@@ -161,7 +162,7 @@ F6/diagnostics deben mostrar:
 3. Implementar un único modificador data-driven de tendencia/threshold.
 4. Elegir escape direction desde Threat/LKP o incoming-damage direction legítima.
 5. Navegar y mantener prioridad hasta criterio de salida.
-6. Integrar explícitamente la supresión de `IMPL-0067` durante Flee.
+6. Integrar explícitamente la supresión de `IMPL-0071` durante Flee.
 7. Añadir diagnostic reproducible + observabilidad mínima.
 
 No agregar en ese slice:
@@ -188,7 +189,7 @@ No agregar en ese slice:
 
 ## Relación
 
-- `IMPL-0067 — NPC Incoming Damage Awareness / Damage-Direction Reaction`
+- `IMPL-0071 — NPC Incoming Damage Awareness / Damage-Direction Reaction`
 - ActorBehaviorController / Behavior Ownership
 - HumanEncounterAIController
 - Actor profiles / tags / future trait seam
@@ -198,4 +199,4 @@ No agregar en ese slice:
 
 ---
 
-**Nota de integración:** registrar/referenciar esta entrada en `Docs/Implementation_Backlog.md` durante un documentation closeout seguro cuando el checkout local no tenga cambios conflictivos en ese archivo.
+**Nota de integración:** esta entrada está registrada resumidamente en `Docs/Implementation_Backlog.md` como IMPL-0072.

@@ -30,11 +30,13 @@ Una solución limitada a heightmap no satisface este requisito porque no puede r
 
 El spike cerró satisfactoriamente la pregunta técnica principal: Old Scars puede derivar una representación volumétrica local desde la Macro Geography existente, dividirla en chunks técnicos, generar mesh/collider, aplicar mutaciones tridimensionales localizadas y reconstruir/persistir esas mutaciones sin reemplazar las autoridades macro ni crear una matriz voxel mundial.
 
-Representación validada:
+Representación validada originalmente en la foundation:
 
 `Macro Geography → bounded shared density lattice → technical chunks → Marching Tetrahedra mesh/collider → localized terrain mutation → spike persistence/replay`
 
-Baseline probado:
+**Nota de vigencia:** las cifras siguientes son la baseline histórica del spike que cerró esta foundation; no describen el fixture runtime actual de IMPL-0063 Stage 1.
+
+Baseline histórico probado:
 
 - `2×1×2` chunks técnicos;
 - `24×32×24` cells por chunk;
@@ -45,7 +47,9 @@ Baseline probado:
 - baseline mesh `55,296` vertices / `18,432` triangles / ~`1,990,656 B`;
 - comparación adicional `16×22×16` cells/chunk, spacing `3`, `25,047` samples / `225,423 B`.
 
-Meshing elegido para el spike: `Marching Tetrahedra`. Esta elección queda validada como implementación técnica pequeña y auditable para la foundation, pero no congela para siempre el algoritmo productivo si evidencia posterior demuestra una alternativa mejor.
+Meshing elegido para el spike histórico: `Marching Tetrahedra`. Desde fases posteriores el runtime de desarrollo soporta **Marching Tetrahedra e Indexed Marching Cubes**; IMPL-0063 Stage 1 valida ambos contra la misma baseline/identidad. Ninguno queda congelado aquí como mesher productivo final.
+
+Estado actual relevante (2026-10-02): el fixture combinado de Stage 1 usa **2×2×2 = 8 chunks técnicos** y valida seams exactos X/Y/Z, reconstrucción, ambos meshers, mutaciones localizadas, collider/NavMesh y Player real. No reinterpretar la medición histórica `2×1×2` como configuración runtime vigente.
 
 Pruebas volumétricas validadas:
 

@@ -226,7 +226,7 @@ Referencia: `IMPL-0020`.
 
 ### 12.1 — Follow-up Carry/Storage — IMPL-0066
 
-Estado: `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING` — TEST-20261001-012/013/014/015/016 conservados; TEST-20261002-001 PASS manual core/save-load reportado por Mauro; TEST-20261002-002/003 gate reconciliado PASS. Checkpoint de implementación autorizado para publicación en dev; próxima acción: decisión comparativa de tuning pequeña/mediana/grande. No DONE ni ACCEPTED; IMPL-0063 requiere autorización posterior de Mauro.
+Estado: `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING` — TEST-20261001-012/013/014/015/016 conservados; TEST-20261002-001 PASS manual core/save-load reportado por Mauro; TEST-20261002-002/003 gate reconciliado PASS. Checkpoint de implementación autorizado para publicación en dev; próxima acción: decisión comparativa de tuning pequeña/mediana/grande. No DONE ni ACCEPTED. IMPL-0063 Stage 1 fue autorizado posteriormente el 2026-10-02 y quedó VALIDATED; fases posteriores siguen bloqueadas hasta revisión/autorización.
 
 Objetivo acotado: separar tres propiedades data-driven de mochilas/contenedores equipables: (1) grid/footprint, (2) peso máximo de contenido que el contenedor acepta y (3) reducción ergonómica de carga efectiva sólo mientras esté correctamente equipado. La masa física de items y contenido no cambia; el límite de kg pertenece al storage y no al actor.
 

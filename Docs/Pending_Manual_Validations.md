@@ -6,11 +6,11 @@ Este documento registra gates manuales que todavía NO fueron ejecutados. No ree
 
 ## IMPL-0061 — Interacciones sociales ligeras NPC↔NPC
 
-**Estado:** `IMPLEMENTED LOCALLY / AUTOMATED PASS / MANUAL ACCEPTANCE PENDING`
+**Estado:** `UNPUBLISHED LOCAL HANDOFF / NOT PRESENT IN DEV / DEFERRED`
 
-**Fecha del handoff:** 2026-09-15
+**Fecha del handoff histórico:** 2026-09-15
 
-**Contexto:** la implementación Social V1 fue preparada y validada automáticamente en el checkout canónico, pero Mauro no tenía acceso al PC para realizar la aceptación visual. No declarar `DONE / ACCEPTED` hasta completar los dos gates manuales siguientes.
+**Contexto reconciliado 2026-10-02:** el handoff describió una implementación Social V1 preparada localmente, pero esa implementación no está presente en `dev@89f2a72`; no existe allí `ActorSocialInteractionController`. Por lo tanto, estos gates se conservan sólo como referencia histórica y **no son accionables** hasta que IMPL-0061 sea reintroducido/publicado mediante un scope autorizado. No declarar implementación publicada, DONE ni ACCEPTED a partir del handoff local.
 
 ### Gate A — Basic Talking
 
@@ -66,13 +66,13 @@ Cuando Mauro realice una validación manual de IMPL-0061:
 6. reconciliar `Docs/Current_Milestone.md` y `Docs/Next_Sprints.md`;
 7. si aparece un fallo real, recién entonces crear/actualizar `Docs/Issue_Registry.md`.
 
-### Tests automatizados ya reportados durante la implementación local
+### Evidencia automatizada del handoff local
 
-El handoff de implementación reportó `TEST-20260915-005` a `TEST-20260915-008`, con los fallos intermedios preservados y el diagnóstico focalizado final en PASS. No reutilizar esos IDs para la validación manual.
+El handoff histórico mencionó `TEST-20260915-005` a `TEST-20260915-008`, pero **esos IDs no existen en `Docs/Test_Log.md`**. Bajo el workflow actual no son evidencia canónica, no deben recrearse retroactivamente y no reservan resultados PASS/FAIL. Si IMPL-0061 vuelve a autorizarse, la implementación y sus diagnostics deberán verificarse sobre el checkout canónico y toda ejecución real recibirá IDs nuevos disponibles en ese momento.
 
-### Próximo trabajo de implementación
+### Relación con el trabajo actual
 
-La existencia de este gate pendiente no cambia la secuencia principal: `IMPL-0020 — Carry Weight / Encumbrance` sigue siendo el próximo trabajo de implementación. La aceptación manual de IMPL-0061 puede retomarse cuando Mauro vuelva a tener acceso a Unity.
+IMPL-0061 permanece diferido y no altera el orden operativo. El NEXT EXACT STEP vigente es revisar el checkpoint IMPL-0063 Stage 1; IMPL-0066 conserva únicamente su decisión manual de tuning pendiente.
 
 ---
 
@@ -215,7 +215,7 @@ Si resulta práctico, provocar un assembly/domain reload durante Play o usar la 
 
 ## IMPL-0066 — Container structural capacity / equipped ergonomics
 
-**Estado:** IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING (2026-10-02). Gates TEST-20261001-012/013/014/015/016 preservados; TEST-20261002-002/003 revalidación reconciliada PASS. TEST-20261002-001 registra la evidencia manual core de Mauro: ergonomía física/efectiva, límite small 20 kg, rechazo sin partial, reingreso y save/load productivo PASS. El checklist core se conserva como referencia; sólo el punto 8 sigue pendiente. Checkpoint autorizado para publicación, sin DONE ni ACCEPTED. IMPL-0063 requiere nueva autorización.
+**Estado:** IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING (2026-10-02). Gates TEST-20261001-012/013/014/015/016 preservados; TEST-20261002-002/003 revalidación reconciliada PASS. TEST-20261002-001 registra la evidencia manual core de Mauro: ergonomía física/efectiva, límite small 20 kg, rechazo sin partial, reingreso y save/load productivo PASS. El checklist core se conserva como referencia; sólo el punto 8 sigue pendiente. Checkpoint autorizado para publicación, sin DONE ni ACCEPTED. IMPL-0063 Stage 1 fue autorizado el 2026-10-02 y quedó VALIDATED; cualquier fase posterior requiere autorización separada.
 
 Usar `Assets/Scenes/SampleScene.unity` en Play; `I` = Inventory, `F3` = Runtime Debug Tools / Item Debug. Preparar una mochila y contenido conocido con Item Debug. Small/medium/large: máximos 20/30/40 kg, contenido equipado ×0.80/0.70/0.60, provisional. No alterar perfiles para esta prueba.
 
@@ -228,4 +228,4 @@ Usar `Assets/Scenes/SampleScene.unity` en Play; `I` = Inventory, `F3` = Runtime 
 7. **PASS reportado por Mauro:** MainMenu → WorldRuntime → Save Game / Load Game mediante el flujo productivo; conserva estado y carga derivada. Evidencia manual formal en TEST-20261002-001; la prueba automatizada de Current Slice no sustituye este reporte.
 8. Repetir la sensación de carga con pequeña/media/grande; Mauro acepta los valores provisionales o indica cambios concretos de tuning.
 
-Después del checkpoint: Mauro compara pequeña/media/grande y acepta o ajusta el tuning provisional (punto 8). Registrar esa nueva ejecución con TEST libre y aplicar sólo cambios autorizados. El checkpoint de implementación no cierra la aceptación de IMPL-0066 ni autoriza iniciar IMPL-0063.
+Después del checkpoint: Mauro compara pequeña/media/grande y acepta o ajusta el tuning provisional (punto 8). Registrar esa nueva ejecución con TEST libre y aplicar sólo cambios autorizados. El checkpoint de implementación no cierra la aceptación de IMPL-0066. IMPL-0063 Stage 1 fue autorizado explícitamente después y quedó VALIDATED; esto no autoriza fases posteriores.

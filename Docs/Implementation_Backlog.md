@@ -441,23 +441,23 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0041 — Player Debug — Heal All / Reset Medical State
 
-- **Estado:** `PLANNED / DEFERRED`.
-- **Fecha/origen:** 2026-09-14 — mejora de tooling aprobada por Mauro durante el cierre M41/P9.
+- **Estado:** `IMPLEMENTED / PUBLISHED / VALIDATION PENDING`.
+- **Fecha/origen:** 2026-09-14 — mejora de tooling aprobada por Mauro durante el cierre M41/P9; implementación publicada en `dev`, aceptación manual pendiente.
 - **Qué queremos:** agregar un control de debug para restaurar rápidamente el estado médico del Player durante QA.
 - **Contrato preliminar:** tooling/debug only; sin UI de producción; usar las autoridades médicas existentes y sus seams productivos para restaurar coherentemente Vital, Blood, wounds, bleeding, pain, trauma y functional condition. No crear una segunda health authority ni introducir persistence nueva.
 - **Por qué:** reducir preparación repetitiva de QA médica entre escenarios sin sustituir el gameplay ni las autoridades de estado.
-- **Trigger/dependencias:** una tarea futura de tooling/QA; no bloquea el cierre de M41 ni autoriza implementación ahora.
+- **Trigger/dependencias:** implementación ya presente; completar los gates manuales registrados en `Pending_Manual_Validations.md`. No bloquea el scope operativo actual.
 - **Límites:** no resucitar mediante una vía paralela, no borrar/alterar estado fuera de autoridades existentes y no añadir UI de producción.
 - **Relación:** Player Debug Invincible / Runtime Debug Tools, Health, Condition y medical authorities; fuera del alcance de M41/P9.
 
 
 ## IMPL-0042 — Export automático de Console Log por sesión Play/Stop
 
-- **Estado:** `PLANNED`.
+- **Estado:** `IMPLEMENTED / PUBLISHED / VALIDATION PENDING`.
 - **Fecha/origen:** 2026-09-14/15 — segunda tanda de brainstorming; aprobado por Mauro.
 - **Qué queremos:** generar al terminar cada sesión Play/Stop un archivo `.txt` único en una carpeta estable de logs accesible a Codex, conservando el Console Log completo y metadatos mínimos de la ejecución.
 - **Por qué:** permitir análisis posterior y QA fuera de casa sin depender del buffer efímero de la Console.
-- **Trigger/dependencias:** próxima ampliación de tooling de pruebas.
+- **Trigger/dependencias:** implementación ya presente; completar gates manuales en `Pending_Manual_Validations.md`. `ISSUE-0029` registra que el header actual atribuye el scope `IMPL-0042` a sesiones ajenas.
 - **Límites:** un log limpio no equivale a PASS; rotación/retención acotada; no registrar por frame información adicional costosa.
 - **Relación:** `Test_Log.md`, diagnostics y evidencia durable.
 
@@ -631,8 +631,9 @@ Este documento registra mecánicas, mejoras técnicas y pequeñas capacidades ap
 
 ## IMPL-0061 — Interacciones sociales ligeras NPC↔NPC
 
-- **Estado:** `PLANNED / DEFERRED`.
+- **Estado:** `PLANNED / DEFERRED — PRIOR LOCAL HANDOFF NOT PRESENT IN DEV`.
 - **Fecha/origen:** 2026-09-15 — playtest/capturas de `Another Dead World`; aprobado por Mauro como dirección futura.
+- **Estado de repositorio:** un handoff histórico describió una implementación local Social V1, pero `ActorSocialInteractionController` y sus tests no están presentes en `dev@89f2a72`. No tratar ese handoff como implementación publicada ni como evidencia canónica.
 - **Qué queremos:** permitir que NPCs ejecuten interacciones sociales simples entre sí cuando exista un consumer real: acercarse/orientarse, pausar otra conducta compatible, intercambiar un evento social y mostrar feedback discreto como una burbuja breve. Saludos, conversación, comercio, avisos o intercambio de información se agregan sólo a medida que sus sistemas productivos existan.
 - **Por qué:** hace visibles relaciones entre agentes y ayuda a que los NPC parezcan habitantes del mundo en vez de unidades que sólo reaccionan al Player.
 - **Trigger/dependencias:** primer sistema social/económico productivo que necesite una interacción NPC↔NPC observable.
@@ -697,7 +698,7 @@ Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe ref
 
 ## IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables
 
-- **Estado:** `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING — BEFORE IMPL-0063`.
+- **Estado:** `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING`.
 - **Fecha/origen:** 2026-10-01 — hallazgo de aceptación manual de `IMPL-0020 — Carry Weight / Encumbrance`, aprobado por Mauro.
 - **Qué queremos:** hacer que mochilas y futuros contenedores equipables tengan tres propiedades independientes y data-driven: **geometría de storage** (grid `width × height`), **peso máximo de contenido** soportado por el contenedor y **reducción ergonómica del impacto de ese contenido sobre Encumbrance**.
 - **Contrato de geometría:** el grid sigue siendo la autoridad física de forma/tamaño. Un objeto que no cabe por footprint no entra aunque queden kilos disponibles; el límite de peso no reemplaza ni relaja las reglas espaciales.
@@ -711,7 +712,7 @@ Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe ref
 - **Relación:** follow-up de aceptación manual de `IMPL-0020`; `ItemStorageProfileDefinition`, `ItemOwnedStorageRuntime`, Equipment, `ActorCarryWeightComponent`, Inventory/transfer, Persistence y debug inventory UI.
 - **Prioridad:** cerrar esta slice acotada antes de abrir `IMPL-0063`. `IMPL-0063` conserva su prioridad alta y vuelve a ser NEXT EXACT STEP tras cerrar/publicar IMPL-0066.
 
-- **Implementación local 2026-10-01:** campos nullable/default compatibles con mods, guard estructural usando masa física y cantidad real de merge, Carry CurrentWeightKg físico + EffectiveLoadKg derivado sólo de carriers equipados, debug observable y restore over-cap conservador sin schema. Core pequeña/media/grande: 20/30/40 kg y ×0.80/0.70/0.60, tuning provisional sin aceptar. TEST-20261001-012/013/014/015/016 PASS automático/review. Checkpoint de implementación autorizado en dev (2026-10-02); TEST-20261002-001 registra PASS manual core y Save Game / Load Game productivo reportados por Mauro, TEST-20261002-002/003 revalida el árbol reconciliado. Falta sólo decisión de tuning pequeña/mediana/grande; no DONE ni ACCEPTED y no iniciar IMPL-0063 sin nueva autorización.
+- **Implementación local 2026-10-01:** campos nullable/default compatibles con mods, guard estructural usando masa física y cantidad real de merge, Carry CurrentWeightKg físico + EffectiveLoadKg derivado sólo de carriers equipados, debug observable y restore over-cap conservador sin schema. Core pequeña/media/grande: 20/30/40 kg y ×0.80/0.70/0.60, tuning provisional sin aceptar. TEST-20261001-012/013/014/015/016 PASS automático/review. Checkpoint de implementación autorizado en dev (2026-10-02); TEST-20261002-001 registra PASS manual core y Save Game / Load Game productivo reportados por Mauro, TEST-20261002-002/003 revalida el árbol reconciliado. Falta sólo decisión de tuning pequeña/mediana/grande; no DONE ni ACCEPTED. IMPL-0063 Stage 1 fue autorizado posteriormente el 2026-10-02 y quedó VALIDATED; fases posteriores siguen requiriendo autorización separada.
 
 ## IMPL-0067 — Input de movimiento/cámara compatible con Inventory abierto
 
@@ -754,3 +755,37 @@ Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe ref
 - **Límites:** no soltar automáticamente backpack, ropa, armadura, items guardados/holstered ni otros slots de Equipment; no agregar impulso físico complejo, lanzamiento dramático, desarme previo a la muerte ni loot reroll dentro de esta entrada. La colocación inicial sólo necesita evitar que los pickups queden inaccesibles o embebidos en el corpse/terrain.
 - **Relación:** M38 Actor Lifecycle, M40 Combat/Weapons y drop/pickup existente, Equipment, ownership, `DroppedWorldItemSpawner`, `WorldItemPickup`, corpse loot y Persistence.
 - **Prioridad:** follow-up futuro; registrarlo no cambia el `NEXT EXACT STEP` ni abre trabajo paralelo al scope activo.
+
+## Reconciliación de IDs social/AI — 2026-10-02
+
+Tres documentos standalone creados el 2026-09-19 reutilizaron por error IDs que después quedaron ocupados por entradas canónicas distintas (`IMPL-0066` container capacity, `IMPL-0067` inventory input y `IMPL-0068` item-owned drag). Para restaurar unicidad sin reescribir la evidencia ya publicada de esos scopes, los backlog futuros Social/AI se reasignan antes de implementación:
+
+- antiguo duplicado `IMPL-0066 Social Conversation V2` → **IMPL-0070**;
+- antiguo duplicado `IMPL-0067 NPC Incoming Damage Awareness` → **IMPL-0071**;
+- antiguo duplicado `IMPL-0068 NPC Flee / Panic Behavior` → **IMPL-0072**.
+
+Los IDs 0066/0067/0068 conservan sus significados canónicos actuales. Los aliases anteriores sólo existen como nota histórica de la colisión y no deben usarse en trabajo nuevo.
+
+## IMPL-0070 — Social Conversation V2: branching, multi-turn y memoria contextual
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Origen:** 2026-09-19; renumerado 2026-10-02 por colisión de ID.
+- **Detalle:** `Docs/Backlog/IMPL-0070_Social_Conversation_V2.md`.
+- **Trigger:** Social V1/IMPL-0061 debe existir de forma publicada y cerrar su propio scope antes de abrir V2.
+- **Límites:** data-driven, determinista, sin LLM runtime, sin memoria narrativa inventada y sin framework universal preventivo.
+
+## IMPL-0071 — NPC Incoming Damage Awareness / Damage-Direction Reaction
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Origen:** 2026-09-19; renumerado 2026-10-02 por colisión de ID.
+- **Detalle:** `Docs/Backlog/IMPL-0071_NPC_Incoming_Damage_Awareness.md`.
+- **Trigger:** consumer real posterior al scope actual; reutilizar Perception/FOV/LOS, Gaze, Search/LKP y Behavior Ownership.
+- **Límites:** dirección aproximada de daño no equivale a Threat ni posición exacta del atacante.
+
+## IMPL-0072 — NPC Flee / Panic Behavior data-driven
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Origen:** 2026-09-19; renumerado 2026-10-02 por colisión de ID.
+- **Detalle:** `Docs/Backlog/IMPL-0072_NPC_Flee_Panic_Behavior.md`.
+- **Trigger:** scope propio posterior; integrar con IMPL-0071 sólo cuando exista evidencia/consumer real.
+- **Límites:** daño/medicina siguen aplicándose durante Flee; sin omnisciencia, RNG por frame, personality framework universal ni tactical planner preventivo.

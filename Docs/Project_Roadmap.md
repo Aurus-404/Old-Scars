@@ -21,20 +21,22 @@ No es una lista de bugs ni de implementaciones pequeñas:
 
 Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renombran retrospectivamente y una coding unit/intervención dentro de un milestone no consume automáticamente un nuevo ID.
 
-## Estado de producción — 2026-09-15
+## Estado de producción — 2026-10-02
 
 | Campo | Estado canónico |
 | --- | --- |
 | Milestone grande cerrado más reciente | M41 — NPC Combat / AI Foundation V1 (M41.4 cerrado) |
-| Milestone grande activo | Ninguno asignado tras M41; siguiente trabajo operativo IMPL-0020 |
+| Milestone grande activo | Ninguno asignado; el trabajo operativo actual es una slice IMPL acotada, no un milestone M nuevo |
 | Estado M41.4 | DONE / ACCEPTED / PUBLISHED — P9 cerrado 2026-09-14 |
 | Persistence Ready | `APPROVED` |
 | Combat Ready | `APPROVED` |
 | AI Ready | `APPROVED` |
-| Open World Rebaseline | `APPROVED — IMPL-0063 AUTHORIZED NEXT AFTER IMPL-0020` |
-| Próximo trabajo | IMPL-0020 — Carry Weight / Encumbrance (PLANNED / READY TO START) |
-| Dependencia cerrada | ISSUE-0022 — Loaded Ammo Mass Conservation DONE / RESOLVED / PUBLISHED, `481183ddfac82f9ff9e547da6c72a1af13ecc088` |
-| Después | IMPL-0063 — Worldgen procedural + terreno volumétrico deformable (`HIGH PRIORITY / AUTHORIZED NEXT AFTER IMPL-0020`); IMPL-0021 vuelve a cola posterior; F8D sólo con evidencia residual, F8E sólo por consumers reales |
+| IMPL-0020 | DONE / ACCEPTED / PUBLISHED — 2026-10-01 |
+| IMPL-0066 | IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING; sólo queda decisión manual de tuning |
+| Open World Rebaseline | `IMPL-0063 STAGE 1 VALIDATED / REMAINING PHASES DEFERRED` |
+| Scope operativo actual | IMPL-0063 Stage 1 — checkpoint publicado en `89f2a72c26d30668670bff3b485300eb9d2e0a4a`, pendiente de revisión |
+| NEXT EXACT STEP | Revisar el checkpoint IMPL-0063 Stage 1; no iniciar Stage 2/streaming/persistencia por inercia |
+| Después | IMPL-0021 permanece detrás de IMPL-0063; cualquier fase posterior de IMPL-0063 requiere autorización separada |
 
 ### Contexto histórico del estado de M41.4 al inicio del cierre P9
 
@@ -82,7 +84,13 @@ P9 — Legacy migration + QA integrada / game feel / cleanup + formal M41 closeo
     ↓
 ISSUE-0022 — Loaded Ammo Mass Conservation DONE / RESOLVED / PUBLISHED
     ↓
-IMPL-0020 — Carry Weight / Encumbrance NEXT EXACT STEP
+IMPL-0020 — Carry Weight / Encumbrance DONE / ACCEPTED / PUBLISHED
+    ↓
+IMPL-0066 — Container capacity/ergonomics checkpoint PUBLISHED; tuning acceptance pending only
+    ↓
+IMPL-0063 Stage 1 — stable terrain chunk identity VALIDATED / PUBLISHED
+    ↓
+NEXT EXACT STEP — review Stage 1; no Stage 2/streaming/persistence without separate authorization
 ```
 
 F8A/B/C se completaron como slice controlada separada y no acreditaron por sí mismos el gate manual integrado P4; Mauro confirmó P4 separadamente. F8D no queda abierto por inercia tras el resultado pareado; F8E sólo se considera si hay consumers legacy concretos.
@@ -203,7 +211,7 @@ El backend runtime vigente del spike volumétrico es la implementación publicad
 
 ## Open World Rebaseline — dirección futura aprobada
 
-La dirección open-world permanece aprobada. La integración productiva `IMPL-0063 — Worldgen procedural + terreno volumétrico deformable` queda explícitamente **autorizada como siguiente gran prioridad después de cerrar IMPL-0020**. Esta autorización no permite interrumpir ni ejecutar trabajo en paralelo con el scope activo, y no desbloquea automáticamente el resto de milestones open-world.
+La dirección open-world permanece aprobada. `IMPL-0020` ya está DONE / ACCEPTED / PUBLISHED. Mauro autorizó únicamente **IMPL-0063 Stage 1** el 2026-10-02; esa slice quedó VALIDATED / PUBLISHED y espera revisión. La autorización de Stage 1 no desbloquea Stage 2, streaming, persistencia productiva ni el resto de milestones open-world. `IMPL-0066` conserva sólo una decisión manual de tuning pendiente y no representa una segunda implementación activa.
 
 | Orden | Unidad | Estado | Dependencia / propósito |
 | --- | --- | --- | --- |
@@ -225,7 +233,7 @@ La dirección open-world permanece aprobada. La integración productiva `IMPL-00
 | Tramo jugable | M41.3 | `DONE` | NPC sandbox/loadouts. |
 | Tramo jugable cerrado | M41.4 | DONE / ACCEPTED / PUBLISHED | combat/AI integration/game feel; cierre P9 2026-09-14. |
 | Defecto post-M41 cerrado | ISSUE-0022 | DONE / RESOLVED / PUBLISHED | Loaded Ammo Mass Conservation cerrada antes de Encumbrance; commit `481183ddfac82f9ff9e547da6c72a1af13ecc088`. |
-| Prioridad siguiente autorizada | IMPL-0063 — Procedural Worldgen + Deformable Volumetric Terrain | `HIGH PRIORITY / AUTHORIZED NEXT AFTER IMPL-0020` | Productizar el seam entre world truth procedural/ecológicamente coherente y terrain volumétrico deformable, chunked, streamable y persistentemente mutable. |
+| Prioridad activa por slices | IMPL-0063 — Procedural Worldgen + Deformable Volumetric Terrain | `STAGE 1 VALIDATED / REMAINING PHASES DEFERRED` | Stage 1 cerró audit/integration + identidad/evidencia baseline de chunks. Revisar el checkpoint antes de autorizar otra slice; streaming/persistencia siguen fuera de alcance. |
 | 7 | ID TBD — Bounded History & Present-Day Resolution | `PLANNED — NOT AUTHORIZED` | historia estructurada acotada. |
 | 8 | ID TBD — World Persistence | `PLANNED — NOT AUTHORIZED` | persistencia world state general. |
 | 9 | ID TBD — Sector Blueprint & Authored Composition | `PLANNED — NOT AUTHORIZED` | blueprint local/materialización autorada. |

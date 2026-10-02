@@ -7,14 +7,14 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 1. `AGENTS.md` — reglas permanentes de trabajo, Git, validación, alcance y routing ChatGPT/Codex.
 2. `Docs/Current_Milestone.md` — estado operativo actual y próximo paso exacto.
 3. `Docs/Next_Sprints.md` — cola real de trabajo a corto plazo y secuencia post-M41 ya aprobada.
-4. `Docs/Prueba_3_Findings.md` — evidencia manual integrada más reciente de Prueba 3/3.1/3.2.
+4. `Docs/Terrain_Chunk_Identity_Stage1.md` — contrato y límites exactos del checkpoint IMPL-0063 Stage 1.
 5. `Docs/Issue_Registry.md` — bugs/deudas/sospechas/resoluciones persistentes.
 6. `Docs/Implementation_Backlog.md` — mecánicas/mejoras aprobadas para después; no son milestones ni bugs.
-7. `Docs/NPC_AI_Sanitation_Plan.md` — plan completo del bloque activo M41.
-8. `Docs/NPC_Combat_Targeting_Research.md` — investigación/decision record de aim/accuracy.
-9. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos implementados.
-10. `Docs/Development_Log.md` — cronología/evidencia histórica.
-11. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes.
+7. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos implementados.
+8. `Docs/Test_Log.md` — evidencia de validaciones realmente ejecutadas; IDs inexistentes aquí no cuentan como tests canónicos.
+9. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes.
+10. `Docs/Development_Log.md` — cronología/evidencia histórica detallada.
+11. Documentos M41/NPC (`Prueba_3_Findings.md`, `NPC_AI_Sanitation_Plan.md`, `NPC_Combat_Targeting_Research.md`) sólo cuando el trabajo toque ese bloque histórico/cerrado.
 
 ## Qué documento responde qué pregunta
 
@@ -22,7 +22,8 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 | --- | --- |
 | ¿Qué estamos haciendo ahora? | `Current_Milestone.md` |
 | ¿Qué hacemos después? | `Next_Sprints.md` |
-| ¿Qué mostró la última prueba manual integrada? | `Prueba_3_Findings.md` |
+| ¿Qué evidencia de prueba está registrada realmente? | `Test_Log.md` |
+| ¿Qué contrato/límite tiene el Stage 1 actual? | `Terrain_Chunk_Identity_Stage1.md` |
 | ¿Qué milestone grande corresponde? | `Project_Roadmap.md` |
 | ¿Qué bug/deuda real sigue abierto? | `Issue_Registry.md` |
 | ¿Qué mecánica/mejora aprobada queremos recordar para después? | `Implementation_Backlog.md` |
@@ -51,95 +52,37 @@ Para auditorías sistémicas amplias, Astra puede usarse como investigador/arqui
 
 No repetir auditorías exhaustivas si el repo ya estableció el seam y el próximo trabajo sólo requiere implementación/validación.
 
-## Estado de continuidad al 2026-09-15
+## Estado de continuidad al 2026-10-02
 
-Bloque recién cerrado:
+### Cierres recientes
 
-`M41 — NPC Combat / AI Foundation — CLOSED / DONE / ACCEPTED / PUBLISHED`
+- M41 — NPC Combat / AI Foundation: **DONE / ACCEPTED / PUBLISHED**.
+- ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED**.
+- IMPL-0020 — Carry Weight / Encumbrance compartido: **DONE / ACCEPTED / PUBLISHED** el 2026-10-01.
+- IMPL-0066 — Container structural capacity / equipped ergonomics: **IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING**. No hay implementación activa aquí; queda únicamente decisión manual comparativa de tuning pequeña/media/grande.
 
-Foundation cerrada:
+### Scope operativo actual
 
-- F2 Behavior ownership + Ambient roaming;
-- F3 Gaze/Attention V1;
-- F4 tracking visual bounded;
-- F5 production perception centrada en Current Gaze;
-- F6 LostContact/Search V1;
-- F7 representación humana + hitboxes anatómicos explícitos;
-- Player Debug Invisible-to-AI.
+**IMPL-0063 — Stage 1: audit/integration gate + stable terrain chunk identity**
 
-Capacidades recientes también cerradas:
+- Base publicada: `89f2a72c26d30668670bff3b485300eb9d2e0a4a`.
+- Estado: **VALIDATED / PUBLISHED — STAGE 1 ONLY**.
+- El umbrella IMPL-0063 no está DONE.
+- `TerrainChunkKey` separa identidad mundial/contextual de `DeformableTerrainChunkId` local y conserva evidencia baseline/layout versionada.
+- El consumer productivo de streaming/persistencia todavía no existe: Stage 1 sólo establece y valida el contrato.
+- La key incluye la ventana lógica activa y XYZ local; **no es todavía una coordenada mundial definitiva de mutación persistente**.
+- Unity Terrain sigue siendo el path/default release; la foundation volumétrica continúa opt-in para desarrollo.
+- Streaming, load/unload, persistencia productiva de mutaciones, geología/cuevas, LOD y optimización posterior siguen fuera de alcance.
 
-- Timed Bandaging V1 + NPC self-treatment;
-- Blood Trails V1/V1.1;
-- NPC Opportunistic Reload (`4b90b9f4c8f5ae3c896d8b1fc21d688095172b0a`).
+**NEXT EXACT STEP:** revisar el checkpoint IMPL-0063 Stage 1. No iniciar Stage 2/streaming/persistencia por inercia. IMPL-0021 permanece detrás de IMPL-0063.
 
-### P1/F6 publicado
+### Validaciones/documentación pendientes que no cambian el scope activo
 
-P1/F6 / Correction Pass B: **DONE / ACCEPTED / PUBLISHED** el 2026-09-06 en `5aac763c14c399bfe09a3e925c50698658ad2716`. CURRENT Gaze/FOV multi-NPC desde origen productivo actual; selección sólo para inspector detallado. LAST usa ObserverOrigin → ObservedPosition históricos, visual secundario y toggle independiente, sin reconstruir blocker hit con collider actual. Sin evidencia: LAST: No evidence. Dead/Inactive sin CURRENT engañoso. Sin nueva Perception/raycasts productivos.
+- IMPL-0066: aceptación de tuning pequeña/media/grande.
+- IMPL-0041: implementación publicada; validación manual pendiente.
+- IMPL-0042: implementación publicada; validación manual pendiente; ISSUE-0029 registra el header de scope hardcodeado.
+- IMPL-0061: hubo un handoff local histórico, pero la implementación **no está presente en `dev`**. Sus supuestos TEST-20260915-005..008 no existen en `Test_Log.md` y no deben tratarse como evidencia canónica ni recrearse retroactivamente.
 
-F6 Observability, Gaze/Perception, LostContact/Search y compile Runtime/Editor PASS previos; aceptación visual manual final confirmada por Mauro. P8/F10 completo DONE / ACCEPTED / PUBLISHED; compile Runtime/Editor, F10 y F6 regression PASS; aceptación visual final de Mauro el 2026-09-13. ISSUE-0023 sigue SUSPECTED.
+### Regla para documentos históricos
 
-### Cierre M41 / P9
-
-P9 está DONE / ACCEPTED / PUBLISHED. Los gates finales constan en `TEST-20260914-001` (NPC-only), `TEST-20260914-002` (authored visual-rig migration), `TEST-20260914-003` (NPC↔Player crowbar melee) y `TEST-20260914-004` (NPC↔Player Lee-Enfield firearm, con setup preconditioning anotado). El detalle y límites de evidencia están en `Test_Log.md`.
-
-ISSUE-0022 — Loaded Ammo Mass Conservation quedó **DONE / RESOLVED / PUBLISHED** en `481183ddfac82f9ff9e547da6c72a1af13ecc088`, con gates `TEST-20260915-001` a `TEST-20260915-004`.
-
-**NEXT EXACT STEP: IMPL-0020 — Carry Weight / Encumbrance.** Permanece PLANNED y no fue iniciado por el cierre de ISSUE-0022.
-
-### Secuencia operativa aprobada para cerrar M41 (histórica)
-
-P2 — Minimum real-time Unconscious dwell: **DONE / PUBLISHED**, `9ca0335cdc8b85bd49d20ddbe97ad814f44c8578`. Core `5 s` inicial de prueba; restante durable en Current Slice v1, sin progreso offline y legacy seguro. P2 y regresiones proporcionales PASS.
-
-P3 — KO / combat-memory continuity: **DONE / PUBLISHED**, 394d01886b8c6697ca2d492c4450282f561ba688. Memory != Threat; una identidad sin posición en Encounter, ventana real 60 s Core provisional pausada sólo por incapacidad propia, reacquisition legítima y cleanup terminal. P3 y ocho regresiones PASS. P4 Prueba 3.3 fue aceptado manualmente después; P7/P8 también están cerrados. El próximo paso exacto es P9.
-
-1. F6 / Correction Pass B cerrado, aceptado y publicado;
-2. minimum real-time KO dwell cerrado y publicado;
-3. P3 — KO / combat-memory continuity cerrado y publicado;
-4. P4 — Prueba 3.3: DONE / ACCEPTED por confirmación manual de Mauro;
-5. F8A Aim Bias Evidence;
-6. F8B/C y F8D sólo según evidencia;
-7. P7 — Player Debug Invincible: DONE / PASS / PUBLISHED en c96900589816239bfdf6553fba699bca6b79a54f;
-8. P8 — Observability V2/F10: DONE / ACCEPTED / PUBLISHED en f4d07434d2b0ea0387584320c81b48dd248bd280;
-9. P9 — legacy migration + integrated QA + cleanup + formal M41 closeout: DONE / ACCEPTED / PUBLISHED (2026-09-14).
-
-Cambio deliberado respecto de wording anterior: KO dwell se ejecuta antes de KO memory para estabilizar primero la transición funcional que la memoria debe soportar.
-
-ISSUE-0026 (30v30 inverted spawn comparison) e ISSUE-0027 (dynamic anatomical hit distribution) siguen diferidos. F8D sólo se reabre con evidencia; ISSUE-0022 loaded ammo mass queda después de M41 según roadmap.
-
-### Después de M41
-
-Orden sistémico aprobado:
-
-- Equipment visuals humanoides: `IMPL-0016 DONE / ACCEPTED`, adelantado por validación visual;
-- `ISSUE-0022` loaded ammo mass: DONE / RESOLVED / PUBLISHED;
-- implementar `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC;
-- implementar `IMPL-0021` Localized Limb Impairment después de Encumbrance.
-
-Loaded ammo mass debe resolverse antes de Encumbrance.
-
-No introducir Encumbrance entre F8A y sus comparaciones: velocidad NPC participa en las condiciones de accuracy y contaminaría la medición.
-
-## Contrato futuro de Carry Weight ya aprobado
-
-- Carry Capacity no es storage capacity.
-- `0..75%` sin penalización.
-- `>75%..100%` penalización progresiva.
-- `100%` todavía móvil.
-- `>100%` traslación cero.
-- Inventory/transfer/drop/equipment/use/reload/treatment siguen operativos según sus propias autoridades.
-- Player/NPC comparten el contrato.
-- `Overloaded` no significa `Incapacitated`.
-- restore sobrecargado conserva items.
-
-No implementar todavía Strength, backpack capacity modifiers ni Limb HP.
-
-## Riesgos/relaciones que deben recordarse
-
-- KO memory no debe mantener al KO como `Threat` activo ni bloquear por sí solo self-treatment/ambient reload.
-- Invincible debe conservar heridas/bleeding/pain/trauma/KO reales y bloquear coherentemente Dead; no basta con saltar `ProcessDeath`.
-- Search debe distinguir path/order válido de futura inmovilidad por Encumbrance.
-- `IsSprinting` futuro debe representar sprint efectivo, no sólo Shift solicitado cuando traslación está bloqueada.
-- Loaded ammo actualmente puede desaparecer del cálculo de masa al convertirse en `LoadedRounds`; corregir antes de que peso gobierne locomoción.
-
-No iniciar por inercia Behavior Trees, GOAP/Utility AI, memory framework general, weak-point framework, full ballistics, cover/squad/hearing/schedules, Strength/stats ni weapon viability/fallback sin una tarea propia y evidencia real.
+Cuando un documento histórico diga que IMPL-0020 es el próximo paso, que Climate/Environment no existen, que `world_session_v1` actual es schema 5 o que IMPL-0063 aún no fue autorizado, esa frase está superada por el estado actual. Corregir el documento vivo dentro de su dominio; no reinterpretar el código ni inventar evidencia para reconciliarlo.

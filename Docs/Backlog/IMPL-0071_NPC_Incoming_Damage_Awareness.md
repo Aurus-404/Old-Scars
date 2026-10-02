@@ -1,8 +1,9 @@
-# IMPL-0067 — NPC Incoming Damage Awareness / Damage-Direction Reaction
+# IMPL-0071 — NPC Incoming Damage Awareness / Damage-Direction Reaction
 
 - **Estado:** `PLANNED / DEFERRED — AFTER CURRENT SOCIAL/BARKS CLOSEOUT`
 - **Fecha/origen:** 2026-09-19 — observación manual de Mauro durante pruebas 1v1 de Social/Barks/KO.
 - **Naturaleza:** backlog futuro aprobado. No autoriza abrir este scope antes de cerrar completamente el scope actual.
+- **ID note:** renumerado de un duplicado histórico `IMPL-0067` a `IMPL-0071` el 2026-10-02; `IMPL-0067` pertenece canónicamente a Input de movimiento/cámara compatible con Inventory abierto.
 
 ## Problema observado
 
@@ -138,8 +139,8 @@ Nunca registrar que el actor "vio" al atacante si sólo recibió un impacto.
 - Perception/FOV/LOS
 - Search/LKP
 - CombatResolution / DamageReceived
-- `IMPL-0068 — NPC Flee / Panic Behavior`
+- `IMPL-0072 — NPC Flee / Panic Behavior`
 
 ---
 
-**Nota de integración:** registrar/referenciar esta entrada en `Docs/Implementation_Backlog.md` durante un documentation closeout seguro cuando el checkout local no tenga cambios conflictivos en ese archivo.
+**Nota de integración:** esta entrada está registrada resumidamente en `Docs/Implementation_Backlog.md` como IMPL-0071.

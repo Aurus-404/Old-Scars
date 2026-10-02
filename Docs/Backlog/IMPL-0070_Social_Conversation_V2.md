@@ -1,8 +1,9 @@
-# IMPL-0066 — Social Conversation V2: branching, multi-turn y memoria contextual
+# IMPL-0070 — Social Conversation V2: branching, multi-turn y memoria contextual
 
 - **Estado:** `PLANNED / AFTER CURRENT SOCIAL V1 CLOSEOUT`
 - **Fecha/origen:** 2026-09-19 — feedback manual de Mauro durante validación de Social V1.
 - **Naturaleza:** backlog futuro aprobado. No autoriza abrir este scope antes de cerrar por completo el scope Social/Barks actual.
+- **ID note:** renumerado de un duplicado histórico `IMPL-0066` a `IMPL-0070` el 2026-10-02; `IMPL-0066` pertenece canónicamente a Container structural capacity / equipped ergonomics.
 
 ## Qué queremos
 
@@ -309,4 +310,4 @@ El slice inicial puede considerarse aceptable cuando:
 
 ---
 
-**Nota de integración:** este archivo captura el backlog detallado sin tocar `Docs/Implementation_Backlog.md`, que actualmente puede tener cambios locales no publicados dentro del scope Social/Barks. Durante el documentation closeout de ese scope debe registrarse/referenciarse este IMPL en el backlog canónico sin perder este detalle.
+**Nota de integración:** esta entrada está registrada resumidamente en `Docs/Implementation_Backlog.md` como IMPL-0070. Su activación futura sigue requiriendo scope propio y cierre previo de la dependencia Social V1.

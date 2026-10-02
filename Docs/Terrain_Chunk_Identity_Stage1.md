@@ -34,6 +34,15 @@ The existing path remains intact: committed WorldSession → TerrainMaterializat
 
 Validated fixture layout hash: `ff0ab7b4ba21ecd3da62e4d742b2e861c52bac5a25cff25bdd5812e9f8cb60d8`. The current fixture remains provisional: eight 2×2×2 chunks, 24×16×24 cells, horizontal spacing 2. The gate reconstructs committed snapshots in one Unity process; it does not claim fresh-process or production terrain persistence validation.
 
+## Current consumer boundary
+
+Stage 1 deliberately stops before a productive streaming/persistence consumer:
+
+- runtime volumes can resolve `TerrainChunkKey`, but the current direct consumer of the new identity/evidence contract is the Stage-1 diagnostic/review path;
+- this is acceptable only as the bounded Stage-1 checkpoint, not as justification to accumulate additional foundation layers without a real consumer;
+- the key includes the active logical `TerrainMaterializationWindow` plus local technical XYZ. It is therefore stable for the validated projection/reconstruction contract, but **is not yet the final global coordinate/address for durable terrain mutations**;
+- before production streaming or mutation persistence, the next authorized slice must explicitly prove how a real consumer maps world-space/logical terrain state to durable chunk/mutation identity without depending on incidental runtime representation.
+
 ## Deferred work
 
 No streaming/load-unload, terrain mutation persistence/journal/coordinate migration, compaction, geology/caves/resources/mining, roads/sites realization, LOD/Transvoxel, Jobs/Burst/GPU/pooling/async queues or final navigation architecture. `world_session_v1` and `deformable_terrain_spike_v1` schemas and release/default UnityTerrain path remain unchanged. Further phases require separate authorization after reviewing this Stage-1 checkpoint.

@@ -60,7 +60,7 @@ Validación automática previa: Runtime/Editor compile, M41 F10 Observability Di
 
 M41.4 and P9 are DONE / ACCEPTED / PUBLISHED. Documentation closeout commit: `docs: close M41 NPC foundation` (2026-09-14). P9 completed the legacy authored visual-rig migration (`TEST-20260914-002`), automated QA, NPC-only manual integration (`TEST-20260914-001`), and NPC↔Player melee/firearm manual integration (`TEST-20260914-003` and `TEST-20260914-004`). The firearm run included the setup preconditioning documented in Test_Log; its subsequent productive acquisition and combat flow passed. Mauro reported no new blocking M41 AI/combat/health/condition/lifecycle/navigation exception. No Unity rerun was performed for this documentation closeout.
 
-P9 legacy audit found no current authored visual-rig consumer requiring a legacy targeting migration; generic fallbacks and schema-v1 compatibility remain preserved. The authored visual-rig reference migration passed. ISSUE-0023 remains SUSPECTED; ISSUE-0026/0027 remain deferred. The approved Player Debug Heal All / Reset Medical State tooling is tracked separately as IMPL-0041 PLANNED / DEFERRED.
+P9 legacy audit found no current authored visual-rig consumer requiring a legacy targeting migration; generic fallbacks and schema-v1 compatibility remain preserved. The authored visual-rig reference migration passed. ISSUE-0023 remains SUSPECTED; ISSUE-0026/0027 remain deferred. The approved Player Debug Heal All / Reset Medical State tooling is implemented/published on dev as IMPL-0041, with manual validation still pending.
 
 **M41: DONE / ACCEPTED / PUBLISHED. M41.4: DONE. P9: DONE / ACCEPTED / PUBLISHED.**
 
@@ -72,7 +72,9 @@ ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el
 
 **PLAYTEST PARCIAL IMPL-0066 — 2026-10-01.** La implementación local no publicada mostró conservación de masa física y reducción de carga efectiva correcta en el caso mochila pequeña + rifle (`6.30 kg physical → 5.34 kg effective` con multiplier `0.80`). El gate manual de capacidad estructural/reingreso también pasó: `800 × .303 = 20.00 / 20 kg`, la bala extra de `0.025 kg` fue rechazada sin partial transfer aunque quedaran celdas y, tras retirar contenido, volvió a aceptarse ingreso. El reporte posterior de Mauro (2026-10-02, TEST-20261002-001) confirma Save Game / Load Game por MainMenu → WorldRuntime PASS; queda pendiente únicamente el tuning comparativo de pequeña/mediana/grande. Los hallazgos `ISSUE-0028`, `ISSUE-0029` y `ISSUE-0030` quedan fuera del scope; `IMPL-0067` y `IMPL-0068` permanecen en backlog y NO alteran el orden operativo actual.
 
-**ACTIVE TASK: IMPL-0063 — Stage 1: audit/integration gate + stable terrain chunk identity.** Autorizado por Mauro el 2026-10-02 tras el checkpoint 5965d23. Stage 1 VALIDATED en TEST-20261002-005/007; revisar este checkpoint antes de autorizar fases posteriores. IMPL-0066 mantiene su decisión de tuning pendiente, sin DONE/ACCEPTED.
+**ACTIVE TASK: IMPL-0063 — Stage 1: audit/integration gate + stable terrain chunk identity.** Autorizado por Mauro el 2026-10-02 tras el checkpoint 5965d23. Stage 1 VALIDATED en TEST-20261002-005/007 y publicado en `89f2a72`; revisar este checkpoint antes de autorizar fases posteriores. IMPL-0066 mantiene sólo su decisión manual de tuning pendiente, sin DONE/ACCEPTED y sin implementación paralela activa.
+
+**SCOPE RULE RECONCILIATION:** la coexistencia documental de IMPL-0066 TUNING ACCEPTANCE PENDING e IMPL-0063 Stage 1 fue una excepción explícita autorizada por Mauro. No representa dos scopes de implementación simultáneos: 0066 está estacionado esperando una decisión manual; únicamente 0063 Stage 1 fue abierto para trabajo técnico.
 
 **NEXT EXACT STEP:** revisión del checkpoint IMPL-0063 Stage 1; no iniciar Stage 2/streaming/persistencia por inercia. IMPL-0021 permanece detrás de IMPL-0063.
 
