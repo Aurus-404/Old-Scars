@@ -3867,3 +3867,16 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - TEST-20261002-006 dedicated review FAIL exposed two diagnostic lifecycle/error paths; fixed only interruption cleanup and bounded content readiness. Original functional PASS preserved; focused combined rerun and affected-diff re-review follow.
 - TEST-20261002-007 combined rerun PASS after the concrete diagnostic review fixes; first and final result/mapping exactly equal. Two combined executions total, without broad regression expansion; MainMenu restored and all protected work retained.
 - TEST-20261002-008 affected diagnostic re-review and publication scope PASS. Final checkpoint uses subject `feat(world): add stable terrain chunk identity foundation`; prior FAIL retained, no subsequent phase started.
+
+## 2026-10-02 — External Opus Audit V2 / Product Playability Rebaseline
+
+- Mauro revisó la auditoría externa intermedia de Claude Opus 5.5 sobre `dev@2ecd54621bcd75ad9ba98e5a4f5af46b349de707`.
+- La V2 había clasificado 1.208 archivos y leído manualmente 172 C# / 47.750 líneas; todavía no era la auditoría final. Se conserva explícitamente que findings futuros pueden subir/bajar severidad o descartarse al completar Editor/Visuals/Persistence restante.
+- Conclusión aceptada por Mauro: Old Scars tiene foundations técnicas fuertes, pero el producto todavía se comporta como prototipo/demo técnica sistémica y no ha demostrado una sesión corta, clara y repetible para alguien ajeno al desarrollo.
+- Se aprueba la dirección `technical/systemic prototype → Playable Core Loop Proof → connected product → later breadth`.
+- Nuevas mecánicas pueden registrarse en backlog, pero no desplazan el core loop salvo consumer directo. No se autoriza Stage 2 por esta decisión.
+- Stage 1 IMPL-0063 conserva su NEXT EXACT STEP: review del checkpoint.
+- Se registran nuevos issues ISSUE-0031..0042 y riesgos R27..R29, sin abrirlos como trabajo simultáneo.
+- Se crea `Docs/Product_Playability_Rebaseline_2026-10-02.md` como síntesis/autoridad de esta decisión de producto y ledger de AUD-01..AUD-36.
+- Se protege explícitamente lo mejor del proyecto: autoridad por dominio, identity/ownership, transacciones/rollback, persistence/recovery, deterministic worldgen, data validation y contratos compartidos Player/NPC.
+- Después del checkpoint actual, la prioridad de planificación es: integridad del árbol publicado + definir/autorizar un Playable Core Loop Proof de 10–15 minutos, con prueba de una persona no autora y sin dependencia obligatoria de tooling debug para completar lo esencial.

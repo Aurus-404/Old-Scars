@@ -83,6 +83,95 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Evidencia:** capturas manuales muestran la bala x1 simultáneamente en el slot de origen y como elemento arrastrado, con este último parcialmente oculto detrás de la UI.
 
 
+### ISSUE-0031 — Integridad del árbol publicado no demostrada frente al working tree local
+- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`.
+- **Origen:** auditoría externa V2, 2026-10-02; corresponde a AUD-01 + AUD-15.
+- **Evidencia/límite:** validaciones recientes registran 13 archivos tracked y 13 untracked preexistentes, y publicaciones parciales por hunks sobre archivos con cambios locales preservados. La evidencia prueba el working tree canónico usado en esas corridas; no demuestra de forma aislada que el árbol publicado `dev` compile/cargue por sí solo. No se afirma que `dev` esté roto.
+- **Impacto:** un clon/CI/colaborador puede descubrir una dependencia accidental de cambios locales; además el dirty state de larga vida encarece cada publicación y revisión.
+- **Plan:** después del checkpoint IMPL-0063 Stage 1, realizar una comprobación acotada de integridad del `dev` publicado y decidir el destino del trabajo local histórico sin reset/clean/stash destructivo. La excepción de aislamiento, si hiciera falta, requiere autorización explícita de Mauro.
+- **No hacer:** crear un worktree/clone Unity frío por comodidad ni descartar cambios locales.
+
+### ISSUE-0032 — La pausa no suspende timers de gameplay basados en tiempo real
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`.
+- **Origen:** auditoría externa V2, AUD-04.
+- **Evidencia:** el menú pausa con `Time.timeScale = 0`, mientras wound treatment, minimum KO dwell, recent-enemy memory/self-treatment timing y blood-mark expiry usan `Time.realtimeSinceStartupAsDouble`. `Update` sigue corriendo con timeScale 0.
+- **Impacto:** acciones/ventanas temporales pueden completar o expirar mientras physiology/WorldClock está detenido; ejemplo: un vendaje puede terminar durante la pausa sin avanzar sangrado.
+- **Relación:** comparte la raíz conceptual de múltiples bases de tiempo con ISSUE-0025, pero el caso de pausa es un defecto de producto distinto.
+- **Plan:** definir una base de “real gameplay time” que no escale con WorldClock pero sí respete pausa, y validar los consumers antes del Playable Core Loop Proof.
+
+### ISSUE-0033 — Terrain mutation no revierte estado si falla mesh/collider/NavMesh rebuild
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V2, AUD-05.
+- **Evidencia:** `WorldDeformableTerrainSpikeController.TryMutate` aplica la operación/densidad y registra mutation antes del rebuild; un fallo posterior retorna false sin restaurar el volumen/representación previa.
+- **Impacto actual:** limitado al path volumétrico de desarrollo.
+- **Impacto futuro:** bloquearía persistencia productiva: un caller podría recibir failure con estado ya mutado/parcial.
+- **Plan:** no corregir por inercia durante el checkpoint; debe quedar resuelto antes del primer consumer durable de terrain mutation.
+
+### ISSUE-0034 — Diagnostics sin runner agregado ni cadencia de regresión global
+- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`.
+- **Origen:** auditoría externa V2, AUD-07.
+- **Evidencia:** existen 56 diagnostics Editor (+1 runtime), pero el flujo normal ejecuta el diagnostic del scope y vecinos; no hay un punto de entrada/cadencia agregada que demuestre periódicamente la salud global.
+- **Impacto:** foundations antiguas pueden permanecer con PASS histórico mientras capas compartidas continúan cambiando.
+- **Plan:** definir una regresión global proporcional/cadencia cuando el Playable Core Loop necesite una baseline estable. No convertirlo en excusa para más tooling que gameplay.
+
+### ISSUE-0035 — Reload usa sólo el primer stack compatible de munición
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V2, AUD-12.
+- **Evidencia:** `WeaponCombatService.ReloadEquipped` retorna después del primer stack compatible; el diagnostic M40 cubre stacks únicos y no el caso multistack.
+- **Impacto:** un arma puede quedar parcialmente recargada aunque existan rounds compatibles repartidos en otros stacks.
+- **Plan:** cubrir caso multistack y reconciliar con el contrato “consume exactamente el faltante” cuando un scope de gameplay/combat lo habilite.
+
+### ISSUE-0036 — Medical V1 no tiene cierre/recuperación de heridas
+- **Tipo/estado/severidad:** `DESIGN_DEBT` · `CONFIRMED` · `P1 / ORANGE`.
+- **Origen:** auditoría externa V2, AUD-16; elevado por Product Playability Rebaseline.
+- **Evidencia:** bandage reduce el bleeding multiplier pero no existe reducción/eliminación de wound bleeding/pain con el tiempo; blood recovery sólo ocurre con bleeding efectivo cero.
+- **Impacto:** una herida sangrante vendada puede convertirse en una muerte diferida inevitable y descansar acelera el tiempo fisiológico sin cerrar la herida. Esto bloquea un survival loop razonable si no es una decisión explícita.
+- **Plan:** decidir primero el diseño mínimo de cierre (coagulación/cierre natural, nueva intervención, sutura u otra regla) y después implementar sólo lo que el Playable Core Loop necesite. No retunear combate para compensarlo.
+
+### ISSUE-0037 — Input/acciones de producto dependen de superficies y controladores Debug
+- **Tipo/estado/severidad:** `DESIGN_DEBT` · `CONFIRMED` · `P1 / ORANGE`.
+- **Origen:** auditoría externa V2, AUD-09.
+- **Evidencia:** `GameplayRuntimeComposition` agrega/valida superficies Debug; `FirearmDebugController` es adaptador de input de combate y `DebugActionExecutor` ejecuta effects y abre `ItemStorageDebugPanel`.
+- **Impacto:** el producto no puede apagar tooling de desarrollo sin perder caminos reales de interacción/combate.
+- **Plan:** no reescribir UI. Durante el Playable Core Loop separar únicamente input/intención/presentación que el loop necesite, preservando los backends existentes.
+
+### ISSUE-0038 — Servicios de equipment duplicados ya divergieron en placement null
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V2, AUD-31.
+- **Evidencia:** `EquipmentTransactionService`, `EquipmentOwnedStorageTransactionService` y `WorldItemEquipmentTransactionService` repiten el mismo flujo/helpers; el camino owned-storage exige `DestinationPlacement != null` donde el hermano de inventario lineal acepta null, pudiendo producir `StaleState`.
+- **Impacto actual:** caso latente/no demostrado en gameplay productivo; el Player grid no lo expone.
+- **Plan:** no hacer refactor DRY general. Verificar el caso cuando se toque equipment y unificar sólo la semántica de placement necesaria.
+
+### ISSUE-0039 — NPC quieto puede no rotar el cuerpo para seguir al target
+- **Tipo/estado/severidad:** `BUG` · `SUSPECTED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V2, AUD-33.
+- **Evidencia estática:** gaze se limita a ±65° respecto del body y perception consume gaze; la rotación corporal productiva parece depender del NavMeshAgent mientras el actor se desplaza.
+- **Riesgo:** un NPC detenido podría perder un target que lo rodea aunque su lógica de encounter siga activa.
+- **Plan:** prueba Play mínima antes de clasificar causa/corrección; no retunear FOV ni Perception por sospecha.
+
+### ISSUE-0040 — Mojibake e idioma mezclado en textos visibles
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V2, AUD-35.
+- **Evidencia:** literales UTF-8 doble/triplemente codificados en `actions.json` y varios C#; mensajes visibles mezclan español/inglés.
+- **Impacto:** texto roto visible al jugador y ausencia de una baseline lingüística clara.
+- **Plan:** corregir literales/encoding en un scope de higiene/UI y fijar idioma base; no crear un framework completo de localización por este issue.
+
+### ISSUE-0041 — Fallos de datos/world bootstrap pueden dejar espera indefinida o error poco visible
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V2, AUD-24.
+- **Evidencia:** con errores y `haltOnDataErrors`, `GameDataManager.IsReady` no pasa a true mientras varios componentes esperan en coroutine; worldgen/materialization tiene rutas de excepción/feedback limitadas.
+- **Impacto:** un JSON roto propio/modded o un fallo inesperado puede parecer un juego congelado en vez de mostrar un fallo accionable.
+- **Plan:** antes de exposición a jugadores/mods, publicar un failure state visible y salidas acotadas.
+
+### ISSUE-0042 — TerrainChunkKey Stage 1 no es identidad durable global de terreno
+- **Tipo/estado/severidad:** `DESIGN_DEBT` · `CONFIRMED` · `P1 / ORANGE`.
+- **Origen:** auditoría externa V2, AUD-02/AUD-30; amplía el límite ya documentado por Stage 1.
+- **Evidencia:** la volume lattice resuelve origin Y y vertical cell size desde min/max surface de la ventana activa; X/Z también son locales a esa ventana. La key incluye SectorId, ventana y layout/tuning. El mismo suelo bajo otra ventana puede recibir otra lattice/key.
+- **Impacto actual:** ninguno productivo; el Stage 1 sigue siendo un checkpoint válido y el documento ya prohíbe asumir persistent mutation coordinates.
+- **Impacto futuro:** streaming/persistencia durable requieren una lattice/address world-stable; persistir mutations con la key actual las dejaría huérfanas tras el rebaseline.
+- **Plan:** aceptar Stage 1 por su alcance, pero no usar la key como identidad persistente ni iniciar Stage 2 por inercia. Resolver sólo con consumer real y autorización separada.
+
+
 ---
 
 ## Issues resueltos / historial

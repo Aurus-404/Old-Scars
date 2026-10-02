@@ -10,7 +10,7 @@ Old Scars is a Unity/C# game. Codex supports implementation and technical execut
 - [Docs/Project_Roadmap.md](Docs/Project_Roadmap.md) owns milestone IDs, states, dependencies, and gates. [Docs/Current_Milestone.md](Docs/Current_Milestone.md) is the operating snapshot; [Docs/Next_Sprints.md](Docs/Next_Sprints.md) is the real near-term queue.
 - [Docs/Issue_Registry.md](Docs/Issue_Registry.md) stores bugs, confirmed/suspected defects and resolved history. [Docs/Implementation_Backlog.md](Docs/Implementation_Backlog.md) stores approved smaller mechanics/technical improvements that should not be forgotten but are not roadmap milestones or bugs.
 - [Docs/Development_Log.md](Docs/Development_Log.md) is append-only. [Docs/Technical_Architecture.md](Docs/Technical_Architecture.md) and [Docs/DataDriven_JSON_Rules.md](Docs/DataDriven_JSON_Rules.md) own implemented technical and data contracts.
-- Research/decision notes may exist for active areas. In the current NPC combat block, [Docs/NPC_Combat_Targeting_Research.md](Docs/NPC_Combat_Targeting_Research.md) is the research basis for aim/accuracy decisions; it does not claim unimplemented behavior is already architecture.
+- Research/decision notes may exist for active areas. For the historical/closed M41 NPC combat block, [Docs/NPC_Combat_Targeting_Research.md](Docs/NPC_Combat_Targeting_Research.md) remains the research basis for aim/accuracy decisions; it does not make that block active or claim unimplemented behavior is already architecture.
 - Escalate a material creative, product, authority, or scope ambiguity to Mauro. Do not silently reconcile conflicting sources.
 
 ## System Harmony
@@ -22,6 +22,17 @@ Before changing a feature, inspect the relevant authorities, interfaces, service
 - Assess regressions by systemic blast radius, not lines changed. Preserve identity, ownership, atomicity, rollback, Core/mod infrastructure, and current contracts when they are in scope.
 - Do not begin an unauthorized milestone or expand gameplay, data, persistence, or scenes merely for convenience.
 - Sunk cost is not a reason to preserve a bad seam. Remove or replace obsolete coordination/compatibility after its real consumers have migrated and tests prove the replacement.
+
+## Product Proof Guardrail
+
+The 2026-10-02 product rebaseline in [Docs/Product_Playability_Rebaseline_2026-10-02.md](Docs/Product_Playability_Rebaseline_2026-10-02.md) establishes that Old Scars is currently a technically strong systemic prototype but not yet a proven replayable game.
+
+- Finish the active scope before opening another one, but do not assume that the next technically logical foundation is the next product priority.
+- After the IMPL-0063 Stage 1 checkpoint review, broad new foundations, mechanics, worldgen expansion, streaming or persistence work require either a direct consumer in an authorized playable slice or separate explicit Mauro authorization.
+- New ideas may be documented/backlogged without becoming implementation priority.
+- Prefer work that converts existing systems into a player-facing loop before adding another layer of infrastructure.
+- A technical PASS is not sufficient evidence of product value. When a scope is intended to prove gameplay, its acceptance must include a player-facing/manual playability criterion.
+- Independent product/direction reviews may inform prioritization, but only Mauro converts them into project authority or authorization. Codex remains an implementation/technical execution agent and must not silently override product direction.
 
 ## Technical Engineering Heuristics
 

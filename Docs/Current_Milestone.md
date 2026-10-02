@@ -76,7 +76,9 @@ ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el
 
 **SCOPE RULE RECONCILIATION:** la coexistencia documental de IMPL-0066 TUNING ACCEPTANCE PENDING e IMPL-0063 Stage 1 fue una excepción explícita autorizada por Mauro. No representa dos scopes de implementación simultáneos: 0066 está estacionado esperando una decisión manual; únicamente 0063 Stage 1 fue abierto para trabajo técnico.
 
-**NEXT EXACT STEP:** revisión del checkpoint IMPL-0063 Stage 1; no iniciar Stage 2/streaming/persistencia por inercia. IMPL-0021 permanece detrás de IMPL-0063.
+**PRODUCT PLAYABILITY REBASELINE — 2026-10-02:** Mauro aprueba que Old Scars sea tratado hoy como un **prototipo sistémico/técnico fuerte, pero todavía no como un juego repetible demostrado**. Tras cerrar el checkpoint actual, la prioridad pasa a demostrar un Playable Core Loop de 10–15 minutos para una persona no autora. Nuevas mecánicas pueden seguir en backlog, pero no desplazan este objetivo sin un consumer directo.
+
+**NEXT EXACT STEP:** revisión del checkpoint IMPL-0063 Stage 1; no iniciar Stage 2/streaming/persistencia por inercia. Después: higiene corta de integridad del `dev` publicado (`ISSUE-0031`) y definición/autorización del Playable Core Loop Proof. IMPL-0021 ya no es el siguiente scope automático; queda diferido detrás del rebaseline jugable salvo necesidad directa.
 
 ## Orden operativo aprobado para cerrar M41 (histórico)
 

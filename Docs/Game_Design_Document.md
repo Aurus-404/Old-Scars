@@ -1,10 +1,18 @@
 # Old Scars - Documento de Diseño del Juego
 
-- Versión: línea base de repositorio 1.3
-- Actualizado: 24 de agosto de 2026
+- Versión: línea base de repositorio 1.4
+- Actualizado: 2 de octubre de 2026
 - Estado: `APPROVED — REVISED DESIGN BASELINE`
 - Derivado de: `Old_Scars_GDD_Maestro_v3.1.docx` (17 de julio de 2026)
 - SHA-256 de la fuente: `919966D0BFCDE1FD77C6D7765EE087B4D04211FBDEAAD06B4AAFCCFEE7308AF4`
+
+## Changelog 1.4
+
+- Product Playability Rebaseline: se reconoce explícitamente que el estado actual es un prototipo sistémico/técnico con foundations fuertes, pero todavía sin un core loop de producto demostrado como sesión corta y repetible para una persona no autora.
+- Después del checkpoint IMPL-0063 Stage 1, la prioridad de planificación pasa a un **Playable Core Loop Proof** antes de autorizar otra cadena amplia de foundations.
+- Nuevas mecánicas pueden seguir registrándose en backlog, pero no desplazan el objetivo jugable salvo que el loop aprobado las requiera como consumer directo.
+- El gate de producto debe poder probarse sin dependencia obligatoria de F3/diagnostics y debe incluir evidencia humana de claridad, decisiones, tensión/recompensa y deseo de repetir.
+- Esta decisión no reduce la ambición final ni autoriza por sí misma un nuevo scope; Stage 2 de terrain/streaming/persistence continúa no autorizado.
 
 ## Changelog 1.3
 
@@ -348,7 +356,9 @@ PC/Windows, Steam, precio premium, tags, idiomas, clasificación, deck para publ
 
 ## Línea Base De Producción
 
-El roadmap canónico no se duplica aquí. M41 / `AI Ready` están cerrados y no hay un milestone grande `Mxx` nuevo activo; el trabajo operativo vigente es la slice acotada `IMPL-0063 Stage 1`, ya VALIDATED/PUBLISHED y pendiente de revisión antes de autorizar otra fase. La secuencia conceptual continúa priorizando foundations open-world y un Connected First Playable antes de reordenar sistemas posteriores.
+El roadmap canónico no se duplica aquí. M41 / `AI Ready` están cerrados y no hay un milestone grande `Mxx` nuevo activo; el trabajo operativo vigente es la slice acotada `IMPL-0063 Stage 1`, ya VALIDATED/PUBLISHED y pendiente de revisión antes de autorizar otra fase. **La prioridad de producto cambió el 2026-10-02:** después de ese checkpoint, Old Scars debe demostrar primero un Playable Core Loop corto y repetible antes de continuar por inercia con más foundations open-world. El Connected First Playable de mundo abierto permanece como integración posterior, no como sustituto de probar que el juego básico funciona.
+
+La referencia de producto de este rebaseline es [Product_Playability_Rebaseline_2026-10-02.md](Product_Playability_Rebaseline_2026-10-02.md).
 
 Los IDs, estados, gates, dependencias y el camino vigente viven en [Project_Roadmap.md](Project_Roadmap.md). La arquitectura futura vive en [Open_World_Architecture.md](Open_World_Architecture.md). La evidencia y los riesgos viven en [Production_Gates_and_Risks.md](Production_Gates_and_Risks.md).
 

@@ -442,6 +442,7 @@ M55.0 ejecuta Launch despues de Release Candidate; no agrega un gate canonico nu
 | Persistence Ready | R05, R14, R19 | R01, R09, R16, R17, R18, R20, R22 |
 | Combat Ready | Ninguno especifico del registro actual | R01, R10, R11, R15, R16, R17, R18, R22 |
 | AI Ready | R06 | R01, R10, R11, R15, R16, R17, R22 |
+| Playable Core Loop Proof | R27 | R04, R10, R12, R15, R16, R22, R27, R28, R29 |
 | World Systems Ready | Ninguno especifico del registro actual | R01, R10, R11, R15, R16, R17, R22, R24, R25, R26 |
 | Survival Systems Ready | R10 | R01, R11, R15, R16, R17, R22 |
 | Content Pipeline Ready | R08 | R01, R02, R09, R11, R13, R16, R17, R20, R21, R22, R24, R26 |
@@ -484,6 +485,9 @@ Estados permitidos: `OPEN`, `MITIGATING`, `ACCEPTED` y `CLOSED`. Un riesgo estru
 | R24 | `MITIGATING` | Mauro | Reinterpretación silenciosa de sectores no resueltos | Media | Alta | Un sector visitado tarde usa el generador/contenido actual y contradice el contrato con el que nació el mundo. | Registrar generation contract y exigir compatibilidad, migración explícita o fallo seguro antes de resolver detalle local. | Cerrar para el scope del Connected First Playable; revalidar Content Pipeline, Vertical Slice y releases. |
 | R25 | `OPEN` | Mauro | Transición sectorial deja estado híbrido o irrecuperable | Media | Alta | Origen liberado y destino parcial, dos sectores autoritativos o rollback incapaz de restaurar A. | Separar runtime transition de autosave, staging inerte, rollback capture, validación y promoción única del destino. | Cerrar para el scope del Connected First Playable; revalidar Vertical Slice y releases. |
 | R26 | `OPEN` | Mauro | Colisión de identidades durables entre estado activo e inactivo | Media | Alta | Actor/item se duplica al materializar o IDs idénticos existen en sectores distintos. | Preflight mundial o mecanismo equivalente que garantice unicidad sin crear otra autoridad de gameplay. | Cerrar para el scope de World Persistence/Connected First Playable; revalidar en gates posteriores. |
+| R27 | `OPEN` | Mauro | Prototipo técnico crece sin demostrar un core loop jugable | Alta | Alta | Aumentan foundations, schemas, diagnostics o world systems mientras una persona externa todavía no puede jugar 10–15 minutos con objetivo, decisiones y deseo de repetir. | Playable Core Loop Proof antes de otra cadena amplia de foundations; nuevas mecánicas van a backlog salvo consumer directo; playtest no autor obligatorio. | Debe cerrar en Playable Core Loop Proof y revalidarse en Vertical Slice. |
+| R28 | `OPEN` | Mauro | Integridad del árbol publicado no demostrada de forma aislada | Media | Alta | Validaciones dependen de un working tree con cambios locales de larga vida o de staging parcial difícil de reproducir. | Resolver ISSUE-0031: comprobar el `dev` publicado de forma proporcional y gestionar el trabajo local sin operaciones destructivas. | Mitigar antes de usar `dev` como baseline del Playable Core Loop; revisar antes de cada gate mayor. |
+| R29 | `MITIGATING` | Mauro | Tooling/documentación crecen más rápido que la experiencia jugable | Alta | Media | Más diagnostics/docs/compatibilidad que nuevas decisiones o acciones visibles al jugador; closeout duplica el mismo estado en varios lugares. | Mantener autoridad única por dato, reducir duplicación, no añadir diagnostics amplios sin criterio de aceptación y medir progreso también por loops jugables/playtests. | Revisar en Playable Core Loop Proof, Vertical Slice y Production Ready. |
 
 ## Plantilla De Revision De Gate
 

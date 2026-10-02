@@ -8,7 +8,23 @@ M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded a
 
 ### Active slice — IMPL-0063 Stage 1
 
-**IMPL-0020** permanece DONE / ACCEPTED / PUBLISHED. **IMPL-0066** tiene checkpoint publicado y estado IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING. Mauro autorizó **IMPL-0063 Stage 1** el 2026-10-02 sobre dev tras 5965d23: audit/integration + identidad/evidencia baseline de chunks. TEST-20261002-005/007 combined PASS; revisar el checkpoint antes de autorizar otra slice. IMPL-0021 permanece detrás de IMPL-0063.
+**IMPL-0020** permanece DONE / ACCEPTED / PUBLISHED. **IMPL-0066** tiene checkpoint publicado y estado IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING. Mauro autorizó **IMPL-0063 Stage 1** el 2026-10-02 sobre dev tras 5965d23: audit/integration + identidad/evidencia baseline de chunks. TEST-20261002-005/007 combined PASS; revisar el checkpoint antes de autorizar otra slice. **La rebaseline de producto del 2026-10-02 elimina IMPL-0021 como siguiente automático:** sigue aprobado en backlog, pero queda detrás del Playable Core Loop Proof salvo consumer directo.
+
+### Rebaseline de producto — siguiente objetivo después del checkpoint actual
+
+La auditoría independiente V2 confirmó una asimetría: foundations técnicas fuertes, pero ninguna sesión de producto de 10–15 minutos demostrada como loop repetible para una persona ajena al desarrollo. Mauro aprueba corregir la prioridad.
+
+Después de la revisión de IMPL-0063 Stage 1:
+
+1. **no abrir Stage 2 por inercia**;
+2. resolver de forma acotada `ISSUE-0031` para saber que el árbol publicado es una baseline reproducible;
+3. definir/autorizar un **Playable Core Loop Proof** usando primero sistemas ya existentes;
+4. tratar `ISSUE-0032` (pausa/tiempo), `ISSUE-0036` (cierre médico) y `ISSUE-0037` (dependencia Debug→producto) como candidatos relevantes sólo en la medida en que bloqueen ese loop;
+5. mantener ideas/mecánicas nuevas en backlog hasta que el loop demuestre un consumer real.
+
+Criterio de producto: la siguiente etapa importante debe aumentar lo que **un jugador entiende, decide, hace y quiere repetir**, no sólo la profundidad de infraestructura.
+
+Referencia: `Docs/Product_Playability_Rebaseline_2026-10-02.md`.
 
 ### Regla de ejecucion del siguiente scope
 

@@ -34,9 +34,27 @@ Mauro conserva autoridad creativa y de producto. Los IDs históricos no se renom
 | IMPL-0020 | DONE / ACCEPTED / PUBLISHED — 2026-10-01 |
 | IMPL-0066 | IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING; sólo queda decisión manual de tuning |
 | Open World Rebaseline | `IMPL-0063 STAGE 1 VALIDATED / REMAINING PHASES DEFERRED` |
+| Product Playability Rebaseline | `APPROVED DIRECTION — PLAYABLE CORE LOOP PROOF BEFORE NEW BROAD FOUNDATION WORK` |
 | Scope operativo actual | IMPL-0063 Stage 1 — checkpoint publicado en `89f2a72c26d30668670bff3b485300eb9d2e0a4a`, pendiente de revisión |
 | NEXT EXACT STEP | Revisar el checkpoint IMPL-0063 Stage 1; no iniciar Stage 2/streaming/persistencia por inercia |
-| Después | IMPL-0021 permanece detrás de IMPL-0063; cualquier fase posterior de IMPL-0063 requiere autorización separada |
+| Después | Higiene corta de integridad del árbol publicado (ISSUE-0031) + definir/autorizar Playable Core Loop Proof. IMPL-0021 y fases posteriores de IMPL-0063 quedan diferidos salvo consumer directo del loop y autorización separada |
+
+## Product Playability Rebaseline — 2026-10-02
+
+Mauro aprueba una corrección de prioridad: Old Scars conserva su ambición sistémica, pero el proyecto debe dejar de medir progreso principalmente por cantidad/profundidad de foundations y demostrar primero un **juego corto que funcione como juego**.
+
+El documento de autoridad para este rebaseline es [Product_Playability_Rebaseline_2026-10-02.md](Product_Playability_Rebaseline_2026-10-02.md).
+
+Reglas de secuencia:
+
+1. cerrar/revisar el scope activo IMPL-0063 Stage 1 sin abrir Stage 2;
+2. comprobar de forma acotada la integridad del `dev` publicado y resolver el trabajo local de larga vida sin operaciones destructivas;
+3. convertir el siguiente gran objetivo en **Playable Core Loop Proof**: 10–15 minutos, objetivo/decisiones/amenaza/recovery/feedback, sin dependencia obligatoria de tooling de developer;
+4. nuevas mecánicas y foundations siguen pudiendo entrar en backlog, pero no pasan a implementación por inercia;
+5. IMPL-0021 deja de ser el siguiente scope automático; sólo se adelanta si el loop jugable demuestra que localized limb impairment es un consumer necesario;
+6. el Connected First Playable open-world existente permanece como gate posterior de integración world/sector/persistence, no como excusa para posponer la prueba de diversión básica.
+
+Este rebaseline no asigna todavía un nuevo ID de milestone/coding unit ni abre trabajo simultáneo. El scope concreto del Playable Core Loop se autoriza sólo después de cerrar el checkpoint actual.
 
 ### Contexto histórico del estado de M41.4 al inicio del cierre P9
 

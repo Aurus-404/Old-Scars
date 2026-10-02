@@ -6,15 +6,16 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 
 1. `AGENTS.md` — reglas permanentes de trabajo, Git, validación, alcance y routing ChatGPT/Codex.
 2. `Docs/Current_Milestone.md` — estado operativo actual y próximo paso exacto.
-3. `Docs/Next_Sprints.md` — cola real de trabajo a corto plazo y secuencia post-M41 ya aprobada.
-4. `Docs/Terrain_Chunk_Identity_Stage1.md` — contrato y límites exactos del checkpoint IMPL-0063 Stage 1.
-5. `Docs/Issue_Registry.md` — bugs/deudas/sospechas/resoluciones persistentes.
-6. `Docs/Implementation_Backlog.md` — mecánicas/mejoras aprobadas para después; no son milestones ni bugs.
-7. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos implementados.
-8. `Docs/Test_Log.md` — evidencia de validaciones realmente ejecutadas; IDs inexistentes aquí no cuentan como tests canónicos.
-9. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes.
-10. `Docs/Development_Log.md` — cronología/evidencia histórica detallada.
-11. Documentos M41/NPC (`Prueba_3_Findings.md`, `NPC_AI_Sanitation_Plan.md`, `NPC_Combat_Targeting_Research.md`) sólo cuando el trabajo toque ese bloque histórico/cerrado.
+3. `Docs/Next_Sprints.md` — cola real de trabajo a corto plazo y secuencia inmediata.
+4. `Docs/Product_Playability_Rebaseline_2026-10-02.md` — dirección de producto vigente: demostrar core loop jugable antes de seguir acumulando foundations.
+5. `Docs/Terrain_Chunk_Identity_Stage1.md` — contrato y límites exactos del checkpoint IMPL-0063 Stage 1.
+6. `Docs/Issue_Registry.md` — bugs/deudas/sospechas/resoluciones persistentes.
+7. `Docs/Implementation_Backlog.md` — mecánicas/mejoras aprobadas para después; no son milestones ni bugs.
+8. `Docs/Technical_Architecture.md` y `Docs/DataDriven_JSON_Rules.md` — contratos implementados.
+9. `Docs/Test_Log.md` — evidencia de validaciones realmente ejecutadas; IDs inexistentes aquí no cuentan como tests canónicos.
+10. `Docs/Project_Roadmap.md` — IDs/estados/dependencias de milestones grandes.
+11. `Docs/Development_Log.md` — cronología/evidencia histórica detallada.
+12. Documentos M41/NPC (`Prueba_3_Findings.md`, `NPC_AI_Sanitation_Plan.md`, `NPC_Combat_Targeting_Research.md`) sólo cuando el trabajo toque ese bloque histórico/cerrado.
 
 ## Qué documento responde qué pregunta
 
@@ -22,6 +23,7 @@ Este archivo existe para que un nuevo chat/sesión de desarrollo pueda reconstru
 | --- | --- |
 | ¿Qué estamos haciendo ahora? | `Current_Milestone.md` |
 | ¿Qué hacemos después? | `Next_Sprints.md` |
+| ¿Cuál es la prioridad de producto y por qué no debemos seguir acumulando foundations por inercia? | `Product_Playability_Rebaseline_2026-10-02.md` |
 | ¿Qué evidencia de prueba está registrada realmente? | `Test_Log.md` |
 | ¿Qué contrato/límite tiene el Stage 1 actual? | `Terrain_Chunk_Identity_Stage1.md` |
 | ¿Qué milestone grande corresponde? | `Project_Roadmap.md` |
@@ -74,7 +76,17 @@ No repetir auditorías exhaustivas si el repo ya estableció el seam y el próxi
 - Unity Terrain sigue siendo el path/default release; la foundation volumétrica continúa opt-in para desarrollo.
 - Streaming, load/unload, persistencia productiva de mutaciones, geología/cuevas, LOD y optimización posterior siguen fuera de alcance.
 
-**NEXT EXACT STEP:** revisar el checkpoint IMPL-0063 Stage 1. No iniciar Stage 2/streaming/persistencia por inercia. IMPL-0021 permanece detrás de IMPL-0063.
+**NEXT EXACT STEP:** revisar el checkpoint IMPL-0063 Stage 1. No iniciar Stage 2/streaming/persistencia por inercia.
+
+**DESPUÉS DEL CHECKPOINT ACTUAL:** hacer una higiene corta de integridad del árbol publicado (`ISSUE-0031`) y preparar/autorizar el **Playable Core Loop Proof**. IMPL-0021 deja de ser “siguiente automático”: permanece aprobado en backlog, pero se difiere detrás del rebaseline jugable salvo que el slice demuestre que lo necesita como consumer directo.
+
+### Product rebaseline 2026-10-02
+
+- Estado del producto: **systemic/technical prototype con foundations fuertes; juego repetible todavía no demostrado**.
+- Prioridad: convertir los sistemas existentes en un loop jugable de 10–15 minutos antes de autorizar otra cadena de foundations.
+- Nuevas mecánicas: documentar/backlog; no preemptan el loop salvo necesidad directa.
+- Gate humano futuro: playtest con una persona no autora y sin dependencia de F3/diagnostics para completar lo esencial.
+- Fuente: `Product_Playability_Rebaseline_2026-10-02.md`.
 
 ### Validaciones/documentación pendientes que no cambian el scope activo
 
