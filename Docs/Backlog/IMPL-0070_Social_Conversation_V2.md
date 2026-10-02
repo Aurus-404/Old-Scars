@@ -1,8 +1,8 @@
 # IMPL-0070 — Social Conversation V2: branching, multi-turn y memoria contextual
 
-- **Estado:** `PLANNED / AFTER CURRENT SOCIAL V1 CLOSEOUT`
-- **Fecha/origen:** 2026-09-19 — feedback manual de Mauro durante validación de Social V1.
-- **Naturaleza:** backlog futuro aprobado. No autoriza abrir este scope antes de cerrar por completo el scope Social/Barks actual.
+- **Estado:** `PLANNED / DEFERRED — REQUIRES PUBLISHED IMPL-0061 BASELINE`
+- **Fecha/origen:** 2026-09-19 — feedback manual de Mauro durante una validación local histórica de Social V1.
+- **Naturaleza:** backlog futuro aprobado. El handoff histórico de Social V1 no está publicado en `dev`; IMPL-0070 no puede asumir que `ActorSocialInteractionController`, conversaciones o barks de esa implementación existan. Sólo puede abrirse tras reintroducir/publicar y cerrar IMPL-0061 mediante un scope autorizado.
 - **ID note:** renumerado de un duplicado histórico `IMPL-0066` a `IMPL-0070` el 2026-10-02; `IMPL-0066` pertenece canónicamente a Container structural capacity / equipped ergonomics.
 
 ## Qué queremos
@@ -259,7 +259,7 @@ No intentar en el primer slice:
 
 ## Trigger / dependencias
 
-No comenzar hasta que el scope actual de Social/Barks esté completamente cerrado:
+No comenzar hasta que IMPL-0061 exista en `dev`, haya sido validado/publicado y su scope esté completamente cerrado:
 
 `implementation → validation → documentation closeout → review → commit → push → HEAD == origin/dev → NEXT EXACT STEP`
 
@@ -298,7 +298,7 @@ El slice inicial puede considerarse aceptable cuando:
 - No relationship framework universal preventivo.
 - No segundo sistema de anatomía.
 - No segunda autoridad de bark/logging.
-- No empezar este scope en paralelo con el cierre Social/Barks actual.
+- No empezar este scope en paralelo con IMPL-0061 ni con otro scope activo.
 
 ## Relación
 

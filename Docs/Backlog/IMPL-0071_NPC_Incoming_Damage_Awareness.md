@@ -1,8 +1,8 @@
 # IMPL-0071 — NPC Incoming Damage Awareness / Damage-Direction Reaction
 
-- **Estado:** `PLANNED / DEFERRED — AFTER CURRENT SOCIAL/BARKS CLOSEOUT`
-- **Fecha/origen:** 2026-09-19 — observación manual de Mauro durante pruebas 1v1 de Social/Barks/KO.
-- **Naturaleza:** backlog futuro aprobado. No autoriza abrir este scope antes de cerrar completamente el scope actual.
+- **Estado:** `PLANNED / DEFERRED — REQUIRES OWN FUTURE SCOPE`
+- **Fecha/origen:** 2026-09-19 — observación manual de Mauro durante pruebas locales históricas 1v1 de Social/Barks/KO.
+- **Naturaleza:** backlog futuro aprobado. La referencia original a un "current Social/Barks closeout" es histórica: IMPL-0061 no está publicado en `dev`. IMPL-0071 sólo puede abrirse mediante autorización explícita cuando llegue su turno y nunca en paralelo con el scope activo.
 - **ID note:** renumerado de un duplicado histórico `IMPL-0067` a `IMPL-0071` el 2026-10-02; `IMPL-0067` pertenece canónicamente a Input de movimiento/cámara compatible con Inventory abierto.
 
 ## Problema observado
@@ -130,7 +130,7 @@ Nunca registrar que el actor "vio" al atacante si sólo recibió un impacto.
 - No cover system obligatorio.
 - No flinch animation framework.
 - No refactor amplio de Perception/Search.
-- No abrir este scope en paralelo con el cierre actual.
+- No abrir este scope en paralelo con el scope activo.
 
 ## Relación
 

@@ -1,8 +1,8 @@
 # IMPL-0072 — NPC Flee / Panic Behavior data-driven
 
-- **Estado:** `PLANNED / DEFERRED — AFTER CURRENT SOCIAL/BARKS CLOSEOUT`
-- **Fecha/origen:** 2026-09-19 — dirección aprobada por Mauro durante pruebas manuales de combate NPC.
-- **Naturaleza:** backlog futuro aprobado. No autoriza implementación inmediata ni trabajo paralelo al scope actual.
+- **Estado:** `PLANNED / DEFERRED — REQUIRES OWN FUTURE SCOPE`
+- **Fecha/origen:** 2026-09-19 — dirección aprobada por Mauro durante pruebas manuales históricas de combate NPC.
+- **Naturaleza:** backlog futuro aprobado. La referencia histórica al cierre Social/Barks no implica que IMPL-0061 esté publicado en `dev`. IMPL-0072 requiere autorización explícita y un scope propio cuando llegue su turno; no autoriza implementación inmediata ni trabajo paralelo.
 - **ID note:** renumerado de un duplicado histórico `IMPL-0068` a `IMPL-0072` el 2026-10-02; `IMPL-0068` pertenece canónicamente a Drag directo de item sobre contenedor item-owned.
 
 ## Qué queremos
@@ -185,7 +185,7 @@ No agregar en ese slice:
 - No omnisciencia.
 - No RNG por frame.
 - No personality framework universal preventivo.
-- No implementación simultánea con el scope actual.
+- No implementación simultánea con el scope activo.
 
 ## Relación
 

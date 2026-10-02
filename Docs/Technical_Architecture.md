@@ -2,7 +2,7 @@
 
 ## Alcance Y Autoridad
 
-Este documento describe contratos tecnicos implementados en el slice actual. No asigna IDs, estados, dependencias ni gates; esa autoridad pertenece a [Project_Roadmap.md](Project_Roadmap.md). [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto con estado explícito `NOT IMPLEMENTED`. Una capacidad futura mencionada aqui es un limite de integracion, no una implementacion existente.
+Este documento describe contratos tecnicos implementados en el slice actual. No asigna IDs, estados, dependencias ni gates; esa autoridad pertenece a [Project_Roadmap.md](Project_Roadmap.md). [Open_World_Architecture.md](Open_World_Architecture.md) define la dirección futura aprobada del mundo abierto y distingue foundations ya implementadas de materialización/streaming/persistencia todavía futuras. Una capacidad futura mencionada aqui es un limite de integracion, no una implementacion existente.
 
 ## Blood Trails R0 — primitive gráfica PC
 
@@ -49,7 +49,7 @@ Este documento describe contratos tecnicos implementados en el slice actual. No 
 - `SectorId` usa `sector_<32 hex lowercase>` y puede derivarse de un domain key explícito. Es identidad lógica separada de scene name, Transform, array index, `ContentId` y `PersistentSceneObjectId`; no expresa shape, tamaño ni coordenadas.
 - `WorldTopology` es un grafo lógico inmutable y conectado. Ordena `SectorId` y conexiones explícitas canónicamente, rechaza sectores/connections duplicados, endpoints ausentes, self-connections y componentes desconectados. Connection keys usan el mismo contrato estable lowercase/dígitos/`_`; dos keys distintas pueden unir el mismo par. Sus endpoints son actualmente no dirigidos y se normalizan ordinalmente.
 - `CanonicalDescription` y `CanonicalHash` representan sólo la topología lógica mediante encoding explícito y SHA-256. No incluyen `WorldId`, paths, Unity objects, geometry ni insertion order; igualdad de hash es evidencia diagnóstica, no compatibility policy.
-- No existen todavía logical pose, biome regions, runtime weather/seasons, rivers finales, history, materialización sectorial de producción, sector streaming/transitions ni active-sector simulation. Existe únicamente el Terrain Materialization Technical Spike local y descartable documentado abajo; `current_slice_v1` permanece sin cambios.
+- Todavía no existen logical pose sectorial productiva, runtime weather/seasons, rivers finales, history, materialización sectorial de producción, sector streaming/transitions ni active-sector simulation. **Macro Environment / Biome Regions sí está implementado y committed** junto con Macro Climate en `world_session_v1` schema 7. Además de Terrain Materialization existen la Deformable Volumetric Terrain Foundation y el checkpoint IMPL-0063 Stage 1 de identidad/evidencia de chunks; siguen siendo foundations/local development paths y no equivalen a streaming, sector realization o World Persistence productiva. `current_slice_v1` permanece sin cambios.
 
 ## Macro World Plan V1
 
