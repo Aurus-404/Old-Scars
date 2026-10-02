@@ -166,12 +166,14 @@ namespace OldScars.Core.World
             this.density = density;
             baselineDensity = (float[])density.Clone();
             this.materials = materials;
+            BaselineLayoutEvidence = TerrainBaselineEvidence.ComputeLayout(sourcePlan, configuration);
         }
 
         public TerrainMaterializationPlan SourcePlan { get; }
         public DeformableTerrainSpikeConfiguration Configuration { get; }
         public Vector3 Origin { get; }
         public float VerticalCellSize { get; }
+        public string BaselineLayoutEvidence { get; }
         public int SampleCountX => Configuration.TotalCellsX + 1;
         public int SampleCountY => Configuration.VerticalCells + 1;
         public int SampleCountZ => Configuration.TotalCellsZ + 1;
@@ -345,6 +347,61 @@ namespace OldScars.Core.World
             for (int y = 0; y < Configuration.ChunkCountY; y++)
             for (int z = 0; z < Configuration.ChunkCountZ; z++)
                 yield return new DeformableTerrainChunkId(x, y, z);
+        }
+
+        public TerrainChunkKey GetChunkKey(DeformableTerrainChunkId chunkId)
+        {
+            RequireChunk(chunkId);
+            return new TerrainChunkKey(SourcePlan.WorldId, SourcePlan.SectorId,
+                SourcePlan.Window, chunkId, BaselineLayoutEvidence);
+        }
+
+        public float BaselineDensityAtChunkSample(DeformableTerrainChunkId chunkId, int x, int y, int z) =>
+            baselineDensity[ChunkSampleIndex(chunkId, x, y, z)];
+
+        public DeformableTerrainMaterial BaselineMaterialAtChunkSample(
+            DeformableTerrainChunkId chunkId, int x, int y, int z) =>
+            (DeformableTerrainMaterial)materials[ChunkSampleIndex(chunkId, x, y, z)];
+
+        /// <summary>
+        /// Closed sample bounds include each shared face/edge/corner. Z/Y/X iteration, X fastest.
+        /// The material lattice is immutable in the current baseline contract; mutations edit density only.
+        /// No mutable buffers, mesher state or representation transforms participate.
+        /// </summary>
+        public string ComputeChunkBaselineEvidence(DeformableTerrainChunkId chunkId)
+        {
+            RequireChunk(chunkId);
+            return WorldCanonicalEncoding.ComputeSha256(stream =>
+            {
+                WorldCanonicalEncoding.WriteString(stream, "terrain_chunk_samples_v1");
+                WorldCanonicalEncoding.WriteString(stream, BaselineLayoutEvidence);
+                WorldCanonicalEncoding.WriteInt64(stream, chunkId.X);
+                WorldCanonicalEncoding.WriteInt64(stream, chunkId.Y);
+                WorldCanonicalEncoding.WriteInt64(stream, chunkId.Z);
+                WorldCanonicalEncoding.WriteInt64(stream, Configuration.CellsPerChunkX + 1);
+                WorldCanonicalEncoding.WriteInt64(stream, Configuration.CellsPerChunkY + 1);
+                WorldCanonicalEncoding.WriteInt64(stream, Configuration.CellsPerChunkZ + 1);
+                for (int z = 0; z <= Configuration.CellsPerChunkZ; z++)
+                for (int y = 0; y <= Configuration.CellsPerChunkY; y++)
+                for (int x = 0; x <= Configuration.CellsPerChunkX; x++)
+                {
+                    int index = Index(chunkId.X * Configuration.CellsPerChunkX + x,
+                        chunkId.Y * Configuration.CellsPerChunkY + y,
+                        chunkId.Z * Configuration.CellsPerChunkZ + z);
+                    TerrainBaselineEvidence.WriteSingle(stream, baselineDensity[index]);
+                    stream.WriteByte(materials[index]);
+                }
+            });
+        }
+
+        private int ChunkSampleIndex(DeformableTerrainChunkId chunkId, int x, int y, int z)
+        {
+            RequireChunk(chunkId);
+            if (x < 0 || x > Configuration.CellsPerChunkX || y < 0 || y > Configuration.CellsPerChunkY ||
+                z < 0 || z > Configuration.CellsPerChunkZ)
+                throw new ArgumentOutOfRangeException("Sample lies outside the chunk's closed baseline bounds.");
+            return Index(chunkId.X * Configuration.CellsPerChunkX + x,
+                chunkId.Y * Configuration.CellsPerChunkY + y, chunkId.Z * Configuration.CellsPerChunkZ + z);
         }
 
         public string ComputeDensityEvidence()

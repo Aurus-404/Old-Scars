@@ -2,17 +2,17 @@
 
 Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Secuencia operativa vigente — 2026-10-01
+## Secuencia operativa vigente — 2026-10-02
 
 M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded as `TEST-20260914-001` through `TEST-20260914-004` in `Test_Log.md`; the rifle run's manual setup caveat is retained there. No Unity rerun was part of the documentation closeout.
 
-### Next exact step — IMPL-0066
+### Active slice — IMPL-0063 Stage 1
 
-**IMPL-0020 — Carry Weight / Encumbrance** is DONE / ACCEPTED / PUBLISHED (2026-10-01). Automated gates remain valid and Mauro's manual playtest confirmed the base locomotion consequence, while exposing a backpack product follow-up. **NEXT EXACT STEP: IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables**: independent grid geometry, per-container maximum content weight and data-driven ergonomic effective-load reduction only while correctly equipped. Physical mass remains conserved. After IMPL-0066 closes, **IMPL-0063** resumes as the high-priority next scope with its bounded audit/integration + stable terrain chunk identity slice. `IMPL-0021` remains behind IMPL-0063.
+**IMPL-0020** permanece DONE / ACCEPTED / PUBLISHED. **IMPL-0066** tiene checkpoint publicado y estado IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING. Mauro autorizó **IMPL-0063 Stage 1** el 2026-10-02 sobre dev tras 5965d23: audit/integration + identidad/evidencia baseline de chunks. TEST-20261002-005/007 combined PASS; revisar el checkpoint antes de autorizar otra slice. IMPL-0021 permanece detrás de IMPL-0063.
 
 ### Regla de ejecucion del siguiente scope
 
-No convertir esta cola en trabajo simultaneo. IMPL-0020 completó su scope técnico; el playtest manual abrió sólo IMPL-0066 como follow-up terminable. Cerrar IMPL-0066 antes de abrir la primera slice de IMPL-0063; no abrir el backlog entero ni asumir aceptado IMPL-0061.
+No convertir esta cola en trabajo simultaneo. IMPL-0020 completó su scope técnico; el playtest manual abrió sólo IMPL-0066 como follow-up terminable. La autorización explícita del 2026-10-02 abre únicamente IMPL-0063 Stage 1 mientras la decisión de tuning IMPL-0066 sigue pendiente; no abrir el backlog entero ni asumir aceptado IMPL-0061.
 
 Durante el siguiente scope acotado:
 
@@ -238,7 +238,7 @@ Referencia: `IMPL-0066`.
 
 ### 13. P13 — Procedural Worldgen + Deformable Volumetric Terrain Productization
 
-Estado: `HIGH PRIORITY / NEXT AFTER IMPL-0066` — la prioridad se conserva, pero la primera slice no se abre hasta cerrar el follow-up manual de Carry/Storage. No implementada todavía.
+Estado: `STAGE 1 VALIDATED / REMAINING PHASES DEFERRED` — autorización local explícita 2026-10-02; TEST-20261002-005/007 combined PASS. TerrainChunkKey, compatibilidad layout y baseline por chunk; seam actual preservado. Próximo paso: revisión del checkpoint antes de nueva autorización, sin iniciar streaming/persistencia ni cerrar IMPL-0066 tuning.
 
 Objetivo: productizar el seam ya investigado entre el world truth procedural determinista/ecológicamente coherente y la foundation volumétrica deformable. No es un permiso para implementar todo de una vez: debe abrirse mediante slices terminables, empezando por audit/integration gate + stable terrain chunk identity, y luego avanzar sólo tras cerrar cada slice.
 
@@ -263,7 +263,7 @@ Referencia: `IMPL-0021`.
 
 ## No iniciar todavía
 
-- IMPL-0063 antes de cerrar/publicar IMPL-0066 y devolverle explícitamente el `NEXT EXACT STEP`;
+- fases posteriores de IMPL-0063 antes de revisar el checkpoint Stage 1 y recibir nueva autorización;
 - Encumbrance antes de cerrar M41/F8;
 - weapon-driven fire-control sin varios arquetipos reales;
 - weapon viability/fallback sin tarea propia;

@@ -192,3 +192,10 @@ No quedan implementados por este cierre:
 La foundation demuestra suficientemente que el camino volumétrico es viable para continuar el proyecto sin volver a asumir una heightmap productiva definitiva. Las decisiones de producción sobre resolución, chunk size, scheduling, LOD, compaction y navegación dinámica se tomarán cuando un consumidor real las necesite.
 
 La prioridad inmediata pasa deliberadamente a la secuencia jugable documentada en [NPC_Sandbox_and_Equipment_Sequence.md](NPC_Sandbox_and_Equipment_Sequence.md), empezando por `M41.2 — Basic Equipment & Weapon Coverage V1`.
+
+
+## Extension — IMPL-0063 Stage 1 (2026-10-02)
+
+The foundation runtime remains intact. Stage 1 adds world-addressable bounded-window TerrainChunkKey separately from the local DeformableTerrainChunkId, deterministic layout compatibility and immutable per-chunk baseline density/material evidence. TEST-20261002-005/007 validates exact X/Y/Z seams and the existing real WorldRuntime collider/Player/local NavMesh/mutation path in one combined warm-Editor session. See [Terrain_Chunk_Identity_Stage1.md](Terrain_Chunk_Identity_Stage1.md).
+
+This does not productize streaming or mutation persistence, redefine sectors or physical scale, change either mesher/default selection or advance geology/LOD/navigation optimization. IMPL-0063 as a whole remains unfinished; next phases require separate authorization.

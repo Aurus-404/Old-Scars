@@ -72,9 +72,9 @@ ISSUE-0022 — Loaded Ammo Mass Conservation: **DONE / RESOLVED / PUBLISHED** el
 
 **PLAYTEST PARCIAL IMPL-0066 — 2026-10-01.** La implementación local no publicada mostró conservación de masa física y reducción de carga efectiva correcta en el caso mochila pequeña + rifle (`6.30 kg physical → 5.34 kg effective` con multiplier `0.80`). El gate manual de capacidad estructural/reingreso también pasó: `800 × .303 = 20.00 / 20 kg`, la bala extra de `0.025 kg` fue rechazada sin partial transfer aunque quedaran celdas y, tras retirar contenido, volvió a aceptarse ingreso. El reporte posterior de Mauro (2026-10-02, TEST-20261002-001) confirma Save Game / Load Game por MainMenu → WorldRuntime PASS; queda pendiente únicamente el tuning comparativo de pequeña/mediana/grande. Los hallazgos `ISSUE-0028`, `ISSUE-0029` y `ISSUE-0030` quedan fuera del scope; `IMPL-0067` y `IMPL-0068` permanecen en backlog y NO alteran el orden operativo actual.
 
-**NEXT EXACT STEP: IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables.** Mauro decide el tuning comparativo pequeña/mediana/grande tras el checkpoint; no iniciar IMPL-0063 sin nueva autorización explícita.
+**ACTIVE TASK: IMPL-0063 — Stage 1: audit/integration gate + stable terrain chunk identity.** Autorizado por Mauro el 2026-10-02 tras el checkpoint 5965d23. Stage 1 VALIDATED en TEST-20261002-005/007; revisar este checkpoint antes de autorizar fases posteriores. IMPL-0066 mantiene su decisión de tuning pendiente, sin DONE/ACCEPTED.
 
-**NEXT AFTER IMPL-0066: IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable.** Conserva prioridad alta y su primera slice sigue siendo audit/integration gate + stable terrain chunk identity. IMPL-0021 permanece detrás de IMPL-0063.
+**NEXT EXACT STEP:** revisión del checkpoint IMPL-0063 Stage 1; no iniciar Stage 2/streaming/persistencia por inercia. IMPL-0021 permanece detrás de IMPL-0063.
 
 ## Orden operativo aprobado para cerrar M41 (histórico)
 
@@ -112,7 +112,7 @@ La secuencia sistémica aprobada es:
 1. `ISSUE-0022` loaded ammo mass: DONE / RESOLVED / PUBLISHED; conservación corregida antes de Encumbrance.
 2. `IMPL-0020` Carry Weight / Encumbrance compartido Player/NPC — DONE / ACCEPTED / PUBLISHED; playtest manual confirma la base y origina el follow-up de storage/ergonomía.
 3. `IMPL-0066` Capacidad estructural y ergonomía de contenedores equipables — `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING`; checkpoint autorizado, aceptación final pendiente.
-4. `IMPL-0063` Integración productiva Worldgen procedural + terreno volumétrico deformable — `HIGH PRIORITY / AUTHORIZED AFTER IMPL-0066`; ejecutar en slices acotadas.
+4. `IMPL-0063` Integración productiva Worldgen procedural + terreno volumétrico deformable — `STAGE 1 VALIDATED / REMAINING PHASES DEFERRED`; autorización local de Mauro 2026-10-02, sólo slices acotadas.
 5. `IMPL-0021` Localized Limb Impairment vuelve a cola posterior, primero sobre consumidores concretos de locomoción y después brazos/handling cuando estén definidos.
 
 No introducir Encumbrance en comparaciones futuras de accuracy, porque velocidad NPC participa en sus condiciones. F8A/F8C ya cerraron ISSUE-0008 sin retuning.
@@ -128,8 +128,8 @@ Aplicacion al estado actual:
 - M41, Invisible to AI, Player Debug Invincible e ISSUE-0022 Loaded Ammo Mass Conservation permanecen cerrados; no forman una lista abierta.
 - Antes de abrir trabajo nuevo, deben reconciliarse/cerrarse las validaciones pendientes que realmente sigan vigentes en el checkout canonico.
 - IMPL-0020 completó su scope técnico propio; la aceptación manual posterior abrió únicamente IMPL-0066 como follow-up acotado de contenedores/ergonomía.
-- `IMPL-0066 — Capacidad estructural y ergonomía de contenedores equipables` es NEXT EXACT STEP. El checkpoint publica implementación y evidencia core, sin cerrar la aceptación del tuning. No iniciar IMPL-0063 sin autorización posterior de Mauro.
-- `IMPL-0063 — Integración productiva Worldgen procedural + terreno volumétrico deformable` conserva prioridad alta y pasa a NEXT AFTER IMPL-0066.
+- `IMPL-0066` conserva su checkpoint publicado y TUNING ACCEPTANCE PENDING. Mauro autorizó explícitamente IMPL-0063 Stage 1 el 2026-10-02; no retuning ni aceptación ficticia de IMPL-0066.
+- `IMPL-0063` Stage 1 VALIDATED: identidad/baseline/seams y seam real preservado. Próximo paso: revisar el checkpoint antes de nueva autorización; el umbrella no está DONE.
 - `IMPL-0021` y cualquier otra idea permanecen detrás de IMPL-0063 salvo una re-priorización explícita posterior.
 
 ## Carry Weight — contrato de producto ya fijado
