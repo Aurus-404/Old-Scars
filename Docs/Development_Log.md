@@ -3827,3 +3827,14 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Los findings anteriores son evidencia/continuidad. No marcan IMPL-0066 DONE, no publican su implementación local y no cambian la secuencia: IMPL-0066 sigue activo; IMPL-0063 permanece después de su cierre.
 - El `TEST-*` manual formal debe agregarse al retomar el checkout local junto con los TEST-20261001-012..016 todavía no publicados, para preservar el orden append-only sin inventar IDs remotos fuera de secuencia.
 
+## 2026-10-01 — IMPL-0066 structural-capacity manual gate PASS; drag UX finding
+
+- Mauro completó el gate manual de capacidad estructural de la mochila pequeña en `SampleScene`.
+- Setup observado: `800 × core:ammo_303_british_01` a `0.025 kg` por unidad llenaron exactamente `20.00 / 20 kg` de contenido mientras seguía existiendo espacio de grid. La mochila equipada mostró masa física del actor `21.50 kg` y carga efectiva `17.50 kg`, coherente con el multiplier provisional `0.80`.
+- Se creó una bala adicional de `0.025 kg`. El intento de ingreso fue rechazado con UX explícita: `Capacidad del contenedor: 20 / 20 kg; ingreso: 0,025 kg. Retirá contenido antes de ingresar esa cantidad.` La bala permaneció en el inventario personal; no se observó transferencia parcial.
+- Tras retirar contenido del carrier, el mismo flujo volvió a aceptar ingreso. La captura posterior mostró `17.53 kg` de contenido interno, masa física del actor `19.03 kg` y carga efectiva `15.52 kg`, confirmando que el límite vuelve a admitir contenido al quedar por debajo de capacidad.
+- Resultado del gate estructural/reingreso: **PASS manual**. Esto cubre límite exacto, rechazo sobrecapacidad con celdas libres y reingreso posterior. IMPL-0066 sigue sin aceptación final: todavía faltan save/load manual y comparación/tuning de pequeña-mediana-grande.
+- Hallazgo adicional `ISSUE-0030`: el drag actual dibuja simultáneamente la copia en el slot de origen y una preview arrastrada, y la preview puede quedar por debajo de paneles de Inventory. El contrato visual se agregó a `IMPL-0068`; no se corrige dentro del scope activo por inercia.
+- El export de esta sesión vuelve a iniciar con `# IMPL-0042`, reconfirmando `ISSUE-0029`.
+- El `TEST-*` manual formal debe reconciliarse con los IDs locales aún no publicados de IMPL-0066 antes del closeout; no se asigna un ID remoto fuera de secuencia.
+

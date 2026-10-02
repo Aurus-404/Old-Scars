@@ -730,10 +730,11 @@ Cuando una entrada se convierta en trabajo inmediato, `Next_Sprints.md` debe ref
 - **Fecha/origen:** 2026-10-01 — playtest manual de IMPL-0066; aprobado por Mauro.
 - **Qué queremos:** al arrastrar un item desde Player Grid y soltarlo sobre el rectángulo/item visual de una mochila u otro container con owned storage accesible, interpretar el drop como transferencia a ese storage sin exigir abrir primero su ventana flotante.
 - **Contrato:** esto es únicamente un atajo de UX. La transferencia debe seguir pasando por `GridStorageTransferService` y conservar los mismos guards/autoridades: grid/footprint, stack, capacidad estructural en kg, no-nesting, access, identity, ownership, snapshots y rollback.
-- **Failure UX:** si el item no entra por geometría, kg, nesting, stack u otra regla productiva, la fuente no cambia y se muestra el motivo existente; no crear una ruta especial que fuerce o clamplee contenido.
-- **Por qué:** convierte la mochila visible en un destino natural de drag-and-drop y reduce pasos repetitivos sin duplicar lógica de inventory.
-- **Validación:** personal→carrier por drop directo, rechazo atómico, stack/quantity correcto, carrier equipado y no equipado cuando el storage sea accesible, y coherencia con la ventana flotante.
+- **Contrato visual de drag:** durante un drag activo, el item no debe verse como dos copias simultáneas. El slot de origen puede conservar sólo footprint/placeholder/estado de reserva, pero no otra copia completa del item. La representación arrastrada debe dibujarse en un overlay UI por encima de Inventory, floating storages y paneles relacionados, con footprint/rotación/cantidad coherentes con la grilla. Nunca debe convertirse accidentalmente en un world visual por quedar fuera del orden de render UI.
+- **Failure UX:** si el item no entra por geometría, kg, nesting, stack u otra regla productiva, la fuente no cambia y se muestra el motivo existente; cancelar/fallar el drop restaura el visual/placement original exacto. No crear una ruta especial que fuerce o clamplee contenido.
+- **Por qué:** convierte la mochila visible en un destino natural de drag-and-drop y reduce pasos repetitivos sin duplicar lógica de inventory; además elimina ambigüedad visual durante el drag.
+- **Validación:** personal→carrier por drop directo, rechazo atómico, stack/quantity correcto, carrier equipado y no equipado cuando el storage sea accesible, coherencia con la ventana flotante, una sola representación visible del item durante drag, drag preview siempre por encima de la UI pertinente y restauración visual/estado exacta en cancel/failure.
 - **Límites:** sin nested containers nuevos, sin auto-packing especial, sin transferencias mágicas fuera del storage accesible y sin segunda autoridad de drag/transfer.
-- **Relación:** Inventory Grid Drag, item-owned storage, `GridStorageTransferService`, IMPL-0066 e `IMPL-0056`.
+- **Relación:** Inventory Grid Drag, item-owned storage, `GridStorageTransferService`, IMPL-0066, `ISSUE-0030` e `IMPL-0056`.
 - **Prioridad:** registrado como follow-up; no cambia el NEXT EXACT STEP actual ni abre trabajo paralelo a IMPL-0066.
 

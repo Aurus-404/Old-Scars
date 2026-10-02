@@ -72,6 +72,17 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Impacto:** no afecta gameplay ni el contenido capturado, pero puede atribuir evidencia futura al scope equivocado y volver ambiguo el historial de QA.
 - **Plan:** revisar el metadata/header de `PlaySessionConsoleLogExporter`; si el scope está hardcodeado, volverlo neutral o derivarlo de una fuente explícita sin convertir el logger en autoridad de milestone. No corregir dentro de IMPL-0066 salvo que bloquee evidencia.
 
+
+### ISSUE-0030 — Drag de Inventory duplica el item visual y puede renderizarlo debajo de la UI
+- **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** playtest manual de `IMPL-0066` en `Assets/Scenes/SampleScene.unity`, 2026-10-01.
+- **Síntoma:** al arrastrar un item dentro del Inventory, el item original continúa renderizado en su slot de origen mientras también aparece la representación arrastrada, produciendo la impresión de dos copias simultáneas. Además, el visual de drag puede quedar por debajo de paneles/ventanas del Inventory en vez de renderizarse por encima de la interfaz.
+- **Comportamiento esperado:** mientras el drag está activo, el contenido del slot de origen no debe dibujar una segunda copia completa del item; puede conservar únicamente su footprint/placeholder de origen si hace falta. La representación arrastrada debe renderizarse en un overlay UI superior, con icono/footprint/rotación/cantidad coherentes con su representación en la grilla.
+- **Seguridad:** cancelar o fallar el drop debe restaurar exactamente la representación/estado original sin mutación de quantity, placement, identity u ownership.
+- **Plan:** corregir junto con la próxima iteración de Inventory drag UX; integrar el contrato visual en `IMPL-0068` y reutilizar el drag/session state existente, sin crear una segunda autoridad de transferencia.
+- **Evidencia:** capturas manuales muestran la bala x1 simultáneamente en el slot de origen y como elemento arrastrado, con este último parcialmente oculto detrás de la UI.
+
+
 ---
 
 ## Issues resueltos / historial
