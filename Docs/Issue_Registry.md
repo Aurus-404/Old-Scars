@@ -109,10 +109,10 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 
 ### ISSUE-0034 — Diagnostics sin runner agregado ni cadencia de regresión global
 - **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`.
-- **Origen:** auditoría externa V2, AUD-07.
-- **Evidencia:** existen 56 diagnostics Editor (+1 runtime), pero el flujo normal ejecuta el diagnostic del scope y vecinos; no hay un punto de entrada/cadencia agregada que demuestre periódicamente la salud global.
-- **Impacto:** foundations antiguas pueden permanecer con PASS histórico mientras capas compartidas continúan cambiando.
-- **Plan:** definir una regresión global proporcional/cadencia cuando el Playable Core Loop necesite una baseline estable. No convertirlo en excusa para más tooling que gameplay.
+- **Origen:** auditoría externa V3 final, AUD-07.
+- **Evidencia:** la lectura completa de los 56 diagnostics de Editor confirma una estrategia fuerte (goldens de worldgen, fuzz/stress, injected failures + rollback, pruebas de integración reales), pero no existe harness compartido ni corrida agregada/cadencia global. El andamiaje de Play Mode está duplicado en ~40 archivos y parte de la suite está atada a tuning, assets y texto de logs.
+- **Impacto:** la calidad individual de los diagnostics es alta, pero muchos PASS históricos quedan viejos mientras capas compartidas cambian; además mantener el harness copiado consume tiempo de producción.
+- **Plan:** cuando el Playable Core Loop necesite baseline estable, definir un punto de entrada/cadencia proporcional y reducir duplicación sólo donde aporte mantenimiento real. No usar este issue como excusa para construir más tooling que gameplay.
 
 ### ISSUE-0035 — Reload usa sólo el primer stack compatible de munición
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
@@ -142,18 +142,18 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Impacto actual:** caso latente/no demostrado en gameplay productivo; el Player grid no lo expone.
 - **Plan:** no hacer refactor DRY general. Verificar el caso cuando se toque equipment y unificar sólo la semántica de placement necesaria.
 
-### ISSUE-0039 — NPC quieto puede no rotar el cuerpo para seguir al target
-- **Tipo/estado/severidad:** `BUG` · `SUSPECTED` · `P2 / YELLOW`.
-- **Origen:** auditoría externa V2, AUD-33.
-- **Evidencia estática:** gaze se limita a ±65° respecto del body y perception consume gaze; la rotación corporal productiva parece depender del NavMeshAgent mientras el actor se desplaza.
-- **Riesgo:** un NPC detenido podría perder un target que lo rodea aunque su lógica de encounter siga activa.
-- **Plan:** prueba Play mínima antes de clasificar causa/corrección; no retunear FOV ni Perception por sospecha.
+### ISSUE-0039 — Falta body turn in place para NPC quieto
+- **Tipo/estado/severidad:** `DESIGN_DEBT` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V3 final, AUD-33; reclasifica el finding V2.
+- **Evidencia:** Perception usa gaze y `ActorGazeController` limita la mirada a ±65° del body. Los diagnostics prueban que un target fuera del cono no debe percibirse y que gaze no rota el cuerpo. Lo que falta es una conducta productiva que rote el cuerpo cuando el NPC está quieto; hoy sólo el `NavMeshAgent` cambia facing al desplazarse.
+- **Límite:** **no es bug de Perception ni del gaze cone**. El efecto jugable de rodear a un NPC quieto y forzar LostContact/Search es PROBABLE hasta verificarlo en Play.
+- **Plan:** verificar el efecto en una prueba mínima. Si es indeseado, diseñar body-turn-in-place hacia target/atención sin retunear FOV ni volver omnisciente la percepción.
 
 ### ISSUE-0040 — Mojibake e idioma mezclado en textos visibles
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P2 / YELLOW`.
-- **Origen:** auditoría externa V2, AUD-35.
-- **Evidencia:** literales UTF-8 doble/triplemente codificados en `actions.json` y varios C#; mensajes visibles mezclan español/inglés.
-- **Impacto:** texto roto visible al jugador y ausencia de una baseline lingüística clara.
+- **Origen:** auditoría externa V3 final, AUD-35.
+- **Evidencia:** mojibake localizado en **5 archivos / 37 líneas**: `actions/actions.json`, `WorldInteractionDebugTester.cs`, `WorldItemEquipmentTransactionService.cs`, `WorldItemPickup.cs` e `InventoryContextActionResolver.cs`. Además hay mensajes visibles mezclando español e inglés.
+- **Impacto:** el jugador ve texto roto; los archivos siguen siendo UTF-8 válido, así que parser/JSON no lo detectan.
 - **Plan:** corregir literales/encoding en un scope de higiene/UI y fijar idioma base; no crear un framework completo de localización por este issue.
 
 ### ISSUE-0041 — Fallos de datos/world bootstrap pueden dejar espera indefinida o error poco visible
@@ -171,6 +171,27 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 - **Impacto futuro:** streaming/persistencia durable requieren una lattice/address world-stable; persistir mutations con la key actual las dejaría huérfanas tras el rebaseline.
 - **Plan:** aceptar Stage 1 por su alcance, pero no usar la key como identidad persistente ni iniciar Stage 2 por inercia. Resolver sólo con consumer real y autorización separada.
 
+
+### ISSUE-0043 — Acciones contextuales pueden conservar alcance después de alejarse
+- **Tipo/estado/severidad:** `BUG` · `SUSPECTED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V3 final, AUD-37.
+- **Evidencia estática:** `WorldInteractionDebugTester` valida los 2,5 m al abrir el menú. `ContextualActionDebugPanel.TryRevalidateAction` reevalúa tags/requisitos pero no distancia; `DebugActionProgressController` y `DebugActionExecutor` tampoco la validan y el menú contextual no bloquea WASD. Las acciones rápidas de pickup/equip sí revalidan.
+- **Hipótesis:** abrir junto a una puerta/contenedor, alejarse y luego hacer click podría iniciar/completar la acción desde cualquier distancia. No fue ejecutado.
+- **Plan:** verificar en Play. Si se reproduce, revalidar alcance al iniciar y al completar; definir oclusión por separado, no asumirla.
+
+### ISSUE-0044 — Diagnostics de Blood Trails escriben assets productivos
+- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V3 final, AUD-38.
+- **Evidencia:** `BloodTrailsV1Diagnostics.RunBatch` reescribe `BloodTrailVisualSettings.asset` con constantes del diagnostic y guarda assets; `BloodTrailsR0Diagnostics.RunBatch` puede modificar `PC_Renderer.asset` y crear material/textura.
+- **Impacto actual:** los valores hoy coinciden, pero el test puede revertir silenciosamente tuning de Inspector y ensuciar el árbol que pretende validar.
+- **Plan:** separar setup/autoring de validación o hacer que el diagnostic verifique sin mutar assets productivos.
+
+### ISSUE-0045 — Entradas de menú Editor pueden descartar escenas no guardadas
+- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P2 / YELLOW`.
+- **Origen:** auditoría externa V3 final, AUD-39.
+- **Evidencia:** cuatro entry points llaman `EditorSceneManager.OpenScene(..., Single)` sin `SaveCurrentModifiedScenesIfUserWantsTo`: CarryEncumbrance, LoadedAmmoMassConservation, M41F8CAimBiasEvidence e Impl00163RigidWearablesTools.GenerateAll.
+- **Impacto:** ejecutarlos desde menú con una escena dirty puede descartar trabajo sin aviso.
+- **Plan:** copiar el guard que ya usan diagnostics de terreno; no requiere rediseño de tooling.
 
 ---
 

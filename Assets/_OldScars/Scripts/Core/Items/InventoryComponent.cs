@@ -10,12 +10,13 @@ using UnityEngine;
 namespace OldScars.Core.Items
 {
     /// <summary>
-    /// Runtime-only inventory v0 for the playable debug loop.
+    /// Runtime inventory/storage component used by the current playable/debug slice.
     ///
-    /// This is not the final inventory or equipment system. The optional grid
-    /// backend adds debug spatial capacity only; there is no save data,
-    /// final equipment model, pickup/drop rules, or final UI. M33.1 exposes
-    /// closed placement movement for the temporary OnGUI drag interface.
+    /// Supports the legacy linear storage and the grid backend; Current Slice
+    /// persistence captures/restores its authoritative storage state, while
+    /// Equipment is owned by ActorEquipmentComponent and pickup/drop mutations
+    /// go through their dedicated transaction/services. The present OnGUI
+    /// inventory surface remains development UI rather than final product UX.
     /// </summary>
     public sealed class InventoryComponent : MonoBehaviour, IGridStorageOwner, IGridStorageTransferEndpoint
     {

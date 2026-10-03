@@ -3880,3 +3880,15 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Se crea `Docs/Product_Playability_Rebaseline_2026-10-02.md` como síntesis/autoridad de esta decisión de producto y ledger de AUD-01..AUD-36.
 - Se protege explícitamente lo mejor del proyecto: autoridad por dominio, identity/ownership, transacciones/rollback, persistence/recovery, deterministic worldgen, data validation y contratos compartidos Player/NPC.
 - Después del checkpoint actual, la prioridad de planificación es: integridad del árbol publicado + definir/autorizar un Playable Core Loop Proof de 10–15 minutos, con prueba de una persona no autora y sin dependencia obligatoria de tooling debug para completar lo esencial.
+
+## 2026-10-03 — External Opus Audit V3 FINAL reconciled
+
+- La auditoría externa `Old_Scars_Auditoria_Integral_v3.md` reemplaza V2 y se toma como review final para su alcance sobre `dev@2ecd546`, no como source of truth ni como reproducción de Unity.
+- Cobertura final declarada: 1.208/1.208 archivos clasificados; 289/289 C# leídos línea por línea (101.943 líneas: 215 runtime + 74 Editor); 0 archivos sin contabilizar. Limitaciones preservadas: no Unity, no checkout canónico/~26 archivos locales, no performance medida, LFS no disponible y varios documentos/lore no leídos completos.
+- Calificaciones finales sin cambio: técnica 7/10; producción/workflow 6/10; juego actual 2/10; potencial 7,5/10. Conteo: 0 CRITICAL, 3 HIGH, 11 MEDIUM, 27 LOW/INFO.
+- Los tres HIGH permanecen: AUD-01 tree-clean validation ausente; AUD-02 TerrainChunkKey sobre lattice no global; AUD-03 core loop no demostrado/tooling de desarrollo como superficie de gameplay.
+- Correcciones de V3 incorporadas: se retira el falso método de 1.841 líneas; AUD-06 baja a LOW porque el mesh seam sí tiene diagnostic real; AUD-33 se reclasifica a hueco de diseño/body turn in place; AUD-36 distingue tree de sectores de road network con ciclos; AUD-35 afecta 5 archivos/37 líneas.
+- La lectura completa de Editor sube la confianza en diagnostics: goldens de worldgen, fuzz/stress e injected failures con rollback son reales. Se mantiene AUD-07 por ausencia de harness/cadencia agregada y por acoplamiento a tuning/assets/log text.
+- Nuevos findings: AUD-37 probable interaction-range revalidation gap → ISSUE-0043; AUD-38 diagnostics que escriben assets → ISSUE-0044; AUD-39 menu entries que pueden descartar escenas dirty → ISSUE-0045; AUD-40/41 quedan como mantenimiento/performance de Editor sin scope propio.
+- Se corrigen además claims vivos nombrados por la auditoría: IMPL-0066 priority stale, `ApplyCore`→`TryApplyCore`, semántica de pausa en Technical Architecture y comentarios stale de Inventory/GameDataLoader.
+- Product Playability Rebaseline se mantiene intacto: Stage 1 review sigue siendo NEXT EXACT STEP; no Stage 2 por inercia; después, integridad de `dev` + Playable Core Loop Proof guiado por consumer.

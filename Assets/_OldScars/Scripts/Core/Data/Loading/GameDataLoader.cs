@@ -12,21 +12,9 @@ namespace OldScars.Core.Data.Loading
     /// Reads JSON definition files from StreamingAssets/Mods and registers them
     /// into TagRegistry and GameDatabase.
     ///
-    /// Current definition families:
-    /// - tags
-    /// - weapon_profiles
-    /// - actions
-    /// - items
-    /// - item_storage_profiles
-    /// - loot_tables
-    /// - actor_profiles
-    /// - world_object_profiles
-    /// - firearm_profiles
-    /// - ammo_profiles
-    /// - armor_profiles
-    /// - penetration_profiles
-    /// - visual_capabilities / visual_rig_profiles
-    /// - visual_assets / item_visual_profiles / attachment_poses
+    /// Recognized definition families are the inputs explicitly traversed by
+    /// LoadAll/its family loaders. Keep that executable path as the authority
+    /// rather than duplicating an exhaustive family list in this comment.
     ///
     /// Every source is identified by a root manifest before any definition is
     /// registered. Global Content IDs are canonicalized with that source context;
