@@ -2,13 +2,13 @@
 
 Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.md` resume el estado; `Issue_Registry.md` conserva defectos; `Implementation_Backlog.md` conserva mecánicas/mejoras aprobadas; `NPC_AI_Sanitation_Plan.md` mantiene el bloque completo de NPC Foundation.
 
-## Secuencia operativa vigente — 2026-10-02
+## Secuencia operativa vigente — 2026-10-03
 
 M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded as `TEST-20260914-001` through `TEST-20260914-004` in `Test_Log.md`; the rifle run's manual setup caveat is retained there. No Unity rerun was part of the documentation closeout.
 
 ### Active slice — IMPL-0063 Stage 1
 
-**IMPL-0020** permanece DONE / ACCEPTED / PUBLISHED. **IMPL-0066** tiene checkpoint publicado y estado IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING. Mauro autorizó **IMPL-0063 Stage 1** el 2026-10-02 sobre dev tras 5965d23: audit/integration + identidad/evidencia baseline de chunks. TEST-20261002-005/007 combined PASS; revisar el checkpoint antes de autorizar otra slice. **La rebaseline de producto del 2026-10-02 elimina IMPL-0021 como siguiente automático:** sigue aprobado en backlog, pero queda detrás del Playable Core Loop Proof salvo consumer directo.
+**IMPL-0020** permanece DONE / ACCEPTED / PUBLISHED. **IMPL-0066** quedó DONE / ACCEPTED / PUBLISHED el 2026-10-03 tras aceptación explícita de Mauro del tuning Core 20/30/40 kg y ×0.80/0.70/0.60 (TEST-20261003-001). Mauro autorizó **IMPL-0063 Stage 1** el 2026-10-02 sobre dev tras 5965d23: audit/integration + identidad/evidencia baseline de chunks. TEST-20261002-005/007 combined PASS; revisar el checkpoint antes de autorizar otra slice. **La rebaseline de producto del 2026-10-02 elimina IMPL-0021 como siguiente automático:** sigue aprobado en backlog, pero queda detrás del Playable Core Loop Proof salvo consumer directo.
 
 ### Rebaseline de producto — siguiente objetivo después del checkpoint actual
 
@@ -28,7 +28,7 @@ Referencia: `Docs/Product_Playability_Rebaseline_2026-10-02.md`.
 
 ### Regla de ejecucion del siguiente scope
 
-No convertir esta cola en trabajo simultaneo. IMPL-0020 completó su scope técnico; el playtest manual abrió sólo IMPL-0066 como follow-up terminable. La autorización explícita del 2026-10-02 abre únicamente IMPL-0063 Stage 1 mientras la decisión de tuning IMPL-0066 sigue pendiente; no abrir el backlog entero ni asumir aceptado IMPL-0061.
+No convertir esta cola en trabajo simultaneo. IMPL-0020 e IMPL-0066 están cerrados. La autorización explícita del 2026-10-02 abrió únicamente IMPL-0063 Stage 1; no abrir el backlog entero ni asumir aceptado IMPL-0061.
 
 Durante el siguiente scope acotado:
 
@@ -242,19 +242,19 @@ Referencia: `IMPL-0020`.
 
 ### 12.1 — Follow-up Carry/Storage — IMPL-0066
 
-Estado: `IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING` — TEST-20261001-012/013/014/015/016 conservados; TEST-20261002-001 PASS manual core/save-load reportado por Mauro; TEST-20261002-002/003 gate reconciliado PASS. Checkpoint de implementación autorizado para publicación en dev; próxima acción: decisión comparativa de tuning pequeña/mediana/grande. No DONE ni ACCEPTED. IMPL-0063 Stage 1 fue autorizado posteriormente el 2026-10-02 y quedó VALIDATED; fases posteriores siguen bloqueadas hasta revisión/autorización.
+Estado: `DONE / ACCEPTED / PUBLISHED` — cierre 2026-10-03. TEST-20261001-012/013/014/015/016 conservados; TEST-20261002-001 PASS manual core/save-load; TEST-20261002-002/003 gate reconciliado PASS; TEST-20261003-001 registra la aceptación final explícita de Mauro. IMPL-0063 Stage 1 fue autorizado posteriormente el 2026-10-02 y quedó VALIDATED; fases posteriores siguen bloqueadas hasta revisión/autorización.
 
 Objetivo acotado: separar tres propiedades data-driven de mochilas/contenedores equipables: (1) grid/footprint, (2) peso máximo de contenido que el contenedor acepta y (3) reducción ergonómica de carga efectiva sólo mientras esté correctamente equipado. La masa física de items y contenido no cambia; el límite de kg pertenece al storage y no al actor.
 
 Acceptance: grid y límite de kg funcionan de forma independiente; una mochila equipada puede reducir Encumbrance del contenido sin modificar masa; desequiparla elimina la reducción; transfer/equipment/rollback/persistence siguen conservando identidad y masa; debug UI hace observable el contrato.
 
-Límites: sin Strength/stats, sin aumento global de Carry Capacity, sin rotura de mochila, sin nested containers nuevos y sin framework general de modifiers. Tuning provisional Core pequeña/media/grande: 20/30/40 kg y ×0.80/0.70/0.60, pendiente del feel manual; no balance canon.
+Límites: sin Strength/stats, sin aumento global de Carry Capacity, sin rotura de mochila, sin nested containers nuevos y sin framework general de modifiers. Baseline Core aceptado: pequeña/media/grande 20/30/40 kg y ×0.80/0.70/0.60; no impide rebalance futuro con scope propio.
 
 Referencia: `IMPL-0066`.
 
 ### 13. P13 — Procedural Worldgen + Deformable Volumetric Terrain Productization
 
-Estado: `STAGE 1 VALIDATED / REMAINING PHASES DEFERRED` — autorización local explícita 2026-10-02; TEST-20261002-005/007 combined PASS. TerrainChunkKey, compatibilidad layout y baseline por chunk; seam actual preservado. Próximo paso: revisión del checkpoint antes de nueva autorización, sin iniciar streaming/persistencia ni cerrar IMPL-0066 tuning.
+Estado: `STAGE 1 VALIDATED / REMAINING PHASES DEFERRED` — autorización local explícita 2026-10-02; TEST-20261002-005/007 combined PASS. TerrainChunkKey, compatibilidad layout y baseline por chunk; seam actual preservado. Próximo paso: revisión del checkpoint antes de nueva autorización; IMPL-0066 ya está cerrado.
 
 Objetivo: productizar el seam ya investigado entre el world truth procedural determinista/ecológicamente coherente y la foundation volumétrica deformable. No es un permiso para implementar todo de una vez: debe abrirse mediante slices terminables, empezando por audit/integration gate + stable terrain chunk identity, y luego avanzar sólo tras cerrar cada slice.
 

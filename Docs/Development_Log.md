@@ -3892,3 +3892,13 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - Nuevos findings: AUD-37 probable interaction-range revalidation gap → ISSUE-0043; AUD-38 diagnostics que escriben assets → ISSUE-0044; AUD-39 menu entries que pueden descartar escenas dirty → ISSUE-0045; AUD-40/41 quedan como mantenimiento/performance de Editor sin scope propio.
 - Se corrigen además claims vivos nombrados por la auditoría: IMPL-0066 priority stale, `ApplyCore`→`TryApplyCore`, semántica de pausa en Technical Architecture y comentarios stale de Inventory/GameDataLoader.
 - Product Playability Rebaseline se mantiene intacto: Stage 1 review sigue siendo NEXT EXACT STEP; no Stage 2 por inercia; después, integridad de `dev` + Playable Core Loop Proof guiado por consumer.
+
+
+## 2026-10-03 — IMPL-0066 final tuning acceptance / closeout
+
+- Mauro revisó la evidencia manual/visual de la sesión productiva del 2026-10-02 y aceptó explícitamente el comportamiento y tuning actual de las mochilas, ordenando cerrar IMPL-0066 sin más retuning.
+- El baseline Core aceptado queda: pequeña `20 kg / ×0.80`, intermedia `30 kg / ×0.70`, grande `40 kg / ×0.60`. El peso propio de cada mochila continúa contando al 100%; sólo el contenido de un carrier correctamente equipado recibe el multiplicador ergonómico.
+- La evidencia manual mostrada conserva masa física y reduce carga efectiva de forma coherente para 20 kg de contenido: pequeña `21.50 kg physical / 17.50 kg effective`, intermedia `22.35 / 16.35`, grande `23.45 / 15.45`. Los gates automatizados existentes ya cubren los máximos estructurales 20/30/40 kg, rechazo atómico, cantidad real de merge, equip/unequip, over-cap restore, rollback e identidad.
+- TEST-20261002-001 mantiene el manual core/save-load; TEST-20261002-002/003 mantienen el gate reconciliado. TEST-20261003-001 registra esta aceptación final explícita; no se reclama una nueva ejecución Unity el 2026-10-03.
+- Los hallazgos/follow-ups de UX e input observados durante el playtest permanecen fuera de scope y no bloquean el cierre.
+- Estado final: **IMPL-0066 DONE / ACCEPTED / PUBLISHED**. Cualquier cambio futuro de los valores 20/30/40 o ×0.80/0.70/0.60 será un scope de balance separado, no continuación pendiente de IMPL-0066.

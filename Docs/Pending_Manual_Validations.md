@@ -72,7 +72,7 @@ El handoff histórico mencionó `TEST-20260915-005` a `TEST-20260915-008`, pero 
 
 ### Relación con el trabajo actual
 
-IMPL-0061 permanece diferido y no altera el orden operativo. El NEXT EXACT STEP vigente es revisar el checkpoint IMPL-0063 Stage 1; IMPL-0066 conserva únicamente su decisión manual de tuning pendiente.
+IMPL-0061 permanece diferido y no altera el orden operativo. El NEXT EXACT STEP vigente es revisar el checkpoint IMPL-0063 Stage 1; IMPL-0066 quedó cerrado por aceptación explícita de Mauro el 2026-10-03.
 
 ---
 
@@ -215,7 +215,7 @@ Si resulta práctico, provocar un assembly/domain reload durante Play o usar la 
 
 ## IMPL-0066 — Container structural capacity / equipped ergonomics
 
-**Estado:** IMPLEMENTED / AUTOMATED PASS / MANUAL CORE PASS / TUNING ACCEPTANCE PENDING (2026-10-02). Gates TEST-20261001-012/013/014/015/016 preservados; TEST-20261002-002/003 revalidación reconciliada PASS. TEST-20261002-001 registra la evidencia manual core de Mauro: ergonomía física/efectiva, límite small 20 kg, rechazo sin partial, reingreso y save/load productivo PASS. El checklist core se conserva como referencia; sólo el punto 8 sigue pendiente. Checkpoint autorizado para publicación, sin DONE ni ACCEPTED. IMPL-0063 Stage 1 fue autorizado el 2026-10-02 y quedó VALIDATED; cualquier fase posterior requiere autorización separada.
+**Estado:** DONE / ACCEPTED / PUBLISHED (2026-10-03). Gates TEST-20261001-012/013/014/015/016 preservados; TEST-20261002-002/003 revalidación reconciliada PASS. TEST-20261002-001 registra la evidencia manual core de Mauro y TEST-20261003-001 formaliza la aceptación final del tuning. El checklist queda como evidencia histórica; no hay validación manual pendiente para IMPL-0066.
 
 Usar `Assets/Scenes/SampleScene.unity` en Play; `I` = Inventory, `F3` = Runtime Debug Tools / Item Debug. Preparar una mochila y contenido conocido con Item Debug. Small/medium/large: máximos 20/30/40 kg, contenido equipado ×0.80/0.70/0.60, provisional. No alterar perfiles para esta prueba.
 
@@ -226,6 +226,6 @@ Usar `Assets/Scenes/SampleScene.unity` en Play; `I` = Inventory, `F3` = Runtime 
 5. Llevar la mochila al máximo de contenido con celdas libres; intentar ingreso adicional y comprobar rechazo con kg actuales/máximos/entrantes, sin perder/mover parcialmente items. Ejemplo small: 800 balas .303 = 20 kg de contenido; la siguiente debe rechazarse aunque haya grid libre.
 6. Retirar suficiente contenido; comprobar que el mismo ingreso ahora funciona y que la movilidad derivada se recupera al descargar.
 7. **PASS reportado por Mauro:** MainMenu → WorldRuntime → Save Game / Load Game mediante el flujo productivo; conserva estado y carga derivada. Evidencia manual formal en TEST-20261002-001; la prueba automatizada de Current Slice no sustituye este reporte.
-8. Repetir la sensación de carga con pequeña/media/grande; Mauro acepta los valores provisionales o indica cambios concretos de tuning.
+8. **PASS / ACCEPTED 2026-10-03:** Mauro acepta el baseline pequeña/media/grande vigente: 20/30/40 kg y ×0.80/0.70/0.60. Cualquier ajuste futuro será un rebalance separado.
 
-Después del checkpoint: Mauro compara pequeña/media/grande y acepta o ajusta el tuning provisional (punto 8). Registrar esa nueva ejecución con TEST libre y aplicar sólo cambios autorizados. El checkpoint de implementación no cierra la aceptación de IMPL-0066. IMPL-0063 Stage 1 fue autorizado explícitamente después y quedó VALIDATED; esto no autoriza fases posteriores.
+Closeout: el punto 8 fue aceptado explícitamente por Mauro el 2026-10-03 y quedó registrado como TEST-20261003-001. IMPL-0066 está DONE / ACCEPTED / PUBLISHED. Los follow-ups detectados durante el playtest permanecen separados y no reabren este scope.

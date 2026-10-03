@@ -374,3 +374,14 @@ Historical next action after TEST-002: run the P9 NPC↔Player manual integratio
 - Complete task diff and final docs reviewed; canonical SHA-256/helper, closed baseline sample bounds, current immutable material field and compatibility input list retained. No additional identity/baseline/persistence defect found by the full dedicated review. Final functional TEST-007 PASS and initial TEST-005 PASS preserved; TEST-006 static FAIL retained.
 - Publication scope: 13 named Stage-1 code/meta/docs files only, task-only whitespace check PASS, protected tracked/untracked snapshots preserved and prior local doc portions excluded. No runtime/default mesher/navigation/save-schema changes, IMPL-0066 tuning acceptance, streaming/LOD/geology/optimization or further IMPL-0063 phase.
 - Next action: commit/push this bounded Stage-1 checkpoint on dev and verify remote equality/divergence; stop before further phases. IMPL-0063 umbrella not DONE; IMPL-0066 tuning remains pending.
+
+
+## TEST-20261003-001 — IMPL-0066 — Final tuning acceptance / closeout
+
+- Date: 2026-10-03. Type: **MANUAL ACCEPTANCE / MAURO-REPORTED CLOSEOUT**. No new Unity execution is claimed for this date.
+- Result: **PASS / ACCEPTED**. After reviewing the 2026-10-02 WorldRuntime playtest evidence, Mauro explicitly accepted the current small/medium/large backpack behavior and instructed to close IMPL-0066 without further tuning.
+- Accepted Core baseline: small `20 kg / ×0.80`, medium `30 kg / ×0.70`, large `40 kg / ×0.60`. Backpack self-mass remains fully physical; only contained mass in a correctly equipped carrier receives the ergonomic multiplier.
+- Manual visual evidence from the prior session showed 20 kg contained load resolving coherently as small `21.50 kg physical / 17.50 kg effective`, medium `22.35 / 16.35`, large `23.45 / 15.45`. The same session also exercised real world pickup/equip flows and structural rejection UX. TEST-20261002-001 already records productive Save Game / Load Game and manual core acceptance.
+- Automated evidence remains TEST-20261001-012/013/014/015/016 plus reconciled TEST-20261002-002/003: exact structural capacities, atomic over-cap rejection, merge quantity, physical/effective separation, equipment transitions, rollback/identity, loaded-ammo mass and Current Slice restore/recovery.
+- Scope note: newly observed world-storage inspection and text-focus/hotkey UX issues are separate follow-ups and do not invalidate this acceptance.
+- Closeout: **IMPL-0066 DONE / ACCEPTED / PUBLISHED**. Future tuning changes require a separate balance scope; historical pending entries above remain preserved as history.
