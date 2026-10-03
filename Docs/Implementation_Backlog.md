@@ -789,3 +789,13 @@ Los IDs 0066/0067/0068 conservan sus significados canónicos actuales. Los alias
 - **Detalle:** `Docs/Backlog/IMPL-0072_NPC_Flee_Panic_Behavior.md`.
 - **Trigger:** scope propio posterior; integrar con IMPL-0071 sólo cuando exista evidencia/consumer real.
 - **Límites:** daño/medicina siguen aplicándose durante Flee; sin omnisciencia, RNG por frame, personality framework universal ni tactical planner preventivo.
+
+## IMPL-0073 — NPC Local Auditory Alerts / Shared Hostile Contact
+
+- **Estado:** `PLANNED / DEFERRED`.
+- **Origen:** 2026-10-03 — decisión de diseño de Mauro.
+- **Detalle:** `Docs/Backlog/IMPL-0073_NPC_Local_Auditory_Alerts_Shared_Contact.md`.
+- **Trigger:** consumer real de alerta verbal/SharedContact posterior al scope activo; reutilizar Barks/Social, Perception/Recognition y Behavior Ownership.
+- **Contrato:** alerta vocal estrictamente local, con rango máximo efectivo, degradación/occlusion simple, TTL corto y sin propagación infinita.
+- **Tuning inicial provisional:** conversación 8–12 m; bark fuerte 15–20 m; grito de combate/alarma 25–35 m. No es balance final.
+- **Límites:** oír una alerta no asigna Threat ni posición exacta; SharedContact recibido no se retransmite automáticamente; sólo percepción/reconocimiento propio puede originar una nueva alerta hostil completa.
