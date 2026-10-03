@@ -128,6 +128,34 @@ No debe imponerse sobre:
 - emergency behaviors explícitamente superiores;
 - otras reservas de comportamiento que el contrato declare no interrumpibles.
 
+## Bark emitido vs estímulo gameplay
+
+El bark visible/audible y el estímulo gameplay deben corresponder al mismo evento aceptado.
+
+Si `ActorBarkPresenter` rechaza una alerta por prioridad/cooldown:
+
+- no debe fingirse que el actor gritó;
+- no debe generarse `SharedContact` equivalente, salvo que exista explícitamente otro canal gameplay independiente.
+
+Si la alerta fue efectivamente emitida:
+
+- texto/log siguen las reglas de Social/Barks;
+- el evento auditivo transporta metadata estructurada;
+- gameplay **nunca** parsea strings visibles/localizados como `"enemigo"` para decidir que existe una amenaza.
+
+## Performance / escala de mundo
+
+El sistema debe escalar a mapas grandes sin consultar a todos los NPC del mundo.
+
+Preferir una consulta espacial/event-driven acotada alrededor del emisor.
+
+Un grito local:
+
+- no debe iterar todos los actores registrados;
+- no debe despertar/cargar actores a cientos de metros o kilómetros;
+- no debe afectar actores offline/streamed-out salvo que un futuro sistema de simulación abstracta tenga un consumer explícito;
+- debe limitar trabajo a la vecindad física relevante del evento.
+
 ## Data-driven
 
 Evitar radios y respuestas especiales hardcodeadas por NPC concreto.
@@ -170,6 +198,8 @@ Nunca registrar que el receptor "vio" o "reconoció" al enemigo sólo porque oy�
 - TTL/expiry evita conocimiento auditivo permanente.
 - Distancia y una obstrucción básica pueden reducir/bloquear la recepción.
 - El comportamiento es determinista y diagnosticable.
+- Un bark rechazado por prioridad/cooldown no genera falsamente SharedContact.
+- El sistema no itera sobre todo el mapa por cada bark.
 
 ## Límites
 
