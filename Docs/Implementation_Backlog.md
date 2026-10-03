@@ -795,17 +795,11 @@ Los IDs 0066/0067/0068 conservan sus significados canónicos actuales. Los alias
 - **Estado:** `PLANNED / DEFERRED`.
 - **Origen:** 2026-10-03 — decisión de diseño de Mauro.
 - **Detalle:** `Docs/Backlog/IMPL-0073_NPC_Local_Auditory_Alerts_Shared_Contact.md`.
-- **Trigger:** consumer real de alerta verbal/SharedContact posterior al scope activo; reutilizar Barks/Social, Perception/Recognition y Behavior Ownership.
-- **Contrato:** alerta vocal estrictamente local, con rango máximo efectivo, degradación/occlusion simple, TTL corto y sin propagación infinita.
+- **Trigger:** consumer real de alerta verbal/SharedContact posterior al scope activo; reutilizar Barks/Social, Perception/Recognition, Gaze y Behavior Ownership.
+- **Contrato:** alerta vocal estrictamente local y event-driven, con rango máximo efectivo, degradación/occlusion simple, TTL corto y sin propagación infinita.
 - **Tuning inicial provisional:** conversación 8–12 m; bark fuerte 15–20 m; grito de combate/alarma 25–35 m. No es balance final.
-- **Límites:** oír una alerta no asigna Threat ni posición exacta; SharedContact recibido no se retransmite automáticamente; sólo percepción/reconocimiento propio puede originar una nueva alerta hostil completa.
-
-
-## IMPL-0073 — NPC Auditory Alert / Local SharedContact
-
-- **Estado:** `PLANNED / DEFERRED`.
-- **Origen:** 2026-10-03 — decisión de diseño de Mauro sobre alertas hostiles verbales localizadas.
-- **Detalle:** `Docs/Backlog/IMPL-0073_NPC_Auditory_Alert_SharedContact.md`.
-- **Trigger:** scope propio futuro posterior al trabajo activo; integrar con Social/Barks, Perception/Recognition y Behavior Ownership sin convertir el bark en broadcast global.
-- **Contrato:** alerta auditiva local event-driven; radios provisionales de prueba ~8–12 m conversación, ~15–20 m bark fuerte y ~25–35 m grito de combate, sujetos a tuning/data-driven.
-- **Límites:** escuchar no concede Threat ni posición exacta; fuera de rango no hay evento; sin retransmisión automática en cadena, faction-wide omniscience, radio global, parseo de strings visibles ni iteración de todo el mapa por bark.
+- **Conocimiento:** oír una alerta orienta atención/investigación; no asigna Threat, ActorInstanceId reconocido ni posición exacta. La confirmación sigue pasando por Perception/FOV/LOS/Recognition propias.
+- **Anti-chain:** SharedContact recibido no se retransmite automáticamente; sólo percepción/reconocimiento propio permite originar una nueva alerta hostil completa.
+- **Bark/gameplay:** un bark rechazado por prioridad/cooldown no genera falsamente SharedContact; metadata estructurada, nunca parseo de strings visibles.
+- **Escala:** consulta espacial/event-driven alrededor del emisor; nunca broadcast de facción, barrido global ni activación de NPC a kilómetros.
+- **Límites:** sin acústica universal, radio/comms de largo alcance, segunda autoridad de Threat, faction-wide omniscience ni relay automático.
