@@ -174,9 +174,9 @@ No son autorización simultánea. Orden conceptual:
 
 - Mauro conserva autoridad creativa/producto.
 - Un audit externo no abre scopes por sí mismo.
-- IMPL-0063 Stage 1 sigue siendo el checkpoint activo pendiente de review.
-- IMPL-0066 sigue esperando sólo tuning acceptance.
-- No se autoriza Stage 2.
+- IMPL-0063 Stage 1 ya fue revisado/validado/publicado; `ISSUE-0042` conserva su límite técnico conocido.
+- IMPL-0066 quedó DONE / ACCEPTED / PUBLISHED el 2026-10-03.
+- No se autoriza Stage 2 por inercia; el siguiente gate operativo es `ISSUE-0031` y después el Playable Core Loop Proof.
 - No se autoriza refactor general de UI, asmdefs, performance, modding, terrain o saves.
 - Los findings nuevos se registran ahora para impedir que se pierdan; se implementan sólo cuando el orden operativo los habilite.
 

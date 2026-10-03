@@ -6,18 +6,18 @@ Este documento contiene sólo los próximos trabajos reales. `Current_Milestone.
 
 M41 / M41.4 / P9: **DONE / ACCEPTED / PUBLISHED**. Final P9 gates are recorded as `TEST-20260914-001` through `TEST-20260914-004` in `Test_Log.md`; the rifle run's manual setup caveat is retained there. No Unity rerun was part of the documentation closeout.
 
-### Active slice — IMPL-0063 Stage 1
+### Checkpoint cerrado — IMPL-0063 Stage 1
 
-**IMPL-0020** permanece DONE / ACCEPTED / PUBLISHED. **IMPL-0066** quedó DONE / ACCEPTED / PUBLISHED el 2026-10-03 tras aceptación explícita de Mauro del tuning Core 20/30/40 kg y ×0.80/0.70/0.60 (TEST-20261003-001). Mauro autorizó **IMPL-0063 Stage 1** el 2026-10-02 sobre dev tras 5965d23: audit/integration + identidad/evidencia baseline de chunks. TEST-20261002-005/007 combined PASS; revisar el checkpoint antes de autorizar otra slice. **La rebaseline de producto del 2026-10-02 elimina IMPL-0021 como siguiente automático:** sigue aprobado en backlog, pero queda detrás del Playable Core Loop Proof salvo consumer directo.
+**IMPL-0020** e **IMPL-0066** permanecen DONE / ACCEPTED / PUBLISHED. **IMPL-0063 Stage 1** fue autorizado el 2026-10-02, validado por TEST-20261002-005/007, publicado en `89f2a72` y revisado posteriormente sin finding que invalide su alcance. `ISSUE-0042` conserva el límite conocido de identidad/lattice global; no autoriza Stage 2 por inercia. **Siguiente scope operativo:** `ISSUE-0031` clean published-tree integrity gate, después Playable Core Loop Proof. IMPL-0021 sigue detrás del rebaseline jugable salvo consumer directo.
 
 ### Rebaseline de producto — siguiente objetivo después del checkpoint actual
 
 La auditoría independiente V2 confirmó una asimetría: foundations técnicas fuertes, pero ninguna sesión de producto de 10–15 minutos demostrada como loop repetible para una persona ajena al desarrollo. Mauro aprueba corregir la prioridad.
 
-Después de la revisión de IMPL-0063 Stage 1:
+Con la revisión de IMPL-0063 Stage 1 ya completada:
 
 1. **no abrir Stage 2 por inercia**;
-2. resolver de forma acotada `ISSUE-0031` para saber que el árbol publicado es una baseline reproducible;
+2. cerrar `ISSUE-0031` con un gate limpio de compile/load del árbol publicado; el preflight estático del 2026-10-03 no sustituye ese gate;
 3. definir/autorizar un **Playable Core Loop Proof** usando primero sistemas ya existentes;
 4. tratar `ISSUE-0032` (pausa/tiempo), `ISSUE-0036` (cierre médico) y `ISSUE-0037` (dependencia Debug→producto) como candidatos relevantes sólo en la medida en que bloqueen ese loop;
 5. mantener ideas/mecánicas nuevas en backlog hasta que el loop demuestre un consumer real.

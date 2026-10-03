@@ -3902,3 +3902,13 @@ Baseline verificado: `aa0757c2f5208aa9752f45c67bee35a62d172091`. Commit funciona
 - TEST-20261002-001 mantiene el manual core/save-load; TEST-20261002-002/003 mantienen el gate reconciliado. TEST-20261003-001 registra esta aceptación final explícita; no se reclama una nueva ejecución Unity el 2026-10-03.
 - Los hallazgos/follow-ups de UX e input observados durante el playtest permanecen fuera de scope y no bloquean el cierre.
 - Estado final: **IMPL-0066 DONE / ACCEPTED / PUBLISHED**. Cualquier cambio futuro de los valores 20/30/40 o ×0.80/0.70/0.60 será un scope de balance separado, no continuación pendiente de IMPL-0066.
+
+
+## 2026-10-03 — IMPL-0063 Stage 1 review complete / ISSUE-0031 static preflight
+
+- Se completó la revisión posterior del checkpoint IMPL-0063 Stage 1 publicado en `89f2a72`. No se encontró un defecto que invalide el alcance de Stage 1: separación entre índice local y TerrainChunkKey, evidencia baseline/layout, invariantes de orden/representación/mesher/mutación y seams X/Y/Z siguen siendo coherentes con el scope probado.
+- Se mantiene como límite explícito `ISSUE-0042`: la key/lattice actual está anclada a una ventana/materialización acotada y no debe tratarse todavía como identidad durable global para streaming o persistencia. Stage 2 no se abre por inercia.
+- Se abrió el siguiente gate operativo `ISSUE-0031`. Preflight estático sobre `dev@9650582`: el árbol publicado está 16 commits por delante de Stage 1; sólo `GameDataLoader.cs` e `InventoryComponent.cs` cambiaron como runtime desde ese checkpoint, además de documentación. Los cambios locales Social/combat históricos no aparecen absorbidos accidentalmente como runtime publicado.
+- Búsquedas del árbol publicado no muestran consumers runtime de los tipos locales/untracked conocidos (Social V1/telemetry/tracer/diagnostics). La documentación canónica ya declara Social V1/IMPL-0061 como handoff local no presente en `dev`.
+- No existe `.github/workflows`; por lo tanto no hay un CI Unity remoto que pueda demostrar compile/load del árbol publicado de forma aislada. Este preflight reduce riesgo pero NO cierra ISSUE-0031.
+- Gate pendiente para cerrar ISSUE-0031: compile Runtime/Editor + carga básica MainMenu → WorldRuntime sobre un árbol publicado limpio/aislado autorizado, sin depender de los archivos históricos del working tree. No reset/clean/stash destructivo ni clone/worktree frío sin autorización explícita.

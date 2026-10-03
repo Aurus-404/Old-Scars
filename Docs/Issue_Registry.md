@@ -84,12 +84,14 @@ Este archivo se mantiene deliberadamente compacto para que pueda leerse en cambi
 
 
 ### ISSUE-0031 — Integridad del árbol publicado no demostrada frente al working tree local
-- **Tipo/estado/severidad:** `TOOLING` · `CONFIRMED` · `P1 / ORANGE`.
+- **Tipo/estado/severidad:** `TOOLING` · `IN PROGRESS — STATIC PREFLIGHT PASS / CLEAN UNITY GATE PENDING` · `P1 / ORANGE`.
 - **Origen:** auditoría externa V2, 2026-10-02; corresponde a AUD-01 + AUD-15.
-- **Evidencia/límite:** validaciones recientes registran 13 archivos tracked y 13 untracked preexistentes, y publicaciones parciales por hunks sobre archivos con cambios locales preservados. La evidencia prueba el working tree canónico usado en esas corridas; no demuestra de forma aislada que el árbol publicado `dev` compile/cargue por sí solo. No se afirma que `dev` esté roto.
-- **Impacto:** un clon/CI/colaborador puede descubrir una dependencia accidental de cambios locales; además el dirty state de larga vida encarece cada publicación y revisión.
-- **Plan:** después del checkpoint IMPL-0063 Stage 1, realizar una comprobación acotada de integridad del `dev` publicado y decidir el destino del trabajo local histórico sin reset/clean/stash destructivo. La excepción de aislamiento, si hiciera falta, requiere autorización explícita de Mauro.
-- **No hacer:** crear un worktree/clone Unity frío por comodidad ni descartar cambios locales.
+- **Evidencia/límite:** validaciones recientes registraron un working tree canónico con cambios tracked/untracked históricos y publicaciones parciales por hunks. Eso prueba el checkout usado en esas corridas, no por sí solo el árbol publicado `dev` aislado.
+- **Preflight estático 2026-10-03:** `dev@9650582` está 16 commits por delante del checkpoint Stage 1 `89f2a72`. La comparación publicada muestra sólo dos archivos runtime modificados desde Stage 1 (`GameDataLoader.cs`, `InventoryComponent.cs`) más documentación; los archivos Social/combat locales históricos no fueron absorbidos accidentalmente como runtime publicado. Búsqueda del árbol publicado no encuentra código runtime que consuma los tipos locales/untracked conocidos (`ActorSocialInteractionController`, `SandboxCombatTelemetry`, `CombatShotTracerDebugRenderer`, diagnostics asociados); la documentación además declara explícitamente Social V1/IMPL-0061 como handoff local no presente en `dev`. No existe `.github/workflows`, por lo que no hay CI Unity remoto que cierre este issue automáticamente.
+- **Resultado del preflight:** no se encontró una dependencia estática obvia de los cambios locales históricos, pero **ISSUE-0031 NO está resuelto**: falta un gate Unity sobre el árbol publicado aislado que demuestre compile + carga básica sin esos archivos locales.
+- **Gate de cierre requerido:** validar el `dev` publicado en un entorno limpio/aislado autorizado, con compile Runtime/Editor y al menos MainMenu → WorldRuntime/load básico; registrar evidencia y confirmar que no necesita ningún archivo del working tree histórico.
+- **Impacto:** un clon/CI/colaborador aún podría descubrir una dependencia accidental no detectable por este preflight; el dirty state de larga vida además encarece publicación/revisión.
+- **No hacer:** reset/clean/stash destructivo ni worktree/clone Unity frío por comodidad. Si el aislamiento exige otro checkout, informar el coste de import/cache y obtener autorización explícita de Mauro.
 
 ### ISSUE-0032 — La pausa no suspende timers de gameplay basados en tiempo real
 - **Tipo/estado/severidad:** `BUG` · `CONFIRMED` · `P1 / ORANGE`.
