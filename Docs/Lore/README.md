@@ -81,6 +81,8 @@ Estas categorías sirven para organizar el contenido; no reemplazan el ID.
 |---|---|---|---|
 | [LORE-001](./LORE-001_Industrializacion_Acero_Termico_y_Armaduras_Motorizadas.md) | Industrialización, acero térmico y armaduras motorizadas | CANON | Historia / Tecnología / Militar |
 
+| [LORE-002](./LORE-002_Estetica_de_Herramientas_y_Objetos_Manuales.md) | Estética de herramientas y objetos manuales | CANON | Objeto / Cultura / Tecnología / Mundo |
+
 ## Regla de uso
 
 Registrar una idea en esta carpeta **no la convierte automáticamente en canon**. El estado del documento es la autoridad narrativa inmediata para distinguir contenido establecido de contenido exploratorio.
