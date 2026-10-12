@@ -82,6 +82,7 @@ Estas categorías sirven para organizar el contenido; no reemplazan el ID.
 | [LORE-001](./LORE-001_Industrializacion_Acero_Termico_y_Armaduras_Motorizadas.md) | Industrialización, acero térmico y armaduras motorizadas | CANON | Historia / Tecnología / Militar |
 
 | [LORE-002](./LORE-002_Estetica_de_Herramientas_y_Objetos_Manuales.md) | Estética de herramientas y objetos manuales | CANON | Objeto / Cultura / Tecnología / Mundo |
+| [LORE-003](./LORE-003_Stahltruppen_Tropas_de_Acero_de_Vandor.md) | Stahltruppen — Tropas de Acero de Vandor | IDEA | Militar / Facción / Nación / Tecnología / Cultura |
 
 ## Regla de uso
 
